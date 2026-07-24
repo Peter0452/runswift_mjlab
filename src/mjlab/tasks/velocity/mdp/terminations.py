@@ -100,3 +100,19 @@ def terrain_edge_reached(
   at_edge &= env.episode_length_buf > 2
 
   return at_edge
+
+
+def feet_too_far_apart(
+  env: ManagerBasedRlEnv,
+  max_separation: float,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> torch.Tensor:
+  """Terminate when foot sites are farther apart than ``max_separation``.
+
+  Catches wide-stance / splits postures that stay upright enough to avoid
+  ``bad_orientation`` but are not useful gaits.
+  """
+  asset: Entity = env.scene[asset_cfg.name]
+  foot_pos = asset.data.site_pos_w[:, asset_cfg.site_ids]  # [B, 2, 3]
+  separation = torch.norm(foot_pos[:, 0] - foot_pos[:, 1], dim=-1)
+  return separation > max_separation
