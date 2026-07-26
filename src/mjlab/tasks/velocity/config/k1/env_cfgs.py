@@ -9,6 +9,7 @@ from mjlab.envs import mdp as envs_mdp
 from mjlab.envs.mdp import dr
 from mjlab.envs.mdp.actions import JointPositionActionCfg
 from mjlab.managers.event_manager import EventTermCfg
+from mjlab.managers.observation_manager import ObservationTermCfg
 from mjlab.managers.reward_manager import RewardTermCfg
 from mjlab.managers.scene_entity_config import SceneEntityCfg
 from mjlab.managers.termination_manager import TerminationTermCfg
@@ -157,6 +158,21 @@ def booster_k1_rough_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     term.delay_max_lag = 2
     term.delay_hold_prob = 0.9
 
+  # Open-loop gait clock for early training; fades to zeros after ~8k iters
+  # (keep dim fixed so the network can run without the clock later).
+  gait_cycle_cfg = ObservationTermCfg(
+    func=mdp.gait_cycle,
+    params={
+      "period": 0.6,
+      "command_name": "twist",
+      "command_threshold": 0.05,
+      "drop_step": 8_000 * 24,
+      "fade_steps": 2_000 * 24,
+    },
+  )
+  cfg.observations["actor"].terms["gait_cycle"] = gait_cycle_cfg
+  cfg.observations["critic"].terms["gait_cycle"] = gait_cycle_cfg
+
   # Pose stds: keep hip roll/yaw tight so the policy cannot sit in a wide
   # stance (exp pose saturates once spread, so tightness matters early).
   cfg.rewards["pose"].params["std_standing"] = {".*": 0.05}
@@ -233,6 +249,12 @@ def booster_k1_rough_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     cfg.episode_length_s = int(1e9)
 
     cfg.observations["actor"].enable_corruption = False
+    # Play/deploy: keep the 2-D slot but always emit zeros (final-policy mode).
+    for group in ("actor", "critic"):
+      gait_term = cfg.observations[group].terms.get("gait_cycle")
+      if gait_term is not None:
+        gait_term.params["drop_step"] = 0
+        gait_term.params["fade_steps"] = 0
     cfg.events.pop("push_robot", None)
     cfg.terminations.pop("out_of_terrain_bounds", None)
     cfg.curriculum = {}
