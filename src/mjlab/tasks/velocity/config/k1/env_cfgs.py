@@ -213,6 +213,22 @@ def booster_k1_rough_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   cfg.rewards["angular_momentum"].weight = -0.02
   cfg.rewards["air_time"].weight = 0.0
 
+  # Phase-synced stepping vs the shared gait clock (fades with the obs).
+  cfg.rewards["gait"] = RewardTermCfg(
+    func=mdp.feet_gait,
+    weight=0.5,
+    params={
+      "sensor_name": "feet_ground_contact",
+      "period": 0.6,
+      "command_name": "twist",
+      "command_threshold": 0.05,
+      "left_foot_name": "left_foot_link",
+      "right_foot_name": "right_foot_link",
+      "drop_step": 8_000 * 24,
+      "fade_steps": 2_000 * 24,
+    },
+  )
+
   # Non-saturating penalty on hip abduction/adduction (wide stance).
   cfg.rewards["hip_roll_l2"] = RewardTermCfg(
     func=mdp.joint_deviation_l2,
@@ -255,6 +271,10 @@ def booster_k1_rough_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
       if gait_term is not None:
         gait_term.params["drop_step"] = 0
         gait_term.params["fade_steps"] = 0
+    gait_reward = cfg.rewards.get("gait")
+    if gait_reward is not None:
+      gait_reward.params["drop_step"] = 0
+      gait_reward.params["fade_steps"] = 0
     cfg.events.pop("push_robot", None)
     cfg.terminations.pop("out_of_terrain_bounds", None)
     cfg.curriculum = {}

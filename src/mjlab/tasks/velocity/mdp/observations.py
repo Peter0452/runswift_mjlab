@@ -63,6 +63,51 @@ def _gait_state(env: ManagerBasedRlEnv) -> dict[str, Any]:
   return state
 
 
+def gait_scale(step: int, drop_step: int, fade_steps: int) -> float:
+  """Curriculum scale for gait obs/reward: 1 → 0 after ``drop_step``."""
+  if fade_steps < 0:
+    raise ValueError(f"fade_steps must be >= 0, got {fade_steps}")
+  if step >= drop_step + fade_steps:
+    return 0.0
+  if step > drop_step and fade_steps > 0:
+    return 1.0 - (step - drop_step) / float(fade_steps)
+  if step > drop_step:
+    return 0.0
+  return 1.0
+
+
+def advance_gait_phase(
+  env: ManagerBasedRlEnv,
+  period: float,
+  command_name: str = "twist",
+  command_threshold: float = 0.05,
+) -> tuple[torch.Tensor, torch.Tensor]:
+  """Advance the shared open-loop gait phase at most once per env step.
+
+  Returns:
+    ``(phase, moving)`` where ``phase`` is in ``[0, 1)`` with shape ``[B]``
+    and ``moving`` is a bool mask of shape ``[B]``.
+  """
+  state = _gait_state(env)
+  phase: torch.Tensor = state["phase"]
+  step = env.common_step_counter
+  command = env.command_manager.get_command(command_name)
+  if command is not None:
+    speed = torch.norm(command[:, :2], dim=1) + torch.abs(command[:, 2])
+    moving = speed > command_threshold
+  else:
+    moving = torch.ones(env.num_envs, device=env.device, dtype=torch.bool)
+
+  if state["step"] != step:
+    state["step"] = step
+    phase[:] = torch.where(
+      moving,
+      (phase + env.step_dt / period) % 1.0,
+      phase,
+    )
+  return phase, moving
+
+
 class gait_cycle:
   """Open-loop gait phase as ``[sin(2πφ), cos(2πφ)]``.
 
@@ -100,37 +145,13 @@ class gait_cycle:
     drop_step: int = 8_000 * 24,
     fade_steps: int = 2_000 * 24,
   ) -> torch.Tensor:
-    if fade_steps < 0:
-      raise ValueError(f"fade_steps must be >= 0, got {fade_steps}")
-
-    state = _gait_state(env)
-    phase: torch.Tensor = state["phase"]
-    step = env.common_step_counter
-    command = env.command_manager.get_command(command_name)
-    if command is not None:
-      speed = torch.norm(command[:, :2], dim=1) + torch.abs(command[:, 2])
-      moving = speed > command_threshold
-    else:
-      moving = torch.ones(env.num_envs, device=env.device, dtype=torch.bool)
-
-    # Advance at most once per env step (actor + critic share this buffer).
-    if state["step"] != step:
-      state["step"] = step
-      phase[:] = torch.where(
-        moving,
-        (phase + env.step_dt / period) % 1.0,
-        phase,
-      )
-
+    phase, moving = advance_gait_phase(env, period, command_name, command_threshold)
     angle = 2.0 * torch.pi * phase
     out = torch.stack((torch.sin(angle), torch.cos(angle)), dim=-1)
     out = out * moving.float().unsqueeze(-1)
-
-    if step >= drop_step + fade_steps:
+    scale = gait_scale(env.common_step_counter, drop_step, fade_steps)
+    if scale == 0.0:
       return torch.zeros_like(out)
-    if step > drop_step and fade_steps > 0:
-      alpha = 1.0 - (step - drop_step) / float(fade_steps)
-      out = out * alpha
-    elif step > drop_step:
-      return torch.zeros_like(out)
+    if scale != 1.0:
+      out = out * scale
     return out

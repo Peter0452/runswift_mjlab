@@ -10,6 +10,7 @@ from mjlab.managers.reward_manager import RewardTermCfg
 from mjlab.managers.scene_entity_config import SceneEntityCfg
 from mjlab.sensor import BuiltinSensor, ContactSensor
 from mjlab.sensor.terrain_height_sensor import TerrainHeightSensor
+from mjlab.tasks.velocity.mdp.observations import advance_gait_phase, gait_scale
 from mjlab.tasks.velocity.mdp.terrain_utils import terrain_normal_from_sensors
 from mjlab.utils.lab_api.math import quat_apply, quat_apply_inverse
 from mjlab.utils.lab_api.string import (
@@ -380,6 +381,69 @@ def soft_landing(
       active = (total_command > command_threshold).float()
       cost = cost * active
   return cost
+
+
+class feet_gait:
+  """Reward bipedal foot contacts that match an open-loop gait phase.
+
+  Reference schedule (shared with ``gait_cycle`` observation):
+
+  - ``φ ∈ [0, 0.5)``: left swing, right stance
+  - ``φ ∈ [0.5, 1)``: left stance, right swing
+
+  Returns a value in ``[0, 1]`` (fraction of feet matching), gated by
+  command magnitude and the same drop/fade curriculum as the gait clock.
+  """
+
+  def __init__(self, cfg: RewardTermCfg, env: ManagerBasedRlEnv):
+    sensor = env.scene[cfg.params["sensor_name"]]
+    assert isinstance(sensor, ContactSensor), (
+      f"feet_gait requires a ContactSensor, got {type(sensor).__name__}"
+    )
+    left_name: str = cfg.params.get("left_foot_name", "left_foot_link")
+    right_name: str = cfg.params.get("right_foot_name", "right_foot_link")
+    names = list(sensor.primary_names)
+    if left_name not in names or right_name not in names:
+      raise ValueError(
+        f"feet_gait expected primaries '{left_name}' and '{right_name}', got {names}"
+      )
+    self.left_idx = names.index(left_name)
+    self.right_idx = names.index(right_name)
+
+  def __call__(
+    self,
+    env: ManagerBasedRlEnv,
+    sensor_name: str,
+    period: float = 0.6,
+    command_name: str = "twist",
+    command_threshold: float = 0.05,
+    left_foot_name: str = "left_foot_link",
+    right_foot_name: str = "right_foot_link",
+    drop_step: int = 8_000 * 24,
+    fade_steps: int = 2_000 * 24,
+  ) -> torch.Tensor:
+    del left_foot_name, right_foot_name  # Resolved in __init__.
+    scale = gait_scale(env.common_step_counter, drop_step, fade_steps)
+    if scale == 0.0:
+      return torch.zeros(env.num_envs, device=env.device)
+
+    phase, moving = advance_gait_phase(env, period, command_name, command_threshold)
+    sensor: ContactSensor = env.scene[sensor_name]
+    assert sensor.data.found is not None
+    contact = (sensor.data.found > 0).float()  # [B, P]
+    left_contact = contact[:, self.left_idx]
+    right_contact = contact[:, self.right_idx]
+
+    # φ < 0.5 → left swing (0), right stance (1); else swapped.
+    left_desired = (phase >= 0.5).float()
+    right_desired = (phase < 0.5).float()
+    match = 0.5 * (
+      (1.0 - torch.abs(left_contact - left_desired))
+      + (1.0 - torch.abs(right_contact - right_desired))
+    )
+    reward = match * moving.float() * scale
+    env.extras["log"]["Metrics/gait_match_mean"] = torch.mean(match * moving.float())
+    return reward
 
 
 class variable_posture:
