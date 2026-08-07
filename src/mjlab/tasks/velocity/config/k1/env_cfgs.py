@@ -1,13 +1,19 @@
 """Booster K1 velocity environment configurations."""
 
+import math
+
 from mjlab.asset_zoo.robots import (
   K1_ACTION_SCALE,
   get_k1_robot_cfg,
+)
+from mjlab.asset_zoo.robots.booster_k1.k1_constants import (
+  KNEES_BENT_KEYFRAME,
 )
 from mjlab.envs import ManagerBasedRlEnvCfg
 from mjlab.envs import mdp as envs_mdp
 from mjlab.envs.mdp import dr
 from mjlab.envs.mdp.actions import JointPositionActionCfg
+from mjlab.managers.curriculum_manager import CurriculumTermCfg
 from mjlab.managers.event_manager import EventTermCfg
 from mjlab.managers.observation_manager import ObservationTermCfg
 from mjlab.managers.reward_manager import RewardTermCfg
@@ -22,10 +28,30 @@ from mjlab.sensor import (
   TerrainHeightSensorCfg,
 )
 from mjlab.tasks.velocity import mdp
-from mjlab.tasks.velocity.mdp import UniformVelocityCommandCfg
+from mjlab.tasks.velocity.mdp import UniformVelocityCommandCfg, walk_params
 from mjlab.tasks.velocity.velocity_env_cfg import make_velocity_env_cfg
+from mjlab.terrains.config import flat, random_rough, wave_terrain
 
-# Legs only: head/arms stay at the tucked keyframe via PD (see k1_constants).
+# Legs + arms: head stays at default via PD. Arms get a small action scale
+# (±0.15 rad) so the policy can balance with them without swinging into
+# obstacles.
+_K1_POLICY_ACTUATORS = (
+  ".*_Hip_Pitch",
+  ".*_Hip_Roll",
+  ".*_Hip_Yaw",
+  ".*_Knee_Pitch",
+  ".*_Ankle_Pitch",
+  ".*_Ankle_Roll",
+  ".*_Shoulder_Pitch",
+  ".*_Shoulder_Roll",
+  ".*_Elbow_Pitch",
+  ".*_Elbow_Yaw",
+)
+
+# Head only: not policy-controlled; held at default keyframe.
+_K1_PASSIVE_JOINTS = ("Head_.*",)
+
+# Leg-only patterns (rewards that should ignore arms).
 _K1_LEG_ACTUATORS = (
   ".*_Hip_Pitch",
   ".*_Hip_Roll",
@@ -104,21 +130,68 @@ def booster_k1_rough_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
 
   if cfg.scene.terrain is not None and cfg.scene.terrain.terrain_generator is not None:
     cfg.scene.terrain.terrain_generator.curriculum = True
+    # Flat + wave/rough only (no stairs/slopes) for early biped locomotion.
+    cfg.scene.terrain.terrain_generator.sub_terrains = {
+      "flat": flat(proportion=0.5),
+      "wave_terrain": wave_terrain(proportion=0.25),
+      "random_rough": random_rough(proportion=0.25),
+    }
 
   joint_pos_action = cfg.actions["joint_pos"]
   assert isinstance(joint_pos_action, JointPositionActionCfg)
-  joint_pos_action.actuator_names = _K1_LEG_ACTUATORS
-  # Scale dict must only include keys that match the restricted action joints.
-  joint_pos_action.scale = {name: K1_ACTION_SCALE[name] for name in _K1_LEG_ACTUATORS}
+  joint_pos_action.actuator_names = _K1_POLICY_ACTUATORS
+  # Legs: ±1.0 rad; arms: ±0.15 rad (see K1_ACTION_SCALE).
+  joint_pos_action.scale = {
+    name: K1_ACTION_SCALE[name] for name in _K1_POLICY_ACTUATORS
+  }
 
   cfg.viewer.body_name = "Trunk"
 
   twist_cmd = cfg.commands["twist"]
   assert isinstance(twist_cmd, UniformVelocityCommandCfg)
   twist_cmd.viz.z_offset = 0.7
+  twist_cmd.ranges.lin_vel_x = (-1.5, 2.0)
+  twist_cmd.ranges.lin_vel_y = (-1.5, 2.0)
+  twist_cmd.ranges.ang_vel_z = (-0.5, 0.5)
+  # ParameterWalk gait frequency command → 4-D twist [vx, vy, wz, freq].
+  twist_cmd.ranges.gait_frequency = walk_params.GAIT_FREQUENCY_RANGE
+  # More standing (T1-like) so the policy learns to hold still as well as walk.
+  twist_cmd.rel_standing_envs = 0.25
+  twist_cmd.rel_forward_envs = 0.4
+  twist_cmd.rel_heading_envs = 0.2
+
+  # Keep curriculum stage 0 in sync with the wider base ranges.
+  cfg.curriculum["command_vel"].params["velocity_stages"][0] = {
+    "step": 0,
+    "lin_vel_x": (-1.5, 2.0),
+    "lin_vel_y": (-1.5, 2.0),
+    "ang_vel_z": (-0.5, 0.5),
+  }
 
   cfg.events["foot_friction"].params["asset_cfg"].geom_names = geom_names
   cfg.events["base_com"].params["asset_cfg"].body_names = ("Trunk",)
+
+  # Always reset to knees-bent crouch (robot default / ParameterWalk-like squat).
+  cfg.events["reset_robot_joints"] = EventTermCfg(
+    func=mdp.reset_joints_from_pose_catalog,
+    mode="reset",
+    params={
+      "poses": [KNEES_BENT_KEYFRAME.joint_pos],
+      "base_heights": [KNEES_BENT_KEYFRAME.pos[2]],
+      "position_range": (-0.1, 0.1),
+      "velocity_range": (0.0, 0.0),
+      "asset_cfg": SceneEntityCfg("robot", joint_names=(".*",)),
+    },
+  )
+
+  # clear_state zeros all PD targets; keep head at default keyframe.
+  cfg.events["hold_head"] = EventTermCfg(
+    func=mdp.set_joint_position_targets_to_default,
+    mode="reset",
+    params={
+      "asset_cfg": SceneEntityCfg("robot", joint_names=_K1_PASSIVE_JOINTS),
+    },
+  )
 
   # Mass/inertia (±~20% via alpha), PD gains, and armature for sim-to-real.
   cfg.events["robot_inertia"] = EventTermCfg(
@@ -158,12 +231,13 @@ def booster_k1_rough_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     term.delay_max_lag = 2
     term.delay_hold_prob = 0.9
 
-  # Open-loop gait clock for early training; fades to zeros after ~8k iters
-  # (keep dim fixed so the network can run without the clock later).
+  # Open-loop gait clock; cadence from commanded gait_frequency (walk_params).
+  # Sin/cos fades after ~8k iters; frequency command stays in twist forever.
   gait_cycle_cfg = ObservationTermCfg(
     func=mdp.gait_cycle,
     params={
-      "period": 0.6,
+      # Fallback only if command lacks freq dim (K1 always has it).
+      "period": 1.0 / walk_params.GAIT_FREQUENCY_DEFAULT,
       "command_name": "twist",
       "command_threshold": 0.05,
       "drop_step": 8_000 * 24,
@@ -173,23 +247,9 @@ def booster_k1_rough_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   cfg.observations["actor"].terms["gait_cycle"] = gait_cycle_cfg
   cfg.observations["critic"].terms["gait_cycle"] = gait_cycle_cfg
 
-  # Pose stds: keep hip roll/yaw tight so the policy cannot sit in a wide
-  # stance (exp pose saturates once spread, so tightness matters early).
-  cfg.rewards["pose"].params["std_standing"] = {".*": 0.05}
-  cfg.rewards["pose"].params["std_walking"] = {
-    r".*_Hip_Pitch": 0.3,
-    r".*_Hip_Roll": 0.1,
-    r".*_Hip_Yaw": 0.1,
-    r".*_Knee_Pitch": 0.35,
-    r".*_Ankle_Pitch": 0.25,
-    r".*_Ankle_Roll": 0.1,
-    r".*_Shoulder_Pitch": 0.05,
-    r".*_Shoulder_Roll": 0.05,
-    r".*_Elbow_Pitch": 0.05,
-    r".*_Elbow_Yaw": 0.05,
-    r"Head_.*": 0.05,
-  }
-  cfg.rewards["pose"].params["std_running"] = {
+  # Pose reward: use running tolerances at all speeds (allow large leg motion).
+  # Default pose reference is knees-bent (robot init_state / action offset).
+  _POSE_STD_RUNNING = {
     r".*_Hip_Pitch": 0.5,
     r".*_Hip_Roll": 0.15,
     r".*_Hip_Yaw": 0.15,
@@ -202,6 +262,9 @@ def booster_k1_rough_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     r".*_Elbow_Yaw": 0.05,
     r"Head_.*": 0.05,
   }
+  cfg.rewards["pose"].params["std_standing"] = _POSE_STD_RUNNING
+  cfg.rewards["pose"].params["std_walking"] = _POSE_STD_RUNNING
+  cfg.rewards["pose"].params["std_running"] = _POSE_STD_RUNNING
 
   cfg.rewards["upright"].params["asset_cfg"].body_names = ("Trunk",)
   cfg.rewards["body_ang_vel"].params["asset_cfg"].body_names = ("Trunk",)
@@ -211,15 +274,23 @@ def booster_k1_rough_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
 
   cfg.rewards["body_ang_vel"].weight = -0.05
   cfg.rewards["angular_momentum"].weight = -0.02
-  cfg.rewards["air_time"].weight = 0.0
+  # Tracking must dominate — prior runs farmed upright/gait without moving.
+  cfg.rewards["track_linear_velocity"].weight = 5.0
+  cfg.rewards["track_angular_velocity"].weight = 4.0
+  cfg.rewards["track_linear_velocity"].params["std"] = math.sqrt(0.15)
+  cfg.rewards["track_angular_velocity"].params["std"] = math.sqrt(0.3)
+  cfg.rewards["upright"].weight = 0.5
+  cfg.rewards["pose"].weight = 0.5
+  cfg.rewards["air_time"].weight = 0.25
+  cfg.rewards["foot_swing_height"].weight = -0.5
 
   # Phase-synced stepping vs the shared gait clock (fades with the obs).
   cfg.rewards["gait"] = RewardTermCfg(
     func=mdp.feet_gait,
-    weight=0.5,
+    weight=0.25,
     params={
       "sensor_name": "feet_ground_contact",
-      "period": 0.6,
+      "period": 1.0 / walk_params.GAIT_FREQUENCY_DEFAULT,
       "command_name": "twist",
       "command_threshold": 0.05,
       "left_foot_name": "left_foot_link",
@@ -229,12 +300,49 @@ def booster_k1_rough_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     },
   )
 
+  # ParameterWalk feet_swing: bonus for airborne foot in phase windows
+  # around 0.25 (L) / 0.75 (R). Keep below track so it cannot replace walking.
+  cfg.rewards["feet_swing"] = RewardTermCfg(
+    func=mdp.feet_swing,
+    weight=1.0,
+    params={
+      "sensor_name": "feet_ground_contact",
+      "period": 1.0 / walk_params.GAIT_FREQUENCY_DEFAULT,
+      "swing_period": walk_params.SWING_PERIOD,
+      "command_name": "twist",
+      "command_threshold": 0.05,
+      "left_foot_name": "left_foot_link",
+      "right_foot_name": "right_foot_link",
+    },
+  )
+
   # Non-saturating penalty on hip abduction/adduction (wide stance).
   cfg.rewards["hip_roll_l2"] = RewardTermCfg(
     func=mdp.joint_deviation_l2,
     weight=-1.0,
     params={
       "asset_cfg": SceneEntityCfg("robot", joint_names=(".*_Hip_Roll",)),
+    },
+  )
+
+  # Keep ankles near default roll (avoids rolling onto edges).
+  cfg.rewards["ankle_roll_l2"] = RewardTermCfg(
+    func=mdp.joint_deviation_l2,
+    weight=-1.0,
+    params={
+      "asset_cfg": SceneEntityCfg("robot", joint_names=(".*_Ankle_Roll",)),
+    },
+  )
+
+  # Disabled: L2 on pitch joints fights stride while learning to walk.
+  cfg.rewards["crouch_l2"] = RewardTermCfg(
+    func=mdp.joint_deviation_l2,
+    weight=0.0,
+    params={
+      "asset_cfg": SceneEntityCfg(
+        "robot",
+        joint_names=(".*_Hip_Pitch", ".*_Knee_Pitch", ".*_Ankle_Pitch"),
+      ),
     },
   )
 
@@ -265,15 +373,19 @@ def booster_k1_rough_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     cfg.episode_length_s = int(1e9)
 
     cfg.observations["actor"].enable_corruption = False
-    # Play/deploy: keep the 2-D slot but always emit zeros (final-policy mode).
+    # Keep open-loop gait clock fully on during play. Zeroing it (old
+    # final-policy mode) breaks mid-train checkpoints that still rely on
+    # sin/cos; play's step counter also resets, so training drop_step would
+    # not match a late checkpoint's faded state either. Always-on clock is
+    # correct for early/mid eval; late policies largely ignore these dims.
     for group in ("actor", "critic"):
       gait_term = cfg.observations[group].terms.get("gait_cycle")
       if gait_term is not None:
-        gait_term.params["drop_step"] = 0
+        gait_term.params["drop_step"] = 10**18
         gait_term.params["fade_steps"] = 0
     gait_reward = cfg.rewards.get("gait")
     if gait_reward is not None:
-      gait_reward.params["drop_step"] = 0
+      gait_reward.params["drop_step"] = 10**18
       gait_reward.params["fade_steps"] = 0
     cfg.events.pop("push_robot", None)
     cfg.terminations.pop("out_of_terrain_bounds", None)
@@ -298,9 +410,11 @@ def booster_k1_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   """Create Booster K1 flat terrain velocity configuration."""
   cfg = booster_k1_rough_env_cfg(play=play)
 
-  cfg.sim.njmax = 300
+  # Do not lower njmax: K1 uses full-body collision; a fallen robot can need
+  # ~750 constraint rows (nefc overflow at njmax=300 → sim NaNs → policy NaNs).
+  # Inherit njmax=1500 from make_velocity_env_cfg().
   cfg.sim.mujoco.ccd_iterations = 50
-  cfg.sim.contact_sensor_maxmatch = 64
+  cfg.sim.contact_sensor_maxmatch = 500
   cfg.sim.nconmax = None
 
   # Switch to flat terrain.
@@ -326,4 +440,480 @@ def booster_k1_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     twist_cmd.ranges.lin_vel_x = (-1.5, 2.0)
     twist_cmd.ranges.ang_vel_z = (-0.7, 0.7)
 
+  return cfg
+
+
+# Non-trunk bodies for small COM jitter (T1 ``other_com``).
+_K1_OTHER_COM_BODIES = (
+  "Head_.*",
+  ".*_Arm_.*",
+  ".*_hand_link",
+  ".*_Hip_.*",
+  ".*_Shank",
+  ".*_Ankle_.*",
+  ".*_foot_link",
+)
+
+# K1 geometry (vs T1 booster_gym 0.68 / 0.45 / 0.20 / 0.72).
+_K1_FAST_SAC_SPAWN_HEIGHT = KNEES_BENT_KEYFRAME.pos[2]
+_K1_FAST_SAC_HEIGHT_TARGET = 0.50  # Slightly below default crouch (0.53).
+_K1_FAST_SAC_TERMINATE_HEIGHT = 0.43
+_K1_FAST_SAC_TERMINATE_HEIGHT_SOFT = 0.30  # Soft-start while standing learns.
+_K1_FAST_SAC_FEET_DISTANCE_REF = 0.18
+_K1_FAST_SAC_FEET_DISTANCE_WIDE_MARGIN = 0.06  # Band [0.18, 0.24] m
+_K1_FAST_SAC_TRACK_FILTER_WEIGHT = 0.1  # Booster normalization.filter_weight
+
+# Booster T1 penalties soft-started via episode-length curriculum (0.5 → 1.0).
+_K1_FAST_SAC_PENALTY_TERMS = (
+  "base_height",
+  "orientation",
+  "torques",
+  "torque_tiredness",
+  "power",
+  "lin_vel_z",
+  "ang_vel_xy",
+  "dof_vel",
+  "dof_acc",
+  "root_acc",
+  "action_rate",
+  "dof_pos_limits",
+  "collision",
+  "feet_slip",
+  "feet_yaw_diff",
+  "feet_yaw_mean",
+  "feet_roll",
+  "feet_distance",
+  "hip_roll_l2",
+  "standing_pose_l2",
+)
+
+
+def _apply_fast_sac_command_curriculum(cfg: ManagerBasedRlEnvCfg) -> None:
+  """Booster T1 command setup with grid curriculum enabled.
+
+  Starts near-zero commands and expands the (lin, ang) grid when episodes nearly
+  time out with tracking within T1 tolerances (``commands.curriculum`` in
+  ``booster_gym/envs/T1.yaml``).
+  """
+  twist_cmd = cfg.commands["twist"]
+  assert isinstance(twist_cmd, UniformVelocityCommandCfg)
+
+  twist_cmd.heading_command = False
+  twist_cmd.ranges.heading = None
+  twist_cmd.resampling_time_range = (8.0, 12.0)
+  # Outer bounds unused while grid samples; kept for joystick / fallback.
+  # Grid ceiling: |vx|,|vy| ≤ 1.5 m/s, |wz| ≤ 1.0 rad/s.
+  twist_cmd.ranges.lin_vel_x = (-1.5, 1.5)
+  twist_cmd.ranges.lin_vel_y = (-1.5, 1.5)
+  twist_cmd.ranges.ang_vel_z = (-1.0, 1.0)
+  twist_cmd.rel_standing_envs = 0.25
+  twist_cmd.rel_forward_envs = 0.0
+  twist_cmd.rel_heading_envs = 0.0
+  # K1 shorter legs vs T1: raise cadence range (~1.3× T1's 1.0–2.0).
+  twist_cmd.ranges.gait_frequency = (1.3, 2.6)
+  twist_cmd.grid_curriculum = UniformVelocityCommandCfg.GridCurriculumCfg(
+    enabled=True,
+    update_rate=0.1,
+    lin_vel_levels=10,
+    ang_vel_levels=10,
+    lin_vel_x_resolution=0.15,  # 10 * 0.15 = 1.5 m/s
+    lin_vel_y_resolution=0.15,
+    ang_vel_resolution=0.1,  # 10 * 0.1 = 1.0 rad/s
+    episode_length_toler=0.1,
+    lin_vel_x_toler=0.4,
+    lin_vel_y_toler=0.2,
+    ang_vel_yaw_toler=0.2,
+    filter_weight=_K1_FAST_SAC_TRACK_FILTER_WEIGHT,
+  )
+
+  # Grid owns command difficulty; drop staged velocity curriculum if present.
+  cfg.curriculum.pop("command_vel", None)
+
+
+def _apply_fast_sac_domain_rand(cfg: ManagerBasedRlEnvCfg) -> None:
+  """Booster T1-style mass/COM, friction, PD, kicks, and force/torque pushes."""
+  # Mass/inertia (~±20% via alpha; T1 base_mass scale 0.8–1.2).
+  cfg.events["robot_inertia"] = EventTermCfg(
+    mode="startup",
+    func=dr.pseudo_inertia,
+    params={
+      "asset_cfg": SceneEntityCfg("robot", body_names=(".*",)),
+      "alpha_range": (-0.2, 0.2),
+    },
+  )
+  # Trunk COM (T1 base_com ±0.1 m).
+  cfg.events["base_com"] = EventTermCfg(
+    mode="startup",
+    func=dr.body_com_offset,
+    params={
+      "asset_cfg": SceneEntityCfg("robot", body_names=("Trunk",)),
+      "operation": "add",
+      "ranges": {
+        0: (-0.1, 0.1),
+        1: (-0.1, 0.1),
+        2: (-0.1, 0.1),
+      },
+    },
+  )
+  # Other-body COM jitter (T1 other_com ±0.005 m).
+  cfg.events["other_com"] = EventTermCfg(
+    mode="startup",
+    func=dr.body_com_offset,
+    params={
+      "asset_cfg": SceneEntityCfg("robot", body_names=_K1_OTHER_COM_BODIES),
+      "operation": "add",
+      "ranges": {
+        0: (-0.005, 0.005),
+        1: (-0.005, 0.005),
+        2: (-0.005, 0.005),
+      },
+    },
+  )
+  # Foot friction (T1 friction 0.1–2.0).
+  if "foot_friction" in cfg.events:
+    cfg.events["foot_friction"].params["ranges"] = (0.1, 2.0)
+  # PD gains (T1 dof_stiffness/damping scale 0.95–1.05).
+  cfg.events["pd_gains"] = EventTermCfg(
+    mode="startup",
+    func=dr.pd_gains,
+    params={
+      "asset_cfg": SceneEntityCfg("robot"),
+      "kp_range": (0.95, 1.05),
+      "kd_range": (0.95, 1.05),
+      "operation": "scale",
+    },
+  )
+  # Soft velocity kick (T1 kick ~every 2 s; replace hard push_robot).
+  cfg.events.pop("push_robot", None)
+  cfg.events["kick_robot"] = EventTermCfg(
+    func=mdp.push_by_setting_velocity,
+    mode="interval",
+    interval_range_s=(1.5, 2.5),
+    params={
+      "velocity_range": {
+        "x": (-0.1, 0.1),
+        "y": (-0.1, 0.1),
+        "z": (-0.05, 0.05),
+        "roll": (-0.02, 0.02),
+        "pitch": (-0.02, 0.02),
+        "yaw": (-0.02, 0.02),
+      },
+    },
+  )
+  # Sustained force/torque push (T1: ~5 s interval, 1 s duration, ≤10 N / ≤2 Nm).
+  cfg.events["push_force"] = EventTermCfg(
+    func=mdp.apply_body_impulse,
+    mode="step",
+    params={
+      "force_range": (-10.0, 10.0),
+      "torque_range": (-2.0, 2.0),
+      "duration_s": (0.8, 1.2),
+      "cooldown_s": (4.0, 6.0),
+      "asset_cfg": SceneEntityCfg("robot", body_names=("Trunk",)),
+    },
+  )
+
+
+def _apply_fast_sac_walk_rewards(cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvCfg:
+  """Replace K1 PPO rewards with Booster Gym T1 reward set (K1 geometry).
+
+  Weights match ``booster_gym/envs/T1.yaml`` (zero-weight terms omitted). K1-only
+  numbers: height target 0.50, terminate clearance 0.43 (soft-starts at 0.30),
+  stance ref 0.18. Enables ``only_positive_rewards``. Soft-starts Booster
+  penalties at 0.5× via episode-length curriculum. No ``feet_too_far``.
+  """
+  site_names = ("left_foot", "right_foot")
+  foot_body_names = ("left_foot_link", "right_foot_link")
+
+  # Kill NaN envs instead of crashing the whole batch in bf16 Normal().
+  cfg.terminations["nan_state"] = TerminationTermCfg(func=mdp.nan_detection)
+
+  def _policy_joints() -> SceneEntityCfg:
+    # Policy joints (legs + arms); matches Booster "all controlled DOFs".
+    return SceneEntityCfg(
+      "robot",
+      joint_names=_K1_POLICY_ACTUATORS,
+      actuator_names=list(_K1_POLICY_ACTUATORS),
+    )
+
+  for key in list(cfg.curriculum.keys()):
+    if key.startswith("penalty_") or key == "clearance_terminate":
+      del cfg.curriculum[key]
+
+  cfg.episode_length_s = 30.0
+
+  reset_joints = cfg.events.get("reset_robot_joints")
+  if reset_joints is not None:
+    reset_joints.params["base_heights"] = [_K1_FAST_SAC_SPAWN_HEIGHT]
+
+  # Soft clearance kill while standing learns; curriculum raises to 0.43.
+  cfg.terminations["root_height"] = TerminationTermCfg(
+    func=mdp.root_clearance_below_minimum,
+    params={
+      "minimum_height": _K1_FAST_SAC_TERMINATE_HEIGHT_SOFT,
+      "sensor_name": "terrain_scan",
+    },
+  )
+  # Not in booster_gym; drop K1 PPO split-kill.
+  cfg.terminations.pop("feet_too_far", None)
+
+  tracking_sigma = 0.25  # Booster: exp(-err² / sigma)
+  track_filter = _K1_FAST_SAC_TRACK_FILTER_WEIGHT
+  foot_pose_cfg = SceneEntityCfg("robot", body_names=foot_body_names)
+
+  # Exact T1.yaml scales (non-zero only). Clip total reward ≥ 0 like Booster.
+  cfg.only_positive_rewards = True
+
+  cfg.rewards = {
+    "survival": RewardTermCfg(func=mdp.is_alive, weight=0.25),
+    "tracking_lin_vel_x": RewardTermCfg(
+      func=mdp.track_lin_vel_axis,
+      weight=2.0,
+      params={
+        "axis": 0,
+        "command_name": "twist",
+        "tracking_sigma": tracking_sigma,
+        "filter_weight": track_filter,
+      },
+    ),
+    "tracking_lin_vel_y": RewardTermCfg(
+      func=mdp.track_lin_vel_axis,
+      weight=2.0,
+      params={
+        "axis": 1,
+        "command_name": "twist",
+        "tracking_sigma": tracking_sigma,
+        "filter_weight": track_filter,
+      },
+    ),
+    "tracking_ang_vel": RewardTermCfg(
+      func=mdp.track_ang_vel_z,
+      weight=1.0,
+      params={
+        "command_name": "twist",
+        "tracking_sigma": tracking_sigma,
+        "filter_weight": track_filter,
+      },
+    ),
+    "base_height": RewardTermCfg(
+      func=mdp.base_height_target_l2,
+      weight=-20.0,
+      params={
+        "target_height": _K1_FAST_SAC_HEIGHT_TARGET,
+        "sensor_name": "terrain_scan",
+      },
+    ),
+    "orientation": RewardTermCfg(
+      func=mdp.flat_orientation_l2,
+      weight=-5.0,
+      params={"asset_cfg": SceneEntityCfg("robot")},
+    ),
+    "torques": RewardTermCfg(
+      func=mdp.joint_torques_l2,
+      weight=-2.0e-4,
+      params={"asset_cfg": _policy_joints()},
+    ),
+    "torque_tiredness": RewardTermCfg(
+      func=mdp.torque_tiredness,
+      weight=-1.0e-2,
+      params={"asset_cfg": _policy_joints()},
+    ),
+    "power": RewardTermCfg(
+      func=mdp.joint_power_penalty,
+      weight=-2.0e-3,
+      params={"asset_cfg": _policy_joints()},
+    ),
+    "lin_vel_z": RewardTermCfg(
+      func=mdp.root_lin_vel_z_l2,
+      weight=-2.0,
+      params={"filter_weight": track_filter},
+    ),
+    "ang_vel_xy": RewardTermCfg(
+      func=mdp.body_angular_velocity_penalty,
+      weight=-0.2,
+      params={"asset_cfg": SceneEntityCfg("robot", body_names=("Trunk",))},
+    ),
+    "dof_vel": RewardTermCfg(
+      func=mdp.joint_vel_l2,
+      weight=-1.0e-4,
+      params={"asset_cfg": _policy_joints()},
+    ),
+    "dof_acc": RewardTermCfg(
+      func=mdp.joint_acc_l2,
+      weight=-1.0e-7,
+      params={"asset_cfg": _policy_joints()},
+    ),
+    "root_acc": RewardTermCfg(
+      func=mdp.root_acc_l2,
+      weight=-1.0e-4,
+      params={"asset_cfg": SceneEntityCfg("robot")},
+    ),
+    "action_rate": RewardTermCfg(func=mdp.action_rate_l2, weight=-1.0),
+    "dof_pos_limits": RewardTermCfg(func=mdp.joint_pos_limits, weight=-1.0),
+    "collision": RewardTermCfg(
+      func=mdp.self_collision_cost,
+      weight=-1.0,
+      params={"sensor_name": "self_collision", "force_threshold": 10.0},
+    ),
+    "feet_slip": RewardTermCfg(
+      func=mdp.feet_slip,
+      weight=-0.1,
+      params={
+        "sensor_name": "feet_ground_contact",
+        "command_name": "twist",
+        "command_threshold": 0.05,
+        "asset_cfg": SceneEntityCfg("robot", site_names=site_names),
+      },
+    ),
+    "feet_yaw_diff": RewardTermCfg(
+      func=mdp.feet_yaw_diff_l2,
+      weight=-1.0,
+      params={"asset_cfg": foot_pose_cfg},
+    ),
+    "feet_yaw_mean": RewardTermCfg(
+      func=mdp.feet_yaw_mean_l2,
+      weight=-1.0,
+      params={"asset_cfg": foot_pose_cfg},
+    ),
+    "feet_roll": RewardTermCfg(
+      func=mdp.feet_roll_l2,
+      weight=-1.0,
+      params={"asset_cfg": foot_pose_cfg},
+    ),
+    "feet_distance": RewardTermCfg(
+      func=mdp.feet_distance_lateral,
+      weight=-1.0,
+      params={
+        "feet_distance_ref": _K1_FAST_SAC_FEET_DISTANCE_REF,
+        "wide_margin": _K1_FAST_SAC_FEET_DISTANCE_WIDE_MARGIN,
+        "asset_cfg": SceneEntityCfg("robot", site_names=site_names),
+      },
+    ),
+    # Always-on: curb hip abduction that creates a V / wide stance.
+    "hip_roll_l2": RewardTermCfg(
+      func=mdp.joint_deviation_l2,
+      weight=-1.0,
+      params={
+        "asset_cfg": SceneEntityCfg("robot", joint_names=(".*_Hip_Roll",)),
+      },
+    ),
+    # When still: pull hip/ankle roll toward default (standing posture).
+    "standing_pose_l2": RewardTermCfg(
+      func=mdp.joint_deviation_l2_when_still,
+      weight=-2.0,
+      params={
+        "command_name": "twist",
+        "command_threshold": 0.05,
+        "asset_cfg": SceneEntityCfg(
+          "robot", joint_names=(".*_Hip_Roll", ".*_Ankle_Roll")
+        ),
+      },
+    ),
+    "feet_swing": RewardTermCfg(
+      func=mdp.feet_swing,
+      weight=3.0,
+      params={
+        "sensor_name": "feet_ground_contact",
+        "period": 1.0 / walk_params.GAIT_FREQUENCY_DEFAULT,
+        "swing_period": walk_params.SWING_PERIOD,
+        "command_name": "twist",
+        "command_threshold": 0.05,
+        "left_foot_name": "left_foot_link",
+        "right_foot_name": "right_foot_link",
+      },
+    ),
+  }
+
+  _apply_fast_sac_domain_rand(cfg)
+
+  # Booster: sin/cos gait clock always on (no Holosoma fade).
+  for group in ("actor", "critic"):
+    gait_term = cfg.observations[group].terms.get("gait_cycle")
+    if gait_term is not None:
+      gait_term.params["drop_step"] = int(1e12)
+      gait_term.params["fade_steps"] = 0
+    cmd_term = cfg.observations[group].terms.get("command")
+    if cmd_term is not None:
+      cmd_term.func = mdp.twist_velocity_commands
+      cmd_term.params["command_name"] = "twist"
+
+  cfg.curriculum["penalty_scale"] = CurriculumTermCfg(
+    func=mdp.penalty_scale_curriculum,
+    params={
+      "reward_names": list(_K1_FAST_SAC_PENALTY_TERMS),
+      "initial_scale": 0.5,
+      "min_scale": 0.5,
+      "max_scale": 1.0,
+      "level_down_threshold": 80.0,
+      "level_up_threshold": 200.0,
+      "degree": 0.001,
+      "num_compute_average_epl": 1000,
+    },
+  )
+  cfg.curriculum["clearance_terminate"] = CurriculumTermCfg(
+    func=mdp.clearance_terminate_curriculum,
+    params={
+      "term_name": "root_height",
+      "initial_height": _K1_FAST_SAC_TERMINATE_HEIGHT_SOFT,
+      "target_height": _K1_FAST_SAC_TERMINATE_HEIGHT,
+      "min_height": _K1_FAST_SAC_TERMINATE_HEIGHT_SOFT,
+      "max_height": _K1_FAST_SAC_TERMINATE_HEIGHT,
+      "level_down_threshold": 80.0,
+      "level_up_threshold": 200.0,
+      "degree": 0.002,
+      "num_compute_average_epl": 1000,
+    },
+  )
+  _apply_fast_sac_command_curriculum(cfg)
+  return cfg
+
+
+def booster_k1_rough_fast_sac_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
+  """Rough-terrain K1 velocity env with Booster T1-aligned rewards (PPO)."""
+  cfg = booster_k1_rough_env_cfg(play=play)
+  cfg = _apply_fast_sac_walk_rewards(cfg)
+  # Match flat Booster actor/critic dims so flat PPO checkpoints can FT here.
+  # Keep ``terrain_scan`` for clearance / base_height; drop privileged height obs.
+  if "height_scan" in cfg.observations["critic"].terms:
+    del cfg.observations["critic"].terms["height_scan"]
+  if play:
+    # Keep Booster rewards / commands / arm actions; drop train disturbances.
+    cfg.episode_length_s = int(1e9)
+    cfg.events.pop("kick_robot", None)
+    cfg.events.pop("push_force", None)
+    cfg.curriculum = {}
+    if "root_height" in cfg.terminations:
+      cfg.terminations["root_height"].params["minimum_height"] = (
+        _K1_FAST_SAC_TERMINATE_HEIGHT
+      )
+    twist = cfg.commands["twist"]
+    assert isinstance(twist, UniformVelocityCommandCfg)
+    if twist.grid_curriculum is not None:
+      twist.grid_curriculum.enabled = False
+    twist.ranges.lin_vel_x = (-1.5, 1.5)
+    twist.ranges.lin_vel_y = (-1.5, 1.5)
+    twist.ranges.ang_vel_z = (-1.0, 1.0)
+  return cfg
+
+
+def booster_k1_flat_fast_sac_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
+  """Flat-terrain K1 velocity env with Booster T1-aligned rewards (PPO/FastSAC)."""
+  cfg = booster_k1_flat_env_cfg(play=play)
+  cfg = _apply_fast_sac_walk_rewards(cfg)
+  if play:
+    cfg.episode_length_s = int(1e9)
+    cfg.events.pop("kick_robot", None)
+    cfg.events.pop("push_force", None)
+    cfg.curriculum = {}
+    if "root_height" in cfg.terminations:
+      cfg.terminations["root_height"].params["minimum_height"] = (
+        _K1_FAST_SAC_TERMINATE_HEIGHT
+      )
+    twist = cfg.commands["twist"]
+    assert isinstance(twist, UniformVelocityCommandCfg)
+    if twist.grid_curriculum is not None:
+      twist.grid_curriculum.enabled = False
+    twist.ranges.lin_vel_x = (-1.5, 1.5)
+    twist.ranges.lin_vel_y = (-1.5, 1.5)
+    twist.ranges.ang_vel_z = (-1.0, 1.0)
   return cfg

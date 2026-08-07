@@ -116,3 +116,20 @@ def feet_too_far_apart(
   foot_pos = asset.data.site_pos_w[:, asset_cfg.site_ids]  # [B, 2, 3]
   separation = torch.norm(foot_pos[:, 0] - foot_pos[:, 1], dim=-1)
   return separation > max_separation
+
+
+def root_clearance_below_minimum(
+  env: ManagerBasedRlEnv,
+  minimum_height: float,
+  sensor_name: str | None = "terrain_scan",
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> torch.Tensor:
+  """Terminate when base clearance above terrain is below ``minimum_height``.
+
+  Booster-style: uses ``base_z - terrain_z`` from ``terrain_scan``, not absolute
+  world Z. Falls back to absolute ``root_z`` on flat / missing sensor.
+  """
+  from mjlab.tasks.velocity.mdp.terrain_utils import base_terrain_clearance
+
+  clearance = base_terrain_clearance(env, sensor_name, asset_cfg.name)
+  return clearance < minimum_height

@@ -1008,8 +1008,7 @@ class Entity:
       joint_ids: Optional joint indices to set. If None, set all joints.
       env_ids: Optional environment indices. If None, set all environments.
     """
-    if env_ids is None:
-      env_ids = slice(None)
+    env_ids = self._data._resolve_env_ids(env_ids)
     if joint_ids is None:
       joint_ids = slice(None)
     self._data.joint_pos_target[env_ids, joint_ids] = position

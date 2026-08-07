@@ -143,3 +143,60 @@ class RslRlOnPolicyRunnerCfg(RslRlBaseRunnerCfg):
   """The critic configuration."""
   algorithm: RslRlPpoAlgorithmCfg = field(default_factory=RslRlPpoAlgorithmCfg)
   """The algorithm configuration."""
+
+
+@dataclass
+class FastSacAlgorithmCfg:
+  """Hyperparameters for FastSAC (distributional SAC for parallel sim)."""
+
+  critic_learning_rate: float = 3e-4
+  actor_learning_rate: float = 3e-4
+  alpha_learning_rate: float = 3e-4
+  buffer_size: int = 1024
+  """Replay buffer capacity per environment."""
+  num_steps: int = 1
+  """N-step return length."""
+  gamma: float = 0.97
+  tau: float = 0.125
+  """Target network soft-update coefficient (aggressive vs classic SAC)."""
+  batch_size: int = 8192
+  """Global batch size across envs (local = batch_size // num_envs)."""
+  learning_starts: int = 10
+  policy_frequency: int = 4
+  """Delayed policy update cadence."""
+  num_updates: int = 8
+  """Gradient updates per env step (UTD ratio)."""
+  target_entropy_ratio: float = 0.0
+  num_atoms: int = 101
+  v_min: float = -20.0
+  v_max: float = 20.0
+  critic_hidden_dim: int = 768
+  actor_hidden_dim: int = 512
+  alpha_init: float = 0.001
+  use_autotune: bool = True
+  use_tanh: bool = True
+  log_std_max: float = 0.0
+  log_std_min: float = -5.0
+  compile: bool = False
+  """torch.compile the update/policy kernels. Off by default for portability."""
+  obs_normalization: bool = True
+  use_layer_norm: bool = True
+  num_q_networks: int = 2
+  max_grad_norm: float = 0.0
+  amp: bool = True
+  amp_dtype: Literal["bf16", "fp16"] = "bf16"
+  weight_decay: float = 0.001
+  logging_interval: int = 100
+
+
+@dataclass
+class FastSacRunnerCfg(RslRlBaseRunnerCfg):
+  """Runner config for FastSAC off-policy training."""
+
+  class_name: str = "FastSacRunner"
+  algorithm: FastSacAlgorithmCfg = field(default_factory=FastSacAlgorithmCfg)
+  """FastSAC algorithm hyperparameters."""
+  # FastSAC counts env steps (not PPO-style rollout iterations).
+  num_steps_per_env: int = 1
+  max_iterations: int = 50_000
+  save_interval: int = 1_000

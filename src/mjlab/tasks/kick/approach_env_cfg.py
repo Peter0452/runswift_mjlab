@@ -19,7 +19,6 @@ approach reward dominates navigation.  On reaching the kick zone the policy
 will naturally slow down since the ``ball_in_kick_zone`` reward peaks there.
 """
 
-
 from mjlab.entity import EntityCfg
 from mjlab.envs import ManagerBasedRlEnvCfg
 from mjlab.managers.event_manager import EventTermCfg

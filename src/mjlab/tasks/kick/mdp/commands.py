@@ -66,3 +66,6 @@ class UniformGoalPositionCommandCfg(CommandTermCfg):
   """Min/max goal direction angle in radians (0 = robot forward)."""
 
   resampling_time_range: tuple[float, float] = field(default=(8.0, 12.0))
+
+  def build(self, env: ManagerBasedRlEnv) -> UniformGoalPositionCommand:
+    return UniformGoalPositionCommand(self, env)

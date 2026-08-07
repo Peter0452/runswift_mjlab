@@ -121,3 +121,45 @@ def terrain_normal_from_sensors(
   points = torch.cat(all_points, dim=1)
   valid_mask = torch.cat(all_valid, dim=1)
   return fit_terrain_normal(points, valid_mask)
+
+
+def base_terrain_clearance(
+  env: ManagerBasedRlEnv,
+  sensor_name: str | None = "terrain_scan",
+  asset_name: str = "robot",
+) -> torch.Tensor:
+  """Base height above local terrain (Booster-style clearance).
+
+  Uses mean hit height from ``sensor_name`` (typically trunk ``terrain_scan``).
+  Falls back to absolute world ``root_z`` when the sensor is missing or all
+  rays miss (flat plane ≈ z=0).
+  """
+  from mjlab.sensor.terrain_height_sensor import TerrainHeightSensor
+
+  asset = env.scene[asset_name]
+  root_z = asset.data.root_link_pos_w[:, 2]
+
+  if sensor_name is None:
+    return root_z
+
+  try:
+    sensor = env.scene[sensor_name]
+  except KeyError:
+    return root_z
+
+  if isinstance(sensor, TerrainHeightSensor):
+    heights = sensor.data.heights
+    return heights.mean(dim=-1) if heights.ndim == 2 else heights
+
+  if isinstance(sensor, RayCastSensor):
+    data = sensor.data
+    frame_z = data.frame_pos_w[:, 0, 2]
+    hit_z = data.hit_pos_w[..., 2]
+    hit = data.distances >= 0
+    hit_z_masked = torch.where(hit, hit_z, torch.zeros_like(hit_z))
+    hit_count = hit.float().sum(dim=-1).clamp(min=1.0)
+    terrain_z = hit_z_masked.sum(dim=-1) / hit_count
+    any_hit = hit.any(dim=-1)
+    return torch.where(any_hit, frame_z - terrain_z, root_z)
+
+  return root_z

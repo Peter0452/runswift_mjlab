@@ -188,3 +188,94 @@ def test_batch_consistency():
   assert r[1].item() > 0.99
   assert r[2].item() < 0.7
   assert r[3].item() > 0.99
+
+
+def _make_feet_swing(phase: torch.Tensor, in_air: torch.Tensor, moving: torch.Tensor):
+  """Mock env + feet_swing for ParameterWalk-style window tests.
+
+  Args:
+    phase: [B] gait phase in [0, 1).
+    in_air: [B, 2] bool/float — column 0 left, 1 right (found==0).
+    moving: [B] bool command gate.
+  """
+  from unittest.mock import patch
+
+  from mjlab.sensor import ContactSensor
+  from mjlab.tasks.velocity.mdp.rewards import feet_swing
+
+  B = phase.shape[0]
+  contact = MagicMock(spec=ContactSensor)
+  contact.primary_names = ("left_foot_link", "right_foot_link")
+  found = (~in_air.bool()).float()  # found > 0 when not in air
+  contact_data = MagicMock()
+  contact_data.found = found
+  type(contact).data = PropertyMock(return_value=contact_data)
+
+  env = MagicMock()
+  env.num_envs = B
+  env.device = phase.device
+  env.extras = {"log": {}}
+  env.scene.__getitem__ = MagicMock(return_value=contact)
+
+  cfg = MagicMock(spec=RewardTermCfg)
+  cfg.params = {
+    "sensor_name": "feet_ground_contact",
+    "left_foot_name": "left_foot_link",
+    "right_foot_name": "right_foot_link",
+  }
+  reward_fn = feet_swing(cfg, env)
+
+  def _call():
+    with patch(
+      "mjlab.tasks.velocity.mdp.rewards.advance_gait_phase",
+      return_value=(phase, moving),
+    ):
+      return reward_fn(
+        env,
+        sensor_name="feet_ground_contact",
+        period=0.6,
+        swing_period=0.2,
+        command_name="twist",
+        command_threshold=0.05,
+      )
+
+  return _call
+
+
+def test_feet_swing_rewards_airborne_in_window():
+  """Left air at φ=0.25 and right air at φ=0.75 each score +1."""
+  phase = torch.tensor([0.25, 0.75, 0.0])
+  in_air = torch.tensor(
+    [
+      [True, False],  # left swing window, left air → 1
+      [False, True],  # right swing window, right air → 1
+      [True, True],  # outside windows → 0
+    ]
+  )
+  moving = torch.tensor([True, True, True])
+  r = _make_feet_swing(phase, in_air, moving)()
+  assert r.shape == (3,)
+  torch.testing.assert_close(r, torch.tensor([1.0, 1.0, 0.0]))
+
+
+def test_feet_swing_zero_when_standing_or_planted():
+  """Standing (not moving) or planted feet in window → 0."""
+  phase = torch.tensor([0.25, 0.25])
+  in_air = torch.tensor([[True, False], [False, False]])
+  moving = torch.tensor([False, True])  # env0 standing; env1 planted
+  r = _make_feet_swing(phase, in_air, moving)()
+  torch.testing.assert_close(r, torch.tensor([0.0, 0.0]))
+
+
+def test_k1_env_cfg_includes_feet_swing():
+  from mjlab.tasks.velocity.config.k1.env_cfgs import booster_k1_flat_env_cfg
+  from mjlab.tasks.velocity.mdp import walk_params
+  from mjlab.tasks.velocity.mdp.rewards import feet_swing
+
+  cfg = booster_k1_flat_env_cfg(play=False)
+  term = cfg.rewards["feet_swing"]
+  assert term.func is feet_swing
+  assert term.weight == 3.0
+  assert term.params["swing_period"] == walk_params.SWING_PERIOD
+  twist = cfg.commands["twist"]
+  assert twist.ranges.gait_frequency == walk_params.GAIT_FREQUENCY_RANGE

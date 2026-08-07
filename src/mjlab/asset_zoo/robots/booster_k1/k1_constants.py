@@ -165,29 +165,42 @@ K1_ACTUATOR_HEAD = _k1_actuator(
 # Keyframe config (Isaac Gym common.default_qpos).
 ##
 
-# Arms folded behind the back (elbows bent, forearms swept down/in) to avoid
-# entanglement in ball contests. With these angles the hands sit behind the
-# trunk near the midline at ~waist height (hand center ~ x=-0.08, y=0.10,
-# z=-0.04 in the trunk frame), collision-free. Head/arms are PD-held, not
-# policy-controlled.
-_TUCKED_ARM_HEAD_POS = {
+# Walk-ready default: arms down at the sides (shoulder roll ~±1.45, elbows
+# straight) so CoM stays forward of the heels; head slightly pitched. Policy
+# may nudge arms within a small action scale — they are no longer locked.
+_DEFAULT_ARM_HEAD_POS = {
   "Head_Yaw": 0.0,
-  "Head_Pitch": 0.0,
-  "Left_Shoulder_Pitch": 0.3,
-  "Left_Shoulder_Roll": -1.65,
-  "Left_Elbow_Pitch": 2.0,
-  "Left_Elbow_Yaw": -0.45,
-  "Right_Shoulder_Pitch": 0.3,
-  "Right_Shoulder_Roll": 1.65,
-  "Right_Elbow_Pitch": 2.0,
-  "Right_Elbow_Yaw": 0.45,
+  "Head_Pitch": 0.25,
+  "Left_Shoulder_Pitch": 0.0,
+  "Left_Shoulder_Roll": -1.45,
+  "Left_Elbow_Pitch": 0.0,
+  "Left_Elbow_Yaw": 0.0,
+  "Right_Shoulder_Pitch": 0.0,
+  "Right_Shoulder_Roll": 1.45,
+  "Right_Elbow_Pitch": 0.0,
+  "Right_Elbow_Yaw": 0.0,
 }
+
+# Fully extended legs (feet-grounded base height ~0.552 m).
+STRAIGHT_LEGS_KEYFRAME = EntityCfg.InitialStateCfg(
+  pos=(0, 0, 0.552),
+  joint_pos={
+    **_DEFAULT_ARM_HEAD_POS,
+    ".*_Hip_Pitch": 0.0,
+    ".*_Hip_Roll": 0.0,
+    ".*_Hip_Yaw": 0.0,
+    ".*_Knee_Pitch": 0.0,
+    ".*_Ankle_Pitch": 0.0,
+    ".*_Ankle_Roll": 0.0,
+  },
+  joint_vel={".*": 0.0},
+)
 
 HOME_KEYFRAME = EntityCfg.InitialStateCfg(
   pos=(0, 0, 0.54),
   joint_pos={
-    **_TUCKED_ARM_HEAD_POS,
-    ".*_Hip_Pitch": -0.2,
+    **_DEFAULT_ARM_HEAD_POS,
+     ".*_Hip_Pitch": -0.2,
     ".*_Hip_Roll": 0.0,
     ".*_Hip_Yaw": 0.0,
     ".*_Knee_Pitch": 0.4,
@@ -197,19 +210,24 @@ HOME_KEYFRAME = EntityCfg.InitialStateCfg(
   joint_vel={".*": 0.0},
 )
 
-# Deeper squat for training resets: lower CoM and pre-bent legs so the
-# policy is closer to a walk-ready stance (same tucked arm/head pose).
+# Training / deploy default pose (legs slightly bent, slight hip/ankle roll).
 # Base height chosen so foot collision bottoms sit near z=0.
 KNEES_BENT_KEYFRAME = EntityCfg.InitialStateCfg(
-  pos=(0, 0, 0.525),
+  pos=(0, 0, 0.53),
   joint_pos={
-    **_TUCKED_ARM_HEAD_POS,
-    ".*_Hip_Pitch": -0.35,
-    ".*_Hip_Roll": 0.0,
-    ".*_Hip_Yaw": 0.0,
-    ".*_Knee_Pitch": 0.70,
-    ".*_Ankle_Pitch": -0.40,
-    ".*_Ankle_Roll": 0.0,
+    **_DEFAULT_ARM_HEAD_POS,
+    "Left_Hip_Pitch": -0.35,
+    "Left_Hip_Roll": -0.04,
+    "Left_Hip_Yaw": 0.0,
+    "Left_Knee_Pitch": 0.70,
+    "Left_Ankle_Pitch": -0.35,
+    "Left_Ankle_Roll": 0.04,
+    "Right_Hip_Pitch": -0.35,
+    "Right_Hip_Roll": 0.04,
+    "Right_Hip_Yaw": 0.0,
+    "Right_Knee_Pitch": 0.70,
+    "Right_Ankle_Pitch": -0.35,
+    "Right_Ankle_Roll": -0.04,
   },
   joint_vel={".*": 0.0},
 )
@@ -274,12 +292,27 @@ def get_k1_robot_cfg() -> EntityCfg:
   )
 
 
-# Match Isaac Gym policy.control.action_scale = 1.0 (not 0.25*effort/stiffness).
+# Legs: ±1.0 rad (matches Booster / Isaac action_scale).
+# Arms: small nudge only (±0.15 rad).
+K1_LEG_ACTION_SCALE = 1.0
+K1_ARM_ACTION_SCALE = 0.15
+
 K1_ACTION_SCALE: dict[str, float] = {}
+_K1_ARM_ACTUATOR_NAMES = (
+  ".*_Shoulder_Pitch",
+  ".*_Shoulder_Roll",
+  ".*_Elbow_Pitch",
+  ".*_Elbow_Yaw",
+)
 for a in K1_ARTICULATION.actuators:
   assert isinstance(a, BuiltinPositionActuatorCfg)
   for n in a.target_names_expr:
-    K1_ACTION_SCALE[n] = ISAAC_ACTION_SCALE
+    if n in _K1_ARM_ACTUATOR_NAMES:
+      K1_ACTION_SCALE[n] = K1_ARM_ACTION_SCALE
+    else:
+      K1_ACTION_SCALE[n] = (
+        ISAAC_ACTION_SCALE if n.startswith("Head") else K1_LEG_ACTION_SCALE
+      )
 
 
 if __name__ == "__main__":

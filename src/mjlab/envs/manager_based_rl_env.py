@@ -162,6 +162,13 @@ class ManagerBasedRlEnvCfg:
   algorithms that expect unscaled reward signals (e.g., HER, static reward scaling).
   """
 
+  only_positive_rewards: bool = False
+  """If True, clip the total reward at zero after summing terms (Booster Gym).
+
+  Per-term episode logs stay unclipped; only the RL signal is floored at 0 so
+  early falls do not produce large negative returns.
+  """
+
 
 class ManagerBasedRlEnv:
   """Manager-based RL environment."""
@@ -327,7 +334,10 @@ class ManagerBasedRlEnv:
     self.termination_manager = TerminationManager(self.cfg.terminations, self)
     print_info(f"[INFO] {self.termination_manager}")
     self.reward_manager = RewardManager(
-      self.cfg.rewards, self, scale_by_dt=self.cfg.scale_rewards_by_dt
+      self.cfg.rewards,
+      self,
+      scale_by_dt=self.cfg.scale_rewards_by_dt,
+      only_positive_rewards=self.cfg.only_positive_rewards,
     )
     print_info(f"[INFO] {self.reward_manager}")
     if len(self.cfg.curriculum) > 0:

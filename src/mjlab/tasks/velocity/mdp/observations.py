@@ -51,6 +51,13 @@ def foot_contact_forces(env: ManagerBasedRlEnv, sensor_name: str) -> torch.Tenso
   return torch.sign(forces_flat) * torch.log1p(torch.abs(forces_flat))
 
 
+def twist_velocity_commands(env: ManagerBasedRlEnv, command_name: str) -> torch.Tensor:
+  """Velocity command ``[vx, vy, wz]`` without gait frequency (Booster T1 actor)."""
+  command = env.command_manager.get_command(command_name)
+  assert command is not None
+  return command[:, :3]
+
+
 def _gait_state(env: ManagerBasedRlEnv) -> dict[str, Any]:
   key = id(env)
   state = _GAIT_STATE.get(key)
@@ -76,48 +83,66 @@ def gait_scale(step: int, drop_step: int, fade_steps: int) -> float:
   return 1.0
 
 
+# Booster T1: gait clock active when gait_frequency > 1e-8.
+_GAIT_FREQ_EPS = 1.0e-8
+
+
 def advance_gait_phase(
   env: ManagerBasedRlEnv,
-  period: float,
+  period: float = 0.6,
   command_name: str = "twist",
   command_threshold: float = 0.05,
 ) -> tuple[torch.Tensor, torch.Tensor]:
   """Advance the shared open-loop gait phase at most once per env step.
 
+  Booster T1 (4-D twist with gait frequency):
+    - ``phase += dt * freq`` every step (``freq=0`` → frozen)
+    - active mask = ``freq > 1e-8`` (not cmd-speed gated)
+
+  Legacy 3-D commands (no freq dim):
+    - ``phase += dt / period`` while ``|v| > command_threshold``
+
   Returns:
-    ``(phase, moving)`` where ``phase`` is in ``[0, 1)`` with shape ``[B]``
-    and ``moving`` is a bool mask of shape ``[B]``.
+    ``(phase, gait_active)`` — phase in ``[0, 1)``, gait_active bool ``[B]``.
   """
   state = _gait_state(env)
   phase: torch.Tensor = state["phase"]
   step = env.common_step_counter
   command = env.command_manager.get_command(command_name)
-  if command is not None:
+
+  if command is not None and command.shape[-1] >= 4:
+    freq = command[:, 3]
+    gait_active = freq > _GAIT_FREQ_EPS
+  elif command is not None:
     speed = torch.norm(command[:, :2], dim=1) + torch.abs(command[:, 2])
-    moving = speed > command_threshold
+    gait_active = speed > command_threshold
   else:
-    moving = torch.ones(env.num_envs, device=env.device, dtype=torch.bool)
+    gait_active = torch.ones(env.num_envs, device=env.device, dtype=torch.bool)
 
   if state["step"] != step:
     state["step"] = step
-    phase[:] = torch.where(
-      moving,
-      (phase + env.step_dt / period) % 1.0,
-      phase,
-    )
-  return phase, moving
+    if command is not None and command.shape[-1] >= 4:
+      # Booster: gait_process = fmod(gait_process + dt * gait_frequency, 1)
+      phase[:] = torch.fmod(phase + env.step_dt * freq, 1.0)
+    else:
+      phase[:] = torch.where(
+        gait_active,
+        (phase + env.step_dt / period) % 1.0,
+        phase,
+      )
+  return phase, gait_active
 
 
 class gait_cycle:
   """Open-loop gait phase as ``[sin(2πφ), cos(2πφ)]``.
 
-  Phase advances only while the velocity command exceeds
-  ``command_threshold`` (standing freezes and zeros the clock). A random
-  phase offset is sampled on reset. Actor and critic share one phase buffer
-  per env so both groups stay synchronized.
+  Booster T1: phase from ``dt * gait_frequency``; sin/cos zeroed when
+  ``gait_frequency <= 1e-8`` (standing). With 4-D twist commands, cadence
+  follows commanded Hz. Legacy 3-D uses fixed ``period`` and speed gate.
 
-  After ``drop_step`` env steps the signal linearly fades to zero over
-  ``fade_steps``, keeping the observation dim fixed for the network.
+  A random phase offset is sampled on reset. Actor and critic share one buffer.
+  Optional ``drop_step`` / ``fade_steps`` fade sin/cos (Holosoma PPO); Booster
+  keeps the clock always on — set ``drop_step`` very large to disable.
   """
 
   def __init__(self, cfg: ObservationTermCfg, env: ManagerBasedRlEnv):
@@ -145,10 +170,12 @@ class gait_cycle:
     drop_step: int = 8_000 * 24,
     fade_steps: int = 2_000 * 24,
   ) -> torch.Tensor:
-    phase, moving = advance_gait_phase(env, period, command_name, command_threshold)
+    phase, gait_active = advance_gait_phase(
+      env, period, command_name, command_threshold
+    )
     angle = 2.0 * torch.pi * phase
     out = torch.stack((torch.sin(angle), torch.cos(angle)), dim=-1)
-    out = out * moving.float().unsqueeze(-1)
+    out = out * gait_active.float().unsqueeze(-1)
     scale = gait_scale(env.common_step_counter, drop_step, fade_steps)
     if scale == 0.0:
       return torch.zeros_like(out)

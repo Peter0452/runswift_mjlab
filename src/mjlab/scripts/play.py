@@ -12,7 +12,12 @@ import torch
 import tyro
 
 from mjlab.envs import ManagerBasedRlEnv
-from mjlab.rl import MjlabOnPolicyRunner, RslRlVecEnvWrapper
+from mjlab.rl import (
+  FastSacRunnerCfg,
+  FastSacVecEnvWrapper,
+  MjlabOnPolicyRunner,
+  RslRlVecEnvWrapper,
+)
 from mjlab.scripts._cli import maybe_print_top_level_help
 from mjlab.tasks.registry import list_tasks, load_env_cfg, load_rl_cfg, load_runner_cls
 from mjlab.tasks.tracking.mdp import MotionCommandCfg
@@ -21,6 +26,7 @@ from mjlab.utils.torch import configure_torch_backends
 from mjlab.utils.wrappers import VideoRecorder
 from mjlab.viewer import NativeMujocoViewer, ViserPlayViewer
 from mjlab.viewer.viser.viewer import CheckpointManager, format_time_ago
+
 
 
 def _parse_wandb_dt(value: str | datetime) -> datetime:
@@ -180,7 +186,11 @@ def run_play(task_id: str, cfg: PlayConfig):
       disable_logger=True,
     )
 
-  env = RslRlVecEnvWrapper(env, clip_actions=agent_cfg.clip_actions)
+  is_fast_sac = isinstance(agent_cfg, FastSacRunnerCfg)
+  if is_fast_sac:
+    env = FastSacVecEnvWrapper(env, clip_actions=agent_cfg.clip_actions)
+  else:
+    env = RslRlVecEnvWrapper(env, clip_actions=agent_cfg.clip_actions)
   if DUMMY_MODE:
     action_shape: tuple[int, ...] = env.unwrapped.action_space.shape
     if cfg.agent == "zero":
