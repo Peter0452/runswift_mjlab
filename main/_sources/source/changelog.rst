@@ -8,6 +8,13 @@ Upcoming version (not yet released)
 Added
 ^^^^^
 
+- Added Booster K1 humanoid to the asset zoo, with flat and rough velocity
+  tasks (``Mjlab-Velocity-Flat-Booster-K1``, ``Mjlab-Velocity-Rough-Booster-K1``).
+  The K1 velocity actor omits ``base_lin_vel`` and ``height_scan`` (unavailable
+  on hardware); the critic still receives them as privileged information where
+  present. Training DR includes mass/inertia (``pseudo_inertia``), leg PD
+  gains, joint armature, command delay, and actor observation delay.
+
 Changed
 ^^^^^^^
 

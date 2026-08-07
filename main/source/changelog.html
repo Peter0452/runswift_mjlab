@@ -58,7 +58,7 @@
     <link rel="prev" title="Research" href="research.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-    <meta name="docbuild:last-update" content="Jul 30, 2026"/>
+    <meta name="docbuild:last-update" content="Aug 07, 2026"/>
   </head>
   
   
@@ -537,6 +537,14 @@ document.write(`
 <h2>Upcoming version (not yet released)<a class="headerlink" href="#upcoming-version-not-yet-released" title="Link to this heading">#</a></h2>
 <section id="added">
 <h3>Added<a class="headerlink" href="#added" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>Added Booster K1 humanoid to the asset zoo, with flat and rough velocity
+tasks (<code class="docutils literal notranslate"><span class="pre">Mjlab-Velocity-Flat-Booster-K1</span></code>, <code class="docutils literal notranslate"><span class="pre">Mjlab-Velocity-Rough-Booster-K1</span></code>).
+The K1 velocity actor omits <code class="docutils literal notranslate"><span class="pre">base_lin_vel</span></code> and <code class="docutils literal notranslate"><span class="pre">height_scan</span></code> (unavailable
+on hardware); the critic still receives them as privileged information where
+present. Training DR includes mass/inertia (<code class="docutils literal notranslate"><span class="pre">pseudo_inertia</span></code>), leg PD
+gains, joint armature, command delay, and actor observation delay.</p></li>
+</ul>
 </section>
 <section id="changed">
 <h3>Changed<a class="headerlink" href="#changed" title="Link to this heading">#</a></h3>
@@ -1596,7 +1604,7 @@ By The mjlab Developers
   
   <div class="footer-item">
     <p class="last-updated">
-  Last updated on Jul 30, 2026.
+  Last updated on Aug 07, 2026.
   <br/>
 </p>
   </div>
