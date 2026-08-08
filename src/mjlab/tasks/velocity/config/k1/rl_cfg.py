@@ -47,7 +47,7 @@ def booster_k1_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
       # Booster runner.mini_epochs=20; full-batch updates ≈ 1 mini-batch.
       num_learning_epochs=20,
       num_mini_batches=1,
-      learning_rate=5.0e-6,  # FT-friendly; was 1e-5 for flat from-scratch
+      learning_rate=1.0e-5,
       schedule="adaptive",
       gamma=0.995,
       lam=0.95,
@@ -57,7 +57,7 @@ def booster_k1_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
     experiment_name="k1_velocity",
     save_interval=100,
     num_steps_per_env=24,  # Booster horizon_length
-    max_iterations=30_000,
+    max_iterations=100_000,
     clip_actions=1.0,  # Booster normalization.clip_actions
   )
 

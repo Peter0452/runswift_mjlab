@@ -864,6 +864,9 @@ def feet_distance_lateral(
   feet_distance_ref: float = 0.18,
   max_penalty: float = 0.1,
   wide_margin: float | None = None,
+  command_name: str = "twist",
+  side_walk_threshold: float = 0.1,
+  side_walk_margin_scale: float = 3.0,
   asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
 ) -> torch.Tensor:
   """Penalize lateral foot spacing outside a band around ``feet_distance_ref``.
@@ -871,7 +874,10 @@ def feet_distance_lateral(
   Booster Gym only penalized a *narrow* stance
   (``clip(ref - dist, 0, max_penalty)``). When ``wide_margin`` is set, also
   penalize too-wide stance:
-  ``clip(dist - (ref + wide_margin), 0, max_penalty)``.
+  ``clip(dist - (ref + margin), 0, max_penalty)``.
+
+  If ``|cmd_vy| > side_walk_threshold``, ``margin`` is scaled by
+  ``side_walk_margin_scale`` (default 3×) so side-walk can open the stance.
   """
   from mjlab.utils.lab_api.math import euler_xyz_from_quat
 
@@ -884,9 +890,19 @@ def feet_distance_lateral(
   narrow = torch.clamp(feet_distance_ref - lateral, min=0.0, max=max_penalty)
   if wide_margin is None:
     return narrow
-  wide = torch.clamp(
-    lateral - (feet_distance_ref + wide_margin), min=0.0, max=max_penalty
-  )
+
+  margin = float(wide_margin)
+  command = env.command_manager.get_command(command_name)
+  if command is not None and side_walk_margin_scale != 1.0:
+    side = torch.abs(command[:, 1]) > side_walk_threshold
+    margin_b = torch.full_like(lateral, margin)
+    margin_b = torch.where(
+      side, margin_b * float(side_walk_margin_scale), margin_b
+    )
+  else:
+    margin_b = margin
+
+  wide = torch.clamp(lateral - (feet_distance_ref + margin_b), min=0.0, max=max_penalty)
   return narrow + wide
 
 
@@ -954,7 +970,16 @@ class root_acc_l2:
 def feet_roll_l2(
   env: ManagerBasedRlEnv, asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG
 ) -> torch.Tensor:
-  """Booster Gym ``feet_roll``: sum of squared foot roll angles."""
+  """Penalize non-flat foot soles (world / gravity frame).
+
+  Uses ``body_link_quat_w`` → XYZ-extrinsic Euler; ``roll→0`` means the sole is
+  level with the world horizontal. That is exactly "lands flat on the ground"
+  on flat terrain: hip roll is allowed as long as ankle roll cancels it so the
+  foot link stays flat (less ankle motor fight than forcing hip_roll=0).
+
+  Not trunk-frame roll, and not local terrain slope (on banks, world-flat ≠
+  terrain-parallel).
+  """
   from mjlab.utils.lab_api.math import euler_xyz_from_quat
 
   asset: Entity = env.scene[asset_cfg.name]

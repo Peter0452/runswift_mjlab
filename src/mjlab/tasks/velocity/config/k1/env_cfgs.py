@@ -129,13 +129,14 @@ def booster_k1_rough_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   )
 
   if cfg.scene.terrain is not None and cfg.scene.terrain.terrain_generator is not None:
-    cfg.scene.terrain.terrain_generator.curriculum = True
-    # Flat + wave/rough only (no stairs/slopes) for early biped locomotion.
+    # Mixed terrains, no level curriculum (fixed proportions each reset).
+    cfg.scene.terrain.terrain_generator.curriculum = False
     cfg.scene.terrain.terrain_generator.sub_terrains = {
-      "flat": flat(proportion=0.5),
-      "wave_terrain": wave_terrain(proportion=0.25),
-      "random_rough": random_rough(proportion=0.25),
+      "flat": flat(proportion=0.6),
+      "wave_terrain": wave_terrain(proportion=0.2),
+      "random_rough": random_rough(proportion=0.2),
     }
+  cfg.curriculum.pop("terrain_levels", None)
 
   joint_pos_action = cfg.actions["joint_pos"]
   assert isinstance(joint_pos_action, JointPositionActionCfg)
@@ -456,12 +457,18 @@ _K1_OTHER_COM_BODIES = (
 
 # K1 geometry (vs T1 booster_gym 0.68 / 0.45 / 0.20 / 0.72).
 _K1_FAST_SAC_SPAWN_HEIGHT = KNEES_BENT_KEYFRAME.pos[2]
-_K1_FAST_SAC_HEIGHT_TARGET = 0.50  # Slightly below default crouch (0.53).
+# Yesterday 0.50 allowed hip-roll crouch; 0.54 over-straightened. Middle ground.
+_K1_FAST_SAC_HEIGHT_TARGET = 0.51
 _K1_FAST_SAC_TERMINATE_HEIGHT = 0.43
 _K1_FAST_SAC_TERMINATE_HEIGHT_SOFT = 0.30  # Soft-start while standing learns.
-_K1_FAST_SAC_FEET_DISTANCE_REF = 0.18
-_K1_FAST_SAC_FEET_DISTANCE_WIDE_MARGIN = 0.06  # Band [0.18, 0.24] m
+# Hip pitch frames at y=±0.096 in k1.xml → natural foot spacing ≈ 0.192 m
+# (straight-leg sites); default crouch with ±0.04 hip roll ≈ 0.16 m.
+_K1_FAST_SAC_FEET_DISTANCE_REF = 0.19
+# Base wide band [0.19, 0.28]; |vy|>0.1 → margin×3 → [0.19, 0.46].
+_K1_FAST_SAC_FEET_DISTANCE_WIDE_MARGIN = 0.09
 _K1_FAST_SAC_TRACK_FILTER_WEIGHT = 0.1  # Booster normalization.filter_weight
+# Still-only: curb V / stretch-out when standing; silent while walking.
+_K1_FAST_SAC_STANDING_HIP_ROLL_WEIGHT = -1.0
 
 # Booster T1 penalties soft-started via episode-length curriculum (0.5 → 1.0).
 _K1_FAST_SAC_PENALTY_TERMS = (
@@ -483,8 +490,7 @@ _K1_FAST_SAC_PENALTY_TERMS = (
   "feet_yaw_mean",
   "feet_roll",
   "feet_distance",
-  "hip_roll_l2",
-  "standing_pose_l2",
+  "standing_hip_roll_l2",
 )
 
 
@@ -506,7 +512,7 @@ def _apply_fast_sac_command_curriculum(cfg: ManagerBasedRlEnvCfg) -> None:
   twist_cmd.ranges.lin_vel_x = (-1.5, 1.5)
   twist_cmd.ranges.lin_vel_y = (-1.5, 1.5)
   twist_cmd.ranges.ang_vel_z = (-1.0, 1.0)
-  twist_cmd.rel_standing_envs = 0.25
+  twist_cmd.rel_standing_envs = 0.20
   twist_cmd.rel_forward_envs = 0.0
   twist_cmd.rel_heading_envs = 0.0
   # K1 shorter legs vs T1: raise cadence range (~1.3× T1's 1.0–2.0).
@@ -618,9 +624,9 @@ def _apply_fast_sac_walk_rewards(cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnv
   """Replace K1 PPO rewards with Booster Gym T1 reward set (K1 geometry).
 
   Weights match ``booster_gym/envs/T1.yaml`` (zero-weight terms omitted). K1-only
-  numbers: height target 0.50, terminate clearance 0.43 (soft-starts at 0.30),
-  stance ref 0.18. Enables ``only_positive_rewards``. Soft-starts Booster
-  penalties at 0.5× via episode-length curriculum. No ``feet_too_far``.
+  numbers: height target 0.51, terminate clearance 0.43, stance ref 0.19.
+  Enables ``only_positive_rewards``. Soft-starts Booster penalties at 0.5× via
+  episode-length curriculum. No ``feet_too_far``.
   """
   site_names = ("left_foot", "right_foot")
   foot_body_names = ("left_foot_link", "right_foot_link")
@@ -639,6 +645,7 @@ def _apply_fast_sac_walk_rewards(cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnv
   for key in list(cfg.curriculum.keys()):
     if key.startswith("penalty_") or key == "clearance_terminate":
       del cfg.curriculum[key]
+  cfg.curriculum.pop("terrain_levels", None)
 
   cfg.episode_length_s = 30.0
 
@@ -646,11 +653,11 @@ def _apply_fast_sac_walk_rewards(cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnv
   if reset_joints is not None:
     reset_joints.params["base_heights"] = [_K1_FAST_SAC_SPAWN_HEIGHT]
 
-  # Soft clearance kill while standing learns; curriculum raises to 0.43.
+  # Fixed clearance kill (no soft-start curriculum).
   cfg.terminations["root_height"] = TerminationTermCfg(
     func=mdp.root_clearance_below_minimum,
     params={
-      "minimum_height": _K1_FAST_SAC_TERMINATE_HEIGHT_SOFT,
+      "minimum_height": _K1_FAST_SAC_TERMINATE_HEIGHT,
       "sensor_name": "terrain_scan",
     },
   )
@@ -668,7 +675,7 @@ def _apply_fast_sac_walk_rewards(cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnv
     "survival": RewardTermCfg(func=mdp.is_alive, weight=0.25),
     "tracking_lin_vel_x": RewardTermCfg(
       func=mdp.track_lin_vel_axis,
-      weight=2.0,
+      weight=1.0,
       params={
         "axis": 0,
         "command_name": "twist",
@@ -678,7 +685,7 @@ def _apply_fast_sac_walk_rewards(cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnv
     ),
     "tracking_lin_vel_y": RewardTermCfg(
       func=mdp.track_lin_vel_axis,
-      weight=2.0,
+      weight=1.0,
       params={
         "axis": 1,
         "command_name": "twist",
@@ -688,7 +695,7 @@ def _apply_fast_sac_walk_rewards(cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnv
     ),
     "tracking_ang_vel": RewardTermCfg(
       func=mdp.track_ang_vel_z,
-      weight=1.0,
+      weight=0.5,
       params={
         "command_name": "twist",
         "tracking_sigma": tracking_sigma,
@@ -775,9 +782,11 @@ def _apply_fast_sac_walk_rewards(cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnv
       weight=-1.0,
       params={"asset_cfg": foot_pose_cfg},
     ),
+    # Flat sole vs world horizontal (gravity). Allows hip roll if ankle cancels
+    # it so the foot still lands flat.
     "feet_roll": RewardTermCfg(
       func=mdp.feet_roll_l2,
-      weight=-1.0,
+      weight=-0.35,
       params={"asset_cfg": foot_pose_cfg},
     ),
     "feet_distance": RewardTermCfg(
@@ -786,27 +795,21 @@ def _apply_fast_sac_walk_rewards(cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnv
       params={
         "feet_distance_ref": _K1_FAST_SAC_FEET_DISTANCE_REF,
         "wide_margin": _K1_FAST_SAC_FEET_DISTANCE_WIDE_MARGIN,
+        "command_name": "twist",
+        "side_walk_threshold": 0.1,
+        "side_walk_margin_scale": 3.0,
         "asset_cfg": SceneEntityCfg("robot", site_names=site_names),
       },
     ),
-    # Always-on: curb hip abduction that creates a V / wide stance.
-    "hip_roll_l2": RewardTermCfg(
-      func=mdp.joint_deviation_l2,
-      weight=-1.0,
-      params={
-        "asset_cfg": SceneEntityCfg("robot", joint_names=(".*_Hip_Roll",)),
-      },
-    ),
-    # When still: pull hip/ankle roll toward default (standing posture).
-    "standing_pose_l2": RewardTermCfg(
+    # Stand only: hip roll toward default ±0.04 (no stretch-out). Off while walking
+    # so side-step / ankle-cancel flat contact are free.
+    "standing_hip_roll_l2": RewardTermCfg(
       func=mdp.joint_deviation_l2_when_still,
-      weight=-2.0,
+      weight=_K1_FAST_SAC_STANDING_HIP_ROLL_WEIGHT,
       params={
         "command_name": "twist",
         "command_threshold": 0.05,
-        "asset_cfg": SceneEntityCfg(
-          "robot", joint_names=(".*_Hip_Roll", ".*_Ankle_Roll")
-        ),
+        "asset_cfg": SceneEntityCfg("robot", joint_names=(".*_Hip_Roll",)),
       },
     ),
     "feet_swing": RewardTermCfg(
@@ -847,20 +850,6 @@ def _apply_fast_sac_walk_rewards(cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnv
       "level_down_threshold": 80.0,
       "level_up_threshold": 200.0,
       "degree": 0.001,
-      "num_compute_average_epl": 1000,
-    },
-  )
-  cfg.curriculum["clearance_terminate"] = CurriculumTermCfg(
-    func=mdp.clearance_terminate_curriculum,
-    params={
-      "term_name": "root_height",
-      "initial_height": _K1_FAST_SAC_TERMINATE_HEIGHT_SOFT,
-      "target_height": _K1_FAST_SAC_TERMINATE_HEIGHT,
-      "min_height": _K1_FAST_SAC_TERMINATE_HEIGHT_SOFT,
-      "max_height": _K1_FAST_SAC_TERMINATE_HEIGHT,
-      "level_down_threshold": 80.0,
-      "level_up_threshold": 200.0,
-      "degree": 0.002,
       "num_compute_average_epl": 1000,
     },
   )
