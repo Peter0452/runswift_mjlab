@@ -47,7 +47,7 @@ def booster_k1_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
       # Booster runner.mini_epochs=20; full-batch updates ≈ 1 mini-batch.
       num_learning_epochs=20,
       num_mini_batches=1,
-      learning_rate=1.0e-5,  # Booster T1.yaml; use 3e-6 for resume only.
+      learning_rate=5.0e-6,  # Aug 7 K1 FT + ParameterWalk; 1e-5 oscillates from scratch.
       schedule="adaptive",
       gamma=0.995,
       lam=0.95,

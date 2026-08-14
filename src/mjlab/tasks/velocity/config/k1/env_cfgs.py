@@ -14,6 +14,7 @@ from mjlab.envs import ManagerBasedRlEnvCfg
 from mjlab.envs import mdp as envs_mdp
 from mjlab.envs.mdp import dr
 from mjlab.envs.mdp.actions import JointPositionActionCfg
+from mjlab.managers.curriculum_manager import CurriculumTermCfg
 from mjlab.managers.event_manager import EventTermCfg
 from mjlab.managers.observation_manager import ObservationTermCfg
 from mjlab.managers.reward_manager import RewardTermCfg
@@ -491,7 +492,8 @@ _K1_OTHER_COM_BODIES = (
 # HOME (-0.2/0.4) needs ParameterWalk feet_offset (-12) to stop hip stretch-out.
 _K1_FAST_SAC_SPAWN_HEIGHT = KNEES_BENT_KEYFRAME.pos[2]
 _K1_FAST_SAC_HEIGHT_TARGET = 0.50
-_K1_FAST_SAC_TERMINATE_HEIGHT = 0.35
+_K1_FAST_SAC_TERMINATE_HEIGHT = 0.35  # clearance curriculum target (max)
+_K1_FAST_SAC_TERMINATE_INITIAL = 0.30  # soft-start kill height
 _K1_FAST_SAC_TERMINATE_HEIGHT_SOFT = 0.30  # Soft-start while standing learns.
 # Hip pitch frames at y=±0.096 in k1.xml → natural foot spacing ≈ 0.192 m
 # (straight-leg sites); default crouch with ±0.04 hip roll ≈ 0.16 m.
@@ -502,6 +504,66 @@ _K1_FAST_SAC_FEET_DISTANCE_WIDE_MARGIN = 0.09
 _K1_FAST_SAC_TRACK_FILTER_WEIGHT = 0.1  # Booster normalization.filter_weight
 # Still-only: curb V / stretch-out when standing; silent while walking.
 _K1_FAST_SAC_STANDING_HIP_ROLL_WEIGHT = -1.0
+
+# Aug 7 track_stance: penalty scale soft-start + clearance kill curriculum.
+_FAST_SAC_PENALTY_REWARD_NAMES = (
+  "base_height",
+  "orientation",
+  "torques",
+  "torque_tiredness",
+  "power",
+  "lin_vel_z",
+  "ang_vel_xy",
+  "dof_vel",
+  "dof_acc",
+  "root_acc",
+  "action_rate",
+  "dof_pos_limits",
+  "collision",
+  "feet_slip",
+  "feet_yaw_diff",
+  "feet_yaw_mean",
+  "feet_roll",
+  "feet_distance",
+  "hip_roll_l2",
+  "standing_hip_roll_l2",
+  "standing_pose_l2",
+)
+
+
+def _apply_fast_sac_curriculum(cfg: ManagerBasedRlEnvCfg) -> None:
+  """Aug 7 K1 rough FT curriculums (grid cmd set separately)."""
+  cfg.curriculum.pop("command_vel", None)
+  cfg.curriculum.pop("terrain_levels", None)
+  cfg.curriculum["penalty_scale"] = CurriculumTermCfg(
+    func=mdp.penalty_scale_curriculum,
+    params={
+      "reward_names": list(_FAST_SAC_PENALTY_REWARD_NAMES),
+      "initial_scale": 0.5,
+      "min_scale": 0.5,
+      "max_scale": 1.0,
+      # Wider band than 80/200 — narrow thresholds caused penalty ping-pong when
+      # mean episode length hovered ~150–300 (plot looked like a sine wave).
+      "level_down_threshold": 150.0,
+      "level_up_threshold": 450.0,
+      "degree": 0.0005,
+      "num_compute_average_epl": 2000,
+    },
+  )
+  cfg.curriculum["clearance_terminate"] = CurriculumTermCfg(
+    func=mdp.clearance_terminate_curriculum,
+    params={
+      "term_name": "root_height",
+      "initial_height": _K1_FAST_SAC_TERMINATE_INITIAL,
+      "target_height": _K1_FAST_SAC_TERMINATE_HEIGHT,
+      "min_height": _K1_FAST_SAC_TERMINATE_INITIAL,
+      "max_height": _K1_FAST_SAC_TERMINATE_HEIGHT,
+      "level_down_threshold": 150.0,
+      "level_up_threshold": 450.0,
+      "degree": 0.001,
+      "num_compute_average_epl": 2000,
+    },
+  )
 
 
 def _apply_fast_sac_commands(cfg: ManagerBasedRlEnvCfg) -> None:
@@ -526,7 +588,7 @@ def _apply_fast_sac_commands(cfg: ManagerBasedRlEnvCfg) -> None:
   twist_cmd.ranges.gait_frequency = (1.3, 2.6)
   twist_cmd.grid_curriculum = UniformVelocityCommandCfg.GridCurriculumCfg(
     enabled=True,
-    update_rate=0.1,
+    update_rate=0.05,
     lin_vel_levels=10,
     ang_vel_levels=10,
     lin_vel_x_resolution=0.15,
@@ -693,11 +755,11 @@ def _apply_fast_sac_walk_rewards(cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnv
     reset_joints.params["poses"] = [KNEES_BENT_KEYFRAME.joint_pos]
     reset_joints.params["base_heights"] = [_K1_FAST_SAC_SPAWN_HEIGHT]
 
-  # Fixed clearance kill (no soft-start curriculum).
+  # Start lenient; ``clearance_terminate`` curriculum tightens toward target.
   cfg.terminations["root_height"] = TerminationTermCfg(
     func=mdp.root_clearance_below_minimum,
     params={
-      "minimum_height": _K1_FAST_SAC_TERMINATE_HEIGHT,
+      "minimum_height": _K1_FAST_SAC_TERMINATE_INITIAL,
       "sensor_name": "terrain_scan",
     },
   )
@@ -860,6 +922,17 @@ def _apply_fast_sac_walk_rewards(cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnv
         "asset_cfg": SceneEntityCfg("robot", joint_names=(".*_Hip_Roll",)),
       },
     ),
+    "standing_pose_l2": RewardTermCfg(
+      func=mdp.joint_deviation_l2_when_still,
+      weight=-1.0,
+      params={
+        "command_name": "twist",
+        "command_threshold": 0.05,
+        "asset_cfg": SceneEntityCfg(
+          "robot", joint_names=(".*_Hip_Roll", ".*_Ankle_Roll")
+        ),
+      },
+    ),
     "feet_swing": RewardTermCfg(
       func=mdp.feet_swing,
       weight=3.0,
@@ -890,7 +963,7 @@ def _apply_fast_sac_walk_rewards(cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnv
       cmd_term.func = mdp.twist_velocity_commands
       cmd_term.params["command_name"] = "twist"
 
-  cfg.curriculum = {}
+  _apply_fast_sac_curriculum(cfg)
   _apply_fast_sac_commands(cfg)
   return cfg
 
