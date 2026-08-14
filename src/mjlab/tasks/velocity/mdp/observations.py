@@ -4,12 +4,16 @@ from typing import TYPE_CHECKING, Any
 
 import torch
 
+from mjlab.entity import Entity
+from mjlab.managers.scene_entity_config import SceneEntityCfg
 from mjlab.sensor import ContactSensor
 from mjlab.sensor.terrain_height_sensor import TerrainHeightSensor
 
 if TYPE_CHECKING:
   from mjlab.envs import ManagerBasedRlEnv
   from mjlab.managers.observation_manager import ObservationTermCfg
+
+_DEFAULT_ASSET_CFG = SceneEntityCfg("robot")
 
 # Shared across actor/critic term instances for the same env (keyed by id).
 _GAIT_STATE: dict[int, dict[str, Any]] = {}
@@ -49,6 +53,59 @@ def foot_contact_forces(env: ManagerBasedRlEnv, sensor_name: str) -> torch.Tenso
   assert sensor_data.force is not None
   forces_flat = sensor_data.force.flatten(start_dim=1)  # [B, N*3]
   return torch.sign(forces_flat) * torch.log1p(torch.abs(forces_flat))
+
+
+def base_mass_scaled(
+  env: ManagerBasedRlEnv, asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG
+) -> torch.Tensor:
+  """Booster / ParameterWalk privileged mass state: trunk COM delta + mass delta."""
+  from mjlab.envs.mdp.dr._core import _select_default_values
+
+  asset: Entity = env.scene[asset_cfg.name]
+  env_ids = torch.arange(env.num_envs, device=env.device, dtype=torch.int)
+  global_body_ids = asset.indexing.body_ids[asset_cfg.body_ids].to(
+    device=env.device, dtype=torch.int
+  )
+  default_ipos = _select_default_values(env, "body_ipos", env_ids, global_body_ids)
+  default_mass = _select_default_values(env, "body_mass", env_ids, global_body_ids)
+  current_ipos = env.sim.model.body_ipos[:, global_body_ids]
+  current_mass = env.sim.model.body_mass[:, global_body_ids]
+  d_ipos = (current_ipos - default_ipos).reshape(env.num_envs, -1)
+  d_mass = (current_mass - default_mass).reshape(env.num_envs, -1)
+  return torch.cat((d_ipos, d_mass), dim=-1)
+
+
+def base_clearance(
+  env: ManagerBasedRlEnv,
+  sensor_name: str | None = "terrain_scan",
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> torch.Tensor:
+  """Booster privileged height: trunk clearance above terrain."""
+  from mjlab.tasks.velocity.mdp.terrain_utils import base_terrain_clearance
+
+  return base_terrain_clearance(env, sensor_name, asset_cfg.name).unsqueeze(-1)
+
+
+def trunk_external_force(
+  env: ManagerBasedRlEnv,
+  scale: float = 0.1,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> torch.Tensor:
+  """Booster privileged push force on trunk (``xfrc_applied``), scaled."""
+  asset: Entity = env.scene[asset_cfg.name]
+  force = asset.data.body_external_wrench[:, asset_cfg.body_ids, :3]
+  return force.reshape(env.num_envs, -1) * scale
+
+
+def trunk_external_torque(
+  env: ManagerBasedRlEnv,
+  scale: float = 0.5,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> torch.Tensor:
+  """Booster privileged push torque on trunk (``xfrc_applied``), scaled."""
+  asset: Entity = env.scene[asset_cfg.name]
+  torque = asset.data.body_external_wrench[:, asset_cfg.body_ids, 3:6]
+  return torque.reshape(env.num_envs, -1) * scale
 
 
 def twist_velocity_commands(env: ManagerBasedRlEnv, command_name: str) -> torch.Tensor:

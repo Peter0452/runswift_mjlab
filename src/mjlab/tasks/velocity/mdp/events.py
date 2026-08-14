@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from typing import TYPE_CHECKING
 
 import torch
@@ -140,3 +141,105 @@ def set_joint_position_targets_to_default(
 
   targets = default_joint_pos[env_ids][:, joint_ids].clone()
   asset.set_joint_position_target(targets, joint_ids=joint_ids, env_ids=env_ids)
+
+
+def _interval_steps(interval_s: float, step_dt: float) -> int:
+  """Booster Gym uses ``ceil(interval / dt)`` control-step counts."""
+  return max(1, math.ceil(interval_s / step_dt))
+
+
+class booster_kick_robots:
+  """Booster T1 velocity kick: additive Gaussian noise every ``kick_interval_s``.
+
+  Matches ``booster_gym/envs/t1.py`` ``_kick_robots`` and ``T1.yaml``:
+  ``kick_interval_s=2``, lin vel ``N(0, 0.1)``, ang vel ``N(0, 0.02)``.
+  """
+
+  def __init__(self, cfg: EventTermCfg, env: ManagerBasedRlEnv):
+    self._asset: Entity = env.scene[cfg.params["asset_cfg"].name]
+    self._interval_steps = _interval_steps(
+      cfg.params.get("kick_interval_s", 2.0), env.step_dt
+    )
+    self._lin_std = float(cfg.params.get("kick_lin_vel_std", 0.1))
+    self._ang_std = float(cfg.params.get("kick_ang_vel_std", 0.02))
+
+  def __call__(
+    self,
+    env: ManagerBasedRlEnv,
+    env_ids: torch.Tensor | None,
+    kick_interval_s: float = 2.0,
+    kick_lin_vel_std: float = 0.1,
+    kick_ang_vel_std: float = 0.02,
+    asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+  ) -> None:
+    del env_ids, kick_interval_s, kick_lin_vel_std, kick_ang_vel_std, asset_cfg
+    if env.common_step_counter % self._interval_steps != 0:
+      return
+    vel_w = self._asset.data.root_link_vel_w.clone()
+    vel_w[:, :3] += torch.randn_like(vel_w[:, :3]) * self._lin_std
+    vel_w[:, 3:] += torch.randn_like(vel_w[:, 3:]) * self._ang_std
+    self._asset.write_root_link_velocity_to_sim(vel_w)
+
+
+class booster_push_robots:
+  """Booster T1 sustained trunk push: Gaussian wrench held for ``push_duration_s``.
+
+  Matches ``booster_gym/envs/t1.py`` ``_push_robots`` and ``T1.yaml``:
+  resample every ``push_interval_s=5``, hold ``push_duration_s=1``, force
+  ``N(0, 10)`` N, torque ``N(0, 2)`` Nm (body frame, like Isaac LOCAL_SPACE).
+  """
+
+  def __init__(self, cfg: EventTermCfg, env: ManagerBasedRlEnv):
+    self._asset: Entity = env.scene[cfg.params["asset_cfg"].name]
+    self._body_ids = cfg.params["asset_cfg"].body_ids
+    self._device = env.device
+    self._num_envs = env.num_envs
+    self._num_bodies = (
+      len(self._body_ids)
+      if isinstance(self._body_ids, list)
+      else self._asset.num_bodies
+    )
+    self._interval_steps = _interval_steps(
+      cfg.params.get("push_interval_s", 5.0), env.step_dt
+    )
+    self._duration_steps = _interval_steps(
+      cfg.params.get("push_duration_s", 1.0), env.step_dt
+    )
+    self._force_std = float(cfg.params.get("push_force_std", 10.0))
+    self._torque_std = float(cfg.params.get("push_torque_std", 2.0))
+    self._forces = torch.zeros(
+      self._num_envs, self._num_bodies, 3, device=self._device
+    )
+    self._torques = torch.zeros(
+      self._num_envs, self._num_bodies, 3, device=self._device
+    )
+
+  def __call__(
+    self,
+    env: ManagerBasedRlEnv,
+    env_ids: torch.Tensor | None,
+    push_interval_s: float = 5.0,
+    push_duration_s: float = 1.0,
+    push_force_std: float = 10.0,
+    push_torque_std: float = 2.0,
+    asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+  ) -> None:
+    del env_ids, push_interval_s, push_duration_s, push_force_std, push_torque_std, asset_cfg
+    phase = env.common_step_counter % self._interval_steps
+    if phase == 0:
+      self._forces = torch.randn_like(self._forces) * self._force_std
+      self._torques = torch.randn_like(self._torques) * self._torque_std
+    elif phase == self._duration_steps:
+      self._forces.zero_()
+      self._torques.zero_()
+    self._asset.write_external_wrench_to_sim(
+      self._forces, self._torques, body_ids=self._body_ids
+    )
+
+  def reset(self, env_ids: torch.Tensor | slice | None = None) -> None:
+    if env_ids is None:
+      self._forces.zero_()
+      self._torques.zero_()
+      return
+    self._forces[env_ids] = 0.0
+    self._torques[env_ids] = 0.0

@@ -57,20 +57,20 @@ EFFORT_KNEE = 40.0
 EFFORT_ANKLE_PITCH = 20.0
 EFFORT_ANKLE_ROLL = 15.0
 
-# Isaac Gym common.stiffness / common.damping.
+# ParameterWalk leg PD: Hip/Knee 100, Ankle 50; damping 2/2/1.
 STIFFNESS_HEAD = 2.0
 DAMPING_HEAD = 0.2
 STIFFNESS_ARM = 5.0
 DAMPING_ARM = 0.5
-STIFFNESS_HIP = 80.0
-DAMPING_HIP = 4.0
-STIFFNESS_KNEE = 80.0
-DAMPING_KNEE = 4.0
-STIFFNESS_ANKLE = 25.0
+STIFFNESS_HIP = 100.0
+DAMPING_HIP = 2.0
+STIFFNESS_KNEE = 100.0
+DAMPING_KNEE = 2.0
+STIFFNESS_ANKLE = 50.0
 DAMPING_ANKLE = 1.0
 
 # Isaac policy.control.action_scale. Do NOT use mjlab's 0.25*effort/stiffness
-# here — with kp=80 that yields ~0.09 rad and blocks gait learning.
+# here — with kp=100 that yields ~0.07 rad and blocks gait learning.
 ISAAC_ACTION_SCALE = 1.0
 
 
@@ -197,7 +197,7 @@ STRAIGHT_LEGS_KEYFRAME = EntityCfg.InitialStateCfg(
 )
 
 HOME_KEYFRAME = EntityCfg.InitialStateCfg(
-  pos=(0, 0, 0.54),
+  pos=(0, 0, 0.58),  # ParameterWalk init_state z
   joint_pos={
     **_DEFAULT_ARM_HEAD_POS,
      ".*_Hip_Pitch": -0.2,
@@ -326,7 +326,7 @@ if __name__ == "__main__":
 
   # `viewer.launch(model)` starts at the all-zero default qpos, so the arms/head
   # would appear at 0. Load the "init_state" keyframe (added by Entity from
-  # KNEES_BENT_KEYFRAME) so the viewer shows the training crouch.
+  # HOME_KEYFRAME) so the viewer shows the training default pose.
   data = mujoco.MjData(model)
   mujoco.mj_resetDataKeyframe(model, data, model.key("init_state").id)
   mujoco.mj_forward(model, data)
