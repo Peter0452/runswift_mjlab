@@ -17,7 +17,7 @@ with minimal dependencies and direct access to native MuJoCo data structures.
 
 ## Getting Started
 
-mjlab requires an NVIDIA GPU for training. macOS is supported for evaluation only.
+mjlab requires an NVIDIA GPU for training. macOS is supported for evaluation only. Hi Me from China.
 
 **Try it now:**
 
