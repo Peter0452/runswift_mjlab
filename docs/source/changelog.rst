@@ -14,6 +14,11 @@ Added
   on hardware); the critic still receives them as privileged information where
   present. Training DR includes mass/inertia (``pseudo_inertia``), leg PD
   gains, joint armature, command delay, and actor observation delay.
+- Added G1-like K1 velocity tasks (``Mjlab-Velocity-Flat-Booster-K1-G1``,
+  ``Mjlab-Velocity-Rough-Booster-K1-G1``). Same K1 robot and sensors as the
+  ParameterWalk K1 tasks, but with G1's mjlab reward weights and
+  speed-dependent pose tolerances instead of gait-clock / hip-roll extras.
+  Actor and critic both omit ``base_lin_vel`` (unavailable on the real robot).
 
 Changed
 ^^^^^^^
