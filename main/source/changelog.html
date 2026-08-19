@@ -544,6 +544,11 @@ The K1 velocity actor omits <code class="docutils literal notranslate"><span cla
 on hardware); the critic still receives them as privileged information where
 present. Training DR includes mass/inertia (<code class="docutils literal notranslate"><span class="pre">pseudo_inertia</span></code>), leg PD
 gains, joint armature, command delay, and actor observation delay.</p></li>
+<li><p>Added G1-like K1 velocity tasks (<code class="docutils literal notranslate"><span class="pre">Mjlab-Velocity-Flat-Booster-K1-G1</span></code>,
+<code class="docutils literal notranslate"><span class="pre">Mjlab-Velocity-Rough-Booster-K1-G1</span></code>). Same K1 robot and sensors as the
+ParameterWalk K1 tasks, but with G1’s mjlab reward weights and
+speed-dependent pose tolerances instead of gait-clock / hip-roll extras.
+Actor and critic both omit <code class="docutils literal notranslate"><span class="pre">base_lin_vel</span></code> (unavailable on the real robot).</p></li>
 </ul>
 </section>
 <section id="changed">
