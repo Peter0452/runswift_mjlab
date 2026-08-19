@@ -62,7 +62,6 @@ def booster_k1_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
   )
 
 
-
 def booster_k1_fast_sac_runner_cfg() -> FastSacRunnerCfg:
   """Create FastSAC runner configuration for Booster K1 velocity task."""
   return FastSacRunnerCfg(

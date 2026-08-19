@@ -476,6 +476,90 @@ def booster_k1_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   return cfg
 
 
+# G1 pose std mapped onto K1 joint names. K1 has no waist/wrists; Head_* stays
+# tight like G1 waist, Elbow_Yaw like G1 shoulder_yaw.
+_K1_G1_POSE_STD_STANDING = {".*": 0.05}
+_K1_G1_POSE_STD_WALKING = {
+  r".*_Hip_Pitch": 0.3,
+  r".*_Hip_Roll": 0.15,
+  r".*_Hip_Yaw": 0.15,
+  r".*_Knee_Pitch": 0.35,
+  r".*_Ankle_Pitch": 0.25,
+  r".*_Ankle_Roll": 0.1,
+  r".*_Shoulder_Pitch": 0.15,
+  r".*_Shoulder_Roll": 0.15,
+  r".*_Elbow_Pitch": 0.15,
+  r".*_Elbow_Yaw": 0.1,
+  r"Head_.*": 0.05,
+}
+_K1_G1_POSE_STD_RUNNING = {
+  r".*_Hip_Pitch": 0.5,
+  r".*_Hip_Roll": 0.2,
+  r".*_Hip_Yaw": 0.2,
+  r".*_Knee_Pitch": 0.6,
+  r".*_Ankle_Pitch": 0.35,
+  r".*_Ankle_Roll": 0.15,
+  r".*_Shoulder_Pitch": 0.5,
+  r".*_Shoulder_Roll": 0.2,
+  r".*_Elbow_Pitch": 0.35,
+  r".*_Elbow_Yaw": 0.15,
+  r"Head_.*": 0.08,
+}
+_K1_G1_EXTRA_REWARDS = (
+  "gait",
+  "feet_swing",
+  "hip_roll_l2",
+  "ankle_roll_l2",
+  "crouch_l2",
+)
+
+
+def _apply_g1_style_rewards(cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvCfg:
+  """Replace ParameterWalk extras with G1-like mjlab velocity rewards.
+
+  Restores default tracking / pose / air-time weights from ``make_velocity_env_cfg``
+  plus G1's speed-dependent pose std and ``self_collisions``. Drops gait-clock
+  rewards and the K1 hip/ankle L2 terms. Robot, sensors, and commands stay K1.
+
+  Unlike G1, neither actor nor critic observes ``base_lin_vel`` — the real K1
+  has no reliable base linear-velocity estimate.
+  """
+  cfg.rewards["track_linear_velocity"].weight = 2.0
+  cfg.rewards["track_angular_velocity"].weight = 2.0
+  cfg.rewards["track_linear_velocity"].params["std"] = math.sqrt(0.25)
+  cfg.rewards["track_angular_velocity"].params["std"] = math.sqrt(0.5)
+  cfg.rewards["upright"].weight = 1.0
+  cfg.rewards["pose"].weight = 1.0
+  cfg.rewards["pose"].params["std_standing"] = _K1_G1_POSE_STD_STANDING
+  cfg.rewards["pose"].params["std_walking"] = _K1_G1_POSE_STD_WALKING
+  cfg.rewards["pose"].params["std_running"] = _K1_G1_POSE_STD_RUNNING
+  cfg.rewards["body_ang_vel"].weight = -0.05
+  cfg.rewards["angular_momentum"].weight = -0.02
+  cfg.rewards["air_time"].weight = 0.0
+  cfg.rewards["foot_swing_height"].weight = -0.25
+
+  for name in _K1_G1_EXTRA_REWARDS:
+    cfg.rewards.pop(name, None)
+
+  # Gait clock obs only exists to support the dropped gait / feet_swing terms.
+  # Real K1 has no base lin-vel; drop it from critic too (actor already omits it).
+  for group in ("actor", "critic"):
+    cfg.observations[group].terms.pop("gait_cycle", None)
+    cfg.observations[group].terms.pop("base_lin_vel", None)
+
+  return cfg
+
+
+def booster_k1_rough_g1_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
+  """Rough-terrain K1 velocity env with G1-like mjlab rewards."""
+  return _apply_g1_style_rewards(booster_k1_rough_env_cfg(play=play))
+
+
+def booster_k1_flat_g1_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
+  """Flat-terrain K1 velocity env with G1-like mjlab rewards."""
+  return _apply_g1_style_rewards(booster_k1_flat_env_cfg(play=play))
+
+
 # Non-trunk bodies for small COM jitter (T1 ``other_com``).
 _K1_OTHER_COM_BODIES = (
   "Head_.*",

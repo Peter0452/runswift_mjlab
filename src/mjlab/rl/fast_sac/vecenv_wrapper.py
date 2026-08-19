@@ -86,7 +86,9 @@ class FastSacVecEnvWrapper:
     return TensorDict(obs_dict, batch_size=[self.num_envs]), extras
 
   @staticmethod
-  def _circular_write_env_ids(circular, env_ids: torch.Tensor, data: torch.Tensor) -> None:
+  def _circular_write_env_ids(
+    circular, env_ids: torch.Tensor, data: torch.Tensor
+  ) -> None:
     """Write ``data[env_ids]`` at the current pointer without advancing it."""
     if circular._buffer is None:
       circular._pointer = 0

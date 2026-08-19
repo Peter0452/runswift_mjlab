@@ -88,15 +88,13 @@ class SimpleReplayBuffer(nn.Module):
       observations = torch.gather(self.observations, 1, obs_indices).reshape(
         self.n_env * batch_size, self.n_obs
       )
-      next_observations = torch.gather(
-        self.next_observations, 1, obs_indices
-      ).reshape(self.n_env * batch_size, self.n_obs)
+      next_observations = torch.gather(self.next_observations, 1, obs_indices).reshape(
+        self.n_env * batch_size, self.n_obs
+      )
       actions = torch.gather(self.actions, 1, act_indices).reshape(
         self.n_env * batch_size, self.n_act
       )
-      rewards = torch.gather(self.rewards, 1, indices).reshape(
-        self.n_env * batch_size
-      )
+      rewards = torch.gather(self.rewards, 1, indices).reshape(self.n_env * batch_size)
       dones = torch.gather(self.dones, 1, indices).reshape(self.n_env * batch_size)
       truncations = torch.gather(self.truncations, 1, indices).reshape(
         self.n_env * batch_size
@@ -159,9 +157,7 @@ class SimpleReplayBuffer(nn.Module):
       done_masks = torch.cumprod(1.0 - all_dones_shifted, dim=2)
       effective_n_steps = done_masks.sum(2)
 
-      discounts = torch.pow(
-        self.gamma, torch.arange(self.n_steps, device=self.device)
-      )
+      discounts = torch.pow(self.gamma, torch.arange(self.n_steps, device=self.device))
       masked_rewards = all_rewards * done_masks
       discounted_rewards = masked_rewards * discounts.view(1, 1, -1)
       n_step_rewards = discounted_rewards.sum(dim=2)
@@ -198,7 +194,11 @@ class SimpleReplayBuffer(nn.Module):
         self.n_env * batch_size, self.n_critic_obs
       )
 
-      if self.n_steps > 1 and self.ptr >= self.buffer_size and curr_truncations is not None:
+      if (
+        self.n_steps > 1
+        and self.ptr >= self.buffer_size
+        and curr_truncations is not None
+      ):
         self.truncations[:, current_pos - 1] = curr_truncations
 
     out = TensorDict(

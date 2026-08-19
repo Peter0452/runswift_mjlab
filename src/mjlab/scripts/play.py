@@ -28,7 +28,6 @@ from mjlab.viewer import NativeMujocoViewer, ViserPlayViewer
 from mjlab.viewer.viser.viewer import CheckpointManager, format_time_ago
 
 
-
 def _parse_wandb_dt(value: str | datetime) -> datetime:
   """Parse a W&B datetime string (or pass through a datetime object)."""
   if isinstance(value, str):

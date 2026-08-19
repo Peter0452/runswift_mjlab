@@ -200,7 +200,7 @@ HOME_KEYFRAME = EntityCfg.InitialStateCfg(
   pos=(0, 0, 0.58),  # ParameterWalk init_state z
   joint_pos={
     **_DEFAULT_ARM_HEAD_POS,
-     ".*_Hip_Pitch": -0.2,
+    ".*_Hip_Pitch": -0.2,
     ".*_Hip_Roll": 0.0,
     ".*_Hip_Yaw": 0.0,
     ".*_Knee_Pitch": 0.4,

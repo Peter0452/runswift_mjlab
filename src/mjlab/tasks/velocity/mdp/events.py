@@ -207,9 +207,7 @@ class booster_push_robots:
     )
     self._force_std = float(cfg.params.get("push_force_std", 10.0))
     self._torque_std = float(cfg.params.get("push_torque_std", 2.0))
-    self._forces = torch.zeros(
-      self._num_envs, self._num_bodies, 3, device=self._device
-    )
+    self._forces = torch.zeros(self._num_envs, self._num_bodies, 3, device=self._device)
     self._torques = torch.zeros(
       self._num_envs, self._num_bodies, 3, device=self._device
     )
@@ -224,7 +222,14 @@ class booster_push_robots:
     push_torque_std: float = 2.0,
     asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
   ) -> None:
-    del env_ids, push_interval_s, push_duration_s, push_force_std, push_torque_std, asset_cfg
+    del (
+      env_ids,
+      push_interval_s,
+      push_duration_s,
+      push_force_std,
+      push_torque_std,
+      asset_cfg,
+    )
     phase = env.common_step_counter % self._interval_steps
     if phase == 0:
       self._forces = torch.randn_like(self._forces) * self._force_std

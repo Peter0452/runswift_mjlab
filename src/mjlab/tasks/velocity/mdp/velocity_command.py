@@ -209,21 +209,15 @@ class UniformVelocityCommand(CommandTerm):
       max_steps * (1.0 - grid.episode_length_toler)
     )
     success &= (
-      torch.abs(
-        self.filtered_lin_vel[env_ids, 0] - self.vel_command_b[env_ids, 0]
-      )
+      torch.abs(self.filtered_lin_vel[env_ids, 0] - self.vel_command_b[env_ids, 0])
       < grid.lin_vel_x_toler
     )
     success &= (
-      torch.abs(
-        self.filtered_lin_vel[env_ids, 1] - self.vel_command_b[env_ids, 1]
-      )
+      torch.abs(self.filtered_lin_vel[env_ids, 1] - self.vel_command_b[env_ids, 1])
       < grid.lin_vel_y_toler
     )
     success &= (
-      torch.abs(
-        self.filtered_ang_vel[env_ids, 2] - self.vel_command_b[env_ids, 2]
-      )
+      torch.abs(self.filtered_ang_vel[env_ids, 2] - self.vel_command_b[env_ids, 2])
       < grid.ang_vel_yaw_toler
     )
 
@@ -267,8 +261,12 @@ class UniformVelocityCommand(CommandTerm):
     self.env_curriculum_level[env_ids, 0] = lin_level
     self.env_curriculum_level[env_ids, 1] = ang_level
 
-    self._mean_lin_level = float(torch.mean(self.env_curriculum_level[:, 0].abs().float()))
-    self._mean_ang_level = float(torch.mean(self.env_curriculum_level[:, 1].abs().float()))
+    self._mean_lin_level = float(
+      torch.mean(self.env_curriculum_level[:, 0].abs().float())
+    )
+    self._mean_ang_level = float(
+      torch.mean(self.env_curriculum_level[:, 1].abs().float())
+    )
     self._max_lin_level = float(torch.max(self.env_curriculum_level[:, 0].abs()).item())
     self._max_ang_level = float(torch.max(self.env_curriculum_level[:, 1].abs()).item())
 

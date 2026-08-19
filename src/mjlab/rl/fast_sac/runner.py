@@ -211,7 +211,9 @@ class FastSacRunner:
     )
 
     self.policy = self.actor.explore
-    print(f"[FastSAC] actor_obs_dim={actor_obs_dim}, critic_obs_dim={critic_obs_dim}, n_act={n_act}")
+    print(
+      f"[FastSAC] actor_obs_dim={actor_obs_dim}, critic_obs_dim={critic_obs_dim}, n_act={n_act}"
+    )
     print(self.actor)
     print(self.qnet)
 
@@ -225,7 +227,8 @@ class FastSacRunner:
     with autocast(
       device_type="cuda" if str(self.device).startswith("cuda") else "cpu",
       dtype=amp_dtype,
-      enabled=bool(self.alg_cfg.get("amp", True)) and str(self.device).startswith("cuda"),
+      enabled=bool(self.alg_cfg.get("amp", True))
+      and str(self.device).startswith("cuda"),
     ):
       yield
 
@@ -531,8 +534,12 @@ class FastSacRunner:
           metric_counts.clear()
           loss_dict["env_rewards"] = float(rewards.mean().item())
           if completed_ep_rews:
-            loss_dict["episode_reward"] = sum(completed_ep_rews) / len(completed_ep_rews)
-            loss_dict["episode_length"] = sum(completed_ep_lens) / len(completed_ep_lens)
+            loss_dict["episode_reward"] = sum(completed_ep_rews) / len(
+              completed_ep_rews
+            )
+            loss_dict["episode_length"] = sum(completed_ep_lens) / len(
+              completed_ep_lens
+            )
             completed_ep_rews.clear()
             completed_ep_lens.clear()
 
@@ -629,9 +636,7 @@ class FastSacRunner:
     self.actor.load_state_dict(loaded["actor_state_dict"], strict=strict)
     if "qnet_state_dict" in loaded:
       self.qnet.load_state_dict(loaded["qnet_state_dict"], strict=strict)
-      self.qnet_target.load_state_dict(
-        loaded["qnet_target_state_dict"], strict=strict
-      )
+      self.qnet_target.load_state_dict(loaded["qnet_target_state_dict"], strict=strict)
     if loaded.get("obs_normalizer_state") is not None and hasattr(
       self.obs_normalizer, "load_state_dict"
     ):
@@ -639,9 +644,7 @@ class FastSacRunner:
     if loaded.get("critic_obs_normalizer_state") is not None and hasattr(
       self.critic_obs_normalizer, "load_state_dict"
     ):
-      self.critic_obs_normalizer.load_state_dict(
-        loaded["critic_obs_normalizer_state"]
-      )
+      self.critic_obs_normalizer.load_state_dict(loaded["critic_obs_normalizer_state"])
     if "log_alpha" in loaded:
       self.log_alpha.data.copy_(loaded["log_alpha"].to(self.device))
     if "actor_optimizer_state_dict" in loaded:
@@ -700,10 +703,14 @@ class FastSacRunner:
         action, _, _ = self.actor(obs)
         return action
 
-    model = _OnnxActor(
-      copy.deepcopy(self.obs_normalizer),
-      copy.deepcopy(self.actor),
-    ).to("cpu").eval()
+    model = (
+      _OnnxActor(
+        copy.deepcopy(self.obs_normalizer),
+        copy.deepcopy(self.actor),
+      )
+      .to("cpu")
+      .eval()
+    )
     dummy = torch.zeros(1, actor_obs_dim)
     torch.onnx.export(
       model,

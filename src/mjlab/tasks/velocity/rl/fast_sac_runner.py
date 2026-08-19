@@ -23,11 +23,7 @@ class VelocityFastSacRunner(FastSacRunner):
     onnx_path = policy_dir / filename
     try:
       self.export_policy_to_onnx(str(policy_dir), filename)
-      run_name: str = (
-        wandb.run.name
-        if wandb.run is not None
-        else "local"
-      )
+      run_name: str = wandb.run.name if wandb.run is not None else "local"
       metadata = get_base_metadata(self.env.unwrapped, run_name)
       attach_metadata_to_onnx(str(onnx_path), metadata)
       if wandb.run is not None and self.cfg.get("upload_model", True):

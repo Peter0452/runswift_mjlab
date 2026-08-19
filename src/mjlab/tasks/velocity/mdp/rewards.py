@@ -427,7 +427,9 @@ class feet_gait:
     if scale == 0.0:
       return torch.zeros(env.num_envs, device=env.device)
 
-    phase, gait_active = advance_gait_phase(env, period, command_name, command_threshold)
+    phase, gait_active = advance_gait_phase(
+      env, period, command_name, command_threshold
+    )
     sensor: ContactSensor = env.scene[sensor_name]
     assert sensor.data.found is not None
     contact = (sensor.data.found > 0).float()  # [B, P]
@@ -442,7 +444,9 @@ class feet_gait:
       + (1.0 - torch.abs(right_contact - right_desired))
     )
     reward = match * gait_active.float() * scale
-    env.extras["log"]["Metrics/gait_match_mean"] = torch.mean(match * gait_active.float())
+    env.extras["log"]["Metrics/gait_match_mean"] = torch.mean(
+      match * gait_active.float()
+    )
     return reward
 
 
@@ -620,7 +624,9 @@ def joint_deviation_l2_when_still(
   return cost * still
 
 
-def _cubic_bezier(y_start: torch.Tensor, y_end: torch.Tensor, x: torch.Tensor) -> torch.Tensor:
+def _cubic_bezier(
+  y_start: torch.Tensor, y_end: torch.Tensor, x: torch.Tensor
+) -> torch.Tensor:
   y_diff = y_end - y_start
   bezier = x**3 + 3.0 * (x**2 * (1.0 - x))
   return y_start + y_diff * bezier
@@ -788,11 +794,7 @@ def _ema_filtered_base_vel(
   raw_ang = asset.data.root_link_ang_vel_b
   cache = getattr(env, "_booster_vel_ema", None)
   step = int(env.common_step_counter)
-  if (
-    cache is None
-    or cache["lin"].shape[0] != env.num_envs
-    or cache["step"] != step
-  ):
+  if cache is None or cache["lin"].shape[0] != env.num_envs or cache["step"] != step:
     if cache is None or cache["lin"].shape[0] != env.num_envs:
       filtered_lin = raw_lin.clone()
       filtered_ang = raw_ang.clone()
@@ -896,9 +898,7 @@ def feet_distance_lateral(
   if command is not None and side_walk_margin_scale != 1.0:
     side = torch.abs(command[:, 1]) > side_walk_threshold
     margin_b = torch.full_like(lateral, margin)
-    margin_b = torch.where(
-      side, margin_b * float(side_walk_margin_scale), margin_b
-    )
+    margin_b = torch.where(side, margin_b * float(side_walk_margin_scale), margin_b)
   else:
     margin_b = margin
 
@@ -1021,7 +1021,8 @@ def feet_yaw_mean_l2(
 
   feet_yaw, root_yaw = _feet_yaw_angles(env, asset_cfg)
   # Match T1: when feet straddle ±π, shift the mean by π before comparing.
-  feet_yaw_mean = feet_yaw.mean(dim=-1) + torch.pi * (
-    torch.abs(feet_yaw[:, 1] - feet_yaw[:, 0]) > torch.pi
-  ).float()
+  feet_yaw_mean = (
+    feet_yaw.mean(dim=-1)
+    + torch.pi * (torch.abs(feet_yaw[:, 1] - feet_yaw[:, 0]) > torch.pi).float()
+  )
   return torch.square(wrap_to_pi(root_yaw - feet_yaw_mean))

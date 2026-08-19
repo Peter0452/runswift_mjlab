@@ -159,14 +159,10 @@ class DistributionalQNetwork(nn.Module):
       nn.LayerNorm(hidden_dim, device=device) if use_layer_norm else nn.Identity(),
       nn.SiLU(),
       nn.Linear(hidden_dim, hidden_dim // 2, device=device),
-      nn.LayerNorm(hidden_dim // 2, device=device)
-      if use_layer_norm
-      else nn.Identity(),
+      nn.LayerNorm(hidden_dim // 2, device=device) if use_layer_norm else nn.Identity(),
       nn.SiLU(),
       nn.Linear(hidden_dim // 2, hidden_dim // 4, device=device),
-      nn.LayerNorm(hidden_dim // 4, device=device)
-      if use_layer_norm
-      else nn.Identity(),
+      nn.LayerNorm(hidden_dim // 4, device=device) if use_layer_norm else nn.Identity(),
       nn.SiLU(),
       nn.Linear(hidden_dim // 4, num_atoms, device=device),
     )
@@ -191,8 +187,7 @@ class DistributionalQNetwork(nn.Module):
     batch_size = rewards.shape[0]
 
     target_z = (
-      rewards.unsqueeze(1)
-      + bootstrap.unsqueeze(1) * discount.unsqueeze(1) * q_support
+      rewards.unsqueeze(1) + bootstrap.unsqueeze(1) * discount.unsqueeze(1) * q_support
     )
     target_z = target_z.clamp(self.v_min, self.v_max)
     b = (target_z - self.v_min) / delta_z
@@ -209,9 +204,7 @@ class DistributionalQNetwork(nn.Module):
     next_dist = F.softmax(self(obs, actions), dim=1)
     proj_dist = torch.zeros_like(next_dist)
     offset = (
-      torch.linspace(
-        0, (batch_size - 1) * self.num_atoms, batch_size, device=device
-      )
+      torch.linspace(0, (batch_size - 1) * self.num_atoms, batch_size, device=device)
       .unsqueeze(1)
       .expand(batch_size, self.num_atoms)
       .long()
