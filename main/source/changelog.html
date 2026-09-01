@@ -58,7 +58,7 @@
     <link rel="prev" title="Research" href="research.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-    <meta name="docbuild:last-update" content="Aug 19, 2026"/>
+    <meta name="docbuild:last-update" content="Sep 01, 2026"/>
   </head>
   
   
@@ -538,6 +538,13 @@ document.write(`
 <section id="added">
 <h3>Added<a class="headerlink" href="#added" title="Link to this heading">#</a></h3>
 <ul class="simple">
+<li><p>Added Booster K1 get-up task (<code class="docutils literal notranslate"><span class="pre">Mjlab-Getup-Flat-Booster-K1</span></code>), a discovery-based
+fall-recovery port of <code class="docutils literal notranslate"><span class="pre">booster_train</span></code> <code class="docutils literal notranslate"><span class="pre">Booster-K1-Getup-v1</span></code>. Flat plane,
+random fallen spawn (full roll/pitch/yaw), 20-DOF legs+arms actions, upright-gated
+climb rewards, and a speed-pressure curriculum on the not-standing time penalty.</p></li>
+<li><p>Play / Viser twist joystick: <code class="docutils literal notranslate"><span class="pre">gait_frequency</span></code> slider when the task uses
+4-D velocity commands, plus <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">run</span> <span class="pre">play</span> <span class="pre">...</span> <span class="pre">--gait-frequency</span> <span class="pre">&lt;Hz&gt;</span></code> to pin
+cadence at startup.</p></li>
 <li><p>Added Booster K1 humanoid to the asset zoo, with flat and rough velocity
 tasks (<code class="docutils literal notranslate"><span class="pre">Mjlab-Velocity-Flat-Booster-K1</span></code>, <code class="docutils literal notranslate"><span class="pre">Mjlab-Velocity-Rough-Booster-K1</span></code>).
 The K1 velocity actor omits <code class="docutils literal notranslate"><span class="pre">base_lin_vel</span></code> and <code class="docutils literal notranslate"><span class="pre">height_scan</span></code> (unavailable
@@ -554,6 +561,9 @@ Actor and critic both omit <code class="docutils literal notranslate"><span clas
 <section id="changed">
 <h3>Changed<a class="headerlink" href="#changed" title="Link to this heading">#</a></h3>
 <ul class="simple">
+<li><p>NuBots K1 walk: full shoulder-pitch authority, shoulder-roll ±30° around
+arms-down, stronger orientation (−10) / <code class="docutils literal notranslate"><span class="pre">angular_momentum</span></code> (−0.15), and
+speed-conditioned trunk <code class="docutils literal notranslate"><span class="pre">ang_vel_xy</span></code> / orientation penalties.</p></li>
 <li><p>Changed the default MuJoCo Warp render background to solid black
 (<code class="docutils literal notranslate"><span class="pre">0,</span> <span class="pre">0,</span> <span class="pre">0,</span> <span class="pre">1</span></code>), matching MuJoCo’s native renderer. Contribution by
 &#64;bd-pmorais.</p></li>
@@ -561,6 +571,12 @@ Actor and critic both omit <code class="docutils literal notranslate"><span clas
 </section>
 <section id="fixed">
 <h3>Fixed<a class="headerlink" href="#fixed" title="Link to this heading">#</a></h3>
+<ul class="simple">
+<li><p>NuBots PPO: use a fixed LR schedule and <code class="docutils literal notranslate"><span class="pre">std_range</span></code> so adaptive KL ramp
+cannot drive action <code class="docutils literal notranslate"><span class="pre">std_param</span></code> to NaN mid-update (<code class="docutils literal notranslate"><span class="pre">torch.normal</span></code> crash).
+Velocity runner also guards Gaussian std with a NaN/floor sanitize.
+Clip actions to ±1 during NuBots FT to stop mid arm-unlock action blow-ups.</p></li>
+</ul>
 </section>
 </section>
 <section id="version-1-5-3-july-22-2026">
@@ -1609,7 +1625,7 @@ By The mjlab Developers
   
   <div class="footer-item">
     <p class="last-updated">
-  Last updated on Aug 19, 2026.
+  Last updated on Sep 01, 2026.
   <br/>
 </p>
   </div>

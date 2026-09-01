@@ -8,6 +8,13 @@ Upcoming version (not yet released)
 Added
 ^^^^^
 
+- Added Booster K1 get-up task (``Mjlab-Getup-Flat-Booster-K1``), a discovery-based
+  fall-recovery port of ``booster_train`` ``Booster-K1-Getup-v1``. Flat plane,
+  random fallen spawn (full roll/pitch/yaw), 20-DOF legs+arms actions, upright-gated
+  climb rewards, and a speed-pressure curriculum on the not-standing time penalty.
+- Play / Viser twist joystick: ``gait_frequency`` slider when the task uses
+  4-D velocity commands, plus ``uv run play ... --gait-frequency <Hz>`` to pin
+  cadence at startup.
 - Added Booster K1 humanoid to the asset zoo, with flat and rough velocity
   tasks (``Mjlab-Velocity-Flat-Booster-K1``, ``Mjlab-Velocity-Rough-Booster-K1``).
   The K1 velocity actor omits ``base_lin_vel`` and ``height_scan`` (unavailable
@@ -23,12 +30,20 @@ Added
 Changed
 ^^^^^^^
 
+- NuBots K1 walk: full shoulder-pitch authority, shoulder-roll ±30° around
+  arms-down, stronger orientation (−10) / ``angular_momentum`` (−0.15), and
+  speed-conditioned trunk ``ang_vel_xy`` / orientation penalties.
 - Changed the default MuJoCo Warp render background to solid black
   (``0, 0, 0, 1``), matching MuJoCo's native renderer. Contribution by
   @bd-pmorais.
 
 Fixed
 ^^^^^
+
+- NuBots PPO: use a fixed LR schedule and ``std_range`` so adaptive KL ramp
+  cannot drive action ``std_param`` to NaN mid-update (``torch.normal`` crash).
+  Velocity runner also guards Gaussian std with a NaN/floor sanitize.
+  Clip actions to ±1 during NuBots FT to stop mid arm-unlock action blow-ups.
 
 Version 1.5.3 (July 22, 2026)
 -----------------------------

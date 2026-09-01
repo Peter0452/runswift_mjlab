@@ -137,6 +137,11 @@ Key ``play`` arguments:
 ``--no-terminations``
     Disable termination conditions so the policy runs indefinitely.
 
+``--gait-frequency``
+    Pin twist gait frequency in Hz for tasks with 4-D velocity commands
+    (e.g. NuBots / ParameterWalk). In the Viser viewer, enable the Twist
+    joystick to also adjust ``gait_frequency`` live with a slider.
+
 
 VecEnv wrapper
 --------------
