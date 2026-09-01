@@ -116,6 +116,26 @@ class CurriculumManager(ManagerBase):
       state = term_cfg.func(self._env, env_ids, **term_cfg.params)
       self._curriculum_state[name] = state
 
+  def state_dict(self) -> dict[str, Any]:
+    """Collect state from any term that defines ``state_dict``.
+
+    Curriculum terms that carry adapted state (e.g. a penalty-weight ramp) must
+    be checkpointed, otherwise a resumed run trains against a different reward
+    than the one it was configured with.
+    """
+    state: dict[str, Any] = {}
+    for name, term_cfg in zip(self._term_names, self._term_cfgs, strict=False):
+      getter = getattr(term_cfg.func, "state_dict", None)
+      if callable(getter):
+        state[name] = getter()
+    return state
+
+  def load_state_dict(self, state: dict[str, Any]) -> None:
+    for name, term_cfg in zip(self._term_names, self._term_cfgs, strict=False):
+      setter = getattr(term_cfg.func, "load_state_dict", None)
+      if name in state and callable(setter):
+        setter(state[name], self._env)
+
   def _prepare_terms(self):
     for term_name, term_cfg in self.cfg.items():
       term_cfg: CurriculumTermCfg | None
@@ -152,4 +172,10 @@ class NullCurriculumManager:
     return {}
 
   def compute(self, env_ids: torch.Tensor | None = None) -> None:
+    pass
+
+  def state_dict(self) -> dict[str, Any]:
+    return {}
+
+  def load_state_dict(self, state: dict[str, Any]) -> None:
     pass

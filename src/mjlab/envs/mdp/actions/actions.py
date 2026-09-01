@@ -107,6 +107,10 @@ class BaseAction(ActionTerm):
       Tuple of (target_ids, target_names).
     """
     if cfg.transmission_type == TransmissionType.JOINT:
+      # Honor preserve_order for explicit joint lists (e.g. NuBots type-major
+      # L/R interleaved). Regex patterns still use natural actuated order.
+      if cfg.preserve_order:
+        return self._entity.find_joints(cfg.actuator_names, preserve_order=True)
       return self._entity.find_joints_by_actuator_names(cfg.actuator_names)
     elif cfg.transmission_type == TransmissionType.TENDON:
       return self._entity.find_tendons(

@@ -3,17 +3,22 @@
 from mjlab.envs import ManagerBasedRlEnvCfg
 from mjlab.tasks.kick.approach_env_cfg import make_approach_env_cfg
 from mjlab.tasks.kick.score_env_cfg import make_score_env_cfg
-from mjlab.tasks.velocity.config.k1.env_cfgs import booster_k1_flat_env_cfg
+from mjlab.tasks.velocity.config.k1.env_cfgs import (
+  booster_k1_flat_env_cfg,
+  booster_k1_nubots_htwk_env_cfg,
+)
 
 
 def k1_approach_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
-  """K1 ball-approach task: walk to the ball and reach the kick zone."""
-  base = booster_k1_flat_env_cfg(play=play)
+  """HTWK walking reward task with target-conditioned kick approach."""
+  base = booster_k1_nubots_htwk_env_cfg(play=play)
   cfg = make_approach_env_cfg(base)
   if play:
     cfg.episode_length_s = int(1e9)
     cfg.observations["actor"].enable_corruption = False
     cfg.curriculum = {}
+    cfg.events.pop("push_robot", None)
+    cfg.events["reset_base"].params["radius_range"] = (4.0, 4.0)
   return cfg
 
 

@@ -13,6 +13,7 @@ from mjlab.sensor.terrain_height_sensor import TerrainHeightSensor
 from mjlab.tasks.velocity.mdp.observations import advance_gait_phase, gait_scale
 from mjlab.tasks.velocity.mdp.terrain_utils import terrain_normal_from_sensors
 from mjlab.utils.lab_api.math import quat_apply, quat_apply_inverse
+from mjlab.utils.lab_api.math import euler_xyz_from_quat, wrap_to_pi
 from mjlab.utils.lab_api.string import (
   resolve_matching_names_values,
 )
@@ -185,13 +186,26 @@ def self_collision_cost(
 def body_angular_velocity_penalty(
   env: ManagerBasedRlEnv,
   asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+  command_name: str | None = None,
+  speed_ref: float = 1.0,
 ) -> torch.Tensor:
-  """Penalize excessive body angular velocities."""
+  """Penalize excessive body angular velocities (roll/pitch, not yaw).
+
+  If ``command_name`` is set, the cost is multiplied by
+  ``1 + |v_xy_cmd| / speed_ref`` so trunk swing is punished more at speed.
+  """
   asset: Entity = env.scene[asset_cfg.name]
   ang_vel = asset.data.body_link_ang_vel_w[:, asset_cfg.body_ids, :]
   ang_vel = ang_vel.squeeze(1)
   ang_vel_xy = ang_vel[:, :2]  # Don't penalize z-angular velocity.
-  return torch.sum(torch.square(ang_vel_xy), dim=1)
+  cost = torch.sum(torch.square(ang_vel_xy), dim=1)
+  if command_name is None or speed_ref <= 0.0:
+    return cost
+  command = env.command_manager.get_command(command_name)
+  if command is None:
+    return cost
+  speed = torch.linalg.norm(command[:, :2], dim=1)
+  return cost * (1.0 + speed / speed_ref)
 
 
 def angular_momentum_penalty(
@@ -386,13 +400,22 @@ def soft_landing(
 class feet_gait:
   """Reward bipedal foot contacts that match an open-loop gait phase.
 
-  Reference schedule (shared with ``gait_cycle`` observation):
+  Reference schedule: the left foot swings in a window centred on ``φ = 0.25``
+  and the right foot on ``φ = 0.75``, each of width ``1 - stance_fraction``.
 
-  - ``φ ∈ [0, 0.5)``: left swing, right stance
-  - ``φ ∈ [0.5, 1)``: left stance, right swing
+  ``stance_fraction`` is the duty factor -- the share of the cycle each foot
+  spends in stance. At the default ``0.5`` the windows meet exactly, giving the
+  legacy schedule (left swing on ``φ ∈ [0, 0.5)``, right swing after) with an
+  instantaneous support exchange: no double support and no flight. Above 0.5 the
+  windows shrink and the gaps between them become double support, which is what
+  a walk actually needs; below 0.5 they overlap into a flight phase.
 
-  Returns a value in ``[0, 1]`` (fraction of feet matching), gated by
-  command magnitude and the same drop/fade curriculum as the gait clock.
+  Unlike :class:`feet_swing`, which only pays a bonus for being airborne inside
+  a narrow window, this scores *both* directions -- a foot planted during its
+  swing window and a foot airborne during stance are equally wrong -- so it
+  pins the step timing to the commanded cadence rather than merely encouraging
+  it. Returns the fraction of feet matching, in ``[0, 1]``, gated by command
+  magnitude and the same drop/fade curriculum as the gait clock.
   """
 
   def __init__(self, cfg: RewardTermCfg, env: ManagerBasedRlEnv):
@@ -419,6 +442,7 @@ class feet_gait:
     command_threshold: float = 0.05,
     left_foot_name: str = "left_foot_link",
     right_foot_name: str = "right_foot_link",
+    stance_fraction: float = 0.5,
     drop_step: int = 8_000 * 24,
     fade_steps: int = 2_000 * 24,
   ) -> torch.Tensor:
@@ -436,9 +460,14 @@ class feet_gait:
     left_contact = contact[:, self.left_idx]
     right_contact = contact[:, self.right_idx]
 
-    # φ < 0.5 → left swing (0), right stance (1); else swapped.
-    left_desired = (phase >= 0.5).float()
-    right_desired = (phase < 0.5).float()
+    # Swing windows centred on 0.25 / 0.75, half-open so that stance_fraction=0.5
+    # reduces exactly to the legacy schedule (left swing on [0, 0.5), right on
+    # [0.5, 1)) rather than differing at the boundary phases.
+    half = 0.5 * (1.0 - stance_fraction)
+    left_swing = (phase >= 0.25 - half) & (phase < 0.25 + half)
+    right_swing = (phase >= 0.75 - half) & (phase < 0.75 + half)
+    left_desired = (~left_swing).float()
+    right_desired = (~right_swing).float()
     match = 0.5 * (
       (1.0 - torch.abs(left_contact - left_desired))
       + (1.0 - torch.abs(right_contact - right_desired))
@@ -624,6 +653,56 @@ def joint_deviation_l2_when_still(
   return cost * still
 
 
+def htwk_hip_roll_barrier(
+  env: ManagerBasedRlEnv,
+  max_deviation: float = 0.12,
+  softness: float = 0.02,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> torch.Tensor:
+  """Softly penalize excessive hip-roll deviation from the default pose.
+
+  A deadband preserves the hip-roll freedom needed for walking and lateral
+  balance.  The softplus hinge then increases smoothly once the deviation
+  exceeds ``max_deviation``.
+  """
+  asset: Entity = env.scene[asset_cfg.name]
+  assert asset.data.default_joint_pos is not None
+  deviation = torch.abs(
+    asset.data.joint_pos[:, asset_cfg.joint_ids]
+    - asset.data.default_joint_pos[:, asset_cfg.joint_ids]
+  )
+  excess = (deviation - float(max_deviation)) / max(float(softness), 1.0e-6)
+  violation = float(softness) * torch.logaddexp(
+    torch.zeros_like(excess), excess
+  )
+  scale = max(float(max_deviation), 1.0e-6)
+  return torch.sum(torch.square(violation / scale), dim=1)
+
+
+def htwk_knee_separation(
+  env: ManagerBasedRlEnv,
+  safe_distance: float = 0.15,
+  softness: float = 0.01,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> torch.Tensor:
+  """Softly penalize the two knee links approaching each other.
+
+  The K1 knee collision links are represented by the two configured bodies
+  (``Left_Shank`` and ``Right_Shank``).  Their full 3-D center distance is
+  used here, which anticipates contact rather than waiting for the separate
+  hard collision sensor to fire.
+  """
+  asset: Entity = env.scene[asset_cfg.name]
+  knee_pos = asset.data.body_link_pos_w[:, asset_cfg.body_ids]
+  distance = torch.linalg.vector_norm(knee_pos[:, 0] - knee_pos[:, 1], dim=-1)
+  excess = (float(safe_distance) - distance) / max(float(softness), 1.0e-6)
+  violation = float(softness) * torch.logaddexp(
+    torch.zeros_like(excess), excess
+  )
+  scale = max(float(safe_distance), 1.0e-6)
+  return torch.square(violation / scale)
+
+
 def _cubic_bezier(
   y_start: torch.Tensor, y_end: torch.Tensor, x: torch.Tensor
 ) -> torch.Tensor:
@@ -740,6 +819,504 @@ class weighted_pose_penalty:
 
 
 # ---------------------------------------------------------------------------
+# HTWK/NuBots-compatible ParameterWalk reward terms
+# ---------------------------------------------------------------------------
+
+_PW_FOOT_YAW_L = 4
+_PW_FOOT_YAW_R = 5
+_PW_BODY_PITCH = 6
+_PW_BODY_ROLL = 7
+_PW_FEET_OFFSET_X = 8
+_PW_FEET_OFFSET_Y = 9
+
+
+def _parameter_walk_command(
+  env: ManagerBasedRlEnv, command_name: str
+) -> torch.Tensor:
+  command = env.command_manager.get_command(command_name)
+  assert command is not None, f"Command '{command_name}' not found."
+  if command.shape[-1] < 10:
+    raise ValueError(
+      f"HTWK/NuBots rewards require a 10-D ParameterWalk command, got "
+      f"{command.shape[-1]} dimensions."
+    )
+  return command
+
+
+def htwk_track_lin_vel_axis(
+  env: ManagerBasedRlEnv,
+  axis: int,
+  command_name: str,
+  sigma: float = 0.25,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> torch.Tensor:
+  """HTWK tracking reward using raw body-frame velocity."""
+  command = _parameter_walk_command(env, command_name)
+  asset: Entity = env.scene[asset_cfg.name]
+  error = torch.square(command[:, axis] - asset.data.root_link_lin_vel_b[:, axis])
+  return torch.exp(-error / sigma)
+
+
+def htwk_track_ang_vel_z(
+  env: ManagerBasedRlEnv,
+  command_name: str,
+  sigma: float = 0.25,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> torch.Tensor:
+  """HTWK yaw-rate tracking reward using raw body-frame angular velocity."""
+  command = _parameter_walk_command(env, command_name)
+  asset: Entity = env.scene[asset_cfg.name]
+  error = torch.square(command[:, 2] - asset.data.root_link_ang_vel_b[:, 2])
+  return torch.exp(-error / sigma)
+
+
+def htwk_orientation_target(
+  env: ManagerBasedRlEnv,
+  command_name: str,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> torch.Tensor:
+  """Squared roll/pitch error against HTWK's commanded body targets."""
+  command = _parameter_walk_command(env, command_name)
+  asset: Entity = env.scene[asset_cfg.name]
+  roll, pitch, _ = euler_xyz_from_quat(asset.data.root_link_quat_w)
+  roll_error = wrap_to_pi(roll) - command[:, _PW_BODY_ROLL]
+  pitch_error = wrap_to_pi(pitch) - command[:, _PW_BODY_PITCH]
+  return torch.square(roll_error) + torch.square(pitch_error)
+
+
+def htwk_base_height(
+  env: ManagerBasedRlEnv,
+  target_height: float = 0.52,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> torch.Tensor:
+  """HTWK base-height cost in world coordinates."""
+  asset: Entity = env.scene[asset_cfg.name]
+  return torch.square(asset.data.root_link_pos_w[:, 2] - target_height)
+
+
+def htwk_ang_vel_xy(
+  env: ManagerBasedRlEnv, asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG
+) -> torch.Tensor:
+  """HTWK raw body roll/pitch angular-velocity cost."""
+  asset: Entity = env.scene[asset_cfg.name]
+  return torch.sum(torch.square(asset.data.root_link_ang_vel_b[:, :2]), dim=1)
+
+
+def htwk_lin_vel_z(
+  env: ManagerBasedRlEnv, asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG
+) -> torch.Tensor:
+  """HTWK raw vertical body velocity cost."""
+  asset: Entity = env.scene[asset_cfg.name]
+  return torch.square(asset.data.root_link_lin_vel_b[:, 2])
+
+
+def htwk_root_acc(
+  env: ManagerBasedRlEnv, asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG
+) -> torch.Tensor:
+  """HTWK root acceleration from MuJoCo's Cartesian body acceleration."""
+  asset: Entity = env.scene[asset_cfg.name]
+  body_acc = asset.data.data.cacc[:, asset_cfg.body_ids]
+  return torch.sum(torch.square(body_acc), dim=(1, 2))
+
+
+def htwk_torque_tiredness(
+  env: ManagerBasedRlEnv, asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG
+) -> torch.Tensor:
+  """Reference torque tiredness with the source's one-sided upper clip."""
+  asset: Entity = env.scene[asset_cfg.name]
+  tau = asset.data.actuator_force[:, asset_cfg.actuator_ids]
+  full_limits = torch.ones(
+    asset.data.actuator_force.shape[1], device=env.device, dtype=tau.dtype
+  )
+  for actuator in asset.actuators:
+    force_limit = getattr(actuator, "force_limit", None)
+    if force_limit is not None:
+      full_limits[actuator.global_ctrl_ids] = force_limit[0]
+  limits = full_limits[asset_cfg.actuator_ids].unsqueeze(0)
+  return torch.sum(torch.square((tau / limits).clip(max=1.0)), dim=1)
+
+
+def htwk_joint_pos_limits(
+  env: ManagerBasedRlEnv, asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG
+) -> torch.Tensor:
+  """HTWK binary count of joints outside their soft position limits."""
+  asset: Entity = env.scene[asset_cfg.name]
+  limits = asset.data.soft_joint_pos_limits
+  assert limits is not None
+  pos = asset.data.joint_pos[:, asset_cfg.joint_ids]
+  lower = limits[:, asset_cfg.joint_ids, 0]
+  upper = limits[:, asset_cfg.joint_ids, 1]
+  return ((pos < lower) | (pos > upper)).float().sum(dim=1)
+
+
+def htwk_feet_orientation(
+  env: ManagerBasedRlEnv,
+  axis: int,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> torch.Tensor:
+  """Squared foot roll/pitch cost in the world frame."""
+  asset: Entity = env.scene[asset_cfg.name]
+  roll, pitch, _ = euler_xyz_from_quat(
+    asset.data.body_link_quat_w[:, asset_cfg.body_ids].reshape(-1, 4)
+  )
+  angle = wrap_to_pi(roll if axis == 0 else pitch).reshape(env.num_envs, -1)
+  return torch.sum(torch.square(angle), dim=1)
+
+
+def _htwk_feet_yaw(
+  env: ManagerBasedRlEnv, asset_cfg: SceneEntityCfg
+) -> torch.Tensor:
+  feet_yaw, root_yaw = _feet_yaw_angles(env, asset_cfg)
+  return wrap_to_pi(feet_yaw - root_yaw.unsqueeze(-1))
+
+
+def htwk_foot_yaw_l(
+  env: ManagerBasedRlEnv,
+  command_name: str,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> torch.Tensor:
+  command = _parameter_walk_command(env, command_name)
+  actual = _htwk_feet_yaw(env, asset_cfg)[:, 0]
+  return torch.square(actual - command[:, _PW_FOOT_YAW_L])
+
+
+def htwk_foot_yaw_r(
+  env: ManagerBasedRlEnv,
+  command_name: str,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> torch.Tensor:
+  command = _parameter_walk_command(env, command_name)
+  actual = _htwk_feet_yaw(env, asset_cfg)[:, 1]
+  return torch.square(actual - command[:, _PW_FOOT_YAW_R])
+
+
+def htwk_feet_yaw_diff(
+  env: ManagerBasedRlEnv,
+  command_name: str,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> torch.Tensor:
+  command = _parameter_walk_command(env, command_name)
+  actual = _htwk_feet_yaw(env, asset_cfg)
+  actual_diff = actual[:, 1] - actual[:, 0]
+  target_diff = command[:, _PW_FOOT_YAW_R] - command[:, _PW_FOOT_YAW_L]
+  return torch.square(wrap_to_pi(actual_diff - target_diff))
+
+
+def htwk_feet_yaw_mean(
+  env: ManagerBasedRlEnv,
+  command_name: str,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> torch.Tensor:
+  command = _parameter_walk_command(env, command_name)
+  actual = _htwk_feet_yaw(env, asset_cfg)
+  target = 0.5 * (
+    command[:, _PW_FOOT_YAW_L] + command[:, _PW_FOOT_YAW_R]
+  )
+  return torch.square(wrap_to_pi(actual.mean(dim=-1) - target))
+
+
+def _htwk_feet_offset(
+  env: ManagerBasedRlEnv,
+  asset_cfg: SceneEntityCfg,
+  feet_distance_ref: float = 0.18,
+) -> tuple[torch.Tensor, torch.Tensor]:
+  asset: Entity = env.scene[asset_cfg.name]
+  feet_pos = asset.data.body_link_pos_w[:, asset_cfg.body_ids]
+  _, _, base_yaw = euler_xyz_from_quat(asset.data.root_link_quat_w)
+  dx = feet_pos[:, 0, 0] - feet_pos[:, 1, 0]
+  dy = feet_pos[:, 0, 1] - feet_pos[:, 1, 1]
+  x_offset = torch.cos(base_yaw) * dx + torch.sin(base_yaw) * dy
+  y_offset = -torch.sin(base_yaw) * dx + torch.cos(base_yaw) * dy
+  # HTWK defines the y command as an offset from nominal stance width, not
+  # as an absolute left/right foot separation.
+  y_offset = y_offset - float(feet_distance_ref)
+  return x_offset, y_offset
+
+
+def _htwk_velocity_scale(
+  command: torch.Tensor,
+  axis: int,
+  max_vel: float,
+  min_scale: float = 0.0,
+) -> torch.Tensor:
+  scale = torch.clamp(
+    (1.0 - torch.abs(command[:, axis]) / max_vel) ** 2, min=0.0, max=1.0
+  )
+  if min_scale > 0.0:
+    scale = torch.clamp(scale, min=float(min_scale))
+  return scale
+
+
+def htwk_feet_offset_x(
+  env: ManagerBasedRlEnv,
+  command_name: str,
+  max_vel: float = 1.0,
+  min_velocity_scale: float = 0.0,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> torch.Tensor:
+  command = _parameter_walk_command(env, command_name)
+  x_offset, _ = _htwk_feet_offset(env, asset_cfg)
+  error = torch.clamp(
+    torch.abs(x_offset - command[:, _PW_FEET_OFFSET_X]), max=0.1
+  )
+  return error * _htwk_velocity_scale(
+    command, 0, max_vel, min_scale=min_velocity_scale
+  )
+
+
+def htwk_feet_offset_y(
+  env: ManagerBasedRlEnv,
+  command_name: str,
+  max_vel: float = 1.0,
+  feet_distance_ref: float = 0.18,
+  min_velocity_scale: float = 0.0,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> torch.Tensor:
+  command = _parameter_walk_command(env, command_name)
+  _, y_offset = _htwk_feet_offset(
+    env, asset_cfg, feet_distance_ref=feet_distance_ref
+  )
+  error = torch.clamp(
+    torch.abs(y_offset - command[:, _PW_FEET_OFFSET_Y]), max=0.1
+  )
+  return error * _htwk_velocity_scale(
+    command, 1, max_vel, min_scale=min_velocity_scale
+  )
+
+
+def htwk_feet_minimum_separation(
+  env: ManagerBasedRlEnv,
+  min_separation: float = 0.10,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> torch.Tensor:
+  """Smoothly penalize foot centers approaching closer than ``min_separation``.
+
+  The squared hinge is zero (including zero gradient) at or above the safe
+  distance, and grows smoothly as the feet move closer together.
+  """
+  asset: Entity = env.scene[asset_cfg.name]
+  feet_pos = asset.data.body_link_pos_w[:, asset_cfg.body_ids]
+  _, _, base_yaw = euler_xyz_from_quat(asset.data.root_link_quat_w)
+  dx = feet_pos[:, 0, 0] - feet_pos[:, 1, 0]
+  dy = feet_pos[:, 0, 1] - feet_pos[:, 1, 1]
+  lateral = torch.abs(torch.cos(base_yaw) * dy - torch.sin(base_yaw) * dx)
+  violation = torch.clamp(float(min_separation) - lateral, min=0.0)
+  return torch.square(violation / max(float(min_separation), 1.0e-6))
+
+
+def htwk_feet_site_xy_separation(
+  env: ManagerBasedRlEnv,
+  min_separation: float = 0.14,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> torch.Tensor:
+  """Penalize foot sites getting too close laterally in the body yaw frame.
+
+  Uses sole sites instead of foot-link origins so the penalty tracks heel
+  clearance more closely than ``htwk_feet_minimum_separation``.
+  """
+  asset: Entity = env.scene[asset_cfg.name]
+  foot_xy = asset.data.site_pos_w[:, asset_cfg.site_ids, :2]
+  _, _, base_yaw = euler_xyz_from_quat(asset.data.root_link_quat_w)
+  dx = foot_xy[:, 0, 0] - foot_xy[:, 1, 0]
+  dy = foot_xy[:, 0, 1] - foot_xy[:, 1, 1]
+  lateral = torch.abs(torch.cos(base_yaw) * dy - torch.sin(base_yaw) * dx)
+  violation = torch.clamp(float(min_separation) - lateral, min=0.0)
+  return torch.square(violation / max(float(min_separation), 1.0e-6))
+
+
+def htwk_foot_foot_collision(
+  env: ManagerBasedRlEnv,
+  sensor_name: str,
+  threshold: float = 1.0,
+) -> torch.Tensor:
+  """Penalize detected left/right foot contacts without terminating episodes."""
+  contact = _htwk_contact(env, sensor_name, threshold)
+  return contact.any(dim=-1).float()
+
+
+def _htwk_contact(
+  env: ManagerBasedRlEnv, sensor_name: str, threshold: float = 1.0
+) -> torch.Tensor:
+  sensor: ContactSensor = env.scene[sensor_name]
+  if sensor.data.force_history is not None:
+    force = torch.linalg.norm(sensor.data.force_history, dim=-1)
+    return force.amax(dim=2) > threshold
+  assert sensor.data.force is not None
+  return torch.linalg.norm(sensor.data.force, dim=-1) > threshold
+
+
+def htwk_feet_slip(
+  env: ManagerBasedRlEnv,
+  sensor_name: str,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+  threshold: float = 1.0,
+) -> torch.Tensor:
+  """HTWK slip cost: full foot velocity squared while historically in contact."""
+  asset: Entity = env.scene[asset_cfg.name]
+  feet_vel = asset.data.body_link_lin_vel_w[:, asset_cfg.body_ids]
+  contact = _htwk_contact(env, sensor_name, threshold).float()
+  return torch.sum(torch.sum(torch.square(feet_vel), dim=-1) * contact, dim=-1)
+
+
+def _htwk_swing_windows(
+  env: ManagerBasedRlEnv,
+  period: float,
+  swing_period: float,
+  command_name: str,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+  """Return ``(left_swing, right_swing, gait_active)`` bool masks ``[B]``."""
+  _parameter_walk_command(env, command_name)
+  term = env.command_manager.get_term(command_name)
+  if hasattr(term, "gait_process") and hasattr(term, "gait_frequency"):
+    phase = term.gait_process
+    gait_active = term.gait_frequency > 1.0e-8
+  else:
+    phase, gait_active = advance_gait_phase(env, period, command_name)
+  half = 0.5 * swing_period
+  left_swing = (torch.abs(phase - 0.25) < half) & gait_active
+  right_swing = (torch.abs(phase - 0.75) < half) & gait_active
+  return left_swing, right_swing, gait_active
+
+
+def htwk_feet_swing(
+  env: ManagerBasedRlEnv,
+  sensor_name: str,
+  period: float = 0.6,
+  swing_period: float = 0.2,
+  command_name: str = "twist",
+  threshold: float = 1.0,
+) -> torch.Tensor:
+  """HTWK swing reward using historical force contact."""
+  left_swing, right_swing, _ = _htwk_swing_windows(
+    env, period, swing_period, command_name
+  )
+  contact = _htwk_contact(env, sensor_name, threshold)
+  return (left_swing & ~contact[:, 0]).float() + (
+    right_swing & ~contact[:, 1]
+  ).float()
+
+
+def htwk_feet_orientation_contact_gated(
+  env: ManagerBasedRlEnv,
+  axis: int,
+  sensor_name: str,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+  threshold: float = 1.0,
+) -> torch.Tensor:
+  """Foot roll/pitch penalty only while that foot is in contact.
+
+  During swing the ankle is free to dorsiflex so the whole sole clears the
+  ground instead of pivoting on the toe with the heel up.
+  """
+  asset: Entity = env.scene[asset_cfg.name]
+  roll, pitch, _ = euler_xyz_from_quat(
+    asset.data.body_link_quat_w[:, asset_cfg.body_ids].reshape(-1, 4)
+  )
+  angle = wrap_to_pi(roll if axis == 0 else pitch).reshape(env.num_envs, -1)
+  contact = _htwk_contact(env, sensor_name, threshold).float()
+  return torch.sum(torch.square(angle) * contact, dim=1)
+
+
+def htwk_swing_sole_clearance(
+  env: ManagerBasedRlEnv,
+  height_sensor_name: str,
+  sensor_name: str = "feet_ground_contact",
+  period: float = 0.6,
+  swing_period: float = 0.2,
+  command_name: str = "twist",
+  min_clearance: float = 0.04,
+  target_clearance: float = 0.06,
+  threshold: float = 1.0,
+) -> torch.Tensor:
+  """Penalize low sole height during swing and reward lifting the whole foot.
+
+  Uses ``foot_height_scan`` sole-site clearance (not just contact bits) so
+  heel-up / toe-down postures are discouraged even when the toe barely misses
+  the contact threshold.
+  """
+  height_sensor = env.scene[height_sensor_name]
+  if not hasattr(height_sensor, "data") or not hasattr(
+    height_sensor.data, "heights"
+  ):
+    raise TypeError(
+      f"htwk_swing_sole_clearance requires a terrain height sensor, got "
+      f"{type(height_sensor).__name__}"
+    )
+  heights = height_sensor.data.heights
+  if heights.ndim != 2 or heights.shape[1] < 2:
+    raise ValueError(
+      f"htwk_swing_sole_clearance expected [B, 2] sole heights, got {heights.shape}"
+    )
+
+  left_swing, right_swing, _ = _htwk_swing_windows(
+    env, period, swing_period, command_name
+  )
+  left_drag = torch.square(
+    torch.clamp(float(min_clearance) - heights[:, 0], min=0.0)
+  )
+  right_drag = torch.square(
+    torch.clamp(float(min_clearance) - heights[:, 1], min=0.0)
+  )
+  drag = left_drag * left_swing.float() + right_drag * right_swing.float()
+
+  target = max(float(target_clearance), 1.0e-6)
+  left_lift = torch.clamp(heights[:, 0] / target, 0.0, 1.0) * left_swing.float()
+  right_lift = torch.clamp(heights[:, 1] / target, 0.0, 1.0) * right_swing.float()
+  lift = left_lift + right_lift
+
+  env.extras["log"]["Metrics/swing_sole_clearance_mean"] = torch.mean(
+    (heights[:, 0] + heights[:, 1]) * 0.5
+  )
+  env.extras["log"]["Metrics/swing_toe_drag_cost"] = torch.mean(drag)
+
+  # Return net swing clearance signal: bonus minus drag (weight applied in cfg).
+  return lift - drag
+
+
+def htwk_shoulder_deviation_l1(
+  env: ManagerBasedRlEnv,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> torch.Tensor:
+  """HTWK L1 shoulder deviation from the configured default pose."""
+  asset: Entity = env.scene[asset_cfg.name]
+  assert asset.data.default_joint_pos is not None
+  diff = (
+    asset.data.joint_pos[:, asset_cfg.joint_ids]
+    - asset.data.default_joint_pos[:, asset_cfg.joint_ids]
+  )
+  return torch.sum(torch.abs(diff), dim=1)
+
+
+def htwk_survival(env: ManagerBasedRlEnv) -> torch.Tensor:
+  """HTWK survival term: constant one during every simulated step."""
+  return torch.ones(env.num_envs, device=env.device)
+
+
+def htwk_collision(
+  env: ManagerBasedRlEnv, sensor_name: str, threshold: float = 1.0
+) -> torch.Tensor:
+  """Count historical non-foot contacts above the HTWK force threshold."""
+  sensor: ContactSensor = env.scene[sensor_name]
+  if sensor.data.force_history is not None:
+    force = torch.linalg.norm(sensor.data.force_history, dim=-1)
+    return (force > threshold).any(dim=1).sum(dim=-1).float()
+  assert sensor.data.force is not None
+  return (torch.linalg.norm(sensor.data.force, dim=-1) > threshold).sum(dim=-1).float()
+
+
+def htwk_collision_instant(
+  env: ManagerBasedRlEnv, sensor_name: str, threshold: float = 1.0
+) -> torch.Tensor:
+  """Reference HTWK collision count using the current contact sample."""
+  sensor: ContactSensor = env.scene[sensor_name]
+  if sensor.data.force is not None:
+    return (
+      torch.linalg.norm(sensor.data.force, dim=-1) > threshold
+    ).sum(dim=-1).float()
+  assert sensor.data.found is not None
+  return sensor.data.found.float().sum(dim=-1)
+
+
 # Booster Gym–style reward terms (ported for K1 / mjlab)
 # ---------------------------------------------------------------------------
 
@@ -750,18 +1327,31 @@ def track_lin_vel_axis(
   command_name: str,
   tracking_sigma: float = 0.25,
   filter_weight: float = 0.1,
+  speed_ref: float = 0.0,
   asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
 ) -> torch.Tensor:
   """Booster Gym ``tracking_lin_vel_{x,y}``: ``exp(-(cmd-v)^2 / sigma)``.
 
   Uses EMA-filtered body linear velocity (Booster ``filter_weight``).
+
+  With ``speed_ref > 0`` the reward is multiplied by ``1 + |v_xy_cmd|/speed_ref``,
+  mirroring the speed scaling already applied to ``orientation`` and
+  ``ang_vel_xy``. Without it this term is a bounded exponential capped at 1, so
+  the positive budget is flat in commanded speed while the penalties grow with
+  the violence of the motion. Past roughly 1.4 m/s the sum goes negative and
+  ``only_positive_rewards`` clamps it to zero, leaving no gradient at all in the
+  speed range we actually care about.
   """
   asset: Entity = env.scene[asset_cfg.name]
   command = env.command_manager.get_command(command_name)
   assert command is not None
   filtered_lin, _ = _ema_filtered_base_vel(env, asset, filter_weight)
   error = torch.square(command[:, axis] - filtered_lin[:, axis])
-  return torch.exp(-error / tracking_sigma)
+  reward = torch.exp(-error / tracking_sigma)
+  if speed_ref <= 0.0:
+    return reward
+  speed = torch.linalg.norm(command[:, :2], dim=1)
+  return reward * (1.0 + speed / speed_ref)
 
 
 def track_ang_vel_z(
@@ -769,15 +1359,24 @@ def track_ang_vel_z(
   command_name: str,
   tracking_sigma: float = 0.25,
   filter_weight: float = 0.1,
+  speed_ref: float = 0.0,
   asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
 ) -> torch.Tensor:
-  """Booster Gym ``tracking_ang_vel`` on yaw rate (EMA-filtered)."""
+  """Booster Gym ``tracking_ang_vel`` on yaw rate (EMA-filtered).
+
+  ``speed_ref`` scales the reward by ``1 + |v_xy_cmd|/speed_ref`` as in
+  :func:`track_lin_vel_axis`.
+  """
   asset: Entity = env.scene[asset_cfg.name]
   command = env.command_manager.get_command(command_name)
   assert command is not None
   _, filtered_ang = _ema_filtered_base_vel(env, asset, filter_weight)
   error = torch.square(command[:, 2] - filtered_ang[:, 2])
-  return torch.exp(-error / tracking_sigma)
+  reward = torch.exp(-error / tracking_sigma)
+  if speed_ref <= 0.0:
+    return reward
+  speed = torch.linalg.norm(command[:, :2], dim=1)
+  return reward * (1.0 + speed / speed_ref)
 
 
 def _ema_filtered_base_vel(
@@ -848,6 +1447,22 @@ def base_height_target_l2(
 
   clearance = base_terrain_clearance(env, sensor_name, asset_cfg.name)
   return torch.square(clearance - target_height)
+
+
+def base_clearance_range_l2(
+  env: ManagerBasedRlEnv,
+  minimum_height: float,
+  maximum_height: float,
+  sensor_name: str | None = "terrain_scan",
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> torch.Tensor:
+  """Penalize terrain clearance outside ``[minimum_height, maximum_height]``."""
+  from mjlab.tasks.velocity.mdp.terrain_utils import base_terrain_clearance
+
+  clearance = base_terrain_clearance(env, sensor_name, asset_cfg.name)
+  below = torch.clamp(minimum_height - clearance, min=0.0)
+  above = torch.clamp(clearance - maximum_height, min=0.0)
+  return torch.square(below) + torch.square(above)
 
 
 def root_lin_vel_z_l2(

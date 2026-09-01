@@ -70,7 +70,10 @@ class MjlabOnPolicyRunner(OnPolicyRunner):
     Extends the base implementation to persist the environment's
     common_step_counter and to respect the ``upload_model`` config flag.
     """
-    env_state = {"common_step_counter": self.env.unwrapped.common_step_counter}
+    env_state = {
+      "common_step_counter": self.env.unwrapped.common_step_counter,
+      "curriculum": self.env.unwrapped.curriculum_manager.state_dict(),
+    }
     infos = {**(infos or {}), "env_state": env_state}
     # Inline base OnPolicyRunner.save() to conditionally gate W&B upload.
     saved_dict = self.alg.save()
@@ -131,11 +134,37 @@ class MjlabOnPolicyRunner(OnPolicyRunner):
     if "log_std" in actor_sd:
       actor_sd["distribution.log_std_param"] = actor_sd.pop("log_std")
 
+    # Teacher / ONNX imports often omit optimizer — warm-start actor/critic only.
+    if load_cfg is None and "optimizer_state_dict" not in loaded_dict:
+      load_cfg = {
+        "actor": True,
+        "critic": "critic_state_dict" in loaded_dict,
+        "optimizer": False,
+        "iteration": "iter" in loaded_dict,
+        "rnd": False,
+      }
+      print(
+        "[INFO]: Checkpoint has no optimizer_state_dict; "
+        "loading actor/critic only (fresh optimizer)."
+      )
+
     load_iteration = self.alg.load(loaded_dict, load_cfg, strict)
     if load_iteration:
       self.current_learning_iteration = loaded_dict["iter"]
 
     infos = loaded_dict["infos"]
     if infos and "env_state" in infos:
-      self.env.unwrapped.common_step_counter = infos["env_state"]["common_step_counter"]
+      env_state = infos["env_state"]
+      self.env.unwrapped.common_step_counter = env_state["common_step_counter"]
+      curriculum = env_state.get("curriculum")
+      if curriculum:
+        self.env.unwrapped.curriculum_manager.load_state_dict(curriculum)
+        print(f"[INFO]: Restored curriculum state: {curriculum}")
+      else:
+        print(
+          "[WARN]: Checkpoint has no curriculum state; adaptive curricula "
+          "(e.g. penalty_scale) restart from their initial values, so the "
+          "effective reward will differ from the run that produced this "
+          "checkpoint until they re-ramp."
+        )
     return infos

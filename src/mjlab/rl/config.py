@@ -77,6 +77,8 @@ class RslRlPpoAlgorithmCfg:
   """The optimizer to use."""
   share_cnn_encoders: bool = False
   """Share CNN encoders between actor and critic."""
+  symmetry_cfg: dict[str, Any] | None = None
+  """Optional rsl_rl symmetry extension (data aug + mirror loss)."""
   class_name: str = "PPO"
   """Algorithm class name resolved by RSL-RL."""
 
@@ -123,6 +125,19 @@ class RslRlBaseRunnerCfg:
   upload_model: bool = True
   """Whether to upload model files (.pt, .onnx) to W&B on save. Set to
   False to keep metric logging but avoid storage usage. Default is True."""
+  eval_interval: int = 0
+  """If > 0, run a deterministic eval rollout every N iterations and save
+  ``model_best.pt`` when the eval score improves."""
+  eval_steps: int = 240
+  """Number of env steps per eval rollout (default 240 ≈ 10 mini-rollouts)."""
+  early_stop_enabled: bool = False
+  """Stop training if rolling mean episode length drops too far below its peak."""
+  early_stop_min_iters: int = 200
+  """Minimum iterations after resume before early-stop can trigger."""
+  early_stop_drop_fraction: float = 0.15
+  """Halt when rolling ep length falls this fraction below the running best."""
+  early_stop_patience: int = 50
+  """Consecutive logging iterations below the drop threshold before stopping."""
 
 
 @dataclass

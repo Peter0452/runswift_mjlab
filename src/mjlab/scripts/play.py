@@ -54,6 +54,8 @@ class PlayConfig:
   viewer: Literal["auto", "native", "viser"] = "auto"
   no_terminations: bool = False
   """Disable all termination conditions (useful for viewing motions with dummy agents)."""
+  gait_frequency: float | None = None
+  """Pin twist gait frequency (Hz) when the task uses 4-D velocity commands."""
   log_root: str = "logs/rsl_rl"
   """Root directory under which experiment logs are written."""
 
@@ -76,6 +78,18 @@ def run_play(task_id: str, cfg: PlayConfig):
   if cfg.no_terminations:
     env_cfg.terminations = {}
     print("[INFO]: Terminations disabled")
+
+  if cfg.gait_frequency is not None:
+    twist = env_cfg.commands.get("twist")
+    ranges = getattr(twist, "ranges", None) if twist is not None else None
+    if ranges is None or getattr(ranges, "gait_frequency", None) is None:
+      print(
+        "[WARN]: --gait-frequency ignored (task has no twist gait_frequency command)"
+      )
+    else:
+      f = float(cfg.gait_frequency)
+      ranges.gait_frequency = (f, f)
+      print(f"[INFO]: Gait frequency pinned to {f:.2f} Hz")
 
   # Check if this is a tracking task by checking for motion command.
   is_tracking_task = "motion" in env_cfg.commands and isinstance(

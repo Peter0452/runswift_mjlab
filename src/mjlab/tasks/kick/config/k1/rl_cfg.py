@@ -10,9 +10,10 @@ from mjlab.rl import (
 def k1_approach_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
   """Runner config for the ball-approach task.
 
-  Identical network size to the velocity task so a locomotion checkpoint
-  can be loaded directly (obs dim will differ by +3 for ball_rel_pos; the
-  extra input weights are randomly initialised).
+  The task keeps the HTWK 16-D action and walking command interface while
+  adding five actor/critic inputs for ball position and target direction.
+  This makes the pretrained HTWK walking backbone usable through a small
+  input adapter during fine-tuning.
   """
   return RslRlOnPolicyRunnerCfg(
     actor=RslRlModelCfg(
@@ -34,10 +35,10 @@ def k1_approach_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
       value_loss_coef=1.0,
       use_clipped_value_loss=True,
       clip_param=0.2,
-      entropy_coef=0.01,
+      entropy_coef=0.005,
       num_learning_epochs=5,
       num_mini_batches=4,
-      learning_rate=1.0e-3,
+      learning_rate=3.0e-4,
       schedule="adaptive",
       gamma=0.99,
       lam=0.95,

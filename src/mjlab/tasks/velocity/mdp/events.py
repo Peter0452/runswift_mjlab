@@ -143,9 +143,39 @@ def set_joint_position_targets_to_default(
   asset.set_joint_position_target(targets, joint_ids=joint_ids, env_ids=env_ids)
 
 
+def set_joint_position_targets_random(
+  env: ManagerBasedRlEnv,
+  env_ids: torch.Tensor | None,
+  position_range: tuple[float, float],
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> None:
+  """Set selected passive-joint targets to random absolute positions."""
+  env_ids = resolve_env_ids(env, env_ids)
+  asset: Entity = env.scene[asset_cfg.name]
+  joint_ids = asset_cfg.joint_ids
+  if isinstance(joint_ids, list):
+    joint_ids = torch.tensor(joint_ids, device=env.device)
+
+  low, high = (float(position_range[0]), float(position_range[1]))
+  if low > high:
+    raise ValueError("position_range lower bound must not exceed upper bound.")
+  default_joint_pos = asset.data.default_joint_pos
+  assert default_joint_pos is not None
+  targets = default_joint_pos[env_ids][:, joint_ids].clone()
+  targets.uniform_(low, high)
+  asset.set_joint_position_target(targets, joint_ids=joint_ids, env_ids=env_ids)
+
+
 def _interval_steps(interval_s: float, step_dt: float) -> int:
   """Booster Gym uses ``ceil(interval / dt)`` control-step counts."""
   return max(1, math.ceil(interval_s / step_dt))
+
+
+def _interval_steps_tensor(interval_s: torch.Tensor, step_dt: float) -> torch.Tensor:
+  """Per-env control-step counts from sampled wait times in seconds."""
+  return torch.clamp(
+    torch.ceil(interval_s / step_dt).to(dtype=torch.long), min=1
+  )
 
 
 class booster_kick_robots:
@@ -187,6 +217,9 @@ class booster_push_robots:
   Matches ``booster_gym/envs/t1.py`` ``_push_robots`` and ``T1.yaml``:
   resample every ``push_interval_s=5``, hold ``push_duration_s=1``, force
   ``N(0, 10)`` N, torque ``N(0, 2)`` Nm (body frame, like Isaac LOCAL_SPACE).
+
+  When ``push_interval_range_s`` is set, each environment independently samples
+  a new wait time in that range (seconds) after every push completes.
   """
 
   def __init__(self, cfg: EventTermCfg, env: ManagerBasedRlEnv):
@@ -199,9 +232,6 @@ class booster_push_robots:
       if isinstance(self._body_ids, list)
       else self._asset.num_bodies
     )
-    self._interval_steps = _interval_steps(
-      cfg.params.get("push_interval_s", 5.0), env.step_dt
-    )
     self._duration_steps = _interval_steps(
       cfg.params.get("push_duration_s", 1.0), env.step_dt
     )
@@ -211,6 +241,28 @@ class booster_push_robots:
     self._torques = torch.zeros(
       self._num_envs, self._num_bodies, 3, device=self._device
     )
+    interval_range = cfg.params.get("push_interval_range_s")
+    if interval_range is not None:
+      self._random_interval = True
+      self._interval_range_s = (float(interval_range[0]), float(interval_range[1]))
+      self._step_dt = env.step_dt
+      self._idle_countdown = torch.zeros(
+        self._num_envs, dtype=torch.long, device=self._device
+      )
+      self._push_steps_left = torch.zeros(
+        self._num_envs, dtype=torch.long, device=self._device
+      )
+      self._resample_idle_countdown(torch.arange(self._num_envs, device=self._device))
+    else:
+      self._random_interval = False
+      self._interval_steps = _interval_steps(
+        cfg.params.get("push_interval_s", 5.0), env.step_dt
+      )
+
+  def _resample_idle_countdown(self, env_ids: torch.Tensor) -> None:
+    lo, hi = self._interval_range_s
+    wait_s = torch.empty(len(env_ids), device=self._device).uniform_(lo, hi)
+    self._idle_countdown[env_ids] = _interval_steps_tensor(wait_s, self._step_dt)
 
   def __call__(
     self,
@@ -221,6 +273,7 @@ class booster_push_robots:
     push_force_std: float = 10.0,
     push_torque_std: float = 2.0,
     asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+    push_interval_range_s: tuple[float, float] | None = None,
   ) -> None:
     del (
       env_ids,
@@ -229,7 +282,18 @@ class booster_push_robots:
       push_force_std,
       push_torque_std,
       asset_cfg,
+      push_interval_range_s,
     )
+    if self._random_interval:
+      self._apply_random_interval_push()
+    else:
+      self._apply_fixed_interval_push(env)
+
+    self._asset.write_external_wrench_to_sim(
+      self._forces, self._torques, body_ids=self._body_ids
+    )
+
+  def _apply_fixed_interval_push(self, env: ManagerBasedRlEnv) -> None:
     phase = env.common_step_counter % self._interval_steps
     if phase == 0:
       self._forces = torch.randn_like(self._forces) * self._force_std
@@ -237,14 +301,47 @@ class booster_push_robots:
     elif phase == self._duration_steps:
       self._forces.zero_()
       self._torques.zero_()
-    self._asset.write_external_wrench_to_sim(
-      self._forces, self._torques, body_ids=self._body_ids
-    )
+
+  def _apply_random_interval_push(self) -> None:
+    waiting = self._push_steps_left == 0
+    self._idle_countdown[waiting] -= 1
+
+    start = waiting & (self._idle_countdown <= 0)
+    if start.any():
+      n = int(start.sum())
+      self._forces[start] = (
+        torch.randn(n, self._num_bodies, 3, device=self._device) * self._force_std
+      )
+      self._torques[start] = (
+        torch.randn(n, self._num_bodies, 3, device=self._device) * self._torque_std
+      )
+      self._push_steps_left[start] = self._duration_steps
+
+    active = self._push_steps_left > 0
+    if active.any():
+      self._push_steps_left[active] -= 1
+      ended = active & (self._push_steps_left == 0)
+      if ended.any():
+        self._forces[ended] = 0.0
+        self._torques[ended] = 0.0
+        self._resample_idle_countdown(ended.nonzero(as_tuple=False).flatten())
 
   def reset(self, env_ids: torch.Tensor | slice | None = None) -> None:
     if env_ids is None:
       self._forces.zero_()
       self._torques.zero_()
+      if self._random_interval:
+        self._push_steps_left.zero_()
+        self._resample_idle_countdown(
+          torch.arange(self._num_envs, device=self._device)
+        )
       return
-    self._forces[env_ids] = 0.0
-    self._torques[env_ids] = 0.0
+    if isinstance(env_ids, slice):
+      idx = torch.arange(self._num_envs, device=self._device)
+    else:
+      idx = env_ids
+    self._forces[idx] = 0.0
+    self._torques[idx] = 0.0
+    if self._random_interval:
+      self._push_steps_left[idx] = 0
+      self._resample_idle_countdown(idx)

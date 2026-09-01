@@ -22,6 +22,16 @@ if TYPE_CHECKING:
   from mjlab.viewer.debug_visualizer import DebugVisualizer
 
 
+_PARAMETER_WALK_TARGET_NAMES = (
+  "foot_yaw_l",
+  "foot_yaw_r",
+  "body_pitch",
+  "body_roll",
+  "feet_offset_x",
+  "feet_offset_y",
+)
+
+
 class UniformVelocityCommand(CommandTerm):
   cfg: UniformVelocityCommandCfg
 
@@ -36,6 +46,13 @@ class UniformVelocityCommand(CommandTerm):
     self.robot: Entity = env.scene[cfg.entity_name]
 
     self._command_dim = 4 if cfg.ranges.gait_frequency is not None else 3
+    if cfg.parameter_walk_ranges is not None:
+      if cfg.ranges.gait_frequency is None:
+        raise ValueError(
+          "parameter_walk_ranges requires ranges.gait_frequency so the command "
+          "has the HTWK 10-D layout."
+        )
+      self._command_dim = 10
     self.vel_command_b = torch.zeros(
       self.num_envs, self._command_dim, device=self.device
     )
@@ -48,6 +65,7 @@ class UniformVelocityCommand(CommandTerm):
     self.is_standing_env = torch.zeros_like(self.is_heading_env)
     self.is_world_env = torch.zeros_like(self.is_heading_env)
     self.is_forward_env = torch.zeros_like(self.is_heading_env)
+    self.vel_scale = float(cfg.init_vel_scale if cfg.vel_curriculum else 1.0)
 
     self.metrics["error_vel_xy"] = torch.zeros(self.num_envs, device=self.device)
     self.metrics["error_vel_yaw"] = torch.zeros(self.num_envs, device=self.device)
@@ -61,6 +79,7 @@ class UniformVelocityCommand(CommandTerm):
     # Set by create_gui() when the viewer is active.
     self._joystick_enabled: viser.GuiCheckboxHandle | None = None
     self._joystick_sliders: list[viser.GuiSliderHandle] = []
+    self._joystick_gait_slider: viser.GuiSliderHandle | None = None
     self._joystick_get_env_idx: Callable[[], int] | None = None
 
     if cfg.grid_curriculum is not None and cfg.grid_curriculum.enabled:
@@ -107,17 +126,46 @@ class UniformVelocityCommand(CommandTerm):
         self.vel_command_b[env_ids, 3] = r.uniform_(*self.cfg.ranges.gait_frequency)
         self._last_gait_freq[env_ids] = self.vel_command_b[env_ids, 3]
     else:
-      self.vel_command_b[env_ids, 0] = r.uniform_(*self.cfg.ranges.lin_vel_x)
-      self.vel_command_b[env_ids, 1] = r.uniform_(*self.cfg.ranges.lin_vel_y)
-      self.vel_command_b[env_ids, 2] = r.uniform_(*self.cfg.ranges.ang_vel_z)
+      self.vel_command_b[env_ids, 0] = self._uniform_scaled(
+        r, self.cfg.ranges.lin_vel_x
+      )
+      self.vel_command_b[env_ids, 1] = self._uniform_scaled(
+        r, self.cfg.ranges.lin_vel_y
+      )
+      self.vel_command_b[env_ids, 2] = self._uniform_scaled(
+        r, self.cfg.ranges.ang_vel_z
+      )
       if self.cfg.ranges.gait_frequency is not None:
         self.vel_command_b[env_ids, 3] = r.uniform_(*self.cfg.ranges.gait_frequency)
         self._last_gait_freq[env_ids] = self.vel_command_b[env_ids, 3]
+    self._resample_parameter_walk_targets(env_ids, r)
+    # HTWK initializes each environment with a decorrelated gait phase. The
+    # command manager resets once per episode, after observation terms reset.
+    from .observations import _gait_state
+
+    gait = _gait_state(self._env)
+    gait["phase"][env_ids] = torch.rand(len(env_ids), device=self.device)
+    gait["step"] = -1
+
+  def _uniform_scaled(
+    self, generator: torch.Tensor, bounds: tuple[float, float]
+  ) -> torch.Tensor:
+    scale = self.vel_scale if self.cfg.vel_curriculum else 1.0
+    return generator.uniform_(bounds[0] * scale, bounds[1] * scale)
     if self.cfg.heading_command:
       assert self.cfg.ranges.heading is not None
       self.heading_target[env_ids] = r.uniform_(*self.cfg.ranges.heading)
       self.is_heading_env[env_ids] = r.uniform_(0.0, 1.0) <= self.cfg.rel_heading_envs
-    self.is_standing_env[env_ids] = r.uniform_(0.0, 1.0) <= self.cfg.rel_standing_envs
+    if self.cfg.still_proportion is None:
+      self.is_standing_env[env_ids] = (
+        r.uniform_(0.0, 1.0) <= self.cfg.rel_standing_envs
+      )
+    else:
+      self.is_standing_env[env_ids] = False
+      count = int(self.cfg.still_proportion * len(env_ids))
+      if count > 0:
+        order = torch.randperm(len(env_ids), device=self.device)[:count]
+        self.is_standing_env[env_ids[order]] = True
 
     # Randomly assign world-frame envs.
     self.is_world_env[env_ids] = r.uniform_(0.0, 1.0) <= self.cfg.rel_world_envs
@@ -156,7 +204,8 @@ class UniformVelocityCommand(CommandTerm):
     # Standing envs: zero twist (and gait frequency if present).
     standing_ids = env_ids[self.is_standing_env[env_ids]]
     if len(standing_ids) > 0:
-      self.vel_command_b[standing_ids, :] = 0.0
+      # Preserve HTWK posture/foot targets while zeroing only the motion part.
+      self.vel_command_b[standing_ids, :4] = 0.0
       self.vel_command_w[standing_ids, :] = 0.0
       if grid is not None and grid.enabled:
         self.env_curriculum_level[standing_ids] = 0
@@ -335,7 +384,14 @@ class UniformVelocityCommand(CommandTerm):
     need_restore = moving & (self.vel_command_b[:, 3] <= 1.0e-8)
     self.vel_command_b[need_restore, 3] = self._last_gait_freq[need_restore]
 
-  # GUI.
+  def _resample_parameter_walk_targets(
+    self, env_ids: torch.Tensor, generator: torch.Tensor
+  ) -> None:
+    ranges = self.cfg.parameter_walk_ranges
+    if ranges is None:
+      return
+    for idx, name in enumerate(_PARAMETER_WALK_TARGET_NAMES, start=4):
+      self.vel_command_b[env_ids, idx] = generator.uniform_(*ranges[name])
 
   def create_gui(
     self,
@@ -351,11 +407,21 @@ class UniformVelocityCommand(CommandTerm):
     ranges = self.cfg.ranges
 
     axes = [
-      ("lin_vel_x", ranges.lin_vel_x[1]),
-      ("lin_vel_y", ranges.lin_vel_y[1]),
-      ("ang_vel_z", ranges.ang_vel_z[1]),
+      (
+        "lin_vel_x",
+        max(abs(ranges.lin_vel_x[0]), abs(ranges.lin_vel_x[1]), 0.1),
+      ),
+      (
+        "lin_vel_y",
+        max(abs(ranges.lin_vel_y[0]), abs(ranges.lin_vel_y[1]), 0.1),
+      ),
+      (
+        "ang_vel_z",
+        max(abs(ranges.ang_vel_z[0]), abs(ranges.ang_vel_z[1]), 0.1),
+      ),
     ]
     sliders: list = []
+    gait_slider = None
 
     with server.gui.add_folder(name.capitalize()):
       enabled = server.gui.add_checkbox("Enable", initial_value=False)
@@ -383,16 +449,33 @@ class UniformVelocityCommand(CommandTerm):
 
         sliders.append(slider)
 
+      if ranges.gait_frequency is not None:
+        lo, hi = ranges.gait_frequency
+        # Pin (f, f) from --gait-frequency: give the slider a usable band.
+        if hi <= lo:
+          lo, hi = max(0.5, lo - 0.5), lo + 0.5
+        init_freq = float(self._last_gait_freq[0].item())
+        init_freq = min(max(init_freq, lo), hi)
+        gait_slider = server.gui.add_slider(
+          "gait_frequency",
+          min=float(lo),
+          max=float(hi),
+          step=0.05,
+          initial_value=init_freq,
+        )
+
       zero_btn = server.gui.add_button("Zero", icon=Icon.SQUARE_X)
 
       @zero_btn.on_click
       def _(_) -> None:
+        # Zero twist only; keep gait_frequency so cadence restores on move.
         for s in sliders:
           s.value = 0.0
 
     # Store GUI state for compute() override.
     self._joystick_enabled = enabled
     self._joystick_sliders = sliders
+    self._joystick_gait_slider = gait_slider
     self._joystick_get_env_idx = get_env_idx
 
   def compute(self, dt: float) -> None:
@@ -402,7 +485,9 @@ class UniformVelocityCommand(CommandTerm):
       idx = self._joystick_get_env_idx()
       for i, s in enumerate(self._joystick_sliders):
         self.vel_command_b[idx, i] = s.value
-      # Joystick only sets vx/vy/wz; freeze gait clock when twist is still.
+      if self._joystick_gait_slider is not None and self._command_dim >= 4:
+        self.vel_command_b[idx, 3] = self._joystick_gait_slider.value
+      # Freeze gait clock when twist is still; restore from slider on move.
       self._zero_gait_freq_when_still()
 
   # Visualization.
@@ -495,6 +580,11 @@ class UniformVelocityCommandCfg(CommandTermCfg):
   lin_vel_x, zero lin_vel_y and ang_vel_z). Increases training coverage for
   straight-line walking, which is important for stair climbing."""
   init_velocity_prob: float = 0.0
+  still_proportion: float | None = None
+  vel_curriculum: bool = False
+  init_vel_scale: float = 0.5
+  vel_scale_step: float = 2.0e-4
+  vel_scale_error_thresh: float = 0.4
 
   @dataclass
   class Ranges:
@@ -506,6 +596,10 @@ class UniformVelocityCommandCfg(CommandTermCfg):
     gait_frequency: tuple[float, float] | None = None
 
   ranges: Ranges
+  # Optional HTWK/NuBots target fields appended after [vx, vy, wz, gait_frequency]:
+  # [foot_yaw_l, foot_yaw_r, body_pitch, body_roll, feet_offset_x, feet_offset_y].
+  # Kept as a dict so legacy 3-D/4-D command configs remain unchanged.
+  parameter_walk_ranges: dict[str, tuple[float, float]] | None = None
 
   @dataclass
   class GridCurriculumCfg:
@@ -547,3 +641,234 @@ class UniformVelocityCommandCfg(CommandTermCfg):
         "The velocity command has heading commands active (heading_command=True) but "
         "the `ranges.heading` parameter is set to None."
       )
+
+
+class ParameterWalkCommand(CommandTerm):
+  """HTWK ParameterWalk command with an internal open-loop gait clock."""
+
+  cfg: ParameterWalkCommandCfg
+
+  def __init__(self, cfg: "ParameterWalkCommandCfg", env: ManagerBasedRlEnv):
+    super().__init__(cfg, env)
+    self.robot: Entity = env.scene[cfg.entity_name]
+    self.cmd = torch.zeros(self.num_envs, 10, device=self.device)
+    self.vel_scale = float(cfg.init_vel_scale if cfg.vel_curriculum else 1.0)
+    self.yaw_scale = float(cfg.init_yaw_scale if cfg.yaw_curriculum else 1.0)
+    self.gait_frequency = torch.zeros(self.num_envs, device=self.device)
+    self.gait_process = torch.rand(self.num_envs, device=self.device)
+    self.metrics["error_vel_xy"] = torch.zeros(self.num_envs, device=self.device)
+    self.metrics["error_vel_yaw"] = torch.zeros(self.num_envs, device=self.device)
+    self._joystick_enabled: viser.GuiCheckboxHandle | None = None
+    self._joystick_sliders: list[viser.GuiSliderHandle] = []
+    self._joystick_gait_slider: viser.GuiSliderHandle | None = None
+    self._joystick_get_env_idx: Callable[[], int] | None = None
+
+  @property
+  def command(self) -> torch.Tensor:
+    phase = 2.0 * torch.pi * self.gait_process
+    return torch.cat(
+      (self.cmd, torch.cos(phase).unsqueeze(-1), torch.sin(phase).unsqueeze(-1)),
+      dim=-1,
+    )
+
+  def _resample_command(self, env_ids: torch.Tensor) -> None:
+    n = len(env_ids)
+    r = self.cmd
+    ranges = self.cfg.ranges
+    scale = self.vel_scale if self.cfg.vel_curriculum else 1.0
+    vx = torch.empty(n, device=self.device).uniform_(*ranges.lin_vel_x)
+    if self.cfg.high_speed_oversample:
+      high_lo = max(self.cfg.high_speed_min, ranges.lin_vel_x[0])
+      high_hi = ranges.lin_vel_x[1]
+      if high_lo < high_hi:
+        high_vx = torch.empty(n, device=self.device).uniform_(high_lo, high_hi)
+        use_high = (
+          torch.rand(n, device=self.device)
+          < self.cfg.high_speed_sampling_probability
+        )
+        vx = torch.where(use_high, high_vx, vx)
+    r[env_ids, 0] = vx * scale
+    r[env_ids, 1] = (
+      torch.empty(n, device=self.device).uniform_(*ranges.lin_vel_y) * scale
+    )
+    yaw_scale = self.yaw_scale if self.cfg.yaw_curriculum else scale
+    r[env_ids, 2] = (
+      torch.empty(n, device=self.device).uniform_(*ranges.ang_vel_yaw) * yaw_scale
+    )
+    frequency = torch.empty(n, device=self.device).uniform_(*ranges.gait_frequency)
+    if self.cfg.high_speed_gait_bias:
+      gait_lo, gait_hi = self.cfg.high_speed_gait_frequency_range
+      high_speed = r[env_ids, 0] > self.cfg.high_speed_min
+      use_high_gait = high_speed & (
+        torch.rand(n, device=self.device)
+        < self.cfg.high_speed_gait_probability
+      )
+      high_frequency = torch.empty(n, device=self.device).uniform_(
+        gait_lo, gait_hi
+      )
+      frequency = torch.where(use_high_gait, high_frequency, frequency)
+    r[env_ids, 3] = frequency
+    r[env_ids, 4] = torch.empty(n, device=self.device).uniform_(*ranges.foot_yaw_l)
+    r[env_ids, 5] = torch.empty(n, device=self.device).uniform_(*ranges.foot_yaw_r)
+    r[env_ids, 6] = torch.empty(n, device=self.device).uniform_(
+      *ranges.body_pitch_target
+    )
+    r[env_ids, 7] = torch.empty(n, device=self.device).uniform_(
+      *ranges.body_roll_target
+    )
+    r[env_ids, 8] = torch.empty(n, device=self.device).uniform_(
+      *ranges.feet_offset_x_target
+    )
+    r[env_ids, 9] = torch.empty(n, device=self.device).uniform_(
+      *ranges.feet_offset_y_target
+    )
+    self.gait_frequency[env_ids] = r[env_ids, 3]
+
+    count = int(self.cfg.still_proportion * n)
+    if count > 0:
+      still = env_ids[torch.randperm(n, device=self.device)[:count]]
+      self.cmd[still, :4] = 0.0
+      self.gait_frequency[still] = 0.0
+
+  def _update_command(self) -> None:
+    self.gait_process[:] = torch.fmod(
+      self.gait_process + self._env.step_dt * self.gait_frequency, 1.0
+    )
+
+  def _update_metrics(self) -> None:
+    self.metrics["error_vel_xy"] = torch.norm(
+      self.cmd[:, :2] - self.robot.data.root_link_lin_vel_b[:, :2], dim=-1
+    )
+    self.metrics["error_vel_yaw"] = torch.abs(
+      self.cmd[:, 2] - self.robot.data.root_link_ang_vel_b[:, 2]
+    )
+
+  def create_gui(
+    self,
+    name: str,
+    server: viser.ViserServer,
+    get_env_idx: Callable[[], int],
+    on_change: Callable[[], None] | None = None,
+    request_action: Callable[[str, Any], None] | None = None,
+  ) -> None:
+    """Create live velocity and cadence controls in the Viser viewer."""
+    del request_action
+    from viser import Icon
+
+    ranges = self.cfg.ranges
+    axes = [
+      ("lin_vel_x", ranges.lin_vel_x[1]),
+      ("lin_vel_y", ranges.lin_vel_y[1]),
+      ("ang_vel_yaw", ranges.ang_vel_yaw[1]),
+    ]
+    sliders: list[viser.GuiSliderHandle] = []
+
+    with server.gui.add_folder(name.capitalize()):
+      enabled = server.gui.add_checkbox("Enable", initial_value=False)
+
+      for label, max_val in axes:
+        max_input = server.gui.add_slider(
+          f"Max {label}",
+          initial_value=max(abs(ranges.__getattribute__(label)[0]), max_val),
+          step=0.1,
+          min=0.1,
+          max=10.0,
+        )
+        slider = server.gui.add_slider(
+          label,
+          min=-max_val,
+          max=max_val,
+          step=0.05,
+          initial_value=0.0,
+        )
+
+        @max_input.on_update
+        def _(_ev, _s=slider, _m=max_input) -> None:
+          _s.min = -_m.value
+          _s.max = _m.value
+
+        sliders.append(slider)
+
+      lo, hi = ranges.gait_frequency
+      gait_slider = server.gui.add_slider(
+        "gait_frequency",
+        min=float(lo),
+        max=float(hi),
+        step=0.05,
+        initial_value=float((lo + hi) * 0.5),
+      )
+
+      zero_btn = server.gui.add_button("Zero", icon=Icon.SQUARE_X)
+
+      @zero_btn.on_click
+      def _(_) -> None:
+        for slider in sliders:
+          slider.value = 0.0
+        if on_change is not None:
+          on_change()
+
+    self._joystick_enabled = enabled
+    self._joystick_sliders = sliders
+    self._joystick_gait_slider = gait_slider
+    self._joystick_get_env_idx = get_env_idx
+
+  def compute(self, dt: float) -> None:
+    """Advance the command and apply the selected Viser command override."""
+    super().compute(dt)
+    if self._joystick_enabled is None or not self._joystick_enabled.value:
+      return
+    assert self._joystick_get_env_idx is not None
+    idx = self._joystick_get_env_idx()
+    for i, slider in enumerate(self._joystick_sliders):
+      self.cmd[idx, i] = slider.value
+    if self._joystick_gait_slider is not None:
+      self.cmd[idx, 3] = self._joystick_gait_slider.value
+      self.gait_frequency[idx] = self._joystick_gait_slider.value
+
+    still = (
+      torch.linalg.vector_norm(self.cmd[:, :2], dim=1)
+      + self.cmd[:, 2].abs()
+      < 0.05
+    )
+    self.gait_frequency[still] = 0.0
+    self.cmd[still, 3] = 0.0
+
+
+@dataclass(kw_only=True)
+class ParameterWalkCommandCfg(CommandTermCfg):
+  """Configuration matching HTWK's ``ParameterWalkCommandCfg``."""
+
+  entity_name: str
+  still_proportion: float = 0.1
+  vel_curriculum: bool = True
+  init_vel_scale: float = 0.5
+  vel_scale_step: float = 2.0e-4
+  vel_scale_error_thresh: float = 0.4
+  yaw_curriculum: bool = False
+  init_yaw_scale: float = 1.0
+  yaw_scale_step: float = 1.0e-4
+  yaw_scale_error_thresh: float = 0.3
+  high_speed_oversample: bool = False
+  high_speed_min: float = 1.5
+  high_speed_sampling_probability: float = 0.5
+  high_speed_gait_bias: bool = False
+  high_speed_gait_probability: float = 0.7
+  high_speed_gait_frequency_range: tuple[float, float] = (2.5, 3.0)
+
+  @dataclass
+  class Ranges:
+    lin_vel_x: tuple[float, float] = (-1.0, 2.0)
+    lin_vel_y: tuple[float, float] = (-1.0, 1.0)
+    ang_vel_yaw: tuple[float, float] = (-1.6, 1.6)
+    gait_frequency: tuple[float, float] = (1.5, 3.0)
+    foot_yaw_l: tuple[float, float] = (-0.7, 0.7)
+    foot_yaw_r: tuple[float, float] = (-0.7, 0.7)
+    body_pitch_target: tuple[float, float] = (-0.1, 0.3)
+    body_roll_target: tuple[float, float] = (-0.1, 0.1)
+    feet_offset_x_target: tuple[float, float] = (-0.15, 0.15)
+    feet_offset_y_target: tuple[float, float] = (-0.08, 0.15)
+
+  ranges: Ranges = field(default_factory=Ranges)
+
+  def build(self, env: ManagerBasedRlEnv) -> ParameterWalkCommand:
+    return ParameterWalkCommand(self, env)

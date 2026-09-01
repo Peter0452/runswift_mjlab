@@ -47,6 +47,7 @@ def make_score_env_cfg(
   base_cfg.commands["goal"] = UniformGoalPositionCommandCfg(
     distance_range=(4.0, 8.0),
     resampling_time_range=(10.0, 15.0),
+    debug_vis=True,
   )
 
   # ── Observations ─────────────────────────────────────────────────────────

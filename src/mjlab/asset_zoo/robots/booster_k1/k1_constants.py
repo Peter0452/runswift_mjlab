@@ -57,7 +57,7 @@ EFFORT_KNEE = 40.0
 EFFORT_ANKLE_PITCH = 20.0
 EFFORT_ANKLE_ROLL = 15.0
 
-# ParameterWalk leg PD: Hip/Knee 100, Ankle 50; damping 2/2/1.
+# ParameterWalk leg PD: Hip/Knee 100, Ankle 50; damping 2/2/2.
 STIFFNESS_HEAD = 2.0
 DAMPING_HEAD = 0.2
 STIFFNESS_ARM = 5.0
@@ -67,7 +67,7 @@ DAMPING_HIP = 2.0
 STIFFNESS_KNEE = 100.0
 DAMPING_KNEE = 2.0
 STIFFNESS_ANKLE = 50.0
-DAMPING_ANKLE = 1.0
+DAMPING_ANKLE = 2.0
 
 # Isaac policy.control.action_scale. Do NOT use mjlab's 0.25*effort/stiffness
 # here — with kp=100 that yields ~0.07 rad and blocks gait learning.
@@ -210,6 +210,41 @@ HOME_KEYFRAME = EntityCfg.InitialStateCfg(
   joint_vel={".*": 0.0},
 )
 
+# NuBots student spawn: NuBots arms (±1.3 shoulder roll) + taller-than-deep-squat
+# legs. Deep crouch (hip -0.35 / knee 0.70 @ z=0.55) put the pelvis behind the
+# feet so the trunk leaned back to keep COM over the support polygon. Move
+# toward HOME (hip -0.2 / knee 0.4 @ 0.58) without going fully straight-legged.
+NUBOTS_SPAWN_Z = 0.575
+
+NUBOTS_KEYFRAME = EntityCfg.InitialStateCfg(
+  pos=(0, 0, NUBOTS_SPAWN_Z),
+  joint_pos={
+    "Head_Yaw": 0.0,
+    "Head_Pitch": 0.0,
+    "Left_Shoulder_Pitch": 0.0,
+    "Left_Shoulder_Roll": -1.3,
+    "Left_Elbow_Pitch": 0.40,  # slight bend (~23°) so arms can counter L
+    "Left_Elbow_Yaw": 0.0,
+    "Right_Shoulder_Pitch": 0.0,
+    "Right_Shoulder_Roll": 1.3,
+    "Right_Elbow_Pitch": 0.40,
+    "Right_Elbow_Yaw": 0.0,
+    "Left_Hip_Pitch": -0.25,
+    "Left_Hip_Roll": -0.04,
+    "Left_Hip_Yaw": 0.0,
+    "Left_Knee_Pitch": 0.50,
+    "Left_Ankle_Pitch": -0.28,
+    "Left_Ankle_Roll": 0.04,
+    "Right_Hip_Pitch": -0.25,
+    "Right_Hip_Roll": 0.04,
+    "Right_Hip_Yaw": 0.0,
+    "Right_Knee_Pitch": 0.50,
+    "Right_Ankle_Pitch": -0.28,
+    "Right_Ankle_Roll": -0.04,
+  },
+  joint_vel={".*": 0.0},
+)
+
 # Training / deploy default pose (legs slightly bent, slight hip/ankle roll).
 # Base height chosen so foot collision bottoms sit near z=0.
 KNEES_BENT_KEYFRAME = EntityCfg.InitialStateCfg(
@@ -286,6 +321,16 @@ def get_k1_robot_cfg() -> EntityCfg:
   """Get a fresh K1 robot configuration instance."""
   return EntityCfg(
     init_state=KNEES_BENT_KEYFRAME,
+    collisions=(FULL_COLLISION,),
+    spec_fn=get_spec,
+    articulation=K1_ARTICULATION,
+  )
+
+
+def get_k1_nubots_robot_cfg() -> EntityCfg:
+  """K1 robot with NuBots / Isaac ``k1_walk_htwk`` default pose."""
+  return EntityCfg(
+    init_state=NUBOTS_KEYFRAME,
     collisions=(FULL_COLLISION,),
     spec_fn=get_spec,
     articulation=K1_ARTICULATION,

@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 F = Callable[..., None]
 
-EventMode = Literal["startup", "reset", "interval", "step"]
+EventMode = Literal["startup", "reset", "post_reset", "interval", "step"]
 
 
 class RecomputeLevel(enum.IntEnum):
@@ -249,7 +249,7 @@ class EventManager(ManagerBase):
         f"Event mode '{mode}' does not require environment indices. This is an undefined behavior"
         " as the environment indices are computed based on the time left for each environment."
       )
-    if mode == "reset" and global_env_step_count is None:
+    if mode in ("reset", "post_reset") and global_env_step_count is None:
       raise ValueError(
         f"Event mode '{mode}' requires the total number of environment steps to be provided."
       )
@@ -288,6 +288,10 @@ class EventManager(ManagerBase):
             fired = True
       elif mode == "step":
         term_cfg.func(self._env, None, **term_cfg.params)
+        fired = True
+      elif mode == "post_reset":
+        assert env_ids is not None, "post_reset events require concrete env_ids, got None"
+        term_cfg.func(self._env, env_ids, **term_cfg.params)
         fired = True
       elif mode == "reset":
         assert global_env_step_count is not None

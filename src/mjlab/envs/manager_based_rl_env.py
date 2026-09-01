@@ -590,6 +590,13 @@ class ManagerBasedRlEnv:
     # command manager.
     info = self.command_manager.reset(env_ids)
     self.extras["log"].update(info)
+    if "post_reset" in self.event_manager.available_modes:
+      env_step_count = self._sim_step_counter // self.cfg.decimation
+      self.event_manager.apply(
+        mode="post_reset",
+        env_ids=env_ids,
+        global_env_step_count=env_step_count,
+      )
     # event manager.
     info = self.event_manager.reset(env_ids)
     self.extras["log"].update(info)

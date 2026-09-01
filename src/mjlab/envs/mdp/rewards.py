@@ -153,7 +153,20 @@ class electrical_power_cost:
 def flat_orientation_l2(
   env: ManagerBasedRlEnv,
   asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+  command_name: str | None = None,
+  speed_ref: float = 1.0,
 ) -> torch.Tensor:
-  """Penalize non-flat base orientation."""
+  """Penalize non-flat base orientation.
+
+  If ``command_name`` is set, the cost is multiplied by
+  ``1 + |v_xy_cmd| / speed_ref`` so tilt is punished more at higher speed.
+  """
   asset: Entity = env.scene[asset_cfg.name]
-  return torch.sum(torch.square(asset.data.projected_gravity_b[:, :2]), dim=1)
+  cost = torch.sum(torch.square(asset.data.projected_gravity_b[:, :2]), dim=1)
+  if command_name is None or speed_ref <= 0.0:
+    return cost
+  command = env.command_manager.get_command(command_name)
+  if command is None:
+    return cost
+  speed = torch.linalg.norm(command[:, :2], dim=1)
+  return cost * (1.0 + speed / speed_ref)

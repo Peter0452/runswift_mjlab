@@ -239,3 +239,128 @@ class gait_cycle:
     if scale != 1.0:
       out = out * scale
     return out
+
+
+class nubots_parameter_walk_commands:
+  """12-D ParameterWalk command matching NuBots / Isaac ``k1_walk_htwk`` obs.
+
+  Layout::
+
+    vx, vy, yaw, gait_freq,
+    foot_yaw_L, foot_yaw_R, body_pitch, body_roll,
+    feet_off_x, feet_off_y, cos(2πφ), sin(2πφ)
+
+  Velocity + frequency come from the ``twist`` command (4-D). Pose targets are
+  resampled on reset from the configured ranges (deploy uses fixed defaults).
+  Gait clock shares ``advance_gait_phase`` with other gait terms.
+  """
+
+  def __init__(self, cfg: ObservationTermCfg, env: ManagerBasedRlEnv):
+    self._env = env
+    p = cfg.params or {}
+    self._command_name = str(p.get("command_name", "twist"))
+    self._command_threshold = float(p.get("command_threshold", 0.05))
+    self._period = float(p.get("period", 1.0 / 1.7))
+    self._ranges = {
+      "foot_yaw_l": p.get("foot_yaw_l_range"),
+      "foot_yaw_r": p.get("foot_yaw_r_range"),
+      "body_pitch": p.get("body_pitch_range", (0.1, 0.1)),
+      "body_roll": p.get("body_roll_range", (0.0, 0.0)),
+      "feet_off_x": p.get("feet_offset_x_range"),
+      "feet_off_y": p.get("feet_offset_y_range"),
+    }
+    n = env.num_envs
+    device = env.device
+    self._foot_yaw_l = torch.zeros(n, device=device)
+    self._foot_yaw_r = torch.zeros(n, device=device)
+    self._body_pitch = torch.zeros(n, device=device)
+    self._body_roll = torch.zeros(n, device=device)
+    self._feet_off_x = torch.zeros(n, device=device)
+    self._feet_off_y = torch.zeros(n, device=device)
+    _gait_state(env)
+    self.reset(slice(None))
+
+  def _sample(self, key: str, count: int, default: float) -> torch.Tensor:
+    lo_hi = self._ranges.get(key)
+    if lo_hi is None:
+      return torch.full((count,), default, device=self._env.device)
+    lo, hi = lo_hi
+    return torch.empty(count, device=self._env.device).uniform_(float(lo), float(hi))
+
+  def reset(self, env_ids: torch.Tensor | slice | None = None) -> None:
+    if env_ids is None:
+      env_ids = slice(None)
+    if isinstance(env_ids, slice):
+      count = self._env.num_envs
+      idx: slice | torch.Tensor = env_ids
+    else:
+      count = int(env_ids.shape[0])
+      idx = env_ids
+    self._foot_yaw_l[idx] = self._sample("foot_yaw_l", count, 0.0)
+    self._foot_yaw_r[idx] = self._sample("foot_yaw_r", count, 0.0)
+    self._body_pitch[idx] = self._sample("body_pitch", count, 0.1)
+    self._body_roll[idx] = self._sample("body_roll", count, 0.0)
+    self._feet_off_x[idx] = self._sample("feet_off_x", count, 0.0)
+    self._feet_off_y[idx] = self._sample("feet_off_y", count, 0.0)
+
+  def __call__(self, env: ManagerBasedRlEnv, **_params) -> torch.Tensor:
+    command = env.command_manager.get_command(self._command_name)
+    assert command is not None
+    # The dedicated HTWK command already owns and exposes its gait clock.
+    # Return the reference 10-D command plus cos/sin phase without generating a
+    # second clock in the observation term.
+    if command.shape[-1] >= 12:
+      return command[:, :12]
+    vx = command[:, 0]
+    vy = command[:, 1]
+    yaw = command[:, 2]
+    if command.shape[-1] >= 4:
+      freq = command[:, 3]
+    else:
+      speed = torch.norm(command[:, :2], dim=1) + torch.abs(command[:, 2])
+      freq = torch.where(
+        speed > self._command_threshold,
+        torch.full_like(speed, 1.0 / self._period),
+        torch.zeros_like(speed),
+      )
+
+    if command.shape[-1] >= 10:
+      foot_yaw_l = command[:, 4]
+      foot_yaw_r = command[:, 5]
+      body_pitch = command[:, 6]
+      body_roll = command[:, 7]
+      feet_off_x = command[:, 8]
+      feet_off_y = command[:, 9]
+    else:
+      foot_yaw_l = self._foot_yaw_l
+      foot_yaw_r = self._foot_yaw_r
+      body_pitch = self._body_pitch
+      body_roll = self._body_roll
+      feet_off_x = self._feet_off_x
+      feet_off_y = self._feet_off_y
+
+    phase, gait_active = advance_gait_phase(
+      env, self._period, self._command_name, self._command_threshold
+    )
+    angle = 2.0 * torch.pi * phase
+    # NuBots deploy / Isaac: [..., cos, sin] (not sin, cos).
+    clock_c = torch.cos(angle) * gait_active.float()
+    clock_s = torch.sin(angle) * gait_active.float()
+
+    return torch.stack(
+      (
+        vx,
+        vy,
+        yaw,
+        freq,
+        foot_yaw_l,
+        foot_yaw_r,
+        body_pitch,
+        body_roll,
+        feet_off_x,
+        feet_off_y,
+        clock_c,
+        clock_s,
+      ),
+      dim=-1,
+    )
