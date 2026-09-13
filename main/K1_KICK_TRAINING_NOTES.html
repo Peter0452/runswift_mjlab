@@ -6,8 +6,9 @@
 
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Index &#8212; mjlab Documentation</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>K1 Kick Training Notes &#8212; mjlab Documentation</title>
   
   
   
@@ -50,9 +51,9 @@
     <script src="_static/copybutton.js?v=f281be69"></script>
     <script src="_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
     <script src="_static/design-tabs.js?v=f930bc37"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'genindex';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'K1_KICK_TRAINING_NOTES';</script>
     <link rel="icon" href="_static/favicon.ico"/>
-    <link rel="index" title="Index" href="#" />
+    <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -168,7 +169,7 @@
 <div class="sidebar-version-switcher">
   <label class="sidebar-version-label" for="version-select">Version</label>
   <select id="version-select" class="sidebar-version-select" onchange="location = this.value;">
-    <option value="genindex.html" selected>main</option>
+    <option value="K1_KICK_TRAINING_NOTES.html" selected>main</option>
   </select>
 </div>
 </div>
@@ -321,7 +322,24 @@
       
       
       
-      <li><a href="https://github.com/mujocolab/mjlab/issues/new?title=Issue%20on%20page%20%2Fgenindex.html&body=Your%20issue%20content%20here." target="_blank"
+      <li><a href="https://github.com/mujocolab/mjlab/edit/main/docs/K1_KICK_TRAINING_NOTES.md" target="_blank"
+   class="btn btn-sm btn-source-edit-button dropdown-item"
+   title="Suggest edit"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-pencil-alt"></i>
+  </span>
+<span class="btn__text-container">Suggest edit</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li><a href="https://github.com/mujocolab/mjlab/issues/new?title=Issue%20on%20page%20%2FK1_KICK_TRAINING_NOTES.html&body=Your%20issue%20content%20here." target="_blank"
    class="btn btn-sm btn-source-issues-button dropdown-item"
    title="Open an issue"
    data-bs-placement="left" data-bs-toggle="tooltip"
@@ -333,6 +351,54 @@
   </span>
 <span class="btn__text-container">Open issue</span>
 </a>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+
+
+<div class="dropdown dropdown-download-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Download this page">
+    <i class="fas fa-download"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="_sources/K1_KICK_TRAINING_NOTES.md" target="_blank"
+   class="btn btn-sm btn-download-source-button dropdown-item"
+   title="Download source file"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="btn__text-container">.md</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li>
+<button onclick="window.print()"
+  class="btn btn-sm btn-download-pdf-button dropdown-item"
+  title="Print to PDF"
+  data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="btn__text-container">.pdf</span>
+</button>
 </li>
       
   </ul>
@@ -374,7 +440,9 @@ document.write(`
   </button>
 `);
 </script>
-
+<button class="sidebar-toggle secondary-toggle btn btn-sm" title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</button>
 </div></div>
       
     </div>
@@ -385,11 +453,26 @@ document.write(`
               
 
 <div id="jb-print-docs-body" class="onlyprint">
-    <h1></h1>
+    <h1>K1 Kick Training Notes</h1>
     <!-- Table of contents -->
     <div id="print-main-content">
         <div id="jb-print-toc">
             
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#goal">Goal</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#stage-1-approach-only-mjlab-kick-approach-booster-k1">Stage-1: approach only (<code class="docutils literal notranslate"><span class="pre">Mjlab-Kick-Approach-Booster-K1</span></code>)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#stage-2-near-kick-mjlab-kick-near-booster-k1">Stage-2: near kick (<code class="docutils literal notranslate"><span class="pre">Mjlab-Kick-Near-Booster-K1</span></code>)</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#payday">Payday</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#paper-reward-recipe-full-kick-legacy">Paper reward recipe (full kick, legacy)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#key-files">Key files</a></li>
+</ul>
+            </nav>
         </div>
     </div>
 </div>
@@ -399,12 +482,211 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-
-<h1 id="index">Index</h1>
-
-<div class="genindex-jumpbox">
- 
+  <section id="k1-kick-training-notes">
+<h1>K1 Kick Training Notes<a class="headerlink" href="#k1-kick-training-notes" title="Link to this heading">#</a></h1>
+<p>Task: <code class="docutils literal notranslate"><span class="pre">Mjlab-Kick-Booster-K1</span></code> (full kick).<br />
+Stage-1: <code class="docutils literal notranslate"><span class="pre">Mjlab-Kick-Approach-Booster-K1</span></code> (approach ball only).<br />
+Stage-2: <code class="docutils literal notranslate"><span class="pre">Mjlab-Kick-Near-Booster-K1</span></code> (near-ball kick, no dribble).<br />
+Logs: <code class="docutils literal notranslate"><span class="pre">logs/rsl_rl/k1_arc_kick/</span></code> / <code class="docutils literal notranslate"><span class="pre">logs/rsl_rl/k1_kick_approach/</span></code> / <code class="docutils literal notranslate"><span class="pre">logs/rsl_rl/k1_kick_near/</span></code>.<br />
+Train: <code class="docutils literal notranslate"><span class="pre">MUJOCO_GL=egl</span> <span class="pre">uv</span> <span class="pre">run</span> <span class="pre">train</span> <span class="pre">…</span></code> from project <code class="docutils literal notranslate"><span class="pre">.venv</span></code>.</p>
+<p>Last updated: 2026-09-12.</p>
+<hr class="docutils" />
+<section id="goal">
+<h2>Goal<a class="headerlink" href="#goal" title="Link to this heading">#</a></h2>
+<p>Robot <strong>approaches</strong> the ball, <strong>aligns</strong>, delivers a <strong>strong kick toward the goal</strong>,
+<strong>stays balanced</strong>, and does <strong>not dribble</strong>.</p>
+</section>
+<hr class="docutils" />
+<section id="stage-1-approach-only-mjlab-kick-approach-booster-k1">
+<h2>Stage-1: approach only (<code class="docutils literal notranslate"><span class="pre">Mjlab-Kick-Approach-Booster-K1</span></code>)<a class="headerlink" href="#stage-1-approach-only-mjlab-kick-approach-booster-k1" title="Link to this heading">#</a></h2>
+<p>Train walking to the ball <strong>before</strong> enabling kick payday.</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Keep</p></th>
+<th class="head"><p>Change</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Twist tracking</p></td>
+<td><p><strong>orbit</strong> to waypoint; <strong>face path</strong> with FOV clamp (±0.69 rad); cruise <strong>1.1</strong> m/s</p></td>
+</tr>
+<tr class="row-odd"><td><p>BaseWalk regularizers</p></td>
+<td><p>far tracking <code class="docutils literal notranslate"><span class="pre">plant_far_scale=1.0</span></code> (full credit at range); fall penalties ↑ (orient −20, height −18)</p></td>
+</tr>
+<tr class="row-even"><td><p>—</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">waypoint_approach</span></code> (+4), <code class="docutils literal notranslate"><span class="pre">waypoint_proximity</span></code> (+4, std 0.35), <code class="docutils literal notranslate"><span class="pre">waypoint_inv_distance</span></code> (+2)</p></td>
+</tr>
+<tr class="row-odd"><td><p>—</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ball_proximity</span></code> [0.3, 0.8] (+2), <code class="docutils literal notranslate"><span class="pre">ball_touch_keepout</span></code> (−8)</p></td>
+</tr>
+<tr class="row-even"><td><p>—</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ball_camera_cone</span></code> (+0.5, soft_limit 0.69) FOV insurance</p></td>
+</tr>
+<tr class="row-odd"><td><p>—</p></td>
+<td><p>soft success: ball [0.3, 0.8] <strong>or</strong> waypoint &lt; 0.35 m</p></td>
+</tr>
+<tr class="row-even"><td><p>Spawn</p></td>
+<td><p>(0.4, 4.0) m; <code class="docutils literal notranslate"><span class="pre">spawn_on_approach_side=False</span></code>; episode 15 s</p></td>
+</tr>
+</tbody>
+</table>
 </div>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>/workspace/runswift_mjlab<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nv">MUJOCO_GL</span><span class="o">=</span>egl<span class="w"> </span>uv<span class="w"> </span>run<span class="w"> </span>train<span class="w"> </span>Mjlab-Kick-Approach-Booster-K1<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--env.scene.num-envs<span class="w"> </span><span class="m">8000</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--agent.run_name<span class="w"> </span>approach_v1
+</pre></div>
+</div>
+<p>Watch: <code class="docutils literal notranslate"><span class="pre">Metrics/near_ball_reached</span></code> ↑, waypoint terms ↑.</p>
+</section>
+<hr class="docutils" />
+<section id="stage-2-near-kick-mjlab-kick-near-booster-k1">
+<h2>Stage-2: near kick (<code class="docutils literal notranslate"><span class="pre">Mjlab-Kick-Near-Booster-K1</span></code>)<a class="headerlink" href="#stage-2-near-kick-mjlab-kick-near-booster-k1" title="Link to this heading">#</a></h2>
+<p>Plant → strike → recover. Spawn one step outside the plant box.</p>
+<section id="payday">
+<h3>Payday<a class="headerlink" href="#payday" title="Link to this heading">#</a></h3>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Role</p></th>
+<th class="head"><p>Term</p></th>
+<th class="head"><p>Weight</p></th>
+<th class="head"><p>Notes</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Plant</strong></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">support_plant_score</span></code></p></td>
+<td><p><strong>4</strong></p></td>
+<td><p>support foot: sag ~0.14 m behind, lat ~0.175 m</p></td>
+</tr>
+<tr class="row-odd"><td><p>Plant still</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">support_foot_planted</span></code></p></td>
+<td><p>2</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Bridge</strong></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">kick_contact_bridge</span></code></p></td>
+<td><p><strong>5</strong></p></td>
+<td><p>gated on plant≥0.25; swing closing + <code class="docutils literal notranslate"><span class="pre">Δ(v·d̂)</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>Instep</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">strike_ankle_pitch</span></code></p></td>
+<td><p>2</p></td>
+<td><p>swing ankle ~−0.5 rad at contact</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Main kick</strong></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ball_velocity_toward_goal</span></code></p></td>
+<td><p><strong>4</strong></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">clip(v·d̂,</span> <span class="pre">0,</span> <span class="pre">6)</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>Impulse</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ball_acceleration_toward_goal</span></code></p></td>
+<td><p><strong>4</strong></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p>Direction aux</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ball_approach_target</span></code></p></td>
+<td><p>1.5</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p>Settle</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">target_reached</span></code></p></td>
+<td><p>5</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p>Balance</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">post_kick_upright</span></code></p></td>
+<td><p><strong>5</strong></p></td>
+<td><p>upright × height&#64;0.52</p></td>
+</tr>
+<tr class="row-odd"><td><p>Stance</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">post_kick_stance</span></code></p></td>
+<td><p><strong>4</strong></p></td>
+<td><p>feet ~0.19 m × flat</p></td>
+</tr>
+<tr class="row-even"><td><p>Anti-lunge</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">premature_kick_lunge</span></code></p></td>
+<td><p>−3</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p>No dribble</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ball_dribble_penalty</span></code></p></td>
+<td><p>−8</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>Spawn:</strong> (0.50, 0.70) m, approach side, <code class="docutils literal notranslate"><span class="pre">approach_spread=π/4</span></code>.<br />
+<strong>Plant box:</strong> support foot lateral 0.15–0.20 m, sagittal 0.10–0.18 m behind ball.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># FT from latest approach ckpt (logs often under k1_arc_kick/)</span>
+<span class="nv">MUJOCO_GL</span><span class="o">=</span>egl<span class="w"> </span>uv<span class="w"> </span>run<span class="w"> </span>train<span class="w"> </span>Mjlab-Kick-Near-Booster-K1<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--env.scene.num-envs<span class="w"> </span><span class="m">8000</span><span class="w"> </span>--agent.resume<span class="w"> </span>True<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--agent.experiment-name<span class="w"> </span>k1_arc_kick<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--agent.load_run<span class="w"> </span>&lt;approach_run&gt;<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--agent.load_checkpoint<span class="w"> </span>model_XXXX.pt<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--agent.run_name<span class="w"> </span>near_kick_from_approach
+</pre></div>
+</div>
+<p>Watch: <code class="docutils literal notranslate"><span class="pre">Metrics/ball_vel_toward_goal</span></code> ↑, dribble penalty near 0,
+strong kick / target hit ↑.</p>
+<p>Then stage-3: full-range <code class="docutils literal notranslate"><span class="pre">Mjlab-Kick-Booster-K1</span></code>.</p>
+</section>
+</section>
+<hr class="docutils" />
+<section id="paper-reward-recipe-full-kick-legacy">
+<h2>Paper reward recipe (full kick, legacy)<a class="headerlink" href="#paper-reward-recipe-full-kick-legacy" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Role</p></th>
+<th class="head"><p>Term</p></th>
+<th class="head"><p>Weight</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Approach</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">agent_approach_ball</span></code></p></td>
+<td><p>2</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Kick</strong></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ball_approach_target</span></code></p></td>
+<td><p><strong>8</strong></p></td>
+</tr>
+<tr class="row-even"><td><p>Kick</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ball_acceleration_toward_goal</span></code></p></td>
+<td><p>2</p></td>
+</tr>
+<tr class="row-odd"><td><p>Settle</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">target_reached</span></code></p></td>
+<td><p>5</p></td>
+</tr>
+<tr class="row-even"><td><p>Balance</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">post_kick_upright</span></code> (≥5 m/s)</p></td>
+<td><p>2</p></td>
+</tr>
+<tr class="row-odd"><td><p>No dribble</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ball_dribble_penalty</span></code></p></td>
+<td><p>−8</p></td>
+</tr>
+<tr class="row-even"><td><p>Wait</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">near_ball_wait</span></code></p></td>
+<td><p>−4</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p><strong>Termination:</strong> <code class="docutils literal notranslate"><span class="pre">near_ball_no_kick</span></code> (&lt;1 m for 2.5 s without kick).<br />
+Spawn curriculum: <strong>(0.8, 1.5) → (2.0, 3.0)</strong> over 20k steps.</p>
+</section>
+<hr class="docutils" />
+<section id="key-files">
+<h2>Key files<a class="headerlink" href="#key-files" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">src/mjlab/tasks/kick/arc_kick_env_cfg.py</span></code> — full + approach + <code class="docutils literal notranslate"><span class="pre">make_near_kick_env_cfg</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">src/mjlab/tasks/kick/config/k1/</span></code> — task registration</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">tests/test_kick_approach_config.py</span></code>, <code class="docutils literal notranslate"><span class="pre">tests/test_kick_near_config.py</span></code></p></li>
+</ul>
+</section>
+</section>
 
 
                 </article>
@@ -423,6 +705,28 @@ document.write(`
             </div>
             
             
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#goal">Goal</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#stage-1-approach-only-mjlab-kick-approach-booster-k1">Stage-1: approach only (<code class="docutils literal notranslate"><span class="pre">Mjlab-Kick-Approach-Booster-K1</span></code>)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#stage-2-near-kick-mjlab-kick-near-booster-k1">Stage-2: near kick (<code class="docutils literal notranslate"><span class="pre">Mjlab-Kick-Near-Booster-K1</span></code>)</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#payday">Payday</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#paper-reward-recipe-full-kick-legacy">Paper reward recipe (full kick, legacy)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#key-files">Key files</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
               
             
           </div>
