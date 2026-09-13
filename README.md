@@ -8,26 +8,7 @@ with minimal dependencies and direct access to native MuJoCo data structures.
 
 ## Getting Started
 
-mjlab requires an NVIDIA GPU for training. macOS is supported for evaluation only. Hi Me from China.
-
-**Try it now:**
-
-Run the demo (no installation needed):
-
-```bash
-uvx --from mjlab --refresh demo
-```
-
-Or try in [Google Colab](https://colab.research.google.com/github/mujocolab/mjlab/blob/main/notebooks/demo.ipynb) (no local setup required).
-
-**Install from source:**
-
-```bash
-git clone https://github.com/mujocolab/mjlab.git && cd mjlab
-uv run demo
-```
-
-For alternative installation methods (PyPI, Docker), see the [Installation Guide](https://mujocolab.github.io/mjlab/main/source/installation.html).
+runswift_mjlab requires an NVIDIA GPU for training. macOS is supported for evaluation only. 
 
 ## Training Examples
 
@@ -78,56 +59,4 @@ When running motion-tracking tasks, add `--registry-name your-org/motions/motion
 
 ## Documentation
 
-Full documentation is available at **[mujocolab.github.io/mjlab](https://mujocolab.github.io/mjlab/)**.
-
-## Development
-
-```bash
-make test          # Run all tests
-make test-fast     # Skip slow tests
-make format        # Format and lint
-make docs          # Build docs locally
-```
-
-For development setup: `uvx pre-commit install`
-
-## Citation
-
-mjlab is used in published research and open-source robotics projects. See the [Research](https://mujocolab.github.io/mjlab/main/source/research.html) page for publications and projects, or share your own in [Show and Tell](https://github.com/mujocolab/mjlab/discussions/categories/show-and-tell).
-
-If you use mjlab in your research, please consider citing:
-
-```bibtex
-@misc{zakka2026mjlablightweightframeworkgpuaccelerated,
-  title={mjlab: A Lightweight Framework for GPU-Accelerated Robot Learning},
-  author={Kevin Zakka and Qiayuan Liao and Brent Yi and Louis Le Lay and Koushil Sreenath and Pieter Abbeel},
-  year={2026},
-  eprint={2601.22074},
-  archivePrefix={arXiv},
-  primaryClass={cs.RO},
-  url={https://arxiv.org/abs/2601.22074},
-}
-```
-
-## License
-
-mjlab is licensed under the [Apache License, Version 2.0](LICENSE).
-
-### Third-Party Code
-
-Some portions of mjlab are forked from external projects:
-
-- **`src/mjlab/utils/lab_api/`** — Utilities forked from [NVIDIA Isaac
-  Lab](https://github.com/isaac-sim/IsaacLab) (BSD-3-Clause license, see file
-  headers)
-
-Forked components retain their original licenses. See file headers for details.
-
-## Acknowledgments
-
-mjlab wouldn't exist without the excellent work of the Isaac Lab team, whose API
-design and abstractions mjlab builds upon.
-
-Thanks to the MuJoCo Warp team — especially Erik Frey and Taylor Howell — for
-answering our questions, giving helpful feedback, and implementing features
-based on our requests countless times.
+To learn more about mjlab: **[mujocolab.github.io/mjlab](https://mujocolab.github.io/mjlab/)**.
