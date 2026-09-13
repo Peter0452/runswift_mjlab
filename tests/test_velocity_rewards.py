@@ -662,6 +662,70 @@ def test_htwk_foot_offset_uses_command_target_and_velocity_gate():
   torch.testing.assert_close(cost, torch.tensor([0.025]))
 
 
+def test_feet_offset_x_fixed_opens_range_with_vx_cmd():
+  from mjlab.tasks.velocity.mdp.rewards import feet_offset_x_fixed
+
+  env = MagicMock()
+  asset = MagicMock()
+  env.scene = {"robot": asset}
+  # Sagittal stagger x_offset = 0.08 m.
+  asset.data.body_link_pos_w = torch.tensor(
+    [[[0.04, 0.10, 0.0], [-0.04, -0.10, 0.0]]]
+  )
+  asset.data.root_link_quat_w = _identity_quat(1)
+  feet = SceneEntityCfg("robot", body_ids=slice(0, 2))
+
+  env.command_manager.get_command.return_value = torch.tensor([[0.0, 0.0, 0.0, 2.0]])
+  stand = feet_offset_x_fixed(
+    env,
+    target=0.0,
+    max_vel=1.0e6,
+    max_offset_range=0.10,
+    range_vel_ref=1.0,
+    asset_cfg=feet,
+  )
+  torch.testing.assert_close(stand, torch.tensor([0.08]))
+
+  env.command_manager.get_command.return_value = torch.tensor([[0.5, 0.0, 0.0, 2.0]])
+  walk = feet_offset_x_fixed(
+    env,
+    target=0.0,
+    max_vel=1.0e6,
+    max_offset_range=0.10,
+    range_vel_ref=1.0,
+    asset_cfg=feet,
+  )
+  # allowed = 0.5/1.0 * 0.10 = 0.05 → excess 0.03
+  torch.testing.assert_close(walk, torch.tensor([0.03]))
+
+
+def test_feet_offset_y_fixed_relaxes_when_vy_is_commanded():
+  from mjlab.tasks.velocity.mdp.rewards import feet_offset_y_fixed
+
+  env = MagicMock()
+  asset = MagicMock()
+  env.scene = {"robot": asset}
+  asset.data.body_link_pos_w = torch.tensor(
+    [[[0.0, 0.30, 0.0], [0.0, 0.0, 0.0]]]
+  )
+  asset.data.root_link_quat_w = _identity_quat(1)
+  env.command_manager.get_command.return_value = torch.tensor([[0.0, 1.0, 0.0, 1.9]])
+  feet = SceneEntityCfg("robot", body_ids=slice(0, 2))
+
+  cost = feet_offset_y_fixed(
+    env,
+    command_name="twist",
+    target=0.0,
+    max_vel=1.0,
+    feet_distance_ref=0.19,
+    max_offset_range=0.12,
+    range_vel_ref=1.0,
+    asset_cfg=feet,
+  )
+  # y_offset = 0.30-0.19 = 0.11; allowed at |vy|=1 → 0.12 → excess 0
+  torch.testing.assert_close(cost, torch.zeros(1))
+
+
 def test_htwk_y_offset_is_relative_to_nominal_foot_distance():
   from mjlab.tasks.velocity.mdp.rewards import htwk_feet_offset_y
 

@@ -37,10 +37,13 @@ def get_ball_spec(
     mass=mass,
     rgba=rgba,
     friction=friction,
+    contype=1,
+    conaffinity=1,
+    condim=3,
     # solref: stiffness ratio (negative = timestep-relative), restitution.
     # solimp: penetration limits and contact-force profile.
     solref=(-200.0, restitution),
-    solimp=(0.9, 0.99, 0.001, 0.4, 2.0),
+    solimp=(0.9, 0.99, 0.001, 0.5, 2.0),
   )
 
   return spec

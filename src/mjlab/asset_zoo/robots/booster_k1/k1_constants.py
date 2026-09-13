@@ -271,7 +271,7 @@ KNEES_BENT_KEYFRAME = EntityCfg.InitialStateCfg(
 # Collision config.
 ##
 
-_FOOT_REGEX = r"^(left|right)_foot[1-5]_collision$"
+_FOOT_REGEX = r"^(left|right)_foot[0-5]_collision$"
 
 FULL_COLLISION = CollisionCfg(
   geom_names_expr=(".*_collision",),

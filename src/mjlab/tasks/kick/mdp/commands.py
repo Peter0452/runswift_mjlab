@@ -37,7 +37,7 @@ class UniformGoalPositionCommand(CommandTerm):
     """Goal position ``[x, y]`` in world-frame env-local coords, shape ``[B, 2]``."""
     return self._command
 
-  def _resample(self, env_ids: torch.Tensor) -> None:
+  def _resample_command(self, env_ids: torch.Tensor) -> None:
     n = len(env_ids)
     r_min, r_max = self.cfg.distance_range
     theta_min, theta_max = self.cfg.angle_range
@@ -57,26 +57,74 @@ class UniformGoalPositionCommand(CommandTerm):
     pass
 
   def _debug_vis_impl(self, visualizer: DebugVisualizer) -> None:
-    """Draw the goal, ready waypoint, heading, and camera-cone boundaries."""
+    """Draw kick target (goal), approach waypoint, 3-phase ``P_ref``, and heading aids."""
+    from mjlab.tasks.kick.mdp.geometry import behind_ball_waypoint_xy
+    from mjlab.tasks.kick.mdp.pref_pose import (
+      PHASE_ARC,
+      PHASE_SETUP,
+      PHASE_STRIKE,
+      compute_reference_pose_xy,
+    )
+
     robot = self._env.scene["robot"]
     ball = self._env.scene["ball"]
     env_ids = visualizer.get_env_indices(self._env.num_envs)
 
     ball_pos = ball.data.root_link_pos_w
     robot_pos = robot.data.root_link_pos_w
-    goal_pos = torch.cat(
+    # Goal is a fixed world XY (env-local command + origin). Keep marker height
+    # fixed so it does not bob with the ball; only XY jumps on command resample.
+    goal_xy = self._command + self._env.scene.env_origins[:, :2]
+    goal_z = torch.full(
+      (self._env.num_envs, 1), 0.15, device=self._env.device, dtype=ball_pos.dtype
+    )
+    goal_pos = torch.cat([goal_xy, goal_z], dim=-1)
+    goal_dir = goal_xy - ball_pos[:, :2]
+    goal_dir = goal_dir / torch.linalg.norm(goal_dir, dim=-1, keepdim=True).clamp(
+      min=1.0e-6
+    )
+    # Short aim arrow (fixed length) — tip moves only if ball moves or goal resamples.
+    aim_len = 1.2
+    aim_end = torch.cat(
       [
-        self._command + self._env.scene.env_origins[:, :2],
-        ball_pos[:, 2:3],
+        ball_pos[:, :2] + aim_len * goal_dir,
+        ball_pos[:, 2:3] + 0.05,
       ],
       dim=-1,
     )
-    ball_to_goal = goal_pos[:, :2] - ball_pos[:, :2]
-    ball_to_goal = ball_to_goal / torch.linalg.norm(
-      ball_to_goal, dim=-1, keepdim=True
-    ).clamp(min=1.0e-6)
-    waypoint = goal_pos.clone()
-    waypoint[:, :2] = ball_pos[:, :2] - 0.35 * ball_to_goal
+
+    # Behind-ball approach waypoint (orbit teacher / waypoint_* rewards).
+    wp_xy = behind_ball_waypoint_xy(
+      self._env,
+      ball_pos[:, :2],
+      float(self.cfg.approach_standoff),
+      "goal",
+    )
+    wp_pos = torch.cat([wp_xy, ball_pos[:, 2:3] + 0.04], dim=-1)
+
+    pref_xy, phase = compute_reference_pose_xy(
+      self._env,
+      command_name="goal",
+      arc_radius=self.cfg.arc_radius,
+      setup_enter_dist=self.cfg.setup_enter_dist,
+      setup_exit_dist=self.cfg.setup_exit_dist,
+      setup_behind=self.cfg.setup_behind,
+      setup_lateral=self.cfg.setup_lateral,
+      prefer_right_foot=self.cfg.prefer_right_foot,
+      bearing_thresh=self.cfg.bearing_thresh,
+      lateral_thresh=self.cfg.lateral_thresh,
+      setup_blend_end=self.cfg.setup_blend_end,
+      strike_blend_thresh=self.cfg.strike_blend_thresh,
+      setup_pos_thresh=self.cfg.setup_pos_thresh,
+      dynamic_kick_foot=self.cfg.dynamic_kick_foot,
+    )
+    pref_pos = torch.cat([pref_xy, ball_pos[:, 2:3] + 0.02], dim=-1)
+
+    phase_colors = {
+      int(PHASE_ARC): (0.15, 0.85, 1.0, 0.95),  # cyan — arc
+      int(PHASE_SETUP): (0.2, 0.35, 1.0, 0.95),  # blue — setup
+      int(PHASE_STRIKE): (1.0, 0.15, 0.85, 0.95),  # magenta — strike
+    }
 
     body_forward = quat_apply(
       robot.data.root_link_quat_w,
@@ -87,7 +135,9 @@ class UniformGoalPositionCommand(CommandTerm):
     body_heading = body_heading / torch.linalg.norm(
       body_heading, dim=-1, keepdim=True
     ).clamp(min=1.0e-6)
-    camera_half_angle = math.radians(45.0)
+    # Usable FOV cone (fixed forward camera) — matches twist FOV clamp / ball_camera_cone.
+    camera_half_angle = float(self.cfg.fov_half_angle)
+    cone_range = float(self.cfg.fov_vis_range)
     cos_half = math.cos(camera_half_angle)
     sin_half = math.sin(camera_half_angle)
     camera_left = torch.stack(
@@ -107,62 +157,128 @@ class UniformGoalPositionCommand(CommandTerm):
       dim=-1,
     )
     robot_marker = robot_pos + torch.tensor(
-      [0.0, 0.0, 0.15], device=self._env.device
+      [0.0, 0.0, 0.12], device=self._env.device
     )
+    # Arc points across the usable cone at fov_vis_range.
+    n_arc = 7
+    arc_angles = torch.linspace(
+      -camera_half_angle,
+      camera_half_angle,
+      n_arc,
+      device=self._env.device,
+      dtype=body_heading.dtype,
+    )
+    cos_a = torch.cos(arc_angles)
+    sin_a = torch.sin(arc_angles)
+    # Rotate body_heading by ±angles in XY for each env: [B, n_arc, 2]
+    hx = body_heading[:, 0:1]
+    hy = body_heading[:, 1:2]
+    arc_dir_x = cos_a.unsqueeze(0) * hx - sin_a.unsqueeze(0) * hy
+    arc_dir_y = sin_a.unsqueeze(0) * hx + cos_a.unsqueeze(0) * hy
+    arc_pts = torch.stack(
+      [
+        robot_marker[:, 0:1] + cone_range * arc_dir_x,
+        robot_marker[:, 1:2] + cone_range * arc_dir_y,
+        robot_marker[:, 2:3].expand(-1, n_arc),
+      ],
+      dim=-1,
+    )  # [B, n_arc, 3]
     for env_id in env_ids:
       visualizer.add_sphere(
         ball_pos[env_id].detach().cpu().numpy(),
         radius=0.11,
         color=(1.0, 0.35, 0.05, 0.9),
+        label="ball",
       )
+      # Fixed kick-target location (world).
       visualizer.add_sphere(
         goal_pos[env_id].detach().cpu().numpy(),
-        radius=0.14,
-        color=(0.1, 1.0, 0.2, 0.9),
+        radius=0.18,
+        color=(0.1, 1.0, 0.2, 0.95),
+        label="kick_target",
       )
-      visualizer.add_sphere(
-        waypoint[env_id].detach().cpu().numpy(),
-        radius=0.12,
-        color=(0.1, 0.75, 1.0, 0.9),
-      )
+      # Short aim direction from ball (not a long rubber-band to the target).
       visualizer.add_arrow(
         ball_pos[env_id].detach().cpu().numpy(),
-        goal_pos[env_id].detach().cpu().numpy(),
-        color=(0.1, 1.0, 0.2, 0.8),
-        width=0.025,
+        aim_end[env_id].detach().cpu().numpy(),
+        color=(0.1, 1.0, 0.2, 0.9),
+        width=0.03,
+        label="kick_aim",
+      )
+      # Approach waypoint (yellow) + robot→waypoint (waypoint_approach direction).
+      visualizer.add_sphere(
+        wp_pos[env_id].detach().cpu().numpy(),
+        radius=0.12,
+        color=(1.0, 0.85, 0.1, 0.95),
+        label="approach_waypoint",
       )
       visualizer.add_arrow(
         robot_pos[env_id].detach().cpu().numpy(),
+        wp_pos[env_id].detach().cpu().numpy(),
+        color=(1.0, 0.75, 0.05, 0.9),
+        width=0.028,
+        label="to_approach_waypoint",
+      )
+      # Ball → waypoint (anti-goal standoff axis).
+      visualizer.add_arrow(
         ball_pos[env_id].detach().cpu().numpy(),
-        color=(1.0, 0.45, 0.05, 0.75),
-        width=0.02,
+        wp_pos[env_id].detach().cpu().numpy(),
+        color=(1.0, 0.9, 0.3, 0.55),
+        width=0.015,
+        label="standoff_axis",
+      )
+      p = int(phase[env_id].item())
+      visualizer.add_sphere(
+        pref_pos[env_id].detach().cpu().numpy(),
+        radius=0.13,
+        color=phase_colors.get(p, (1.0, 1.0, 1.0, 0.9)),
+        label="pref_pose",
+      )
+      visualizer.add_arrow(
+        robot_pos[env_id].detach().cpu().numpy(),
+        pref_pos[env_id].detach().cpu().numpy(),
+        color=phase_colors.get(p, (1.0, 1.0, 1.0, 0.85)),
+        width=0.022,
+        label="to_pref_pose",
       )
       visualizer.add_arrow(
         robot_marker[env_id].detach().cpu().numpy(),
         (robot_marker[env_id] + 0.55 * body_forward[env_id]).detach().cpu().numpy(),
         color=(1.0, 0.05, 0.05, 0.9),
         width=0.025,
+        label="body_forward",
+      )
+      # FOV usable cone (cyan): left/right edges + far arc.
+      cone_color = (0.2, 0.85, 1.0, 0.85)
+      visualizer.add_arrow(
+        robot_marker[env_id].detach().cpu().numpy(),
+        (robot_marker[env_id] + cone_range * camera_left[env_id]).detach().cpu().numpy(),
+        color=cone_color,
+        width=0.022,
+        label="fov_cone_left",
       )
       visualizer.add_arrow(
         robot_marker[env_id].detach().cpu().numpy(),
-        (robot_marker[env_id] + 0.8 * camera_left[env_id]).detach().cpu().numpy(),
-        color=(1.0, 0.1, 0.8, 0.75),
-        width=0.015,
+        (robot_marker[env_id] + cone_range * camera_right[env_id]).detach().cpu().numpy(),
+        color=cone_color,
+        width=0.022,
+        label="fov_cone_right",
       )
       visualizer.add_arrow(
         robot_marker[env_id].detach().cpu().numpy(),
-        (robot_marker[env_id] + 0.8 * camera_right[env_id]).detach().cpu().numpy(),
-        color=(1.0, 0.1, 0.8, 0.75),
-        width=0.015,
+        (robot_marker[env_id] + cone_range * body_heading[env_id]).detach().cpu().numpy(),
+        color=(0.4, 0.95, 1.0, 0.55),
+        width=0.012,
+        label="fov_cone_center",
       )
-      visualizer.add_arrow(
-        waypoint[env_id].detach().cpu().numpy(),
-        (waypoint[env_id] + 0.5 * torch.cat(
-          [ball_to_goal[env_id], torch.zeros(1, device=self._env.device)]
-        )).detach().cpu().numpy(),
-        color=(0.1, 0.4, 1.0, 0.9),
-        width=0.025,
-      )
+      for i in range(n_arc - 1):
+        visualizer.add_arrow(
+          arc_pts[env_id, i].detach().cpu().numpy(),
+          arc_pts[env_id, i + 1].detach().cpu().numpy(),
+          color=cone_color,
+          width=0.018,
+          label="fov_cone_arc",
+        )
 
 
 @dataclass
@@ -178,6 +294,26 @@ class UniformGoalPositionCommandCfg(CommandTermCfg):
   """Min/max goal direction angle in radians (0 = robot forward)."""
 
   resampling_time_range: tuple[float, float] = field(default=(8.0, 12.0))
+
+  # Pref-pose debug-vis knobs (match Arc→Setup→Strike reward geometry).
+  arc_radius: float = 0.4
+  setup_enter_dist: float = 0.9
+  setup_exit_dist: float = 1.0
+  setup_behind: float = 0.35
+  setup_lateral: float = 0.12
+  prefer_right_foot: bool = True
+  bearing_thresh: float = 0.2
+  lateral_thresh: float = 0.05
+  setup_blend_end: float = 0.20
+  strike_blend_thresh: float = 0.75
+  setup_pos_thresh: float = 0.28
+  dynamic_kick_foot: bool = True
+  # Approach waypoint standoff (behind ball along −goal); matches orbit teacher.
+  approach_standoff: float = 0.40
+  # Usable FOV half-angle (rad) for debug cone — 75% of 105° HFOV ≈ 0.69.
+  fov_half_angle: float = 0.69
+  # Length of FOV cone rays / arc in play (m).
+  fov_vis_range: float = 2.5
 
   def build(self, env: ManagerBasedRlEnv) -> UniformGoalPositionCommand:
     return UniformGoalPositionCommand(self, env)

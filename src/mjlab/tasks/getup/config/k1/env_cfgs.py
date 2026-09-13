@@ -53,7 +53,7 @@ _K1_ARM_JOINTS = (
 # Verified K1 standing base height (asset HOME / booster_train STAND_HEIGHT).
 _K1_STAND_HEIGHT = 0.57
 _K1_GETUP_SPAWN_Z = 0.35
-_K1_FOOT_FRICTION_GEOMS = r"^(left|right)_foot[1-5]_collision$"
+_K1_FOOT_FRICTION_GEOMS = r"^(left|right)_foot[0-5]_collision$"
 
 
 def _getup_policy_joint_cfg() -> SceneEntityCfg:

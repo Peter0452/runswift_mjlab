@@ -147,11 +147,6 @@ class UniformVelocityCommand(CommandTerm):
     gait["phase"][env_ids] = torch.rand(len(env_ids), device=self.device)
     gait["step"] = -1
 
-  def _uniform_scaled(
-    self, generator: torch.Tensor, bounds: tuple[float, float]
-  ) -> torch.Tensor:
-    scale = self.vel_scale if self.cfg.vel_curriculum else 1.0
-    return generator.uniform_(bounds[0] * scale, bounds[1] * scale)
     if self.cfg.heading_command:
       assert self.cfg.ranges.heading is not None
       self.heading_target[env_ids] = r.uniform_(*self.cfg.ranges.heading)
@@ -211,6 +206,12 @@ class UniformVelocityCommand(CommandTerm):
         self.env_curriculum_level[standing_ids] = 0
     # Booster still: freeze gait clock whenever twist magnitude is near zero.
     self._zero_gait_freq_when_still()
+
+  def _uniform_scaled(
+    self, generator: torch.Tensor, bounds: tuple[float, float]
+  ) -> torch.Tensor:
+    scale = self.vel_scale if self.cfg.vel_curriculum else 1.0
+    return generator.uniform_(bounds[0] * scale, bounds[1] * scale)
 
   def _init_grid_curriculum(self) -> None:
     grid = self.cfg.grid_curriculum

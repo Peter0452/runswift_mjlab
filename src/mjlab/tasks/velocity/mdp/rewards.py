@@ -1038,9 +1038,12 @@ def _htwk_velocity_scale(
   axis: int,
   max_vel: float,
   min_scale: float = 0.0,
+  max_scale: float = 1.0,
 ) -> torch.Tensor:
   scale = torch.clamp(
-    (1.0 - torch.abs(command[:, axis]) / max_vel) ** 2, min=0.0, max=1.0
+    (1.0 - torch.abs(command[:, axis]) / max_vel) ** 2,
+    min=0.0,
+    max=float(max_scale),
   )
   if min_scale > 0.0:
     scale = torch.clamp(scale, min=float(min_scale))
@@ -1052,6 +1055,7 @@ def htwk_feet_offset_x(
   command_name: str,
   max_vel: float = 1.0,
   min_velocity_scale: float = 0.0,
+  max_velocity_scale: float = 1.0,
   asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
 ) -> torch.Tensor:
   command = _parameter_walk_command(env, command_name)
@@ -1060,7 +1064,11 @@ def htwk_feet_offset_x(
     torch.abs(x_offset - command[:, _PW_FEET_OFFSET_X]), max=0.1
   )
   return error * _htwk_velocity_scale(
-    command, 0, max_vel, min_scale=min_velocity_scale
+    command,
+    0,
+    max_vel,
+    min_scale=min_velocity_scale,
+    max_scale=max_velocity_scale,
   )
 
 
@@ -1070,6 +1078,7 @@ def htwk_feet_offset_y(
   max_vel: float = 1.0,
   feet_distance_ref: float = 0.18,
   min_velocity_scale: float = 0.0,
+  max_velocity_scale: float = 1.0,
   asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
 ) -> torch.Tensor:
   command = _parameter_walk_command(env, command_name)
@@ -1080,7 +1089,74 @@ def htwk_feet_offset_y(
     torch.abs(y_offset - command[:, _PW_FEET_OFFSET_Y]), max=0.1
   )
   return error * _htwk_velocity_scale(
-    command, 1, max_vel, min_scale=min_velocity_scale
+    command,
+    1,
+    max_vel,
+    min_scale=min_velocity_scale,
+    max_scale=max_velocity_scale,
+  )
+
+
+def _twist_command(env: ManagerBasedRlEnv, command_name: str) -> torch.Tensor:
+  command = env.command_manager.get_command(command_name)
+  assert command is not None, f"Command '{command_name}' not found."
+  return command
+
+
+def feet_offset_x_fixed(
+  env: ManagerBasedRlEnv,
+  command_name: str = "twist",
+  target: float = 0.0,
+  max_vel: float = 1.0,
+  min_velocity_scale: float = 0.0,
+  max_velocity_scale: float = 1.0,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> torch.Tensor:
+  """Penalize sagittal foot stagger vs a fixed target, gated by ``|vx_cmd|``.
+
+  Same geometry as HTWK ``feet_offset_x``, but does not require a 10-D
+  ParameterWalk command. Full strength at ``vx≈0``; relaxes as ``|vx|``
+  approaches ``max_vel`` so forward stepping can open a stagger.
+  """
+  command = _twist_command(env, command_name)
+  x_offset, _ = _htwk_feet_offset(env, asset_cfg)
+  error = torch.clamp(torch.abs(x_offset - float(target)), max=0.1)
+  return error * _htwk_velocity_scale(
+    command,
+    0,
+    max_vel,
+    min_scale=min_velocity_scale,
+    max_scale=max_velocity_scale,
+  )
+
+
+def feet_offset_y_fixed(
+  env: ManagerBasedRlEnv,
+  command_name: str = "twist",
+  target: float = 0.0,
+  max_vel: float = 1.0,
+  feet_distance_ref: float = 0.19,
+  min_velocity_scale: float = 0.0,
+  max_velocity_scale: float = 1.0,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> torch.Tensor:
+  """Penalize stance-width error vs a fixed target, gated by ``|vy_cmd|``.
+
+  ``y_offset`` is lateral foot spacing minus ``feet_distance_ref``. Target 0
+  means nominal width. Full strength when ``vy≈0`` (anti-sidestep); relaxes
+  as ``|vy|`` grows so commanded side-walk can open the stance.
+  """
+  command = _twist_command(env, command_name)
+  _, y_offset = _htwk_feet_offset(
+    env, asset_cfg, feet_distance_ref=feet_distance_ref
+  )
+  error = torch.clamp(torch.abs(y_offset - float(target)), max=0.1)
+  return error * _htwk_velocity_scale(
+    command,
+    1,
+    max_vel,
+    min_scale=min_velocity_scale,
+    max_scale=max_velocity_scale,
   )
 
 
@@ -1321,6 +1397,24 @@ def htwk_collision_instant(
 # ---------------------------------------------------------------------------
 
 
+def _cmd_xy_speed(
+  env: ManagerBasedRlEnv, command_name: str
+) -> torch.Tensor:
+  """Commanded planar speed ``‖(vx, vy)‖`` from ``command_name``."""
+  command = env.command_manager.get_command(command_name)
+  assert command is not None
+  return torch.linalg.norm(command[:, :2], dim=1)
+
+
+def _speed_affine_scale(
+  speed: torch.Tensor, speed_ref: float
+) -> torch.Tensor:
+  """``1 + speed / speed_ref`` (no-op identity when ``speed_ref <= 0``)."""
+  if speed_ref <= 0.0:
+    return torch.ones_like(speed)
+  return 1.0 + speed / float(speed_ref)
+
+
 def track_lin_vel_axis(
   env: ManagerBasedRlEnv,
   axis: int,
@@ -1328,6 +1422,8 @@ def track_lin_vel_axis(
   tracking_sigma: float = 0.25,
   filter_weight: float = 0.1,
   speed_ref: float = 0.0,
+  high_speed_threshold: float = 0.0,
+  high_speed_sigma: float = 0.0,
   asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
 ) -> torch.Tensor:
   """Booster Gym ``tracking_lin_vel_{x,y}``: ``exp(-(cmd-v)^2 / sigma)``.
@@ -1341,17 +1437,26 @@ def track_lin_vel_axis(
   the violence of the motion. Past roughly 1.4 m/s the sum goes negative and
   ``only_positive_rewards`` clamps it to zero, leaving no gradient at all in the
   speed range we actually care about.
+
+  With ``high_speed_threshold > 0`` and ``high_speed_sigma > 0``, uses the
+  tighter ``high_speed_sigma`` whenever ``‖v_xy_cmd‖ >= high_speed_threshold``
+  (Mode B: refuse-to-track at ≥1 m/s).
   """
   asset: Entity = env.scene[asset_cfg.name]
   command = env.command_manager.get_command(command_name)
   assert command is not None
   filtered_lin, _ = _ema_filtered_base_vel(env, asset, filter_weight)
   error = torch.square(command[:, axis] - filtered_lin[:, axis])
-  reward = torch.exp(-error / tracking_sigma)
-  if speed_ref <= 0.0:
-    return reward
   speed = torch.linalg.norm(command[:, :2], dim=1)
-  return reward * (1.0 + speed / speed_ref)
+  sigma = tracking_sigma
+  if high_speed_threshold > 0.0 and high_speed_sigma > 0.0:
+    sigma = torch.where(
+      speed >= float(high_speed_threshold),
+      torch.full_like(speed, float(high_speed_sigma)),
+      torch.full_like(speed, float(tracking_sigma)),
+    )
+  reward = torch.exp(-error / sigma)
+  return reward * _speed_affine_scale(speed, speed_ref)
 
 
 def track_ang_vel_z(
@@ -1360,23 +1465,29 @@ def track_ang_vel_z(
   tracking_sigma: float = 0.25,
   filter_weight: float = 0.1,
   speed_ref: float = 0.0,
+  high_speed_threshold: float = 0.0,
+  high_speed_sigma: float = 0.0,
   asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
 ) -> torch.Tensor:
   """Booster Gym ``tracking_ang_vel`` on yaw rate (EMA-filtered).
 
-  ``speed_ref`` scales the reward by ``1 + |v_xy_cmd|/speed_ref`` as in
-  :func:`track_lin_vel_axis`.
+  ``speed_ref`` / ``high_speed_*`` match :func:`track_lin_vel_axis`.
   """
   asset: Entity = env.scene[asset_cfg.name]
   command = env.command_manager.get_command(command_name)
   assert command is not None
   _, filtered_ang = _ema_filtered_base_vel(env, asset, filter_weight)
   error = torch.square(command[:, 2] - filtered_ang[:, 2])
-  reward = torch.exp(-error / tracking_sigma)
-  if speed_ref <= 0.0:
-    return reward
   speed = torch.linalg.norm(command[:, :2], dim=1)
-  return reward * (1.0 + speed / speed_ref)
+  sigma = tracking_sigma
+  if high_speed_threshold > 0.0 and high_speed_sigma > 0.0:
+    sigma = torch.where(
+      speed >= float(high_speed_threshold),
+      torch.full_like(speed, float(high_speed_sigma)),
+      torch.full_like(speed, float(tracking_sigma)),
+    )
+  reward = torch.exp(-error / sigma)
+  return reward * _speed_affine_scale(speed, speed_ref)
 
 
 def _ema_filtered_base_vel(
@@ -1437,16 +1548,25 @@ def base_height_target_l2(
   target_height: float = 0.50,
   sensor_name: str | None = "terrain_scan",
   asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+  command_name: str | None = None,
+  speed_ref: float = 0.0,
 ) -> torch.Tensor:
   """Booster / ParameterWalk ``base_height``: ``(h - target)^2``.
 
   ``h`` is clearance of the base above terrain (Booster:
   ``base_z - terrain_height(base_xy)``). See ``base_terrain_clearance``.
+
+  With ``command_name`` and ``speed_ref > 0``, scales by
+  ``1 + ‖v_xy_cmd‖ / speed_ref`` so crouch is taxed harder when speed is
+  commanded (Mode A at ≥1 m/s) without changing the still/stand baseline.
   """
   from mjlab.tasks.velocity.mdp.terrain_utils import base_terrain_clearance
 
   clearance = base_terrain_clearance(env, sensor_name, asset_cfg.name)
-  return torch.square(clearance - target_height)
+  cost = torch.square(clearance - target_height)
+  if command_name is None or speed_ref <= 0.0:
+    return cost
+  return cost * _speed_affine_scale(_cmd_xy_speed(env, command_name), speed_ref)
 
 
 def base_clearance_range_l2(
@@ -1641,3 +1761,58 @@ def feet_yaw_mean_l2(
     + torch.pi * (torch.abs(feet_yaw[:, 1] - feet_yaw[:, 0]) > torch.pi).float()
   )
   return torch.square(wrap_to_pi(root_yaw - feet_yaw_mean))
+
+
+def knee_flex_cmd_excess(
+  env: ManagerBasedRlEnv,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+  q_threshold: float = 1.85,
+  roll_gate: float = 0.15,
+  action_name: str = "joint_pos",
+  command_name: str | None = None,
+  speed_ref: float = 0.0,
+) -> torch.Tensor:
+  """Tax knee *commands* only when that knee is already past the crouch band.
+
+  Diagnosis (BaseWalk ``model_36500``): the collapse spike is policy-driven.
+  Precursors before the action rise are lateral lean (``grav_y`` / trunk roll),
+  an already-asymmetric / deep knee, and elevated last knee/hip actions — a
+  crouch-runaway, not a useful steady crouch (~1.5–1.7 rad).
+
+  Per knee ``i``::
+
+      cost_i = relu(q_i - q_threshold) * relu(a_i)
+
+  with optional lean gate ``(1 + |g_y| / roll_gate)`` so tilt-triggered squat
+  commands are taxed harder. Steady crouched gait below ``q_threshold`` is free.
+
+  With ``command_name`` and ``speed_ref > 0``, scales by
+  ``1 + ‖v_xy_cmd‖ / speed_ref`` so the spike tax bites harder at commanded
+  speed (Mode A collapse band).
+  """
+  asset: Entity = env.scene[asset_cfg.name]
+  q = asset.data.joint_pos[:, asset_cfg.joint_ids]
+  action_term = env.action_manager.get_term(action_name)
+  target_names = list(action_term._target_names)
+  joint_names = list(asset.joint_names)
+  jids = asset_cfg.joint_ids
+  if isinstance(jids, torch.Tensor):
+    jid_list = [int(x) for x in jids.tolist()]
+  else:
+    jid_list = [int(x) for x in jids]
+  act_cols: list[int] = []
+  for jid in jid_list:
+    name = joint_names[jid]
+    if name not in target_names:
+      raise KeyError(f"Knee joint '{name}' missing from action '{action_name}'")
+    act_cols.append(target_names.index(name))
+  a = action_term.raw_action[:, act_cols]
+  over = torch.relu(q - float(q_threshold))
+  cmd = torch.relu(a)
+  cost = torch.sum(over * cmd, dim=1)
+  if roll_gate > 0.0:
+    gy = torch.abs(asset.data.projected_gravity_b[:, 1])
+    cost = cost * (1.0 + gy / float(roll_gate))
+  if command_name is not None and speed_ref > 0.0:
+    cost = cost * _speed_affine_scale(_cmd_xy_speed(env, command_name), speed_ref)
+  return cost

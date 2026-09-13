@@ -17,3 +17,19 @@ benchmark_results/
 # Documentation outputs.
 **/_build/*
 **/generated/*
+
+# Local backups / broken trees.
+*_stale/
+src/mjlab_broken/
+reports/
+
+# One-off diagnose scripts at repo root.
+*_diagnose.py
+*_leadlag.py
+knee_trigger_obs.py
+response_surface.py
+kick_play_record_analyse.py
+
+# Extra local checkpoints (already-tracked files stay tracked).
+nubots_models/*.onnx
+nubots_models/*.pt

@@ -13,15 +13,24 @@ def htwk_velocity_levels(
   env: ManagerBasedRlEnv,
   env_ids: torch.Tensor | slice,
   command_name: str = "twist",
+  update_interval: int = 1,
 ) -> float:
-  """Grow HTWK command ranges while the current velocity is tracked."""
+  """Grow HTWK command ranges while the current velocity is tracked.
+
+  ``update_interval`` limits how often the scale advances. Curriculum terms are
+  invoked every env step; with the default ``1`` this matches legacy HTWK.
+  Pass ``num_steps_per_env`` (typically 24) so the scale grows once per
+  learning iteration instead of racing to 1.0 in a few hundred iters.
+  """
   del env_ids
   term = env.command_manager.get_term(command_name)
   if not getattr(term.cfg, "vel_curriculum", False):
     return float(getattr(term, "vel_scale", 1.0))
   error = term.metrics["error_vel_xy"].mean().item()
+  interval = max(1, int(update_interval))
   if (
-    error < term.cfg.vel_scale_error_thresh
+    env.common_step_counter % interval == 0
+    and error < term.cfg.vel_scale_error_thresh
     and term.vel_scale < 1.0
   ):
     term.vel_scale = min(1.0, term.vel_scale + term.cfg.vel_scale_step)
@@ -56,15 +65,27 @@ def htwk_action_rate_curriculum(
   end_weight: float = -1.0,
   error_thresh: float = 0.45,
   step: float = 3.0e-4,
+  update_interval: int = 1,
 ) -> float:
-  """Tighten action smoothness only after HTWK velocity tracking is good."""
+  """Tighten action smoothness only after HTWK velocity tracking is good.
+
+  Curriculum terms run every env step. Default ``update_interval=1`` keeps
+  legacy HTWK pacing; BaseWalk should pass ``num_steps_per_env`` so the
+  weight moves once per learning iteration (otherwise a "slow" step still
+  races to the floor in ~200 iters and collapses the gait).
+  """
   del env_ids
   command = env.command_manager.get_term(command_name)
   error = command.metrics["error_vel_xy"].mean().item()
   cfg = env.reward_manager.get_term_cfg(term_name)
+  interval = max(1, int(update_interval))
   if env.common_step_counter == 0:
     cfg.weight = start_weight
-  elif error < error_thresh and cfg.weight > end_weight:
+  elif (
+    env.common_step_counter % interval == 0
+    and error < error_thresh
+    and cfg.weight > end_weight
+  ):
     cfg.weight = max(end_weight, cfg.weight - step)
   return float(cfg.weight)
 

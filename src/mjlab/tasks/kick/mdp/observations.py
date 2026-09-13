@@ -101,3 +101,31 @@ def ball_to_goal_direction(
     robot.data.root_link_quat_w, direction_w_3d
   )
   return direction_b[:, :2]
+
+
+def kick_range_placeholder(
+  env: ManagerBasedRlEnv,
+) -> torch.Tensor:
+  """Reserved kick-range input (always zero until walk-in training)."""
+  return torch.zeros(env.num_envs, 1, device=env.device)
+
+
+def ball_vel_placeholder(
+  env: ManagerBasedRlEnv,
+) -> torch.Tensor:
+  """Reserved ball-velocity input (always zero on actor; not used on deploy)."""
+  return torch.zeros(env.num_envs, 3, device=env.device)
+
+
+def ball_rel_pos_placeholder(
+  env: ManagerBasedRlEnv,
+) -> torch.Tensor:
+  """Reserved ball-relative position (zeros during walk-only training)."""
+  return torch.zeros(env.num_envs, 3, device=env.device)
+
+
+def ball_goal_direction_placeholder(
+  env: ManagerBasedRlEnv,
+) -> torch.Tensor:
+  """Reserved ball-to-goal direction (zeros during walk-only training)."""
+  return torch.zeros(env.num_envs, 2, device=env.device)

@@ -1,4 +1,6 @@
-"""RL runner configurations for K1 kick tasks."""
+"""RL runner configuration for the unified K1 Arc→Setup→Strike kick task."""
+
+import math
 
 from mjlab.rl import (
   RslRlModelCfg,
@@ -7,27 +9,23 @@ from mjlab.rl import (
 )
 
 
-def k1_approach_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
-  """Runner config for the ball-approach task.
-
-  The task keeps the HTWK 16-D action and walking command interface while
-  adding five actor/critic inputs for ball position and target direction.
-  This makes the pretrained HTWK walking backbone usable through a small
-  input adapter during fine-tuning.
-  """
+def _k1_kick_ppo_base(*, experiment_name: str, max_iterations: int) -> RslRlOnPolicyRunnerCfg:
+  """PPO MLP + std match BaseWalk for warm-start."""
+  booster_init_std = math.exp(-2.0)
   return RslRlOnPolicyRunnerCfg(
     actor=RslRlModelCfg(
-      hidden_dims=(512, 256, 128),
+      hidden_dims=(256, 128, 128),
       activation="elu",
       obs_normalization=True,
       distribution_cfg={
         "class_name": "GaussianDistribution",
-        "init_std": 1.0,
-        "std_type": "scalar",
+        "init_std": booster_init_std,
+        "std_type": "log",
+        "std_range": (1e-3, 1.0),
       },
     ),
     critic=RslRlModelCfg(
-      hidden_dims=(512, 256, 128),
+      hidden_dims=(256, 256, 128),
       activation="elu",
       obs_normalization=True,
     ),
@@ -38,54 +36,30 @@ def k1_approach_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
       entropy_coef=0.005,
       num_learning_epochs=5,
       num_mini_batches=4,
-      learning_rate=3.0e-4,
+      learning_rate=5.0e-4,
       schedule="adaptive",
-      gamma=0.99,
+      gamma=0.995,
       lam=0.95,
       desired_kl=0.01,
       max_grad_norm=1.0,
     ),
-    experiment_name="k1_approach",
+    experiment_name=experiment_name,
     save_interval=100,
     num_steps_per_env=24,
-    max_iterations=15_000,
+    max_iterations=max_iterations,
   )
 
 
-def k1_score_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
-  """Runner config for the kick-to-goal task."""
-  return RslRlOnPolicyRunnerCfg(
-    actor=RslRlModelCfg(
-      hidden_dims=(512, 256, 128),
-      activation="elu",
-      obs_normalization=True,
-      distribution_cfg={
-        "class_name": "GaussianDistribution",
-        "init_std": 1.0,
-        "std_type": "scalar",
-      },
-    ),
-    critic=RslRlModelCfg(
-      hidden_dims=(512, 256, 128),
-      activation="elu",
-      obs_normalization=True,
-    ),
-    algorithm=RslRlPpoAlgorithmCfg(
-      value_loss_coef=1.0,
-      use_clipped_value_loss=True,
-      clip_param=0.2,
-      entropy_coef=0.005,  # lower entropy: more exploitation of the prior
-      num_learning_epochs=5,
-      num_mini_batches=4,
-      learning_rate=5.0e-4,  # lower LR for fine-tuning
-      schedule="adaptive",
-      gamma=0.995,  # longer horizon: ball needs time to travel
-      lam=0.95,
-      desired_kl=0.01,
-      max_grad_norm=1.0,
-    ),
-    experiment_name="k1_score",
-    save_interval=100,
-    num_steps_per_env=24,
-    max_iterations=20_000,
-  )
+def k1_arc_kick_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
+  """PPO for full kick."""
+  return _k1_kick_ppo_base(experiment_name="k1_arc_kick", max_iterations=20_000)
+
+
+def k1_kick_approach_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
+  """PPO for approach-only stage."""
+  return _k1_kick_ppo_base(experiment_name="k1_kick_approach", max_iterations=10_000)
+
+
+def k1_kick_near_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
+  """PPO for near-ball kick stage."""
+  return _k1_kick_ppo_base(experiment_name="k1_kick_near", max_iterations=15_000)

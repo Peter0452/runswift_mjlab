@@ -168,6 +168,11 @@
                     mass="0.494" diaginertia="0.0012267 0.00117 0.000247305"/>
                   <joint name="Left_Ankle_Roll" axis="1 0 0" range="-0.345 0.345"/>
                   <geom class="visual" mesh="Left_Foot"/>
+                  <!-- Volume box ≈ Left_Foot.STL AABB (kick contact). Sole capsules
+                       alone are r=0.01 at z=-0.028; mesh tops out at z≈0.026 so the
+                       visual foot could sink ~4 cm into the ball before contact. -->
+                  <geom name="left_foot0_collision" class="collision" type="box"
+                    size="0.093 0.040 0.032" pos="0.027 0.001 -0.006"/>
                   <!-- Sole plane of original box collider: z = -0.038. Capsule radius 0.01 -> centerline z = -0.028.
                        Box footprint: x in [-0.064, 0.116], y in [-0.035, 0.035]. -->
                   <geom name="left_foot1_collision" class="foot_capsule" fromto="0.09 -0.025 -0.028 0.02 -0.025 -0.028"/>
@@ -220,6 +225,8 @@
                     mass="0.494" diaginertia="0.0012267 0.00117 0.000247305"/>
                   <joint name="Right_Ankle_Roll" axis="1 0 0" range="-0.345 0.345"/>
                   <geom class="visual" mesh="Right_Foot"/>
+                  <geom name="right_foot0_collision" class="collision" type="box"
+                    size="0.093 0.040 0.032" pos="0.027 -0.001 -0.006"/>
                   <geom name="right_foot1_collision" class="foot_capsule" fromto="0.09 -0.025 -0.028 0.02 -0.025 -0.028"/>
                   <geom name="right_foot2_collision" class="foot_capsule" fromto="-0.058 -0.0125 -0.028 0.11 -0.0125 -0.028"/>
                   <geom name="right_foot3_collision" class="foot_capsule" fromto="-0.064 0 -0.028 0.116 0 -0.028"/>

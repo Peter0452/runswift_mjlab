@@ -7,6 +7,7 @@ from mjlab.asset_zoo.robots import (
   get_k1_robot_cfg,
 )
 from mjlab.asset_zoo.robots.booster_k1.k1_constants import (
+  HOME_KEYFRAME,
   KNEES_BENT_KEYFRAME,
   NUBOTS_KEYFRAME,
   get_k1_nubots_robot_cfg,
@@ -1108,6 +1109,484 @@ def booster_k1_flat_fast_sac_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg
   return cfg
 
 
+# HTWK-gym ``T1/Base_Walk.yaml``: 12 leg actions, 47-D actor (vx/vy/yaw + gait clock).
+_K1_BASE_WALK_ACTION_JOINTS = (
+  "Left_Hip_Pitch",
+  "Right_Hip_Pitch",
+  "Left_Hip_Roll",
+  "Right_Hip_Roll",
+  "Left_Hip_Yaw",
+  "Right_Hip_Yaw",
+  "Left_Knee_Pitch",
+  "Right_Knee_Pitch",
+  "Left_Ankle_Pitch",
+  "Right_Ankle_Pitch",
+  "Left_Ankle_Roll",
+  "Right_Ankle_Roll",
+)
+_K1_BASE_WALK_PASSIVE_JOINTS = (
+  "Head_.*",
+  ".*_Shoulder_.*",
+  ".*_Elbow_.*",
+)
+_K1_BASE_WALK_LEG_ACTION_SCALE = 0.8
+_K1_BASE_WALK_HEIGHT_TARGET = 0.52
+_K1_BASE_WALK_TERMINATE_HEIGHT = 0.40
+_K1_BASE_WALK_FEET_DISTANCE_REF = 0.19
+_K1_BASE_WALK_FEET_OFFSET_X_WEIGHT = -8.0
+_K1_BASE_WALK_FEET_OFFSET_Y_WEIGHT = -12.0
+_K1_BASE_WALK_FEET_DISTANCE_WIDE_MARGIN = 0.04
+_K1_BASE_WALK_TRACK_FILTER = 0.1
+# Raw body-frame vel for tracking (filter_weight=1 → no EMA smoothing).
+_K1_BASE_WALK_TRACKING_FILTER = 1.0
+_K1_BASE_WALK_FORWARD_ENV_FRACTION = 0.4
+# Cap velocity gate so standstill feet_offset is 0.2× (not full strength).
+_K1_BASE_WALK_FEET_OFFSET_MAX_VEL_SCALE = 0.2
+# Match 2026-09-03_01-39-30_feet_offset_from4500, with stronger feet_roll.
+# Action rate: Foundation_Walk_K1 level (fixed −0.12) — no race to −1.
+_K1_BASE_WALK_ACTION_RATE_WEIGHT = -1.5
+_K1_BASE_WALK_VEL_SCALE_STEP = 2.0e-4
+_K1_BASE_WALK_VEL_SCALE_ERROR_THRESH = 0.35
+_K1_BASE_WALK_VEL_SCALE_UPDATE_INTERVAL = 24  # once per learning iter (not per env step)
+_K1_BASE_WALK_FEET_ROLL_WEIGHT = -0.55
+# Cadence sampled per env; period fallback uses mid of range.
+_K1_BASE_WALK_GAIT_FREQUENCY_RANGE = (1.0, 3.0)
+_K1_BASE_WALK_GAIT_FREQUENCY = 2.0  # obs/swing period fallback (mid of range)
+# Speed-conditioned rewards (Mode A crouch-at-speed / Mode B undertrack):
+# posture penalties and tracking income scale as ``1 + ‖v_xy‖ / speed_ref``.
+_K1_BASE_WALK_POSTURE_SPEED_REF = 1.0
+_K1_BASE_WALK_TRACK_SPEED_REF = 1.0
+# Tighter tracking kernel above this planar cmd speed (Mode B).
+_K1_BASE_WALK_HIGH_SPEED_THRESH = 1.0
+_K1_BASE_WALK_HIGH_SPEED_SIGMA = 0.15
+
+K1_BASE_WALK_CORE_DIM = 47
+K1_BASE_WALK_ACTOR_DIM = K1_BASE_WALK_CORE_DIM + 9
+K1_BASE_WALK_KICK_ACTOR_DIM = K1_BASE_WALK_ACTOR_DIM
+
+
+def _base_walk_policy_joint_cfg() -> SceneEntityCfg:
+  return SceneEntityCfg(
+    "robot",
+    joint_names=_K1_BASE_WALK_ACTION_JOINTS,
+    actuator_names=_K1_BASE_WALK_ACTION_JOINTS,
+  )
+
+
+def _apply_base_walk_commands(cfg: ManagerBasedRlEnvCfg) -> None:
+  """BaseWalk twist: wide ranges + 40% forward bias (scratch original)."""
+  twist = cfg.commands["twist"]
+  assert isinstance(twist, UniformVelocityCommandCfg)
+  twist.heading_command = False
+  twist.ranges.heading = None
+  twist.parameter_walk_ranges = None
+  twist.resampling_time_range = (8.0, 12.0)
+  twist.still_proportion = 0.1
+  twist.rel_standing_envs = 0.0
+  twist.rel_forward_envs = _K1_BASE_WALK_FORWARD_ENV_FRACTION
+  twist.rel_heading_envs = 0.0
+  # Full band; ``init_vel_scale`` + slow ``htwk_velocity_levels`` gate difficulty.
+  twist.ranges.lin_vel_x = (-1.3, 2.0)
+  twist.ranges.lin_vel_y = (-1.3, 1.3)
+  twist.ranges.ang_vel_z = (-1.5, 1.5)
+  twist.ranges.gait_frequency = _K1_BASE_WALK_GAIT_FREQUENCY_RANGE
+  if twist.grid_curriculum is not None:
+    twist.grid_curriculum.enabled = False
+  twist.vel_curriculum = True
+  twist.init_vel_scale = 0.5
+  twist.vel_scale_step = _K1_BASE_WALK_VEL_SCALE_STEP
+  twist.vel_scale_error_thresh = _K1_BASE_WALK_VEL_SCALE_ERROR_THRESH
+  cfg.curriculum.pop("command_vel", None)
+
+
+def _apply_base_walk_obs(cfg: ManagerBasedRlEnvCfg, *, play: bool) -> None:
+  """56-D actor: 47-D walk core + 9 zero kick slots (same layout as kick tasks)."""
+  from mjlab.managers.observation_manager import ObservationGroupCfg
+  from mjlab.tasks.kick.kick_obs import add_kick_slot_placeholders
+  from mjlab.utils.noise import UniformNoiseCfg as Unoise
+
+  policy_joints = _base_walk_policy_joint_cfg()
+  actor_terms = {
+    "projected_gravity": ObservationTermCfg(
+      func=mdp.projected_gravity,
+      noise=None if play else Unoise(n_min=-0.01, n_max=0.01),
+    ),
+    "base_ang_vel": ObservationTermCfg(
+      func=mdp.base_ang_vel,
+      noise=None if play else Unoise(n_min=-0.1, n_max=0.1),
+    ),
+    "command": ObservationTermCfg(
+      func=mdp.twist_velocity_commands,
+      params={"command_name": "twist"},
+    ),
+    "gait_cycle": ObservationTermCfg(
+      func=mdp.gait_cycle,
+      params={
+        "period": 1.0 / _K1_BASE_WALK_GAIT_FREQUENCY,
+        "command_name": "twist",
+        "command_threshold": 0.05,
+        "drop_step": int(1e12),
+        "fade_steps": 0,
+      },
+    ),
+    "joint_pos": ObservationTermCfg(
+      func=mdp.joint_pos_rel,
+      params={"asset_cfg": policy_joints},
+      noise=None if play else Unoise(n_min=-0.01, n_max=0.01),
+    ),
+    "joint_vel": ObservationTermCfg(
+      func=mdp.joint_vel_rel,
+      params={"asset_cfg": policy_joints},
+      scale=0.1,
+      noise=None if play else Unoise(n_min=-0.1, n_max=0.1),
+    ),
+    "actions": ObservationTermCfg(func=mdp.last_action),
+  }
+  cfg.observations["actor"] = ObservationGroupCfg(
+    terms=actor_terms,
+    concatenate_terms=True,
+    enable_corruption=not play,
+  )
+  cfg.observations["critic"] = ObservationGroupCfg(
+    terms=dict(actor_terms),
+    concatenate_terms=True,
+    enable_corruption=False,
+  )
+  _apply_booster_critic_obs(cfg)
+  add_kick_slot_placeholders(cfg)
+  for group in ("actor", "critic"):
+    for obs_name in ("projected_gravity", "base_ang_vel", "joint_pos", "joint_vel"):
+      term = cfg.observations[group].terms[obs_name]
+      term.delay_min_lag = 0
+      term.delay_max_lag = 2
+      term.delay_hold_prob = 0.9
+
+
+def _apply_base_walk_rewards(cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvCfg:
+  """Base_Walk penalties + HTWK ``feet_swing`` and K1 cmd/gait tuning."""
+  site_names = ("left_foot", "right_foot")
+  foot_body_names = ("left_foot_link", "right_foot_link")
+  policy_joints = _base_walk_policy_joint_cfg()
+  foot_pose_cfg = SceneEntityCfg("robot", body_names=foot_body_names)
+  tracking_sigma = 0.25
+
+  cfg.terminations["nan_state"] = TerminationTermCfg(func=mdp.nan_detection)
+  cfg.episode_length_s = 30.0
+  cfg.only_positive_rewards = True
+  cfg.curriculum = {
+    "velocity": CurriculumTermCfg(
+      func=mdp.htwk_velocity_levels,
+      params={
+        "command_name": "twist",
+        "update_interval": _K1_BASE_WALK_VEL_SCALE_UPDATE_INTERVAL,
+      },
+    ),
+  }
+
+  reset_joints = cfg.events.get("reset_robot_joints")
+  if reset_joints is not None:
+    reset_joints.params["poses"] = [HOME_KEYFRAME.joint_pos]
+    reset_joints.params["base_heights"] = [HOME_KEYFRAME.pos[2]]
+    reset_joints.params["position_range"] = (0.0, 0.05)
+
+  cfg.terminations["root_height"] = TerminationTermCfg(
+    func=mdp.root_clearance_below_minimum,
+    params={
+      "minimum_height": _K1_BASE_WALK_TERMINATE_HEIGHT,
+      "sensor_name": None,
+      "asset_cfg": SceneEntityCfg("robot"),
+    },
+  )
+  cfg.terminations.pop("feet_too_far", None)
+
+  cfg.rewards = {
+    "survival": RewardTermCfg(func=mdp.is_alive, weight=0.25),
+    "tracking_lin_vel_x": RewardTermCfg(
+      func=mdp.track_lin_vel_axis,
+      weight=2.25,
+      params={
+        "axis": 0,
+        "command_name": "twist",
+        "tracking_sigma": tracking_sigma,
+        "filter_weight": _K1_BASE_WALK_TRACKING_FILTER,
+        "speed_ref": _K1_BASE_WALK_TRACK_SPEED_REF,
+        "high_speed_threshold": _K1_BASE_WALK_HIGH_SPEED_THRESH,
+        "high_speed_sigma": _K1_BASE_WALK_HIGH_SPEED_SIGMA,
+      },
+    ),
+    "tracking_lin_vel_y": RewardTermCfg(
+      func=mdp.track_lin_vel_axis,
+      weight=2.25,
+      params={
+        "axis": 1,
+        "command_name": "twist",
+        "tracking_sigma": tracking_sigma,
+        "filter_weight": _K1_BASE_WALK_TRACKING_FILTER,
+        "speed_ref": _K1_BASE_WALK_TRACK_SPEED_REF,
+        "high_speed_threshold": _K1_BASE_WALK_HIGH_SPEED_THRESH,
+        "high_speed_sigma": _K1_BASE_WALK_HIGH_SPEED_SIGMA,
+      },
+    ),
+    "tracking_ang_vel": RewardTermCfg(
+      func=mdp.track_ang_vel_z,
+      weight=1.75,
+      params={
+        "command_name": "twist",
+        "tracking_sigma": tracking_sigma,
+        "filter_weight": _K1_BASE_WALK_TRACKING_FILTER,
+        "speed_ref": _K1_BASE_WALK_TRACK_SPEED_REF,
+        "high_speed_threshold": _K1_BASE_WALK_HIGH_SPEED_THRESH,
+        "high_speed_sigma": _K1_BASE_WALK_HIGH_SPEED_SIGMA,
+      },
+    ),
+    "base_height": RewardTermCfg(
+      func=mdp.base_height_target_l2,
+      weight=-20.0,
+      params={
+        "target_height": _K1_BASE_WALK_HEIGHT_TARGET,
+        "sensor_name": None,
+        "asset_cfg": SceneEntityCfg("robot"),
+        "command_name": "twist",
+        "speed_ref": _K1_BASE_WALK_POSTURE_SPEED_REF,
+      },
+    ),
+    "orientation": RewardTermCfg(
+      func=mdp.flat_orientation_l2,
+      weight=-8.0,
+      params={"asset_cfg": SceneEntityCfg("robot")},
+    ),
+    "torques": RewardTermCfg(
+      func=mdp.joint_torques_l2,
+      weight=-2.0e-4,
+      params={"asset_cfg": policy_joints},
+    ),
+    "torque_tiredness": RewardTermCfg(
+      func=mdp.torque_tiredness,
+      weight=-1.0e-2,
+      params={"asset_cfg": policy_joints},
+    ),
+    "power": RewardTermCfg(
+      func=mdp.joint_power_penalty,
+      weight=-2.0e-3,
+      params={"asset_cfg": policy_joints},
+    ),
+    "lin_vel_z": RewardTermCfg(
+      func=mdp.root_lin_vel_z_l2,
+      weight=-2.0,
+      params={"filter_weight": _K1_BASE_WALK_TRACK_FILTER},
+    ),
+    "ang_vel_xy": RewardTermCfg(
+      func=mdp.body_angular_velocity_penalty,
+      weight=-0.2,
+      params={"asset_cfg": SceneEntityCfg("robot", body_names=("Trunk",))},
+    ),
+    "dof_vel": RewardTermCfg(
+      func=mdp.joint_vel_l2,
+      weight=-1.0e-4,
+      params={"asset_cfg": policy_joints},
+    ),
+    "dof_acc": RewardTermCfg(
+      func=mdp.joint_acc_l2,
+      weight=-1.0e-7,
+      params={"asset_cfg": policy_joints},
+    ),
+    "root_acc": RewardTermCfg(
+      func=mdp.root_acc_l2,
+      weight=-1.0e-4,
+      params={"asset_cfg": SceneEntityCfg("robot")},
+    ),
+    "action_rate": RewardTermCfg(
+      func=mdp.action_rate_l2, weight=_K1_BASE_WALK_ACTION_RATE_WEIGHT
+    ),
+    "dof_pos_limits": RewardTermCfg(func=mdp.htwk_joint_pos_limits, weight=-2.0),
+    "collision": RewardTermCfg(
+      func=mdp.self_collision_cost,
+      weight=-1.0,
+      params={"sensor_name": "self_collision", "force_threshold": 1.0},
+    ),
+    "feet_slip": RewardTermCfg(
+      func=mdp.feet_slip,
+      weight=-0.1,
+      params={
+        "sensor_name": "feet_ground_contact",
+        "command_name": "twist",
+        "command_threshold": 0.05,
+        "asset_cfg": SceneEntityCfg("robot", site_names=site_names),
+      },
+    ),
+    "feet_yaw_diff": RewardTermCfg(
+      func=mdp.feet_yaw_diff_l2,
+      weight=-1.0,
+      params={"asset_cfg": foot_pose_cfg},
+    ),
+    "feet_yaw_mean": RewardTermCfg(
+      func=mdp.feet_yaw_mean_l2,
+      weight=-1.0,
+      params={"asset_cfg": foot_pose_cfg},
+    ),
+    "feet_roll": RewardTermCfg(
+      func=mdp.feet_roll_l2,
+      weight=_K1_BASE_WALK_FEET_ROLL_WEIGHT,
+      params={"asset_cfg": foot_pose_cfg},
+    ),
+    "feet_distance": RewardTermCfg(
+      func=mdp.feet_distance_lateral,
+      weight=-1.0,
+      params={
+        "feet_distance_ref": _K1_BASE_WALK_FEET_DISTANCE_REF,
+        "max_penalty": 0.1,
+        "wide_margin": _K1_BASE_WALK_FEET_DISTANCE_WIDE_MARGIN,
+        "command_name": "twist",
+        "side_walk_threshold": 0.1,
+        "side_walk_margin_scale": 3.0,
+        "asset_cfg": SceneEntityCfg("robot", site_names=site_names),
+      },
+    ),
+    "feet_offset_x": RewardTermCfg(
+      func=mdp.feet_offset_x_fixed,
+      weight=_K1_BASE_WALK_FEET_OFFSET_X_WEIGHT,
+      params={
+        "command_name": "twist",
+        "target": 0.0,
+        "max_vel": 1.0,
+        "max_velocity_scale": _K1_BASE_WALK_FEET_OFFSET_MAX_VEL_SCALE,
+        "asset_cfg": foot_pose_cfg,
+      },
+    ),
+    "feet_offset_y": RewardTermCfg(
+      func=mdp.feet_offset_y_fixed,
+      weight=_K1_BASE_WALK_FEET_OFFSET_Y_WEIGHT,
+      params={
+        "command_name": "twist",
+        "target": 0.0,
+        "max_vel": 1.0,
+        "max_velocity_scale": _K1_BASE_WALK_FEET_OFFSET_MAX_VEL_SCALE,
+        "feet_distance_ref": _K1_BASE_WALK_FEET_DISTANCE_REF,
+        "asset_cfg": foot_pose_cfg,
+      },
+    ),
+    "feet_swing": RewardTermCfg(
+      func=mdp.feet_swing,
+      weight=3.0,
+      params={
+        "sensor_name": "feet_ground_contact",
+        "period": 1.0 / _K1_BASE_WALK_GAIT_FREQUENCY,
+        "swing_period": walk_params.SWING_PERIOD,
+        "command_name": "twist",
+        "command_threshold": 0.05,
+        "left_foot_name": "left_foot_link",
+        "right_foot_name": "right_foot_link",
+      },
+    ),
+    # Surgical: tax knee *commands* only when q already past the crouch band.
+    # Leaves ~1.5–1.7 rad gait alone; hits tilt/asymmetric runaway into spikes.
+    "knee_flex_cmd_excess": RewardTermCfg(
+      func=mdp.knee_flex_cmd_excess,
+      weight=-2.5,
+      params={
+        "asset_cfg": SceneEntityCfg(
+          "robot", joint_names=("Left_Knee_Pitch", "Right_Knee_Pitch")
+        ),
+        "q_threshold": 1.85,
+        "roll_gate": 0.15,
+        "action_name": "joint_pos",
+        "command_name": "twist",
+        "speed_ref": _K1_BASE_WALK_POSTURE_SPEED_REF,
+      },
+    ),
+  }
+
+  joint_pos_action = cfg.actions["joint_pos"]
+  assert isinstance(joint_pos_action, JointPositionActionCfg)
+  joint_pos_action.actuator_names = _K1_BASE_WALK_ACTION_JOINTS
+  joint_pos_action.preserve_order = True
+  joint_pos_action.scale = {
+    name: _K1_BASE_WALK_LEG_ACTION_SCALE for name in _K1_BASE_WALK_ACTION_JOINTS
+  }
+  joint_pos_action.clip = dict(_K1_LEG_CLIP)
+  joint_pos_action.use_default_offset = True
+
+  cfg.events["hold_passive"] = EventTermCfg(
+    func=mdp.set_joint_position_targets_to_default,
+    mode="reset",
+    params={
+      "asset_cfg": SceneEntityCfg("robot", joint_names=_K1_BASE_WALK_PASSIVE_JOINTS),
+    },
+  )
+
+  _apply_fast_sac_domain_rand(cfg)
+  _apply_base_walk_commands(cfg)
+  return cfg
+
+
+def booster_k1_base_walk_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
+  """Flat K1 walk: HTWK Base_Walk rewards, 56-D obs (47 walk + 9 kick slots), 12 legs."""
+  cfg = booster_k1_flat_env_cfg(play=play)
+  cfg = _apply_base_walk_rewards(cfg)
+  _apply_base_walk_obs(cfg, play=play)
+  if play:
+    cfg.episode_length_s = int(1e9)
+    cfg.events.pop("kick_robot", None)
+    cfg.events.pop("push_robot", None)
+    cfg.curriculum = {}
+    twist = cfg.commands["twist"]
+    assert isinstance(twist, UniformVelocityCommandCfg)
+    if twist.grid_curriculum is not None:
+      twist.grid_curriculum.enabled = False
+    twist.vel_curriculum = False
+    twist.ranges.lin_vel_x = (-1.5, 1.5)
+    twist.ranges.lin_vel_y = (-1.0, 1.0)
+    twist.ranges.ang_vel_z = (-1.0, 1.0)
+  return cfg
+
+
+_K1_BASE_WALK_ROUGH_FT_MIX = (0.90, 0.05, 0.05)  # flat / random_rough / wave
+
+
+def booster_k1_base_walk_rough_ft_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
+  """BaseWalk rough FT: 90/5/5 mix; terrain_scan clearance for height + critic.
+
+  Keeps the 56-D actor unchanged. ``terrain_scan`` is privileged (critic
+  ``base_clearance``, ``base_height`` reward, ``root_height`` terminate).
+  """
+  cfg = booster_k1_base_walk_env_cfg(play=play)
+  rough_cfg = booster_k1_rough_env_cfg(play=play)
+  assert cfg.scene.terrain is not None
+  assert rough_cfg.scene.terrain is not None
+  assert rough_cfg.scene.terrain.terrain_generator is not None
+
+  cfg.scene.terrain.terrain_type = "generator"
+  cfg.scene.terrain.terrain_generator = rough_cfg.scene.terrain.terrain_generator
+  terrain_generator = cfg.scene.terrain.terrain_generator
+  terrain_generator.curriculum = False
+  flat_p, rough_p, wave_p = _K1_BASE_WALK_ROUGH_FT_MIX
+  terrain_generator.sub_terrains = {
+    "flat": flat(proportion=flat_p),
+    "random_rough": random_rough(proportion=rough_p),
+    "wave_terrain": wave_terrain(proportion=wave_p),
+  }
+
+  terrain_scan = next(
+    sensor
+    for sensor in (rough_cfg.scene.sensors or ())
+    if sensor.name == "terrain_scan"
+  )
+  cfg.scene.sensors = tuple(
+    s for s in (cfg.scene.sensors or ()) if s.name != "terrain_scan"
+  ) + (terrain_scan,)
+
+  cfg.rewards["base_height"].params["sensor_name"] = "terrain_scan"
+  cfg.terminations["root_height"].params["sensor_name"] = "terrain_scan"
+
+  # Flat BaseWalk strips bounds; restore when using a tiled generator.
+  if "out_of_terrain_bounds" in rough_cfg.terminations:
+    cfg.terminations["out_of_terrain_bounds"] = rough_cfg.terminations[
+      "out_of_terrain_bounds"
+    ]
+
+  return cfg
+
+
 # NuBots / Isaac Lab k1_walk_htwk: 16 policy joints, type-major L/R order.
 _NUBOTS_ACTION_JOINTS = (
   "Left_Shoulder_Pitch",
@@ -1167,15 +1646,16 @@ _NUBOTS_ROBUST_FT_TRUNK_WRENCH_INTERVAL_S = 4.0
 _NUBOTS_ROBUST_FT_SHOULDER_DEV_START = -0.5
 _NUBOTS_ROBUST_FT_SHOULDER_DEV_END = -0.05
 # Leg-spacing FT: keep foot/knee clearance active at run speed and on hardware.
-_NUBOTS_ROBUST_FT_FOOT_OFFSET_MIN_VEL_SCALE = 0.35
-_NUBOTS_ROBUST_FT_MIN_FEET_SEPARATION = 0.14
-_NUBOTS_ROBUST_FT_MIN_FEET_SITE_XY = 0.14
-_NUBOTS_ROBUST_FT_FEET_MIN_SEP_WEIGHT = -3.0
-_NUBOTS_ROBUST_FT_FEET_SITE_XY_WEIGHT = -2.0
-_NUBOTS_ROBUST_FT_KNEE_SAFE_DISTANCE = 0.18
-_NUBOTS_ROBUST_FT_KNEE_SEPARATION_WEIGHT = -3.0
+_NUBOTS_ROBUST_FT_FOOT_OFFSET_MIN_VEL_SCALE = 0.25
+_NUBOTS_ROBUST_FT_FEET_DISTANCE_REF = 0.19
+_NUBOTS_ROBUST_FT_MIN_FEET_SEPARATION = 0.16
+_NUBOTS_ROBUST_FT_MIN_FEET_SITE_XY = 0.16
+_NUBOTS_ROBUST_FT_FEET_MIN_SEP_WEIGHT = -4.0
+_NUBOTS_ROBUST_FT_FEET_SITE_XY_WEIGHT = -3.0
+_NUBOTS_ROBUST_FT_KNEE_SAFE_DISTANCE = 0.19
+_NUBOTS_ROBUST_FT_KNEE_SEPARATION_WEIGHT = -3.5
 _NUBOTS_ROBUST_FT_HIP_ROLL_MAX_DEVIATION = 0.18
-_NUBOTS_ROBUST_FT_FOOT_FOOT_COLLISION_WEIGHT = -3.0
+_NUBOTS_ROBUST_FT_FOOT_FOOT_COLLISION_WEIGHT = -4.0
 # Sole must clear the ground during swing (not heel-up / toe-drag).
 _NUBOTS_ROBUST_FT_SWING_MIN_CLEARANCE = 0.04
 _NUBOTS_ROBUST_FT_SWING_TARGET_CLEARANCE = 0.06
@@ -1187,8 +1667,8 @@ _NUBOTS_ARM_SWING_PITCH_BAND = math.radians(25.0)
 _NUBOTS_ARM_SWING_ROLL_BAND = math.radians(15.0)
 _NUBOTS_HEIGHT_TARGET = 0.575
 _NUBOTS_ACTION_RATE_WEIGHT = -0.5
-_NUBOTS_TERRAIN_MIX_INITIAL = (0.80, 0.10, 0.10)  # flat / rough / wave
-_NUBOTS_TERRAIN_MIX_TARGET = (0.80, 0.10, 0.10)
+_NUBOTS_TERRAIN_MIX_INITIAL = (0.70, 0.15, 0.15)  # flat / rough / wave
+_NUBOTS_TERRAIN_MIX_TARGET = (0.70, 0.15, 0.15)
 _NUBOTS_PHASE1_TERRAIN = (0.95, 0.05)  # flat / rough only
 _NUBOTS_PHASE2_TERRAIN_INITIAL = (0.90, 0.05, 0.05)  # flat / rough / wave
 _NUBOTS_PHASE2_TERRAIN_TARGET = (0.70, 0.15, 0.15)
@@ -2391,6 +2871,9 @@ def booster_k1_nubots_htwk_robust_ft_env_cfg(
   cfg.rewards["feet_offset_y"].params["min_velocity_scale"] = (
     _NUBOTS_ROBUST_FT_FOOT_OFFSET_MIN_VEL_SCALE
   )
+  cfg.rewards["feet_offset_y"].params["feet_distance_ref"] = (
+    _NUBOTS_ROBUST_FT_FEET_DISTANCE_REF
+  )
   cfg.rewards["feet_minimum_separation"].weight = (
     _NUBOTS_ROBUST_FT_FEET_MIN_SEP_WEIGHT
   )
@@ -2468,9 +2951,9 @@ def booster_k1_nubots_htwk_robust_ft_env_cfg(
   terrain_generator = cfg.scene.terrain.terrain_generator
   terrain_generator.curriculum = False
   terrain_generator.sub_terrains = {
-    "flat": flat(proportion=0.80),
-    "random_rough": random_rough(proportion=0.10),
-    "wave_terrain": wave_terrain(proportion=0.10),
+    "flat": flat(proportion=0.70),
+    "random_rough": random_rough(proportion=0.15),
+    "wave_terrain": wave_terrain(proportion=0.15),
   }
 
   terrain_scan = next(
@@ -2527,10 +3010,7 @@ def booster_k1_nubots_htwk_robust_ft_env_cfg(
       params={
         "steps_per_iteration": 24,
         "stages": [
-          # Start the robust fine-tune with the requested terrain mix.
-          {"iteration": 0, "proportions": [0.8, 0.1, 0.1]},
-          {"iteration": 20_000, "proportions": [0.8, 0.1, 0.1]},
-          {"iteration": 40_000, "proportions": [0.7, 0.15, 0.15]},
+          {"iteration": 0, "proportions": [0.7, 0.15, 0.15]},
         ],
       },
     )

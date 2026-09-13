@@ -75,6 +75,29 @@ def booster_k1_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
   )
 
 
+def booster_k1_base_walk_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
+  """PPO for BaseWalk: scratch original (1e-5 adaptive, std 1e-3–1.0)."""
+  cfg = booster_k1_ppo_runner_cfg()
+  cfg.algorithm.learning_rate = 1.0e-5
+  cfg.algorithm.schedule = "adaptive"
+  cfg.experiment_name = "k1_base_walk"
+  cfg.max_iterations = 50_000
+  cfg.clip_actions = None
+  cfg.actor.distribution_cfg = dict(cfg.actor.distribution_cfg or {})
+  cfg.actor.distribution_cfg["std_range"] = (1e-3, 1.0)
+  return cfg
+
+
+def booster_k1_base_walk_rough_ft_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
+  """BaseWalk rough FT: fixed 5e-6 LR (HTWK robust-style)."""
+  cfg = booster_k1_base_walk_ppo_runner_cfg()
+  cfg.algorithm.learning_rate = 5.0e-6
+  cfg.algorithm.schedule = "fixed"
+  cfg.experiment_name = "k1_base_walk_rough_ft"
+  cfg.max_iterations = 15_000
+  return cfg
+
+
 def booster_k1_nubots_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
   """PPO runner matching NuBots ``agent.yaml`` (student = teacher MLP).
 
@@ -276,6 +299,13 @@ def booster_k1_nubots_htwk_robust_ft_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
   cfg.algorithm.learning_rate = 5.0e-6
   cfg.algorithm.schedule = "fixed"
   cfg.clip_actions = 1.0
+  cfg.actor.distribution_cfg = dict(cfg.actor.distribution_cfg or {})
+  # Cap exploration during long FT resumes; uncapped std preceded both collapses.
+  cfg.actor.distribution_cfg["std_range"] = (0.05, 0.40)
+  cfg.early_stop_enabled = True
+  cfg.early_stop_min_iters = 200
+  cfg.early_stop_drop_fraction = 0.20
+  cfg.early_stop_patience = 80
   return cfg
 
 
