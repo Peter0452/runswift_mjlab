@@ -10,14 +10,19 @@ import torch
 from mjlab.entity import Entity
 from mjlab.envs.mdp.events import resolve_env_ids
 from mjlab.managers.scene_entity_config import SceneEntityCfg
+from mjlab.tasks.kick.mdp.geometry import (
+  behind_ball_waypoint_xy,
+  ensure_approach_waypoint_latch,
+  get_approach_waypoint_latch,
+  nearest_foot_kick_side,
+  update_plant_arrival_latch,
+)
 from mjlab.utils.lab_api.math import (
   quat_apply,
   quat_apply_inverse,
   quat_from_euler_xyz,
   sample_uniform,
 )
-
-from mjlab.tasks.kick.mdp.geometry import behind_ball_waypoint_xy
 
 if TYPE_CHECKING:
   from mjlab.envs import ManagerBasedRlEnv
@@ -93,6 +98,51 @@ def reset_ball_uniform(
   ball.write_root_state_to_sim(default_state, env_ids=env_ids)
 
 
+def latch_spawn_waypoint_side(
+  env: ManagerBasedRlEnv,
+  env_ids: torch.Tensor,
+  robot_xy: torch.Tensor,
+  ball_xy: torch.Tensor,
+  waypoint_lateral_range: tuple[float, float] | None,
+  fixed_kick_side: float | None,
+  goal_command_name: str,
+) -> None:
+  """Latch kick foot from the spawn-closer leg; sample lateral range."""
+  latch = ensure_approach_waypoint_latch(env)
+  latch.side[env_ids] = 0.0
+  latch.lateral[env_ids] = 0.0
+  latch.at_plant[env_ids] = False
+  latch.ready_time_s[env_ids] = 0.0
+  command = env.command_manager.get_command(goal_command_name)
+  assert command is not None, f"Command '{goal_command_name}' not found."
+  n = len(env_ids)
+  device = env.device
+  goal_xy = command[env_ids, :2] + env.scene.env_origins[env_ids, :2]
+  goal_dir = goal_xy - ball_xy
+  goal_dir = goal_dir / torch.linalg.norm(goal_dir, dim=-1, keepdim=True).clamp(
+    min=1.0e-6
+  )
+  if waypoint_lateral_range is None:
+    if fixed_kick_side is not None:
+      latch.side[env_ids] = float(fixed_kick_side)
+    else:
+      latch.side[env_ids] = nearest_foot_kick_side(robot_xy, ball_xy, goal_dir)
+    return
+  if fixed_kick_side is None:
+    side = nearest_foot_kick_side(robot_xy, ball_xy, goal_dir)
+  else:
+    side = torch.full((n,), float(fixed_kick_side), device=device)
+  lo, hi = float(waypoint_lateral_range[0]), float(waypoint_lateral_range[1])
+  lat = sample_uniform(
+    torch.full((n,), lo, device=device),
+    torch.full((n,), hi, device=device),
+    (n,),
+    device,
+  )
+  latch.side[env_ids] = side
+  latch.lateral[env_ids] = lat
+
+
 def reset_robot_around_ball_facing(
   env: ManagerBasedRlEnv,
   env_ids: torch.Tensor | None,
@@ -101,6 +151,8 @@ def reset_robot_around_ball_facing(
   spawn_on_approach_side: bool = False,
   approach_spread: float = math.pi / 2.0,
   goal_command_name: str = "goal",
+  waypoint_lateral_range: tuple[float, float] | None = None,
+  fixed_kick_side: float | None = None,
   robot_cfg: SceneEntityCfg = _DEFAULT_ROBOT_CFG,
   ball_cfg: SceneEntityCfg = _DEFAULT_BALL_CFG,
 ) -> None:
@@ -114,6 +166,10 @@ def reset_robot_around_ball_facing(
   hemisphere opposite the goal so it never starts on the target side of the
   ball.  Use this with ``mode="post_reset"`` so the goal command is already
   sampled for the episode.
+
+  ``waypoint_lateral_range`` latches a spawn-side offset for the yellow
+  approach waypoint (swing foot on the kick line). ``None`` keeps it on-axis.
+  Kick foot is the spawn-closer leg unless ``fixed_kick_side`` is set.
   """
   env_ids = resolve_env_ids(env, env_ids)
   robot: Entity = env.scene[robot_cfg.name]
@@ -171,6 +227,15 @@ def reset_robot_around_ball_facing(
   robot.write_root_link_velocity_to_sim(
     robot_state[:, 7:13],
     env_ids=env_ids,
+  )
+  latch_spawn_waypoint_side(
+    env,
+    env_ids,
+    robot_pos[:, :2],
+    ball_pos[:, :2],
+    waypoint_lateral_range,
+    fixed_kick_side,
+    goal_command_name,
   )
 
 
@@ -408,6 +473,8 @@ def ensure_robot_ball_twist_command(
   goal_command_name: str = "goal",
   approach_standoff: float = 0.40,
   ready_waypoint_distance: float = 0.20,
+  ready_facing_angle: float = math.radians(20.0),
+  ready_hold_time_s: float = 0.10,
   # Near-kick plant: drive root to support-side plant pose + pin feet offsets.
   orbit_to_plant_box: bool = False,
   plant_root_behind: float = 0.22,
@@ -438,10 +505,7 @@ def ensure_robot_ball_twist_command(
   """
   del env_ids, _unused
   step = int(env.common_step_counter)
-  if (
-    not force
-    and getattr(env, "_kick_robot_ball_twist_step", -1) == step
-  ):
+  if not force and getattr(env, "_kick_robot_ball_twist_step", -1) == step:
     return
 
   from mjlab.tasks.kick.mdp.geometry import ball_to_goal_direction_xy
@@ -482,8 +546,9 @@ def ensure_robot_ball_twist_command(
       (env.num_envs,), float(turn_speed), device=env.device, dtype=robot_xy.dtype
     )
 
-  wp_dist = None
-  drive_hat = None
+  wp_dist = torch.full_like(ball_dist, torch.inf)
+  drive_hat = to_ball / ball_dist.unsqueeze(-1).clamp(min=1.0e-6)
+  goal_dir = drive_hat
   near_plant = torch.zeros(env.num_envs, dtype=torch.bool, device=env.device)
   if orbit_to_plant_box:
     goal_dir = ball_to_goal_direction_xy(env, ball_xy, goal_command_name)
@@ -498,13 +563,26 @@ def ensure_robot_ball_twist_command(
     wp_dist = torch.linalg.norm(to_plant, dim=-1)
     plant_hat = to_plant / wp_dist.unsqueeze(-1).clamp(min=1.0e-6)
     ball_hat = to_ball / ball_dist.unsqueeze(-1).clamp(min=1.0e-6)
-    near_plant = wp_dist <= float(ready_waypoint_distance)
+    fwd = quat_apply(
+      robot.data.root_link_quat_w,
+      torch.tensor([1.0, 0.0, 0.0], device=env.device, dtype=robot_xy.dtype).expand(
+        env.num_envs, 3
+      ),
+    )[:, :2]
+    fwd = fwd / fwd.norm(dim=-1, keepdim=True).clamp(min=1.0e-6)
+    facing = torch.sum(fwd * goal_dir, dim=-1).clamp(-1.0, 1.0)
+    near_plant = update_plant_arrival_latch(
+      env,
+      wp_dist,
+      facing,
+      float(ready_waypoint_distance),
+      facing_min=math.cos(float(ready_facing_angle)),
+      hold_time_s=float(ready_hold_time_s),
+    )
     # Approach-side catch: go to plant pose, then keep walking toward ball.
     if creep_through_plant:
       drive_hat = torch.where(near_plant.unsqueeze(-1), ball_hat, plant_hat)
-      speed_scale = torch.clamp(
-        wp_dist / max(float(slow_distance), 1.0e-6), 0.0, 1.0
-      )
+      speed_scale = torch.clamp(wp_dist / max(float(slow_distance), 1.0e-6), 0.0, 1.0)
       approach_speed = float(min_speed) + (v_x - float(min_speed)) * speed_scale
       speed = torch.where(
         near_plant,
@@ -514,9 +592,7 @@ def ensure_robot_ball_twist_command(
       plant = torch.zeros_like(near_plant)  # never freeze / stand
     else:
       drive_hat = plant_hat
-      speed_scale = torch.clamp(
-        wp_dist / max(float(slow_distance), 1.0e-6), 0.0, 1.0
-      )
+      speed_scale = torch.clamp(wp_dist / max(float(slow_distance), 1.0e-6), 0.0, 1.0)
       speed = float(min_speed) + (v_x - float(min_speed)) * speed_scale
       plant = near_plant
     v_w = drive_hat * speed.unsqueeze(-1)
@@ -526,18 +602,54 @@ def ensure_robot_ball_twist_command(
     )
     to_wp = waypoint - robot_xy
     wp_dist = torch.linalg.norm(to_wp, dim=-1)
-    drive_hat = to_wp / wp_dist.unsqueeze(-1).clamp(min=1.0e-6)
-    speed_scale = torch.clamp(
-      wp_dist / max(float(slow_distance), 1.0e-6), 0.0, 1.0
+    goal_dir = ball_to_goal_direction_xy(env, ball_xy, goal_command_name)
+    fwd = quat_apply(
+      robot.data.root_link_quat_w,
+      torch.tensor([1.0, 0.0, 0.0], device=env.device, dtype=robot_xy.dtype).expand(
+        env.num_envs, 3
+      ),
+    )[:, :2]
+    fwd = fwd / fwd.norm(dim=-1, keepdim=True).clamp(min=1.0e-6)
+    yaw_err = torch.atan2(
+      fwd[:, 0] * goal_dir[:, 1] - fwd[:, 1] * goal_dir[:, 0],
+      (fwd * goal_dir).sum(dim=-1).clamp(-1.0, 1.0),
     )
-    speed = float(min_speed) + (v_x - float(min_speed)) * speed_scale
+    facing = torch.cos(yaw_err)
+    at_plant = update_plant_arrival_latch(
+      env,
+      wp_dist,
+      facing,
+      float(ready_waypoint_distance),
+      facing_min=math.cos(float(ready_facing_angle)),
+      hold_time_s=float(ready_hold_time_s),
+    )
+    waypoint = behind_ball_waypoint_xy(
+      env, ball_xy, float(approach_standoff), goal_command_name
+    )
+    to_wp = waypoint - robot_xy
+    wp_dist = torch.linalg.norm(to_wp, dim=-1)
+    plant_hat = to_wp / wp_dist.unsqueeze(-1).clamp(min=1.0e-6)
+    near_plant = at_plant
+    if creep_through_plant:
+      ball_hat = to_ball / ball_dist.unsqueeze(-1).clamp(min=1.0e-6)
+      drive_hat = torch.where(at_plant.unsqueeze(-1), ball_hat, plant_hat)
+      speed_scale = torch.clamp(wp_dist / max(float(slow_distance), 1.0e-6), 0.0, 1.0)
+      approach_speed = float(min_speed) + (v_x - float(min_speed)) * speed_scale
+      speed = torch.where(
+        at_plant,
+        torch.full_like(approach_speed, float(creep_speed)),
+        approach_speed,
+      )
+      plant = torch.zeros_like(at_plant)
+    else:
+      drive_hat = plant_hat
+      speed_scale = torch.clamp(wp_dist / max(float(slow_distance), 1.0e-6), 0.0, 1.0)
+      speed = float(min_speed) + (v_x - float(min_speed)) * speed_scale
+      plant = wp_dist <= float(ready_waypoint_distance)
     v_w = drive_hat * speed.unsqueeze(-1)
-    plant = wp_dist <= float(ready_waypoint_distance)
   else:
     r_hat = to_ball / ball_dist.unsqueeze(-1).clamp(min=1.0e-6)
-    speed_scale = torch.clamp(
-      ball_dist / max(float(slow_distance), 1.0e-6), 0.0, 1.0
-    )
+    speed_scale = torch.clamp(ball_dist / max(float(slow_distance), 1.0e-6), 0.0, 1.0)
     speed = float(min_speed) + (v_x - float(min_speed)) * speed_scale
     v_w = r_hat * speed.unsqueeze(-1)
     plant = ball_dist <= float(plant_distance)
@@ -567,7 +679,17 @@ def ensure_robot_ball_twist_command(
       ),
     )
     body_yaw = torch.atan2(body_fwd[:, 1], body_fwd[:, 0])
-    path_yaw = torch.atan2(drive_hat[:, 1], drive_hat[:, 0])
+    yaw_hat = drive_hat
+    if orbit_to_plant_box:
+      yaw_hat = torch.where(
+        (wp_dist <= float(slow_distance)).unsqueeze(-1), goal_dir, drive_hat
+      )
+    elif orbit_to_approach:
+      # Close in: keep translating toward the waypoint, but lock heading to
+      # ball→goal so a nearby offset marker cannot spin the robot into an orbit.
+      face_goal = near_plant | (wp_dist <= float(slow_distance))
+      yaw_hat = torch.where(face_goal.unsqueeze(-1), goal_dir, drive_hat)
+    path_yaw = torch.atan2(yaw_hat[:, 1], yaw_hat[:, 0])
     phi_path = wrap_to_pi(path_yaw - body_yaw)
     # Turning by δ (CCW+) moves ball bearing: θ' = θ_ball − δ.
     # Keep |θ'| ≤ fov_half_angle ⇒ δ ∈ [θ_ball − θ_safe, θ_ball + θ_safe].
@@ -608,7 +730,7 @@ def ensure_robot_ball_twist_command(
     twist_term.vel_command_b[:, 7] = body_roll_target
     twist_term.vel_command_b[:, 8] = float(feet_offset_x_target)
     twist_term.vel_command_b[:, 9] = float(feet_offset_y_target)
-    if orbit_to_plant_box and wp_dist is not None:
+    if orbit_to_plant_box:
       pin = wp_dist <= max(float(ready_waypoint_distance), 0.35)
       twist_term.vel_command_b[pin, 8] = float(plant_feet_offset_x)
       twist_term.vel_command_b[pin, 9] = float(plant_feet_offset_y)
@@ -625,8 +747,13 @@ def ensure_robot_ball_twist_command(
   env.extras["log"]["Metrics/twist_creep_through"] = float(creep_through_plant)
   env.extras["log"]["Metrics/twist_near_plant"] = near_plant.float().mean()
   env.extras["log"]["Metrics/twist_fov_clip"] = float(use_path_yaw)
-  if wp_dist is not None:
+  if orbit_to_approach or orbit_to_plant_box:
     env.extras["log"]["Metrics/twist_waypoint_dist"] = wp_dist.mean()
+  latch = get_approach_waypoint_latch(env)
+  if latch is not None:
+    env.extras["log"]["Metrics/waypoint_side"] = latch.side.mean()
+    env.extras["log"]["Metrics/waypoint_lateral"] = latch.lateral.mean()
+    env.extras["log"]["Metrics/waypoint_at_plant"] = latch.at_plant.float().mean()
 
 
 def update_pref_pose_twist_command(
@@ -880,9 +1007,7 @@ def reset_strike_episode(
     device,
   )
   vel_dir = torch.randn(n, 2, device=device)
-  vel_dir = vel_dir / torch.linalg.norm(vel_dir, dim=-1, keepdim=True).clamp(
-    min=1.0e-6
-  )
+  vel_dir = vel_dir / torch.linalg.norm(vel_dir, dim=-1, keepdim=True).clamp(min=1.0e-6)
   ball_lin_vel = torch.zeros(n, 3, device=device)
   ball_lin_vel[:, 0:2] = vel_dir * speed.unsqueeze(-1)
 

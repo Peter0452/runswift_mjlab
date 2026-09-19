@@ -66,14 +66,17 @@ def ball_still_timeout(
     robot_cfg_name=robot_cfg.name,
     kick_phase_robot_ball_distance=kick_phase_robot_ball_distance,
   )
-  ready = kick_ready_activation_mask(
-    env,
-    robot_cfg,
-    ball_cfg,
-    command_name,
-    target_distance,
-    kick_ready_threshold,
-  ) > 0.0
+  ready = (
+    kick_ready_activation_mask(
+      env,
+      robot_cfg,
+      ball_cfg,
+      command_name,
+      target_distance,
+      kick_ready_threshold,
+    )
+    > 0.0
+  )
   return (~state.kick_detected) & ready & (state.time_since_still_s > max_still_time_s)
 
 
@@ -206,10 +209,10 @@ def double_touch(
   ball_cfg: SceneEntityCfg = _DEFAULT_BALL_CFG,
   robot_cfg: SceneEntityCfg = _DEFAULT_ROBOT_CFG,
 ) -> torch.Tensor:
-  """Failure: illegal agent–ball contact after the post-kick window.
+  """Failure: a second contact edge after the kick-contact debounce.
 
-  Uses ``agent_ball_contact`` from feet/body↔ball contact sensors (distance
-  fallback only if those sensors are missing).
+  Sustained first contact is allowed; leaving and touching the ball again is
+  terminated.
   """
   state = ensure_ball_phase_updated(
     env,
@@ -220,8 +223,11 @@ def double_touch(
     robot_cfg_name=robot_cfg.name,
     contact_distance=contact_distance,
   )
+  assert state.time_since_kick_s is not None
+  assert state.kick_detected is not None
+  assert state.post_kick_contact_count is not None
   past_window = state.time_since_kick_s > post_kick_window_s
-  illegal = state.kick_detected & past_window & state.agent_ball_contact
+  illegal = state.kick_detected & past_window & (state.post_kick_contact_count >= 2)
   env.extras["log"]["Metrics/double_touch"] = illegal.float().mean()
   return illegal
 
@@ -345,8 +351,8 @@ def near_ball_reached(
   env._near_ball_reached_timer = timer
   env.extras["log"]["Metrics/near_ball_reached_s"] = timer.mean()
   env.extras["log"]["Metrics/near_ball_reached"] = (
-    near & (timer >= float(min_time_s))
-  ).float().mean()
+    (near & (timer >= float(min_time_s))).float().mean()
+  )
   return near & (timer >= float(min_time_s))
 
 

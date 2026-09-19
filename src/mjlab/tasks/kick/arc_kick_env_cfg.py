@@ -61,7 +61,7 @@ _BALL_RADIUS = 0.11  # FIFA size-5; spawn z = radius so the ball rests on the pl
 _POST_KICK_STABILITY_S = 1.0
 _TARGET_RADIUS = 1.0  # metres — ball stopped inside this of goal = hit
 _POST_KICK_WINDOW_S = 2.0  # T_window for target miss / settle
-_DOUBLE_TOUCH_WINDOW_S = 1.0  # T_window for illegal re-contact
+_DOUBLE_TOUCH_WINDOW_S = 0.10  # debounce before a second contact edge is illegal
 _BALL_SPAWN_XY_NOISE = 0.05  # ±m jitter on ball reset XY
 _BALL_OBS_NOISE = (-0.05, 0.05)  # actor ball_rel_pos uniform noise (m)
 
@@ -284,9 +284,11 @@ def make_arc_kick_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvCf
     if name not in base_cfg.rewards:
       continue
     term = base_cfg.rewards[name]
-    weight = {"tracking_lin_vel_x": 1.5, "tracking_lin_vel_y": 1.5, "tracking_ang_vel": 1.0}[
-      name
-    ]
+    weight = {
+      "tracking_lin_vel_x": 1.5,
+      "tracking_lin_vel_y": 1.5,
+      "tracking_ang_vel": 1.0,
+    }[name]
     base_cfg.rewards[name] = RewardTermCfg(
       func=func,
       weight=weight,
@@ -312,12 +314,15 @@ def make_arc_kick_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvCf
     "strike_scale": 0.0,
     "near_ball_dist": None,
     "near_ball_scale": 1.0,
-    **{k: _plant_walk[k] for k in (
-      "plant_full_dist",
-      "plant_far_dist",
-      "plant_far_scale",
-      "restore_tracking_after_kick",
-    )},
+    **{
+      k: _plant_walk[k]
+      for k in (
+        "plant_full_dist",
+        "plant_far_dist",
+        "plant_far_scale",
+        "restore_tracking_after_kick",
+      )
+    },
   }
 
   _knee_scales = {
@@ -528,8 +533,13 @@ def make_approach_only_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRl
   cfg = make_arc_kick_env_cfg(base_cfg)
   robot = SceneEntityCfg("robot")
   ball = SceneEntityCfg("ball")
-  keepout_m = 0.3
-  standoff_m = 0.40
+  # Plant: pelvis 0.15 m behind, 0.08–0.12 m off-axis. Keep-out 9 cm
+  # (0.09; 0.9 m would sit in front of the plant). After latch, yellow
+  # collapses onto the ball (lateral stays) and keep-out releases.
+  keepout_m = 0.09
+  standoff_m = 0.15
+  ready_wp_m = 0.15
+  finish_band_m = 0.25
 
   # No kick / settle / anti-loiter-without-kick pressure.
   for name in (
@@ -554,34 +564,35 @@ def make_approach_only_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRl
   cfg.rewards.pop("agent_approach_ball", None)
   cfg.rewards["waypoint_approach"] = RewardTermCfg(
     func=kick_mdp.waypoint_approach_velocity,
-    weight=4.0,
+    weight=5.0,
     params={
       "target_distance": standoff_m,
       "command_name": "goal",
       "activate_ball_distance": None,
-      "activate_waypoint_distance": 0.20,
+      "activate_waypoint_distance": ready_wp_m,
       "velocity_eps": 0.1,
       "use_cosine": True,
       "robot_cfg": robot,
       "ball_cfg": ball,
     },
   )
-  # Sharp Gaussian — at 1.2 m this is ~e^{-11} with std=0.8, now bites.
+  # Position × facing: on the waypoint and lined up with ball→goal.
   cfg.rewards["waypoint_proximity"] = RewardTermCfg(
     func=kick_mdp.behind_ball_waypoint,
-    weight=4.0,
+    weight=5.0,
     params={
       "target_distance": standoff_m,
-      "std": 0.35,
+      "std": 0.22,
+      "facing_std": 0.40,
       "command_name": "goal",
       "robot_cfg": robot,
       "ball_cfg": ball,
     },
   )
-  # Long-range finish pressure: 1/(1+d) still differs 1.2 m vs 0.4 m.
+  # Long-range finish pressure: 1/(1+d) still differs 1.2 m vs 0.32 m.
   cfg.rewards["waypoint_inv_distance"] = RewardTermCfg(
     func=kick_mdp.behind_ball_inv_distance,
-    weight=2.0,
+    weight=3.0,
     params={
       "target_distance": standoff_m,
       "command_name": "goal",
@@ -589,13 +600,13 @@ def make_approach_only_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRl
       "ball_cfg": ball,
     },
   )
-  # Soft finish band around the ball (outside touch keep-out).
+  # Finish band around the ball (outside touch keep-out).
   cfg.rewards["ball_proximity"] = RewardTermCfg(
     func=kick_mdp.ball_distance_band,
     weight=2.0,
     params={
       "min_distance": keepout_m,
-      "max_distance": 0.80,
+      "max_distance": finish_band_m,
       "robot_cfg": robot,
       "ball_cfg": ball,
     },
@@ -606,6 +617,31 @@ def make_approach_only_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRl
     params={
       "keepout_distance": keepout_m,
       "contact_cost": 1.0,
+      "release_when_planted": True,
+      "robot_cfg": robot,
+      "ball_cfg": ball,
+    },
+  )
+  cfg.rewards["ball_velocity_toward_goal"] = RewardTermCfg(
+    func=kick_mdp.ball_velocity_toward_goal,
+    weight=4.0,
+    params={
+      "command_name": "goal",
+      "ball_cfg": ball,
+      "max_reward": 6.0,
+      "use_decay": False,
+      "require_plant_latch": True,
+    },
+  )
+  cfg.rewards["kicking_foot_strike"] = RewardTermCfg(
+    func=kick_mdp.kicking_foot_strike_ball,
+    weight=2.0,
+    params={
+      "command_name": "goal",
+      "target_distance": standoff_m,
+      "activate_inside_ball_distance": 1.0,
+      "require_kick_ready": False,
+      "require_plant_latch": True,
       "robot_cfg": robot,
       "ball_cfg": ball,
     },
@@ -634,14 +670,14 @@ def make_approach_only_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRl
   if "survival" in cfg.rewards:
     cfg.rewards["survival"].weight = 0.15
 
-  # Soft success: ball [0.3, 0.8] OR within 0.35 m of approach waypoint.
+  # Success: ball [keepout, 0.50] OR within 0.12 m of the close waypoint.
   cfg.terminations["near_ball_reached"] = TerminationTermCfg(
     func=near_ball_reached,
     time_out=True,
     params={
-      "near_ball_distance": 0.80,
+      "near_ball_distance": finish_band_m,
       "min_keepout_distance": keepout_m,
-      "max_waypoint_distance": 0.35,
+      "max_waypoint_distance": 0.12,
       "approach_standoff": standoff_m,
       "command_name": "goal",
       "min_time_s": 0.5,
@@ -653,26 +689,30 @@ def make_approach_only_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRl
   # Paper annulus + full 360° (learn to orbit when spawned on the goal side).
   cfg.events["reset_base"].params["radius_range"] = (0.4, 4.0)
   cfg.events["reset_base"].params["spawn_on_approach_side"] = False
+  # Spawn-side plant: yellow marker 0.08–0.12 m off-axis (hip half-width ~0.095).
+  cfg.events["reset_base"].params["waypoint_lateral_range"] = (0.08, 0.12)
 
-  # Orbit teacher: path-facing + FOV clamp; faster cruise for bigger steps.
+  # Orbit teacher: path-facing + FOV clamp; creep through plant (no freeze).
   _orbit = {
     "orbit_to_approach": True,
     "goal_command_name": "goal",
     "approach_standoff": standoff_m,
-    "ready_waypoint_distance": 0.20,
+    "ready_waypoint_distance": ready_wp_m,
     "plant_distance": keepout_m,
     "plant_full_dist": 0.6,
     "plant_far_dist": 1.5,
     # Full tracking/gait credit at range — 0.5 was soft-pedaling the teacher at ~1.5 m.
     "plant_far_scale": 1.0,
-    "cruise_speed": 1.1,
-    "min_speed": 0.40,
-    "slow_distance": 0.8,
+    "cruise_speed": 1.35,
+    "min_speed": 0.55,
+    "slow_distance": 0.45,
     "turn_speed": 1.2,
     "face_path_fov_clip": True,
     "fov_half_angle": 0.69,
     "yaw_gain": 2.0,
     "heading_deadzone": 0.05,
+    "creep_through_plant": True,
+    "creep_speed": 0.25,
   }
   if "pref_pose_twist" in cfg.events:
     cfg.events["pref_pose_twist"].params.update(
@@ -692,6 +732,8 @@ def make_approach_only_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRl
           "fov_half_angle",
           "yaw_gain",
           "heading_deadzone",
+          "creep_through_plant",
+          "creep_speed",
         )
       }
     )
@@ -718,6 +760,7 @@ def make_approach_only_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRl
       }
     )
 
+  cfg.commands["goal"].approach_standoff = standoff_m
   cfg.episode_length_s = 15.0
   return cfg
 
@@ -745,161 +788,121 @@ def make_near_kick_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvC
   trunk = SceneEntityCfg("robot", body_names=("Trunk",))
   robot_ball = {"robot_cfg": robot, "ball_cfg": ball}
 
-  # Unlock touch / hover-band (approach keep-out fights kicking).
-  cfg.rewards.pop("ball_touch_keepout", None)
-  cfg.rewards.pop("ball_proximity", None)
-  cfg.rewards.pop("agent_approach_ball", None)
+  # Preserve the finished approach policy's complete reward landscape.
+  # Alignment latch enables kick outcome; keep-out is removed so it cannot
+  # shove the robot back before plant.
   cfg.terminations.pop("near_ball_reached", None)
 
-  # Soften approach shaping; keep it until near the plant box (~0.4 m).
-  _kick_zone_m = 0.40
-  if "waypoint_approach" in cfg.rewards:
-    cfg.rewards["waypoint_approach"].weight = 0.5
-    cfg.rewards["waypoint_approach"].params["inactive_inside_ball_distance"] = (
-      _kick_zone_m
-    )
-  if "waypoint_proximity" in cfg.rewards:
-    cfg.rewards["waypoint_proximity"].weight = 0.75
-    cfg.rewards["waypoint_proximity"].params["inactive_inside_ball_distance"] = (
-      _kick_zone_m
-    )
-  if "waypoint_inv_distance" in cfg.rewards:
-    cfg.rewards["waypoint_inv_distance"].weight = 0.75
-    cfg.rewards["waypoint_inv_distance"].params["inactive_inside_ball_distance"] = (
-      _kick_zone_m
-    )
-  for name in ("tracking_lin_vel_x", "tracking_lin_vel_y", "tracking_ang_vel"):
-    if name in cfg.rewards:
-      cfg.rewards[name].weight = 0.5
-      cfg.rewards[name].params["inactive_inside_ball_distance"] = _kick_zone_m
-
-  # Plant → strike: steep sagittal-closing plant (product funnel), soft bridge.
-  _plant = {
-    "sagittal_target": 0.14,
-    "sagittal_sigma": 0.12,
-    "lateral_target": 0.175,
-    "lateral_sigma": 0.08,
-    "sagittal_funnel": 0.12,
-    "lateral_funnel": 0.10,
-    "funnel_weight": 0.55,
-    "command_name": "goal",
-  }
-  cfg.rewards["support_plant_score"] = RewardTermCfg(
-    func=kick_mdp.support_plant_score,
-    weight=8.0,
-    params={
-      "activate_inside_ball_distance": 1.2,
-      **_plant,
-      **robot_ball,
-    },
-  )
-  cfg.rewards["kick_contact_bridge"] = RewardTermCfg(
-    func=kick_mdp.kick_contact_bridge,
-    weight=5.0,
-    params={
-      "activate_inside_ball_distance": 0.85,
-      "closing_scale": 0.15,
-      "contact_bonus": 3.0,
-      "impulse_scale": 4.0,
-      "max_impulse": 3.0,
-      "impulse_contact_eps": 0.05,
-      "min_plant_score": 0.15,
-      "plant_gate_power": 1.0,
-      "max_closing_speed": 2.0,
-      **_plant,
-      **robot_ball,
-    },
-  )
-  cfg.rewards["strike_ankle_pitch"] = RewardTermCfg(
-    func=kick_mdp.strike_ankle_pitch,
-    weight=2.0,
-    params={
-      "target_pitch": -0.50,
-      "pitch_sigma": 0.15,
-      "command_name": "goal",
-      **robot_ball,
-    },
-  )
-
-  # Soften anti-lunge so closing into the plant box is not over-punished.
-  cfg.rewards["premature_kick_lunge"] = RewardTermCfg(
-    func=kick_mdp.premature_kick_lunge_penalty,
-    weight=-1.5,
-    params={
-      "target_distance": 0.35,
-      "command_name": "goal",
-      "kick_ready_threshold": 0.40,
-      **robot_ball,
-    },
-  )
-  # Planted support foot while near the ball (still / on ground).
-  cfg.rewards["support_foot_planted"] = RewardTermCfg(
-    func=kick_mdp.support_foot_planted,
+  # No explicit planting stage: alignment unlocks a straight-through strike.
+  cfg.rewards.pop("support_plant_score", None)
+  cfg.rewards["kicking_foot_strike"] = RewardTermCfg(
+    func=kick_mdp.kicking_foot_strike_ball,
     weight=2.0,
     params={
       "activate_inside_ball_distance": 0.85,
       "target_distance": 0.35,
       "command_name": "goal",
       "require_kick_ready": False,
-      "kick_ready_threshold": 0.40,
+      "require_plant_latch": True,
+      "proximity_sigma": 0.30,
+      "proximity_gated_speed": True,
       **robot_ball,
     },
   )
-
-  # Gait placement off during strike; keep light crouch-runaway tax.
   for name in (
     "feet_swing",
+    "knee_flex_cmd_excess",
     "feet_offset_x",
     "feet_offset_y",
-    "feet_distance",
   ):
-    if name in cfg.rewards:
-      cfg.rewards[name].weight = 0.0
-  if "knee_flex_cmd_excess" in cfg.rewards:
-    cfg.rewards["knee_flex_cmd_excess"].weight = -1.0
+    cfg.rewards[name].params["disable_when_planted"] = True
+  # Ball-attached target (standoff 0, no lateral). Pay closing
+  # speed, not a static stand-off magnet.
+  cfg.rewards["waypoint_approach"].params.update(
+    {
+      "target_distance": 0.0,
+      "use_cosine": False,
+      "activate_waypoint_distance": None,
+      "activate_ball_distance": None,
+      "facing_std": 0.40,
+      "stop_after_plant_latch": True,
+    }
+  )
+  cfg.rewards["waypoint_proximity"].params.update(
+    {
+      "target_distance": 0.0,
+      "progress": True,
+      "facing_std": 0.40,
+      "stop_after_plant_latch": True,
+    }
+  )
+  cfg.rewards["waypoint_inv_distance"].params.update(
+    {
+      "target_distance": 0.0,
+      "progress": True,
+      "stop_after_plant_latch": True,
+    }
+  )
+  # One-shot lure onto the latch; waypoint terms stay off afterward.
+  cfg.rewards["plant_latch_bonus"] = RewardTermCfg(
+    func=kick_mdp.plant_latch_arrival_bonus,
+    weight=3.0,
+  )
+  cfg.rewards["orientation"].weight = -18.0
+  cfg.rewards["base_height"].weight = -14.0
+  cfg.rewards["wrong_ball_contact"] = RewardTermCfg(
+    func=kick_mdp.wrong_ball_contact_penalty,
+    weight=-4.0,
+    params=robot_ball,
+  )
 
-  if "action_rate" in cfg.rewards:
-    cfg.rewards["action_rate"].weight = -1.0
-
-  # Walk-height posture: crouch / collapse is expensive; mid-strike lean is softer.
-  if "orientation" in cfg.rewards:
-    cfg.rewards["orientation"].weight = -6.0
-  if "base_height" in cfg.rewards:
-    cfg.rewards["base_height"].weight = -10.0
-    cfg.rewards["base_height"].params["target_height"] = _TRUNK_HEIGHT_TARGET
-  if "trunk_height_floor" in cfg.rewards:
-    cfg.rewards["trunk_height_floor"].weight = -8.0
-    cfg.rewards["trunk_height_floor"].params["minimum_height"] = _TRUNK_HEIGHT_MIN
-  # Dive kills were ending eps in ~0.25 s before any kick — rely on fell_over only.
-  cfg.terminations.pop("root_height", None)
-  if "fell_over" in cfg.terminations:
-    cfg.terminations["fell_over"].params["limit_angle"] = math.radians(85.0)
-
-  # Approach-side drive to plant, then creep toward ball (no standstill catch).
+  # Yellow sits on the ball (no standoff, no lateral). Face kick-axis in
+  # the close zone; do not recycle last vx.
   _plant_twist = {
-    "orbit_to_plant_box": True,
-    "orbit_to_approach": False,
+    "orbit_to_plant_box": False,
+    "orbit_to_approach": True,
     "creep_through_plant": True,
     "creep_speed": 0.25,
-    "plant_root_behind": 0.22,
-    "plant_root_lateral": 0.10,
+    "plant_root_behind": 0.10,
+    "plant_root_lateral": 0.0,
     "plant_feet_offset_x": -0.02,
     "plant_feet_offset_y": 0.12,
-    "ready_waypoint_distance": 0.15,
-    "slow_distance": 0.45,
+    "ready_waypoint_distance": 0.22,
+    "slow_distance": 0.80,
     "cruise_speed": 0.9,
     "min_speed": 0.30,
     "face_path_fov_clip": True,
-    "approach_standoff": 0.22,
+    "use_sampled_magnitudes": False,
+    "approach_standoff": 0.0,
     "plant_distance": 0.22,
   }
   for name in ("tracking_lin_vel_x", "tracking_lin_vel_y", "tracking_ang_vel"):
     if name in cfg.rewards:
       cfg.rewards[name].params.update(_plant_twist)
   if "pref_pose_twist" in cfg.events:
-    cfg.events["pref_pose_twist"].params.update(_plant_twist)
+    cfg.events["pref_pose_twist"].params.update(
+      {
+        **_plant_twist,
+        "ready_facing_angle": math.radians(20.0),
+        "ready_hold_time_s": 0.05,
+      }
+    )
 
-  # Main payday: clip(v·d̂, 0, 6); aux direction gated at 0.25 m/s.
+  # Main payday dominates shaping: a visually plausible swing without ball
+  # speed is not a successful kick.
+  for name in (
+    "kick_contact_bridge",
+    "strike_ankle_pitch",
+    "premature_kick_lunge",
+    "ball_approach_target",
+    "ball_acceleration_toward_goal",
+    "target_reached",
+    "post_kick_stance",
+    "near_ball_wait",
+    "ball_touch_keepout",
+    "ball_proximity",
+  ):
+    cfg.rewards.pop(name, None)
   cfg.rewards["ball_velocity_toward_goal"] = RewardTermCfg(
     func=kick_mdp.ball_velocity_toward_goal,
     weight=4.0,
@@ -908,37 +911,46 @@ def make_near_kick_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvC
       "ball_cfg": ball,
       "max_reward": 6.0,
       "use_decay": False,
+      "require_plant_latch": True,
     },
   )
-  cfg.rewards["ball_approach_target"] = RewardTermCfg(
-    func=kick_mdp.ball_approach_target,
-    weight=1.5,
+  cfg.rewards["kick_direction_accuracy"] = RewardTermCfg(
+    func=kick_mdp.kick_direction_accuracy_window,
+    weight=2.0,
     params={
-      "velocity_eps": 0.25,
       "command_name": "goal",
       "ball_cfg": ball,
+      "robot_cfg": robot,
+      "window_s": 0.30,
+      "angle_sigma": 0.25,
     },
   )
-  cfg.rewards["ball_acceleration_toward_goal"] = RewardTermCfg(
-    func=kick_mdp.ball_acceleration_toward_goal,
-    weight=4.0,
-    params={"command_name": "goal", "ball_cfg": ball},
-  )
-  cfg.rewards["target_reached"] = RewardTermCfg(
-    func=kick_mdp.target_reached,
-    weight=5.0,
+  cfg.rewards["kick_speed_loose"] = RewardTermCfg(
+    func=kick_mdp.kick_speed_match_window,
+    weight=2.0,
     params={
-      "contact_window_s": _POST_KICK_WINDOW_S,
-      "velocity_eps": 0.1,
-      "std": 1.0,
       "command_name": "goal",
       "ball_cfg": ball,
+      "robot_cfg": robot,
+      "window_s": 0.30,
+      "relative_sigma": 0.35,
     },
   )
-  # Balance after any real kick (≥1.2 m/s toward goal): upright × walk height.
+  cfg.rewards["kick_speed_tight"] = RewardTermCfg(
+    func=kick_mdp.kick_speed_match_window,
+    weight=2.0,
+    params={
+      "command_name": "goal",
+      "ball_cfg": ball,
+      "robot_cfg": robot,
+      "window_s": 0.30,
+      "relative_sigma": 0.12,
+    },
+  )
+  # Balance after a real kick (≥1.2 m/s toward goal).
   cfg.rewards["post_kick_upright"] = RewardTermCfg(
     func=kick_mdp.post_kick_upright,
-    weight=5.0,
+    weight=2.0,
     params={
       "asset_cfg": trunk,
       "ball_cfg": ball,
@@ -949,27 +961,9 @@ def make_near_kick_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvC
       "sigma": 0.20,
     },
   )
-  # Standing recovery: feet close (~0.19 m) + soles flat (roll/pitch ~0).
-  feet = SceneEntityCfg("robot", body_names=("left_foot_link", "right_foot_link"))
-  cfg.rewards["post_kick_stance"] = RewardTermCfg(
-    func=kick_mdp.post_kick_stance,
-    weight=4.0,
-    params={
-      "contact_window_s": 1.5,
-      "min_kick_speed": _KICK_REWARD_GATE_SPEED,
-      "feet_distance_ref": 0.19,
-      "distance_sigma": 0.06,
-      "flat_sigma": 0.25,
-      "feet_cfg": feet,
-      **robot_ball,
-    },
-  )
-  # Stronger always-on flat-foot tax so tipped soles are costly even mid-episode.
-  if "feet_roll" in cfg.rewards:
-    cfg.rewards["feet_roll"].weight = -1.5
   cfg.rewards["ball_dribble_penalty"] = RewardTermCfg(
     func=kick_mdp.ball_dribble_penalty,
-    weight=-8.0,
+    weight=-2.0,
     params={
       "min_kick_speed": _KICK_REWARD_GATE_SPEED,
       "dribble_speed": 0.15,
@@ -977,20 +971,6 @@ def make_near_kick_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvC
       **robot_ball,
     },
   )
-  cfg.rewards["near_ball_wait"] = RewardTermCfg(
-    func=kick_mdp.near_ball_wait_penalty,
-    weight=-4.0,
-    params={
-      "near_ball_distance": 1.0,
-      "ramp_tau_s": 1.0,
-      "max_scale": 3.0,
-      "robot_still_speed": 0.25,
-      **robot_ball,
-    },
-  )
-  # Keep FOV insurance from approach.
-  assert "ball_camera_cone" in cfg.rewards
-
   cfg.terminations["target_hit"] = TerminationTermCfg(
     func=target_hit,
     time_out=True,
@@ -1038,6 +1018,14 @@ def make_near_kick_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvC
   cfg.events["reset_base"].params["radius_range"] = (0.50, 0.70)
   cfg.events["reset_base"].params["spawn_on_approach_side"] = True
   cfg.events["reset_base"].params["approach_spread"] = math.pi / 4.0
+  # Yellow on the ball; kick with the spawn-closer foot.
+  cfg.events["reset_base"].params["waypoint_lateral_range"] = (0.0, 0.0)
+  cfg.events["reset_base"].params["fixed_kick_side"] = None
+  goal = cfg.commands["goal"]
+  assert isinstance(goal, UniformGoalPositionCommandCfg)
+  goal.distance_range = (8.0, 12.0)
+  goal.approach_standoff = 0.0
+  goal.collapse_waypoint_when_planted = True
   if "spawn_radius" in cfg.curriculum:
     cfg.curriculum["spawn_radius"].params.update(
       {

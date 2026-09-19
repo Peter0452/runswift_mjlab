@@ -150,9 +150,7 @@ def nearest_arc_point_xy(
   lat = (direction * tangent).sum(dim=-1, keepdim=True)
   along = (direction * goal_dir).sum(dim=-1, keepdim=True)
   flipped = along * goal_dir + torch.abs(lat) * tangent
-  flipped = flipped / torch.linalg.norm(flipped, dim=-1, keepdim=True).clamp(
-    min=1.0e-6
-  )
+  flipped = flipped / torch.linalg.norm(flipped, dim=-1, keepdim=True).clamp(min=1.0e-6)
   direction = torch.where((on_side < 0.0).unsqueeze(-1), flipped, direction)
   return ball_xy + direction * radius
 
@@ -249,9 +247,7 @@ def compute_reference_pose_xy(
   aligned = (bearing < bearing_thresh) & at_setup
 
   # Blend weight: 0 at setup_enter_dist (just entered), 1 at setup_blend_end (into ball).
-  blend_t = 1.0 - _smoothstep(
-    float(setup_blend_end), float(setup_enter_dist), dist
-  )
+  blend_t = 1.0 - _smoothstep(float(setup_blend_end), float(setup_enter_dist), dist)
 
   # Hysteresis transitions.
   want_setup = dist < setup_enter_dist

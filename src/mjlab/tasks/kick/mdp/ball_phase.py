@@ -30,6 +30,8 @@ class BallPhaseState:
   prev_vel_toward_goal: torch.Tensor | None = None
   delta_vel_toward_goal: torch.Tensor | None = None
   agent_ball_contact: torch.Tensor | None = None
+  prev_agent_ball_contact: torch.Tensor | None = None
+  post_kick_contact_count: torch.Tensor | None = None
   time_since_ball_stopped_s: torch.Tensor | None = None
   strong_kick_detected: torch.Tensor | None = None
   time_since_strong_kick_s: torch.Tensor | None = None
@@ -52,6 +54,8 @@ def init_ball_phase_state(env: ManagerBasedRlEnv) -> BallPhaseState:
     state.kick_detected is None
     or state.kick_detected.shape[0] != n
     or state.agent_ball_contact is None
+    or state.prev_agent_ball_contact is None
+    or state.post_kick_contact_count is None
     or state.time_since_ball_stopped_s is None
     or state.strong_kick_detected is None
     or state.time_since_strong_kick_s is None
@@ -75,6 +79,8 @@ def init_ball_phase_state(env: ManagerBasedRlEnv) -> BallPhaseState:
   state.prev_vel_toward_goal = torch.zeros(n, device=device)
   state.delta_vel_toward_goal = torch.zeros(n, device=device)
   state.agent_ball_contact = torch.zeros(n, dtype=torch.bool, device=device)
+  state.prev_agent_ball_contact = torch.zeros(n, dtype=torch.bool, device=device)
+  state.post_kick_contact_count = torch.zeros(n, dtype=torch.long, device=device)
   state.time_since_ball_stopped_s = torch.zeros(n, device=device)
   state.strong_kick_detected = torch.zeros(n, dtype=torch.bool, device=device)
   state.time_since_strong_kick_s = torch.zeros(n, device=device)
@@ -104,6 +110,8 @@ def reset_ball_phase_state(
   state.prev_vel_toward_goal[env_ids] = 0.0
   state.delta_vel_toward_goal[env_ids] = 0.0
   state.agent_ball_contact[env_ids] = False
+  state.prev_agent_ball_contact[env_ids] = False
+  state.post_kick_contact_count[env_ids] = 0
   state.time_since_ball_stopped_s[env_ids] = 0.0
   state.strong_kick_detected[env_ids] = False
   state.time_since_strong_kick_s[env_ids] = 0.0
@@ -284,6 +292,21 @@ def ensure_ball_phase_updated(
     foot_dist = torch.linalg.norm(feet_xy - ball_pos.unsqueeze(1), dim=-1).amin(dim=-1)
     state.agent_ball_contact = foot_dist < contact_distance
 
+  assert state.agent_ball_contact is not None
+  assert state.prev_agent_ball_contact is not None
+  assert state.post_kick_contact_count is not None
+  assert state.kick_detected is not None
+  contact_edge = state.agent_ball_contact & ~state.prev_agent_ball_contact
+  # The kick-producing contact is contact one. Count only later rising edges,
+  # so a sustained strike contact is not mistaken for a double tap.
+  state.post_kick_contact_count = torch.where(
+    new_kick,
+    torch.ones_like(state.post_kick_contact_count),
+    state.post_kick_contact_count
+    + (state.kick_detected & contact_edge).to(state.post_kick_contact_count.dtype),
+  )
+  state.prev_agent_ball_contact.copy_(state.agent_ball_contact)
+
   env.extras["log"]["Metrics/feet_ball_contact"] = (
     feet_contact.float().mean()
     if feet_contact is not None
@@ -294,7 +317,9 @@ def ensure_ball_phase_updated(
     if body_contact is not None
     else torch.tensor(0.0, device=env.device)
   )
-  env.extras["log"]["Metrics/agent_ball_contact"] = state.agent_ball_contact.float().mean()
+  env.extras["log"]["Metrics/agent_ball_contact"] = (
+    state.agent_ball_contact.float().mean()
+  )
   env.extras["log"]["Metrics/strong_kick_detected"] = (
     state.strong_kick_detected.float().mean()
   )

@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import math
 from typing import TYPE_CHECKING
 
 import torch
 
 from mjlab.entity import Entity
 from mjlab.managers.scene_entity_config import SceneEntityCfg
+from mjlab.tasks.kick.mdp.geometry import expected_ballistic_speed
 from mjlab.utils.lab_api.math import quat_apply_inverse
 
 if TYPE_CHECKING:
@@ -97,9 +99,7 @@ def ball_to_goal_direction(
   direction_w_3d = torch.cat(
     [direction_w, torch.zeros_like(direction_w[:, :1])], dim=-1
   )
-  direction_b = quat_apply_inverse(
-    robot.data.root_link_quat_w, direction_w_3d
-  )
+  direction_b = quat_apply_inverse(robot.data.root_link_quat_w, direction_w_3d)
   return direction_b[:, :2]
 
 
@@ -108,6 +108,31 @@ def kick_range_placeholder(
 ) -> torch.Tensor:
   """Reserved kick-range input (always zero until walk-in training)."""
   return torch.zeros(env.num_envs, 1, device=env.device)
+
+
+def kick_range_expected_speed(
+  env: ManagerBasedRlEnv,
+  command_name: str = "goal",
+  ball_cfg: SceneEntityCfg = _DEFAULT_BALL_CFG,
+  launch_angle: float = math.pi / 4.0,
+  gravity: float = 9.81,
+  reference_speed: float = math.sqrt(9.81 * 10.0),
+  observation_scale: float = 0.10,
+) -> torch.Tensor:
+  """Zero-centred desired ball speed derived from commanded landing range.
+
+  The small scale is intentional: warm-start checkpoints learned zero mean and
+  near-zero variance for this formerly reserved slot. With the normalizer's
+  0.01 epsilon, the 8–12 m command range enters at roughly ±1 normalized.
+  """
+  ball: Entity = env.scene[ball_cfg.name]
+  command = env.command_manager.get_command(command_name)
+  assert command is not None, f"Command '{command_name}' not found."
+  goal_pos = command[:, :2] + env.scene.env_origins[:, :2]
+  target_range = torch.linalg.norm(goal_pos - ball.data.root_link_pos_w[:, :2], dim=-1)
+  expected_speed = expected_ballistic_speed(target_range, launch_angle, gravity)
+  normalized = expected_speed / max(float(reference_speed), 1.0e-6) - 1.0
+  return (float(observation_scale) * normalized).unsqueeze(-1)
 
 
 def ball_vel_placeholder(

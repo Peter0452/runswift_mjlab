@@ -48,7 +48,7 @@ def k1_kick_approach_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     cfg.commands["twist"].debug_vis = False
     # Yellow approach waypoint + cyan FOV cone (goal debug vis).
     cfg.commands["goal"].debug_vis = True
-    cfg.commands["goal"].approach_standoff = 0.40
+    cfg.commands["goal"].approach_standoff = 0.15
     cfg.commands["goal"].fov_half_angle = 0.69
     cfg.commands["goal"].fov_vis_range = 2.5
     cfg.commands["goal"].resampling_time_range = (1e9, 1e9)
@@ -71,7 +71,7 @@ def k1_kick_near_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     cfg.terminations.pop("near_ball_no_kick", None)
     cfg.commands["twist"].debug_vis = False
     cfg.commands["goal"].debug_vis = True
-    cfg.commands["goal"].approach_standoff = 0.40
+    cfg.commands["goal"].approach_standoff = 0.0
     cfg.commands["goal"].fov_half_angle = 0.69
     cfg.commands["goal"].fov_vis_range = 2.5
     cfg.commands["goal"].resampling_time_range = (1e9, 1e9)

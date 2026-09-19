@@ -99,6 +99,7 @@ class UniformGoalPositionCommand(CommandTerm):
       ball_pos[:, :2],
       float(self.cfg.approach_standoff),
       "goal",
+      collapse_when_planted=self.cfg.collapse_waypoint_when_planted,
     )
     wp_pos = torch.cat([wp_xy, ball_pos[:, 2:3] + 0.04], dim=-1)
 
@@ -156,9 +157,7 @@ class UniformGoalPositionCommand(CommandTerm):
       ],
       dim=-1,
     )
-    robot_marker = robot_pos + torch.tensor(
-      [0.0, 0.0, 0.12], device=self._env.device
-    )
+    robot_marker = robot_pos + torch.tensor([0.0, 0.0, 0.12], device=self._env.device)
     # Arc points across the usable cone at fov_vis_range.
     n_arc = 7
     arc_angles = torch.linspace(
@@ -252,21 +251,30 @@ class UniformGoalPositionCommand(CommandTerm):
       cone_color = (0.2, 0.85, 1.0, 0.85)
       visualizer.add_arrow(
         robot_marker[env_id].detach().cpu().numpy(),
-        (robot_marker[env_id] + cone_range * camera_left[env_id]).detach().cpu().numpy(),
+        (robot_marker[env_id] + cone_range * camera_left[env_id])
+        .detach()
+        .cpu()
+        .numpy(),
         color=cone_color,
         width=0.022,
         label="fov_cone_left",
       )
       visualizer.add_arrow(
         robot_marker[env_id].detach().cpu().numpy(),
-        (robot_marker[env_id] + cone_range * camera_right[env_id]).detach().cpu().numpy(),
+        (robot_marker[env_id] + cone_range * camera_right[env_id])
+        .detach()
+        .cpu()
+        .numpy(),
         color=cone_color,
         width=0.022,
         label="fov_cone_right",
       )
       visualizer.add_arrow(
         robot_marker[env_id].detach().cpu().numpy(),
-        (robot_marker[env_id] + cone_range * body_heading[env_id]).detach().cpu().numpy(),
+        (robot_marker[env_id] + cone_range * body_heading[env_id])
+        .detach()
+        .cpu()
+        .numpy(),
         color=(0.4, 0.95, 1.0, 0.55),
         width=0.012,
         label="fov_cone_center",
@@ -310,6 +318,7 @@ class UniformGoalPositionCommandCfg(CommandTermCfg):
   dynamic_kick_foot: bool = True
   # Approach waypoint standoff (behind ball along −goal); matches orbit teacher.
   approach_standoff: float = 0.40
+  collapse_waypoint_when_planted: bool = True
   # Usable FOV half-angle (rad) for debug cone — 75% of 105° HFOV ≈ 0.69.
   fov_half_angle: float = 0.69
   # Length of FOV cone rays / arc in play (m).

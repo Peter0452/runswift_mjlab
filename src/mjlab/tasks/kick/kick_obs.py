@@ -78,7 +78,13 @@ def add_unified_kick_observations(
       "ball_cfg": ball_cfg,
     },
   )
-  kick_range_obs = ObservationTermCfg(func=kick_mdp.kick_range_placeholder)
+  kick_range_obs = ObservationTermCfg(
+    func=kick_mdp.kick_range_expected_speed,
+    params={
+      "command_name": command_name,
+      "ball_cfg": ball_cfg,
+    },
+  )
   ball_vel_obs = ObservationTermCfg(func=kick_mdp.ball_vel_placeholder)
 
   cfg.observations["actor"].terms["ball_rel_pos"] = ball_obs_actor

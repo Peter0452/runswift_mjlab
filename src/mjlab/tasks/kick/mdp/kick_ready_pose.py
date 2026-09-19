@@ -9,8 +9,8 @@ import torch
 from mjlab.entity import Entity
 from mjlab.managers.scene_entity_config import SceneEntityCfg
 from mjlab.tasks.kick.mdp.geometry import (
-  behind_ball_waypoint_xy,
   ball_to_goal_direction_xy,
+  behind_ball_waypoint_xy,
 )
 from mjlab.utils.lab_api.math import quat_apply, quat_apply_inverse
 
@@ -43,14 +43,10 @@ def compute_kick_ready_score(
   ball_pos_w = ball.data.root_link_pos_w
   ball_pos_xy = ball_pos_w[:, :2]
   waypoint = behind_ball_waypoint_xy(env, ball_pos_xy, target_distance, command_name)
-  waypoint_error_sq = torch.sum(
-    torch.square(robot_pos_w[:, :2] - waypoint), dim=-1
-  )
+  waypoint_error_sq = torch.sum(torch.square(robot_pos_w[:, :2] - waypoint), dim=-1)
   waypoint_score = torch.exp(-waypoint_error_sq / waypoint_std**2)
 
-  rel_b = quat_apply_inverse(
-    robot.data.root_link_quat_w, ball_pos_w - robot_pos_w
-  )
+  rel_b = quat_apply_inverse(robot.data.root_link_quat_w, ball_pos_w - robot_pos_w)
   fwd_error = torch.abs(rel_b[:, 0] - target_distance)
   distance_score = torch.exp(-torch.square(fwd_error) / distance_std**2)
   lateral_score = torch.exp(
@@ -75,12 +71,8 @@ def compute_kick_ready_score(
     -torch.square(1.0 - target_alignment) / target_alignment_std**2
   )
 
-  outside_camera_cone = torch.clamp(
-    torch.abs(bearing) - camera_soft_limit, min=0.0
-  )
-  camera_score = torch.exp(
-    -torch.square(outside_camera_cone) / camera_sigma**2
-  )
+  outside_camera_cone = torch.clamp(torch.abs(bearing) - camera_soft_limit, min=0.0)
+  camera_score = torch.exp(-torch.square(outside_camera_cone) / camera_sigma**2)
 
   return (
     waypoint_score

@@ -9,7 +9,9 @@ from mjlab.rl import (
 )
 
 
-def _k1_kick_ppo_base(*, experiment_name: str, max_iterations: int) -> RslRlOnPolicyRunnerCfg:
+def _k1_kick_ppo_base(
+  *, experiment_name: str, max_iterations: int
+) -> RslRlOnPolicyRunnerCfg:
   """PPO MLP + std match BaseWalk for warm-start."""
   booster_init_std = math.exp(-2.0)
   return RslRlOnPolicyRunnerCfg(
