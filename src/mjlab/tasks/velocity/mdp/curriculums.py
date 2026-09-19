@@ -48,10 +48,7 @@ def htwk_yaw_levels(
   if not getattr(term.cfg, "yaw_curriculum", False):
     return float(getattr(term, "yaw_scale", 1.0))
   error = term.metrics["error_vel_yaw"].mean().item()
-  if (
-    error < term.cfg.yaw_scale_error_thresh
-    and term.yaw_scale < 1.0
-  ):
+  if error < term.cfg.yaw_scale_error_thresh and term.yaw_scale < 1.0:
     term.yaw_scale = min(1.0, term.yaw_scale + term.cfg.yaw_scale_step)
   return float(term.yaw_scale)
 
@@ -112,6 +109,8 @@ def htwk_shoulder_release(
   cfg = env.reward_manager.get_term_cfg(term_name)
   cfg.weight = weight
   return float(weight)
+
+
 from mjlab.managers.scene_entity_config import SceneEntityCfg
 
 from .velocity_command import UniformVelocityCommandCfg

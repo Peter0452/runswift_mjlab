@@ -28,6 +28,7 @@ from mjlab.tasks.kick.mdp.terminations import (
   target_missed,
 )
 from mjlab.tasks.velocity import mdp as velocity_mdp
+from mjlab.utils.spec_config import CollisionCfg
 
 # Shared 3-phase geometry knobs (reward params).
 # enter < exit required for Arc↔Setup hysteresis (else phases chatter).
@@ -58,6 +59,14 @@ _MIN_KICK_SPEED = 5.0  # "strong kick" threshold (post_kick_upright bonus)
 # ``ensure_ball_phase_updated``'s default ``min_kick_speed`` (first caller wins).
 _KICK_REWARD_GATE_SPEED = 1.2
 _BALL_RADIUS = 0.11  # FIFA size-5; spawn z = radius so the ball rests on the plane
+# Critically damped contacts (solref = timeconst, dampratio — not COR).
+_BALL_SOLREF = (0.02, 1.0)
+_BALL_JOINT_DAMPING = 0.05
+_PLANE_SOLREF = (0.02, 1.0)
+_PLANE_SOLIMP = (0.99, 0.99, 0.01)
+_PLANE_FRICTION = (1.0, 0.005, 0.0001)
+_AIR_DENSITY = 1.2
+_AIR_VISCOSITY = 0.000018
 _POST_KICK_STABILITY_S = 1.0
 _TARGET_RADIUS = 1.0  # metres — ball stopped inside this of goal = hit
 _POST_KICK_WINDOW_S = 2.0  # T_window for target miss / settle
@@ -80,10 +89,24 @@ def make_arc_kick_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvCf
   base_cfg.scene.entities["ball"] = EntityCfg(
     spec_fn=lambda: get_ball_spec(
       radius=_BALL_RADIUS,
-      restitution=0.0,
+      solref=_BALL_SOLREF,
+      joint_damping=_BALL_JOINT_DAMPING,
       friction=(1.0, 0.5, 0.015),
     )
   )
+  if base_cfg.scene.terrain is not None:
+    # Keep the infinite plane; only retune contact (do not change walk terrains).
+    base_cfg.scene.terrain.collisions = (
+      CollisionCfg(
+        geom_names_expr=(r"^terrain$",),
+        solref=_PLANE_SOLREF,
+        solimp=_PLANE_SOLIMP,
+        friction=_PLANE_FRICTION,
+        disable_other_geoms=False,
+      ),
+    )
+  base_cfg.sim.mujoco.density = _AIR_DENSITY
+  base_cfg.sim.mujoco.viscosity = _AIR_VISCOSITY
   base_cfg.scene.env_spacing = max(base_cfg.scene.env_spacing, 10.0)
 
   # Real robot↔ball contacts for kick latch / double_touch (not distance proxies).

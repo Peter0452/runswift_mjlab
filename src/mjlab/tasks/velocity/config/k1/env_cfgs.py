@@ -1147,7 +1147,9 @@ _K1_BASE_WALK_FEET_OFFSET_MAX_VEL_SCALE = 0.2
 _K1_BASE_WALK_ACTION_RATE_WEIGHT = -1.5
 _K1_BASE_WALK_VEL_SCALE_STEP = 2.0e-4
 _K1_BASE_WALK_VEL_SCALE_ERROR_THRESH = 0.35
-_K1_BASE_WALK_VEL_SCALE_UPDATE_INTERVAL = 24  # once per learning iter (not per env step)
+_K1_BASE_WALK_VEL_SCALE_UPDATE_INTERVAL = (
+  24  # once per learning iter (not per env step)
+)
 _K1_BASE_WALK_FEET_ROLL_WEIGHT = -0.55
 # Cadence sampled per env; period fallback uses mid of range.
 _K1_BASE_WALK_GAIT_FREQUENCY_RANGE = (1.0, 3.0)
@@ -2451,9 +2453,7 @@ def booster_k1_nubots_htwk_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     foot_foot_collision,
   )
 
-  feet = SceneEntityCfg(
-    "robot", body_names=("left_foot_link", "right_foot_link")
-  )
+  feet = SceneEntityCfg("robot", body_names=("left_foot_link", "right_foot_link"))
   actuated = SceneEntityCfg(
     "robot",
     joint_names=_NUBOTS_ACTION_JOINTS,
@@ -2712,9 +2712,7 @@ def booster_k1_nubots_htwk_exact_env_cfg(
     mode="startup",
     func=dr.pseudo_inertia,
     params={
-      "asset_cfg": SceneEntityCfg(
-        "robot", body_names=("^(?!Trunk$).*",)
-      ),
+      "asset_cfg": SceneEntityCfg("robot", body_names=("^(?!Trunk$).*",)),
       "alpha_range": _HTWK_EXACT_OTHER_LINK_ALPHA_RANGE,
     },
   )
@@ -2857,9 +2855,7 @@ def booster_k1_nubots_htwk_robust_ft_env_cfg(
     },
   )
 
-  knees = SceneEntityCfg(
-    "robot", body_names=("Left_Shank", "Right_Shank")
-  )
+  knees = SceneEntityCfg("robot", body_names=("Left_Shank", "Right_Shank"))
   feet = SceneEntityCfg("robot", body_names=("left_foot_link", "right_foot_link"))
   hip_roll = SceneEntityCfg("robot", joint_names=(".*_Hip_Roll",))
   foot_sites = SceneEntityCfg("robot", site_names=("left_foot", "right_foot"))
@@ -2874,15 +2870,13 @@ def booster_k1_nubots_htwk_robust_ft_env_cfg(
   cfg.rewards["feet_offset_y"].params["feet_distance_ref"] = (
     _NUBOTS_ROBUST_FT_FEET_DISTANCE_REF
   )
-  cfg.rewards["feet_minimum_separation"].weight = (
-    _NUBOTS_ROBUST_FT_FEET_MIN_SEP_WEIGHT
-  )
+  cfg.rewards["feet_minimum_separation"].weight = _NUBOTS_ROBUST_FT_FEET_MIN_SEP_WEIGHT
   cfg.rewards["feet_minimum_separation"].params["min_separation"] = (
     _NUBOTS_ROBUST_FT_MIN_FEET_SEPARATION
   )
-  cfg.rewards["foot_foot_collision"].weight = (
-    _NUBOTS_ROBUST_FT_FOOT_FOOT_COLLISION_WEIGHT
-  )
+  cfg.rewards[
+    "foot_foot_collision"
+  ].weight = _NUBOTS_ROBUST_FT_FOOT_FOOT_COLLISION_WEIGHT
   cfg.rewards["feet_site_xy_separation"] = RewardTermCfg(
     func=mdp.htwk_feet_site_xy_separation,
     weight=_NUBOTS_ROBUST_FT_FEET_SITE_XY_WEIGHT,
@@ -2957,13 +2951,12 @@ def booster_k1_nubots_htwk_robust_ft_env_cfg(
   }
 
   terrain_scan = next(
-    sensor for sensor in (rough_cfg.scene.sensors or ())
+    sensor
+    for sensor in (rough_cfg.scene.sensors or ())
     if sensor.name == "terrain_scan"
   )
   cfg.scene.sensors = (cfg.scene.sensors or ()) + (terrain_scan,)
-  cfg.observations["critic"].terms["base_height"].params["sensor_name"] = (
-    "terrain_scan"
-  )
+  cfg.observations["critic"].terms["base_height"].params["sensor_name"] = "terrain_scan"
   cfg.rewards["base_height"] = RewardTermCfg(
     func=mdp.base_height_target_l2,
     weight=-8.0,

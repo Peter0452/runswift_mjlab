@@ -152,9 +152,7 @@ class UniformVelocityCommand(CommandTerm):
       self.heading_target[env_ids] = r.uniform_(*self.cfg.ranges.heading)
       self.is_heading_env[env_ids] = r.uniform_(0.0, 1.0) <= self.cfg.rel_heading_envs
     if self.cfg.still_proportion is None:
-      self.is_standing_env[env_ids] = (
-        r.uniform_(0.0, 1.0) <= self.cfg.rel_standing_envs
-      )
+      self.is_standing_env[env_ids] = r.uniform_(0.0, 1.0) <= self.cfg.rel_standing_envs
     else:
       self.is_standing_env[env_ids] = False
       count = int(self.cfg.still_proportion * len(env_ids))
@@ -684,8 +682,7 @@ class ParameterWalkCommand(CommandTerm):
       if high_lo < high_hi:
         high_vx = torch.empty(n, device=self.device).uniform_(high_lo, high_hi)
         use_high = (
-          torch.rand(n, device=self.device)
-          < self.cfg.high_speed_sampling_probability
+          torch.rand(n, device=self.device) < self.cfg.high_speed_sampling_probability
         )
         vx = torch.where(use_high, high_vx, vx)
     r[env_ids, 0] = vx * scale
@@ -701,12 +698,9 @@ class ParameterWalkCommand(CommandTerm):
       gait_lo, gait_hi = self.cfg.high_speed_gait_frequency_range
       high_speed = r[env_ids, 0] > self.cfg.high_speed_min
       use_high_gait = high_speed & (
-        torch.rand(n, device=self.device)
-        < self.cfg.high_speed_gait_probability
+        torch.rand(n, device=self.device) < self.cfg.high_speed_gait_probability
       )
-      high_frequency = torch.empty(n, device=self.device).uniform_(
-        gait_lo, gait_hi
-      )
+      high_frequency = torch.empty(n, device=self.device).uniform_(gait_lo, gait_hi)
       frequency = torch.where(use_high_gait, high_frequency, frequency)
     r[env_ids, 3] = frequency
     r[env_ids, 4] = torch.empty(n, device=self.device).uniform_(*ranges.foot_yaw_l)
@@ -827,9 +821,7 @@ class ParameterWalkCommand(CommandTerm):
       self.gait_frequency[idx] = self._joystick_gait_slider.value
 
     still = (
-      torch.linalg.vector_norm(self.cmd[:, :2], dim=1)
-      + self.cmd[:, 2].abs()
-      < 0.05
+      torch.linalg.vector_norm(self.cmd[:, :2], dim=1) + self.cmd[:, 2].abs() < 0.05
     )
     self.gait_frequency[still] = 0.0
     self.cmd[still, 3] = 0.0

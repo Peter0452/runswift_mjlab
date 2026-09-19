@@ -12,8 +12,12 @@ from mjlab.sensor import BuiltinSensor, ContactSensor
 from mjlab.sensor.terrain_height_sensor import TerrainHeightSensor
 from mjlab.tasks.velocity.mdp.observations import advance_gait_phase, gait_scale
 from mjlab.tasks.velocity.mdp.terrain_utils import terrain_normal_from_sensors
-from mjlab.utils.lab_api.math import quat_apply, quat_apply_inverse
-from mjlab.utils.lab_api.math import euler_xyz_from_quat, wrap_to_pi
+from mjlab.utils.lab_api.math import (
+  euler_xyz_from_quat,
+  quat_apply,
+  quat_apply_inverse,
+  wrap_to_pi,
+)
 from mjlab.utils.lab_api.string import (
   resolve_matching_names_values,
 )
@@ -672,9 +676,7 @@ def htwk_hip_roll_barrier(
     - asset.data.default_joint_pos[:, asset_cfg.joint_ids]
   )
   excess = (deviation - float(max_deviation)) / max(float(softness), 1.0e-6)
-  violation = float(softness) * torch.logaddexp(
-    torch.zeros_like(excess), excess
-  )
+  violation = float(softness) * torch.logaddexp(torch.zeros_like(excess), excess)
   scale = max(float(max_deviation), 1.0e-6)
   return torch.sum(torch.square(violation / scale), dim=1)
 
@@ -696,9 +698,7 @@ def htwk_knee_separation(
   knee_pos = asset.data.body_link_pos_w[:, asset_cfg.body_ids]
   distance = torch.linalg.vector_norm(knee_pos[:, 0] - knee_pos[:, 1], dim=-1)
   excess = (float(safe_distance) - distance) / max(float(softness), 1.0e-6)
-  violation = float(softness) * torch.logaddexp(
-    torch.zeros_like(excess), excess
-  )
+  violation = float(softness) * torch.logaddexp(torch.zeros_like(excess), excess)
   scale = max(float(safe_distance), 1.0e-6)
   return torch.square(violation / scale)
 
@@ -830,9 +830,7 @@ _PW_FEET_OFFSET_X = 8
 _PW_FEET_OFFSET_Y = 9
 
 
-def _parameter_walk_command(
-  env: ManagerBasedRlEnv, command_name: str
-) -> torch.Tensor:
+def _parameter_walk_command(env: ManagerBasedRlEnv, command_name: str) -> torch.Tensor:
   command = env.command_manager.get_command(command_name)
   assert command is not None, f"Command '{command_name}' not found."
   if command.shape[-1] < 10:
@@ -963,9 +961,7 @@ def htwk_feet_orientation(
   return torch.sum(torch.square(angle), dim=1)
 
 
-def _htwk_feet_yaw(
-  env: ManagerBasedRlEnv, asset_cfg: SceneEntityCfg
-) -> torch.Tensor:
+def _htwk_feet_yaw(env: ManagerBasedRlEnv, asset_cfg: SceneEntityCfg) -> torch.Tensor:
   feet_yaw, root_yaw = _feet_yaw_angles(env, asset_cfg)
   return wrap_to_pi(feet_yaw - root_yaw.unsqueeze(-1))
 
@@ -1009,9 +1005,7 @@ def htwk_feet_yaw_mean(
 ) -> torch.Tensor:
   command = _parameter_walk_command(env, command_name)
   actual = _htwk_feet_yaw(env, asset_cfg)
-  target = 0.5 * (
-    command[:, _PW_FOOT_YAW_L] + command[:, _PW_FOOT_YAW_R]
-  )
+  target = 0.5 * (command[:, _PW_FOOT_YAW_L] + command[:, _PW_FOOT_YAW_R])
   return torch.square(wrap_to_pi(actual.mean(dim=-1) - target))
 
 
@@ -1060,9 +1054,7 @@ def htwk_feet_offset_x(
 ) -> torch.Tensor:
   command = _parameter_walk_command(env, command_name)
   x_offset, _ = _htwk_feet_offset(env, asset_cfg)
-  error = torch.clamp(
-    torch.abs(x_offset - command[:, _PW_FEET_OFFSET_X]), max=0.1
-  )
+  error = torch.clamp(torch.abs(x_offset - command[:, _PW_FEET_OFFSET_X]), max=0.1)
   return error * _htwk_velocity_scale(
     command,
     0,
@@ -1082,12 +1074,8 @@ def htwk_feet_offset_y(
   asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
 ) -> torch.Tensor:
   command = _parameter_walk_command(env, command_name)
-  _, y_offset = _htwk_feet_offset(
-    env, asset_cfg, feet_distance_ref=feet_distance_ref
-  )
-  error = torch.clamp(
-    torch.abs(y_offset - command[:, _PW_FEET_OFFSET_Y]), max=0.1
-  )
+  _, y_offset = _htwk_feet_offset(env, asset_cfg, feet_distance_ref=feet_distance_ref)
+  error = torch.clamp(torch.abs(y_offset - command[:, _PW_FEET_OFFSET_Y]), max=0.1)
   return error * _htwk_velocity_scale(
     command,
     1,
@@ -1147,9 +1135,7 @@ def feet_offset_y_fixed(
   as ``|vy|`` grows so commanded side-walk can open the stance.
   """
   command = _twist_command(env, command_name)
-  _, y_offset = _htwk_feet_offset(
-    env, asset_cfg, feet_distance_ref=feet_distance_ref
-  )
+  _, y_offset = _htwk_feet_offset(env, asset_cfg, feet_distance_ref=feet_distance_ref)
   error = torch.clamp(torch.abs(y_offset - float(target)), max=0.1)
   return error * _htwk_velocity_scale(
     command,
@@ -1267,9 +1253,7 @@ def htwk_feet_swing(
     env, period, swing_period, command_name
   )
   contact = _htwk_contact(env, sensor_name, threshold)
-  return (left_swing & ~contact[:, 0]).float() + (
-    right_swing & ~contact[:, 1]
-  ).float()
+  return (left_swing & ~contact[:, 0]).float() + (right_swing & ~contact[:, 1]).float()
 
 
 def htwk_feet_orientation_contact_gated(
@@ -1311,9 +1295,7 @@ def htwk_swing_sole_clearance(
   the contact threshold.
   """
   height_sensor = env.scene[height_sensor_name]
-  if not hasattr(height_sensor, "data") or not hasattr(
-    height_sensor.data, "heights"
-  ):
+  if not hasattr(height_sensor, "data") or not hasattr(height_sensor.data, "heights"):
     raise TypeError(
       f"htwk_swing_sole_clearance requires a terrain height sensor, got "
       f"{type(height_sensor).__name__}"
@@ -1327,12 +1309,8 @@ def htwk_swing_sole_clearance(
   left_swing, right_swing, _ = _htwk_swing_windows(
     env, period, swing_period, command_name
   )
-  left_drag = torch.square(
-    torch.clamp(float(min_clearance) - heights[:, 0], min=0.0)
-  )
-  right_drag = torch.square(
-    torch.clamp(float(min_clearance) - heights[:, 1], min=0.0)
-  )
+  left_drag = torch.square(torch.clamp(float(min_clearance) - heights[:, 0], min=0.0))
+  right_drag = torch.square(torch.clamp(float(min_clearance) - heights[:, 1], min=0.0))
   drag = left_drag * left_swing.float() + right_drag * right_swing.float()
 
   target = max(float(target_clearance), 1.0e-6)
@@ -1387,8 +1365,8 @@ def htwk_collision_instant(
   sensor: ContactSensor = env.scene[sensor_name]
   if sensor.data.force is not None:
     return (
-      torch.linalg.norm(sensor.data.force, dim=-1) > threshold
-    ).sum(dim=-1).float()
+      (torch.linalg.norm(sensor.data.force, dim=-1) > threshold).sum(dim=-1).float()
+    )
   assert sensor.data.found is not None
   return sensor.data.found.float().sum(dim=-1)
 
@@ -1397,18 +1375,14 @@ def htwk_collision_instant(
 # ---------------------------------------------------------------------------
 
 
-def _cmd_xy_speed(
-  env: ManagerBasedRlEnv, command_name: str
-) -> torch.Tensor:
+def _cmd_xy_speed(env: ManagerBasedRlEnv, command_name: str) -> torch.Tensor:
   """Commanded planar speed ``‖(vx, vy)‖`` from ``command_name``."""
   command = env.command_manager.get_command(command_name)
   assert command is not None
   return torch.linalg.norm(command[:, :2], dim=1)
 
 
-def _speed_affine_scale(
-  speed: torch.Tensor, speed_ref: float
-) -> torch.Tensor:
+def _speed_affine_scale(speed: torch.Tensor, speed_ref: float) -> torch.Tensor:
   """``1 + speed / speed_ref`` (no-op identity when ``speed_ref <= 0``)."""
   if speed_ref <= 0.0:
     return torch.ones_like(speed)

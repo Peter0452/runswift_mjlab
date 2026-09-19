@@ -173,9 +173,7 @@ def _interval_steps(interval_s: float, step_dt: float) -> int:
 
 def _interval_steps_tensor(interval_s: torch.Tensor, step_dt: float) -> torch.Tensor:
   """Per-env control-step counts from sampled wait times in seconds."""
-  return torch.clamp(
-    torch.ceil(interval_s / step_dt).to(dtype=torch.long), min=1
-  )
+  return torch.clamp(torch.ceil(interval_s / step_dt).to(dtype=torch.long), min=1)
 
 
 class booster_kick_robots:
@@ -332,9 +330,7 @@ class booster_push_robots:
       self._torques.zero_()
       if self._random_interval:
         self._push_steps_left.zero_()
-        self._resample_idle_countdown(
-          torch.arange(self._num_envs, device=self._device)
-        )
+        self._resample_idle_countdown(torch.arange(self._num_envs, device=self._device))
       return
     if isinstance(env_ids, slice):
       idx = torch.arange(self._num_envs, device=self._device)
