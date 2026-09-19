@@ -466,7 +466,16 @@ document.write(`
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#goal">Goal</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#stage-1-approach-only-mjlab-kick-approach-booster-k1">Stage-1: approach only (<code class="docutils literal notranslate"><span class="pre">Mjlab-Kick-Approach-Booster-K1</span></code>)</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#stage-2-near-kick-mjlab-kick-near-booster-k1">Stage-2: near kick (<code class="docutils literal notranslate"><span class="pre">Mjlab-Kick-Near-Booster-K1</span></code>)</a><ul class="visible nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#payday">Payday</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#what-this-revision-changed">What this revision changed</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#geometry-and-latch">Geometry and latch</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#teacher-pref-pose-twist-tracking">Teacher (<code class="docutils literal notranslate"><span class="pre">pref_pose_twist</span></code> + tracking)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#rewards-before-latch">Rewards before latch</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#rewards-after-latch">Rewards after latch</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#walk-regularizers-always-on-unless-noted">Walk regularizers (always on unless noted)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#removed-on-near-kick-and-why">Removed on near-kick (and why)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#terminations-train">Terminations (train)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#known-failure-waypoint-farming">Known failure: waypoint farming</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#train-play">Train / play</a></li>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#paper-reward-recipe-full-kick-legacy">Paper reward recipe (full kick, legacy)</a></li>
@@ -489,7 +498,7 @@ Stage-1: <code class="docutils literal notranslate"><span class="pre">Mjlab-Kick
 Stage-2: <code class="docutils literal notranslate"><span class="pre">Mjlab-Kick-Near-Booster-K1</span></code> (near-ball kick, no dribble).<br />
 Logs: <code class="docutils literal notranslate"><span class="pre">logs/rsl_rl/k1_arc_kick/</span></code> / <code class="docutils literal notranslate"><span class="pre">logs/rsl_rl/k1_kick_approach/</span></code> / <code class="docutils literal notranslate"><span class="pre">logs/rsl_rl/k1_kick_near/</span></code>.<br />
 Train: <code class="docutils literal notranslate"><span class="pre">MUJOCO_GL=egl</span> <span class="pre">uv</span> <span class="pre">run</span> <span class="pre">train</span> <span class="pre">…</span></code> from project <code class="docutils literal notranslate"><span class="pre">.venv</span></code>.</p>
-<p>Last updated: 2026-09-12.</p>
+<p>Last updated: 2026-09-19.</p>
 <hr class="docutils" />
 <section id="goal">
 <h2>Goal<a class="headerlink" href="#goal" title="Link to this heading">#</a></h2>
@@ -508,22 +517,28 @@ Train: <code class="docutils literal notranslate"><span class="pre">MUJOCO_GL=eg
 </thead>
 <tbody>
 <tr class="row-even"><td><p>Twist tracking</p></td>
-<td><p><strong>orbit</strong> to waypoint; <strong>face path</strong> with FOV clamp (±0.69 rad); cruise <strong>1.1</strong> m/s</p></td>
+<td><p><strong>orbit</strong> to waypoint; <strong>face path</strong> with FOV clamp (±0.69 rad); cruise <strong>1.35</strong> m/s; <strong>creep</strong> through plant</p></td>
 </tr>
 <tr class="row-odd"><td><p>BaseWalk regularizers</p></td>
 <td><p>far tracking <code class="docutils literal notranslate"><span class="pre">plant_far_scale=1.0</span></code> (full credit at range); fall penalties ↑ (orient −20, height −18)</p></td>
 </tr>
 <tr class="row-even"><td><p>—</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">waypoint_approach</span></code> (+4), <code class="docutils literal notranslate"><span class="pre">waypoint_proximity</span></code> (+4, std 0.35), <code class="docutils literal notranslate"><span class="pre">waypoint_inv_distance</span></code> (+2)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">waypoint_approach</span></code> (+5), <code class="docutils literal notranslate"><span class="pre">waypoint_proximity</span></code> (+5, std 0.22 × facing σ=0.40), <code class="docutils literal notranslate"><span class="pre">waypoint_inv_distance</span></code> (+3)</p></td>
 </tr>
 <tr class="row-odd"><td><p>—</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">ball_proximity</span></code> [0.3, 0.8] (+2), <code class="docutils literal notranslate"><span class="pre">ball_touch_keepout</span></code> (−8)</p></td>
+<td><p>yellow <strong>0.15 m</strong> behind + spawn-side <strong>0.08–0.12 m</strong>; keep-out <strong>0.09 m</strong>, released after plant latch</p></td>
+</tr>
+<tr class="row-even"><td><p>—</p></td>
+<td><p>after latch: yellow → ball (lateral stays), <code class="docutils literal notranslate"><span class="pre">ball_velocity_toward_goal</span></code> + swing-foot strike</p></td>
+</tr>
+<tr class="row-odd"><td><p>—</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ball_proximity</span></code> [0.09, 0.25] (+2), <code class="docutils literal notranslate"><span class="pre">ball_touch_keepout</span></code> (−8, 0.09 m)</p></td>
 </tr>
 <tr class="row-even"><td><p>—</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">ball_camera_cone</span></code> (+0.5, soft_limit 0.69) FOV insurance</p></td>
 </tr>
 <tr class="row-odd"><td><p>—</p></td>
-<td><p>soft success: ball [0.3, 0.8] <strong>or</strong> waypoint &lt; 0.35 m</p></td>
+<td><p>success: ball [0.09, 0.25] <strong>or</strong> waypoint &lt; 0.12 m; standoff <strong>0.15</strong> m</p></td>
 </tr>
 <tr class="row-even"><td><p>Spawn</p></td>
 <td><p>(0.4, 4.0) m; <code class="docutils literal notranslate"><span class="pre">spawn_on_approach_side=False</span></code>; episode 15 s</p></td>
@@ -541,94 +556,340 @@ Train: <code class="docutils literal notranslate"><span class="pre">MUJOCO_GL=eg
 <hr class="docutils" />
 <section id="stage-2-near-kick-mjlab-kick-near-booster-k1">
 <h2>Stage-2: near kick (<code class="docutils literal notranslate"><span class="pre">Mjlab-Kick-Near-Booster-K1</span></code>)<a class="headerlink" href="#stage-2-near-kick-mjlab-kick-near-booster-k1" title="Link to this heading">#</a></h2>
-<p>Plant → strike → recover. Spawn one step outside the plant box.</p>
-<section id="payday">
-<h3>Payday<a class="headerlink" href="#payday" title="Link to this heading">#</a></h3>
+<p>Fine-tune the finished approach policy to <strong>walk through the ball and kick</strong>.
+There is no explicit plant box. Built by <code class="docutils literal notranslate"><span class="pre">make_near_kick_env_cfg</span></code> on top of
+approach-only, then registered in <code class="docutils literal notranslate"><span class="pre">config/k1/</span></code>.</p>
+<section id="what-this-revision-changed">
+<h3>What this revision changed<a class="headerlink" href="#what-this-revision-changed" title="Link to this heading">#</a></h3>
+<p>Previous near-kick still treated yellow as a <strong>stand-off plant</strong> (behind the
+ball, 0.10 m lateral, keep-out disk). The policy farmed that marker, backed
+off when keep-out fired, and almost never latched, so kick terms stayed off.</p>
+<p>Current near-kick does this instead:</p>
+<ol class="arabic simple">
+<li><p><strong>Yellow is the ball.</strong> Standoff 0, lateral 0. Teacher, waypoint rewards,
+and play debug vis all aim at ball centre.</p></li>
+<li><p><strong>No stand-off ring.</strong> <code class="docutils literal notranslate"><span class="pre">ball_touch_keepout</span></code> (−8 disk) and <code class="docutils literal notranslate"><span class="pre">ball_proximity</span></code>
+([0.09, 0.25] m) are removed so they cannot shove the robot back or fight
+walking onto the ball.</p></li>
+<li><p><strong>Waypoint terms are progress, not magnets.</strong> They pay heading-gated
+closing speed toward the ball. Standing still is 0; backing up is
+negative. They <strong>turn off after latch</strong>.</p></li>
+<li><p><strong>Latch is the mode switch.</strong> 0.05 s within 0.22 m of the ball and 20° of
+ball→goal. Sticky <code class="docutils literal notranslate"><span class="pre">at_plant</span></code>. One-shot <code class="docutils literal notranslate"><span class="pre">plant_latch_bonus</span></code> (+3) on the
+rising edge. After that, kick payday is allowed and waypoint payday stops.</p></li>
+<li><p><strong>Kick foot is the spawn-inside leg</strong>, not a fixed right foot. Facing the
+ball, both feet are the same distance from the centre, so “closer” means
+smaller offset from the ball→goal axis.</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">ball_velocity_toward_goal</span></code> is back</strong> so strength scales (<code class="docutils literal notranslate"><span class="pre">clip(v·d̂,</span> <span class="pre">0,</span> <span class="pre">6)</span></code>,
+no decay, latch-gated). Windowed direction / speed-match still exist.</p></li>
+</ol>
+</section>
+<section id="geometry-and-latch">
+<h3>Geometry and latch<a class="headerlink" href="#geometry-and-latch" title="Link to this heading">#</a></h3>
 <div class="pst-scrollable-table-container"><table class="table">
 <thead>
-<tr class="row-odd"><th class="head"><p>Role</p></th>
-<th class="head"><p>Term</p></th>
-<th class="head"><p>Weight</p></th>
-<th class="head"><p>Notes</p></th>
+<tr class="row-odd"><th class="head"><p>Knob</p></th>
+<th class="head"><p>Value</p></th>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><strong>Plant</strong></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">support_plant_score</span></code></p></td>
-<td><p><strong>4</strong></p></td>
-<td><p>support foot: sag ~0.14 m behind, lat ~0.175 m</p></td>
+<tr class="row-even"><td><p>Goal range</p></td>
+<td><p>8–12 m</p></td>
 </tr>
-<tr class="row-odd"><td><p>Plant still</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">support_foot_planted</span></code></p></td>
-<td><p>2</p></td>
-<td><p></p></td>
+<tr class="row-odd"><td><p>Yellow</p></td>
+<td><p>ball centre (standoff 0, lateral 0)</p></td>
 </tr>
-<tr class="row-even"><td><p><strong>Bridge</strong></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">kick_contact_bridge</span></code></p></td>
-<td><p><strong>5</strong></p></td>
-<td><p>gated on plant≥0.25; swing closing + <code class="docutils literal notranslate"><span class="pre">Δ(v·d̂)</span></code></p></td>
+<tr class="row-even"><td><p>Spawn</p></td>
+<td><p>(0.50, 0.70) m, approach side, <code class="docutils literal notranslate"><span class="pre">approach_spread=π/4</span></code></p></td>
 </tr>
-<tr class="row-odd"><td><p>Instep</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">strike_ankle_pitch</span></code></p></td>
-<td><p>2</p></td>
-<td><p>swing ankle ~−0.5 rad at contact</p></td>
+<tr class="row-odd"><td><p>Episode</p></td>
+<td><p>7 s (play: infinite)</p></td>
 </tr>
-<tr class="row-even"><td><p><strong>Main kick</strong></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">ball_velocity_toward_goal</span></code></p></td>
-<td><p><strong>4</strong></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">clip(v·d̂,</span> <span class="pre">0,</span> <span class="pre">6)</span></code></p></td>
+<tr class="row-even"><td><p>Latch distance</p></td>
+<td><p>0.22 m</p></td>
 </tr>
-<tr class="row-odd"><td><p>Impulse</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">ball_acceleration_toward_goal</span></code></p></td>
-<td><p><strong>4</strong></p></td>
-<td><p></p></td>
+<tr class="row-odd"><td><p>Latch facing</p></td>
+<td><p>20° (<code class="docutils literal notranslate"><span class="pre">cos</span></code> gate)</p></td>
 </tr>
-<tr class="row-even"><td><p>Direction aux</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">ball_approach_target</span></code></p></td>
-<td><p>1.5</p></td>
-<td><p></p></td>
+<tr class="row-even"><td><p>Latch hold</p></td>
+<td><p>0.05 s, then sticky</p></td>
 </tr>
-<tr class="row-odd"><td><p>Settle</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">target_reached</span></code></p></td>
-<td><p>5</p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-even"><td><p>Balance</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">post_kick_upright</span></code></p></td>
-<td><p><strong>5</strong></p></td>
-<td><p>upright × height&#64;0.52</p></td>
-</tr>
-<tr class="row-odd"><td><p>Stance</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">post_kick_stance</span></code></p></td>
-<td><p><strong>4</strong></p></td>
-<td><p>feet ~0.19 m × flat</p></td>
-</tr>
-<tr class="row-even"><td><p>Anti-lunge</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">premature_kick_lunge</span></code></p></td>
-<td><p>−3</p></td>
-<td><p></p></td>
-</tr>
-<tr class="row-odd"><td><p>No dribble</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">ball_dribble_penalty</span></code></p></td>
-<td><p>−8</p></td>
-<td><p></p></td>
+<tr class="row-odd"><td><p>Kick foot</p></td>
+<td><p>hip closer to ball→goal axis at spawn (<code class="docutils literal notranslate"><span class="pre">fixed_kick_side=None</span></code>)</p></td>
 </tr>
 </tbody>
 </table>
 </div>
-<p><strong>Spawn:</strong> (0.50, 0.70) m, approach side, <code class="docutils literal notranslate"><span class="pre">approach_spread=π/4</span></code>.<br />
-<strong>Plant box:</strong> support foot lateral 0.15–0.20 m, sagittal 0.10–0.18 m behind ball.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># FT from latest approach ckpt (logs often under k1_arc_kick/)</span>
-<span class="nv">MUJOCO_GL</span><span class="o">=</span>egl<span class="w"> </span>uv<span class="w"> </span>run<span class="w"> </span>train<span class="w"> </span>Mjlab-Kick-Near-Booster-K1<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--env.scene.num-envs<span class="w"> </span><span class="m">8000</span><span class="w"> </span>--agent.resume<span class="w"> </span>True<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--agent.experiment-name<span class="w"> </span>k1_arc_kick<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--agent.load_run<span class="w"> </span>&lt;approach_run&gt;<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--agent.load_checkpoint<span class="w"> </span>model_XXXX.pt<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--agent.run_name<span class="w"> </span>near_kick_from_approach
+<p><code class="docutils literal notranslate"><span class="pre">Metrics/waypoint_at_plant</span></code> is the fraction currently latched.
+<code class="docutils literal notranslate"><span class="pre">Metrics/plant_latch_arrival</span></code> is the rising-edge rate (same signal as the
+bonus).</p>
+</section>
+<section id="teacher-pref-pose-twist-tracking">
+<h3>Teacher (<code class="docutils literal notranslate"><span class="pre">pref_pose_twist</span></code> + tracking)<a class="headerlink" href="#teacher-pref-pose-twist-tracking" title="Link to this heading">#</a></h3>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Knob</p></th>
+<th class="head"><p>Value</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Drive target</p></td>
+<td><p>ball (same as yellow)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">orbit_to_approach</span></code></p></td>
+<td><p>True</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">creep_through_plant</span></code></p></td>
+<td><p>True, 0.25 m/s after latch</p></td>
+</tr>
+<tr class="row-odd"><td><p>Close-zone heading</p></td>
+<td><p>ball→goal when latched <strong>or</strong> yellow dist ≤ 0.80 m</p></td>
+</tr>
+<tr class="row-even"><td><p>Speed</p></td>
+<td><p>fixed cruise 0.9 / min 0.30 (<code class="docutils literal notranslate"><span class="pre">use_sampled_magnitudes=False</span></code>)</p></td>
+</tr>
+<tr class="row-odd"><td><p>FOV clamp</p></td>
+<td><p>±0.69 rad so the ball stays in camera</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Tracking weights stay 1.5 / 1.5 / 1.0. After latch the linear command keeps
+walking <strong>through</strong> the ball (does not freeze).</p>
+</section>
+<section id="rewards-before-latch">
+<h3>Rewards before latch<a class="headerlink" href="#rewards-before-latch" title="Link to this heading">#</a></h3>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Term</p></th>
+<th class="head"><p>Weight</p></th>
+<th class="head"><p>Pays</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">waypoint_approach</span></code></p></td>
+<td><p>+5</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">max(0,</span> <span class="pre">v</span> <span class="pre">·</span> <span class="pre">d̂_ball)</span></code> × facing (<code class="docutils literal notranslate"><span class="pre">σ=0.40</span></code>); off after latch</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">waypoint_proximity</span></code></p></td>
+<td><p>+5</p></td>
+<td><p>same closing speed × facing; off after latch</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">waypoint_inv_distance</span></code></p></td>
+<td><p>+3</p></td>
+<td><p>signed closing speed (retreat negative); off after latch</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ball_camera_cone</span></code></p></td>
+<td><p>+0.5</p></td>
+<td><p>ball in FOV</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">plant_latch_bonus</span></code></p></td>
+<td><p>+3</p></td>
+<td><p><strong>one step</strong> when <code class="docutils literal notranslate"><span class="pre">at_plant</span></code> becomes 1</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>These three waypoint terms are the dense approach payday. They stay on until
+latch, so a policy that walks in fast and never plants can farm them for the
+whole 7 s. That is the current failure mode (see below).</p>
+<p><code class="docutils literal notranslate"><span class="pre">plant_latch_bonus</span></code> is meant to make crossing the latch worth losing those
+terms. The function returns 0 or 1; weight 3. If <code class="docutils literal notranslate"><span class="pre">scale_rewards_by_dt</span></code> is
+on (<code class="docutils literal notranslate"><span class="pre">dt=0.02</span></code>), the episode sum is only ~0.06 — much smaller than a
+waypoint farm. <code class="docutils literal notranslate"><span class="pre">action_rate</span></code> is <strong>−1.5 always</strong> (BaseWalk); it does not
+change at latch.</p>
+</section>
+<section id="rewards-after-latch">
+<h3>Rewards after latch<a class="headerlink" href="#rewards-after-latch" title="Link to this heading">#</a></h3>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Term</p></th>
+<th class="head"><p>Weight</p></th>
+<th class="head"><p>Pays</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kicking_foot_strike</span></code></p></td>
+<td><p>+2</p></td>
+<td><p>spawn-closer foot closing speed × proximity; latch required</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ball_velocity_toward_goal</span></code></p></td>
+<td><p>+4</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">clip(v</span> <span class="pre">·</span> <span class="pre">d̂_goal,</span> <span class="pre">0,</span> <span class="pre">6)</span></code>, no time decay, latch required</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kick_direction_accuracy</span></code></p></td>
+<td><p>+2</p></td>
+<td><p>0.3 s after detected foot–ball strike; angle Gaussian <code class="docutils literal notranslate"><span class="pre">σ=0.25</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">kick_speed_loose</span></code></p></td>
+<td><p>+2</p></td>
+<td><p>same 0.3 s window; <code class="docutils literal notranslate"><span class="pre">‖v‖</span></code> vs <code class="docutils literal notranslate"><span class="pre">sqrt(g</span> <span class="pre">R)</span></code>, relative <code class="docutils literal notranslate"><span class="pre">σ=0.35</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kick_speed_tight</span></code></p></td>
+<td><p>+2</p></td>
+<td><p>same window, <code class="docutils literal notranslate"><span class="pre">σ=0.12</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">post_kick_upright</span></code></p></td>
+<td><p>+2</p></td>
+<td><p>after ≥1.2 m/s toward goal; 1.5 s window</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">wrong_ball_contact</span></code></p></td>
+<td><p>−4</p></td>
+<td><p>support foot or trunk (selected foot allowed)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ball_dribble_penalty</span></code></p></td>
+<td><p>−2</p></td>
+<td><p>slow motion that is not a ≥1.2 m/s kick</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Direction and both speed-match terms are <strong>exactly zero</strong> until a foot-contact
+speed jump, then zero again after 0.3 s. They are not “faster = more”.
+<code class="docutils literal notranslate"><span class="pre">ball_velocity_toward_goal</span></code> <strong>is</strong> speed-scaled, but capped at 6 m/s, so a
+6 m/s and an 11 m/s shot pay the same on that term. Ballistic expected speed
+for 8–12 m is about 8.9–10.8 m/s
+(<code class="docutils literal notranslate"><span class="pre">v</span> <span class="pre">=</span> <span class="pre">sqrt(g</span> <span class="pre">R</span> <span class="pre">/</span> <span class="pre">sin(2θ))</span></code>, <code class="docutils literal notranslate"><span class="pre">θ=45°</span></code>). The actor <code class="docutils literal notranslate"><span class="pre">kick_range</span></code> slot carries
+that expected speed in a warm-start-safe encoding.</p>
+<p>At latch, <code class="docutils literal notranslate"><span class="pre">feet_swing</span></code>, <code class="docutils literal notranslate"><span class="pre">knee_flex_cmd_excess</span></code>, <code class="docutils literal notranslate"><span class="pre">feet_offset_x</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">feet_offset_y</span></code> turn off (<code class="docutils literal notranslate"><span class="pre">disable_when_planted</span></code>) so walk foot-placement
+does not fight the swing.</p>
+</section>
+<section id="walk-regularizers-always-on-unless-noted">
+<h3>Walk regularizers (always on unless noted)<a class="headerlink" href="#walk-regularizers-always-on-unless-noted" title="Link to this heading">#</a></h3>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Term</p></th>
+<th class="head"><p>Weight</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">tracking_lin_vel_x/y</span></code></p></td>
+<td><p>+1.5 / +1.5</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">tracking_ang_vel</span></code></p></td>
+<td><p>+1.0</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">orientation</span></code></p></td>
+<td><p>−18</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">base_height</span></code> / <code class="docutils literal notranslate"><span class="pre">trunk_height_floor</span></code></p></td>
+<td><p>−14 / −14</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">feet_offset_x/y</span></code></p></td>
+<td><p>−8 / −12 (off after latch)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">feet_swing</span></code></p></td>
+<td><p>+3 (off after latch)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">knee_flex_cmd_excess</span></code></p></td>
+<td><p>−2.5 (off after latch)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">action_rate</span></code></p></td>
+<td><p>−1.5</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">survival</span></code></p></td>
+<td><p>+0.15</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="removed-on-near-kick-and-why">
+<h3>Removed on near-kick (and why)<a class="headerlink" href="#removed-on-near-kick-and-why" title="Link to this heading">#</a></h3>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Term</p></th>
+<th class="head"><p>Why</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ball_touch_keepout</span></code></p></td>
+<td><p>−8 disk made the robot back off before latch</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ball_proximity</span></code></p></td>
+<td><p>[0.09, 0.25] ring fought yellow-on-ball</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">support_plant_score</span></code> / plant extras</p></td>
+<td><p>no explicit plant stage</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ball_approach_target</span></code></p></td>
+<td><p>scale-free cosine; replaced by projected speed + windows</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ball_acceleration_toward_goal</span></code></p></td>
+<td><p>noisy; not used</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">target_reached</span></code> / <code class="docutils literal notranslate"><span class="pre">post_kick_stance</span></code> / <code class="docutils literal notranslate"><span class="pre">near_ball_wait</span></code></p></td>
+<td><p>leftover settle/wait magnets</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">kick_contact_bridge</span></code>, <code class="docutils literal notranslate"><span class="pre">strike_ankle_pitch</span></code>, <code class="docutils literal notranslate"><span class="pre">premature_kick_lunge</span></code></p></td>
+<td><p>over-shaped the swing</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="terminations-train">
+<h3>Terminations (train)<a class="headerlink" href="#terminations-train" title="Link to this heading">#</a></h3>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Term</p></th>
+<th class="head"><p>Notes</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">time_out</span></code></p></td>
+<td><p>7 s</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">root_height</span></code></p></td>
+<td><p>fall / crouch</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">near_ball_no_kick</span></code></p></td>
+<td><p>&lt;1 m for 5 s without a kick</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">double_touch</span></code></p></td>
+<td><p>second contact in 0.10 s after kick</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">target_hit</span></code> / <code class="docutils literal notranslate"><span class="pre">target_missed</span></code></p></td>
+<td><p>ball vs 1 m goal disk</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Play pops <code class="docutils literal notranslate"><span class="pre">target_hit</span></code>, <code class="docutils literal notranslate"><span class="pre">target_missed</span></code>, <code class="docutils literal notranslate"><span class="pre">double_touch</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">near_ball_no_kick</span></code>, and never times out, so bumps look like repeated
+“hits”. That is not a kick (<code class="docutils literal notranslate"><span class="pre">kicking_foot_strike</span></code> still needs latch).</p>
+</section>
+<section id="known-failure-waypoint-farming">
+<h3>Known failure: waypoint farming<a class="headerlink" href="#known-failure-waypoint-farming" title="Link to this heading">#</a></h3>
+<p>PPO can treat walking toward yellow as the task. Those three terms pay every
+step until latch; kick terms almost never fire if latch is rare. Mean reward
+then climbs while <code class="docutils literal notranslate"><span class="pre">Metrics/waypoint_at_plant</span></code> collapses and
+<code class="docutils literal notranslate"><span class="pre">behind_ball_distance</span></code> grows (policy stays ~2 m out). Watch latch and
+<code class="docutils literal notranslate"><span class="pre">target_hit</span></code>, not mean reward.</p>
+<p><code class="docutils literal notranslate"><span class="pre">plant_latch_bonus</span></code> is supposed to break that, but it is one-shot and small
+next to +5/+5/+3 closing speed over a full episode.</p>
+</section>
+<section id="train-play">
+<h3>Train / play<a class="headerlink" href="#train-play" title="Link to this heading">#</a></h3>
+<p>Logs often land under <code class="docutils literal notranslate"><span class="pre">logs/rsl_rl/k1_kick_approach/</span></code> when
+<code class="docutils literal notranslate"><span class="pre">--agent.experiment-name</span> <span class="pre">k1_kick_approach</span></code> is set for warm-start. The
+registered near-kick experiment name is <code class="docutils literal notranslate"><span class="pre">k1_kick_near</span></code>.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">MUJOCO_GL</span><span class="o">=</span>egl<span class="w"> </span>uv<span class="w"> </span>run<span class="w"> </span>train<span class="w"> </span>Mjlab-Kick-Near-Booster-K1<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--env.scene.num-envs<span class="w"> </span><span class="m">10000</span><span class="w"> </span>--agent.resume<span class="w"> </span>True<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--agent.experiment-name<span class="w"> </span>k1_kick_approach<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--agent.load-run<span class="w"> </span>&lt;approach_run&gt;<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--agent.load-checkpoint<span class="w"> </span>model_XXXX.pt<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--agent.run_name<span class="w"> </span>near_kick_gated_v1
+
+<span class="nv">MUJOCO_GL</span><span class="o">=</span>egl<span class="w"> </span>uv<span class="w"> </span>run<span class="w"> </span>play<span class="w"> </span>Mjlab-Kick-Near-Booster-K1<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--checkpoint-file<span class="w"> </span>logs/rsl_rl/k1_kick_approach/&lt;run&gt;/model_XXXX.pt<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--num-envs<span class="w"> </span><span class="m">1</span><span class="w"> </span>--viewer<span class="w"> </span>viser
 </pre></div>
 </div>
-<p>Watch: <code class="docutils literal notranslate"><span class="pre">Metrics/ball_vel_toward_goal</span></code> ↑, dribble penalty near 0,
-strong kick / target hit ↑.</p>
+<p>Watch: <code class="docutils literal notranslate"><span class="pre">Metrics/waypoint_at_plant</span></code> ↑, <code class="docutils literal notranslate"><span class="pre">Metrics/plant_latch_arrival</span></code> ↑,
+<code class="docutils literal notranslate"><span class="pre">Episode_Reward/ball_velocity_toward_goal</span></code> ↑, <code class="docutils literal notranslate"><span class="pre">Metrics/target_hit</span></code> ↑,
+dribble near 0. Waypoint episode sums should <strong>fall</strong> once latch is common.</p>
 <p>Then stage-3: full-range <code class="docutils literal notranslate"><span class="pre">Mjlab-Kick-Booster-K1</span></code>.</p>
 </section>
 </section>
@@ -682,8 +943,12 @@ Spawn curriculum: <strong>(0.8, 1.5) → (2.0, 3.0)</strong> over 20k steps.</p>
 <h2>Key files<a class="headerlink" href="#key-files" title="Link to this heading">#</a></h2>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">src/mjlab/tasks/kick/arc_kick_env_cfg.py</span></code> — full + approach + <code class="docutils literal notranslate"><span class="pre">make_near_kick_env_cfg</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">src/mjlab/tasks/kick/config/k1/</span></code> — task registration</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">tests/test_kick_approach_config.py</span></code>, <code class="docutils literal notranslate"><span class="pre">tests/test_kick_near_config.py</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">src/mjlab/tasks/kick/config/k1/</span></code> — task registration, play overrides</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">src/mjlab/tasks/kick/mdp/rewards.py</span></code> — latch bonus, strike, ball-vel, windows</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">src/mjlab/tasks/kick/mdp/geometry.py</span></code> — latch, nearest-foot kick side</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">src/mjlab/tasks/kick/mdp/events.py</span></code> — teacher, spawn foot latch</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">tests/test_kick_approach_config.py</span></code>, <code class="docutils literal notranslate"><span class="pre">tests/test_kick_near_config.py</span></code>,
+<code class="docutils literal notranslate"><span class="pre">tests/test_kick_waypoint_geometry.py</span></code></p></li>
 </ul>
 </section>
 </section>
@@ -718,7 +983,16 @@ Spawn curriculum: <strong>(0.8, 1.5) → (2.0, 3.0)</strong> over 20k steps.</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#goal">Goal</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#stage-1-approach-only-mjlab-kick-approach-booster-k1">Stage-1: approach only (<code class="docutils literal notranslate"><span class="pre">Mjlab-Kick-Approach-Booster-K1</span></code>)</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#stage-2-near-kick-mjlab-kick-near-booster-k1">Stage-2: near kick (<code class="docutils literal notranslate"><span class="pre">Mjlab-Kick-Near-Booster-K1</span></code>)</a><ul class="visible nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#payday">Payday</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#what-this-revision-changed">What this revision changed</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#geometry-and-latch">Geometry and latch</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#teacher-pref-pose-twist-tracking">Teacher (<code class="docutils literal notranslate"><span class="pre">pref_pose_twist</span></code> + tracking)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#rewards-before-latch">Rewards before latch</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#rewards-after-latch">Rewards after latch</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#walk-regularizers-always-on-unless-noted">Walk regularizers (always on unless noted)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#removed-on-near-kick-and-why">Removed on near-kick (and why)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#terminations-train">Terminations (train)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#known-failure-waypoint-farming">Known failure: waypoint farming</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#train-play">Train / play</a></li>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#paper-reward-recipe-full-kick-legacy">Paper reward recipe (full kick, legacy)</a></li>
