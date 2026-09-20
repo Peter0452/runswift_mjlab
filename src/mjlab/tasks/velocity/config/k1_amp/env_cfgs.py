@@ -17,6 +17,7 @@ from mjlab.sensor import (
 )
 from mjlab.tasks.velocity import mdp
 from mjlab.tasks.velocity.velocity_amp_env_cfg import make_velocity_env_cfg
+from mjlab.terrains.config import flat, random_rough, wave_terrain
 
 
 def booster_k1_amp_rough_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
@@ -124,10 +125,18 @@ def booster_k1_amp_rough_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
 
     if cfg.scene.terrain is not None:
       if cfg.scene.terrain.terrain_generator is not None:
+        # Fixed 80/10/10 flat / rough / wave for interactive rough tests.
         cfg.scene.terrain.terrain_generator.curriculum = False
         cfg.scene.terrain.terrain_generator.num_cols = 5
         cfg.scene.terrain.terrain_generator.num_rows = 5
         cfg.scene.terrain.terrain_generator.border_width = 10.0
+        cfg.scene.terrain.terrain_generator.sub_terrains = {
+          "flat": flat(proportion=0.80),
+          "random_rough": random_rough(proportion=0.10),
+          "wave_terrain": wave_terrain(proportion=0.10),
+        }
+      if cfg.curriculum is not None:
+        cfg.curriculum.pop("terrain_levels", None)
 
   return cfg
 
