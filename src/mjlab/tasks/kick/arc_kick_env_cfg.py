@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 
+from mjlab.asset_zoo.props.ball import get_ball_radius, get_ball_spec
 from mjlab.entity import EntityCfg
 from mjlab.envs import ManagerBasedRlEnvCfg
 from mjlab.managers.curriculum_manager import CurriculumTermCfg
@@ -58,10 +59,8 @@ _MIN_KICK_SPEED = 5.0  # "strong kick" threshold (post_kick_upright bonus)
 # below this is treated as a slow nudge, not a real kick. Kept in sync with
 # ``ensure_ball_phase_updated``'s default ``min_kick_speed`` (first caller wins).
 _KICK_REWARD_GATE_SPEED = 1.2
-_BALL_RADIUS = 0.11  # FIFA size-5; spawn z = radius so the ball rests on the plane
-# Critically damped contacts (solref = timeconst, dampratio — not COR).
-_BALL_SOLREF = (0.02, 1.0)
-_BALL_JOINT_DAMPING = 0.05
+# FIFA size-5 booster ball (textured OBJ + shell inertia). Spawn z = radius.
+_BALL_RADIUS = get_ball_radius(5)
 _PLANE_SOLREF = (0.02, 1.0)
 _PLANE_SOLIMP = (0.99, 0.99, 0.01)
 _PLANE_FRICTION = (1.0, 0.005, 0.0001)
@@ -77,8 +76,6 @@ _BALL_OBS_NOISE = (-0.05, 0.05)  # actor ball_rel_pos uniform noise (m)
 
 def make_arc_kick_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvCfg:
   """BaseWalk + ball/goal + 3-phase ``P_ref`` rewards (policy-owned twist)."""
-  from mjlab.asset_zoo.props import get_ball_spec
-
   robot = SceneEntityCfg("robot")
   ball = SceneEntityCfg("ball")
   trunk = SceneEntityCfg("robot", body_names=("Trunk",))
@@ -86,14 +83,10 @@ def make_arc_kick_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvCf
   goal_params = {**robot_ball, "command_name": "goal", **_PREF}
 
   base_cfg.only_positive_rewards = False
-  base_cfg.scene.entities["ball"] = EntityCfg(
-    spec_fn=lambda: get_ball_spec(
-      radius=_BALL_RADIUS,
-      solref=_BALL_SOLREF,
-      joint_damping=_BALL_JOINT_DAMPING,
-      friction=(1.0, 0.5, 0.015),
-    )
-  )
+  base_cfg.scene.entities["ball"] = EntityCfg(spec_fn=lambda: get_ball_spec(5))
+  # Stiff elliptic friction so slide converts to roll (walk feet stay condim=3).
+  base_cfg.sim.mujoco.impratio = 10.0
+  base_cfg.sim.mujoco.cone = "elliptic"
   if base_cfg.scene.terrain is not None:
     # Keep the infinite plane; only retune contact (do not change walk terrains).
     base_cfg.scene.terrain.collisions = (
@@ -816,8 +809,20 @@ def make_near_kick_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvC
   # shove the robot back before plant.
   cfg.terminations.pop("near_ball_reached", None)
 
-  # No explicit planting stage: alignment unlocks a straight-through strike.
-  cfg.rewards.pop("support_plant_score", None)
+  # Alignment latch unlocks strike only once the support foot is in the plant
+  # box — pelvis-only latch was paying for long reaches.
+  cfg.rewards["support_plant_score"] = RewardTermCfg(
+    func=kick_mdp.support_plant_score,
+    weight=5.0,
+    params={
+      "command_name": "goal",
+      "sagittal_target": 0.14,
+      "lateral_target": 0.175,
+      "activate_inside_ball_distance": 0.85,
+      "stop_after_plant_latch": False,
+      **robot_ball,
+    },
+  )
   cfg.rewards["kicking_foot_strike"] = RewardTermCfg(
     func=kick_mdp.kicking_foot_strike_ball,
     weight=2.0,
@@ -840,7 +845,9 @@ def make_near_kick_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvC
   ):
     cfg.rewards[name].params["disable_when_planted"] = True
   # Ball-attached target (standoff 0, no lateral). Pay closing
-  # speed, not a static stand-off magnet.
+  # speed, not a static stand-off magnet. Weights are weak vs latch so
+  # PPO cannot farm approach forever (was 5/5/3 vs latch +3 once).
+  cfg.rewards["waypoint_approach"].weight = 1.5
   cfg.rewards["waypoint_approach"].params.update(
     {
       "target_distance": 0.0,
@@ -851,6 +858,7 @@ def make_near_kick_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvC
       "stop_after_plant_latch": True,
     }
   )
+  cfg.rewards["waypoint_proximity"].weight = 1.5
   cfg.rewards["waypoint_proximity"].params.update(
     {
       "target_distance": 0.0,
@@ -859,6 +867,7 @@ def make_near_kick_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvC
       "stop_after_plant_latch": True,
     }
   )
+  cfg.rewards["waypoint_inv_distance"].weight = 1.0
   cfg.rewards["waypoint_inv_distance"].params.update(
     {
       "target_distance": 0.0,
@@ -869,14 +878,30 @@ def make_near_kick_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvC
   # One-shot lure onto the latch; waypoint terms stay off afterward.
   cfg.rewards["plant_latch_bonus"] = RewardTermCfg(
     func=kick_mdp.plant_latch_arrival_bonus,
-    weight=3.0,
+    weight=20.0,
   )
-  cfg.rewards["orientation"].weight = -18.0
-  cfg.rewards["base_height"].weight = -14.0
+  cfg.rewards["orientation"].weight = -20.0
+  cfg.rewards["base_height"].weight = -18.0
+  if "trunk_height_floor" in cfg.rewards:
+    cfg.rewards["trunk_height_floor"].weight = -22.0
   cfg.rewards["wrong_ball_contact"] = RewardTermCfg(
     func=kick_mdp.wrong_ball_contact_penalty,
     weight=-4.0,
     params=robot_ball,
+  )
+  # Stance holds during latch/swing; after contact, feet catch then walk returns.
+  cfg.rewards["support_foot_planted"] = RewardTermCfg(
+    func=kick_mdp.support_foot_planted,
+    weight=1.5,
+    params={
+      "activate_inside_ball_distance": 0.85,
+      "target_distance": 0.35,
+      "command_name": "goal",
+      "require_kick_ready": False,
+      "require_plant_latch": True,
+      "speed_sigma": 0.25,
+      **robot_ball,
+    },
   )
 
   # Yellow sits on the ball (no standoff, no lateral). Face kick-axis in
@@ -890,14 +915,21 @@ def make_near_kick_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvC
     "plant_root_lateral": 0.0,
     "plant_feet_offset_x": -0.02,
     "plant_feet_offset_y": 0.12,
-    "ready_waypoint_distance": 0.22,
+    "ready_waypoint_distance": 0.14,
     "slow_distance": 0.80,
     "cruise_speed": 0.9,
     "min_speed": 0.30,
     "face_path_fov_clip": True,
     "use_sampled_magnitudes": False,
     "approach_standoff": 0.0,
-    "plant_distance": 0.22,
+    "plant_distance": 0.14,
+    "require_support_plant_for_latch": True,
+    "support_plant_sagittal_target": 0.14,
+    "support_plant_sagittal_tol": 0.10,
+    "support_plant_lateral_target": 0.175,
+    "support_plant_lateral_tol": 0.10,
+    "require_swing_foot_for_latch": True,
+    "swing_foot_max_ball_distance": 0.25,
   }
   for name in ("tracking_lin_vel_x", "tracking_lin_vel_y", "tracking_ang_vel"):
     if name in cfg.rewards:
@@ -907,7 +939,7 @@ def make_near_kick_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvC
       {
         **_plant_twist,
         "ready_facing_angle": math.radians(20.0),
-        "ready_hold_time_s": 0.05,
+        "ready_hold_time_s": 0.10,
       }
     )
 
@@ -920,12 +952,21 @@ def make_near_kick_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvC
     "ball_approach_target",
     "ball_acceleration_toward_goal",
     "target_reached",
-    "post_kick_stance",
     "near_ball_wait",
     "ball_touch_keepout",
     "ball_proximity",
   ):
     cfg.rewards.pop(name, None)
+  cfg.rewards["post_kick_stance"] = RewardTermCfg(
+    func=kick_mdp.post_kick_stance,
+    weight=1.5,
+    params={
+      "contact_window_s": 1.5,
+      "min_kick_speed": _KICK_REWARD_GATE_SPEED,
+      "feet_distance_ref": 0.19,
+      **robot_ball,
+    },
+  )
   cfg.rewards["ball_velocity_toward_goal"] = RewardTermCfg(
     func=kick_mdp.ball_velocity_toward_goal,
     weight=4.0,
@@ -973,7 +1014,7 @@ def make_near_kick_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvC
   # Balance after a real kick (≥1.2 m/s toward goal).
   cfg.rewards["post_kick_upright"] = RewardTermCfg(
     func=kick_mdp.post_kick_upright,
-    weight=2.0,
+    weight=12.0,
     params={
       "asset_cfg": trunk,
       "ball_cfg": ball,
@@ -1038,7 +1079,7 @@ def make_near_kick_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvC
   )
 
   # Slightly outside plant box — one step into plant, then strike.
-  cfg.events["reset_base"].params["radius_range"] = (0.50, 0.70)
+  cfg.events["reset_base"].params["radius_range"] = (0.30, 0.45)
   cfg.events["reset_base"].params["spawn_on_approach_side"] = True
   cfg.events["reset_base"].params["approach_spread"] = math.pi / 4.0
   # Yellow on the ball; kick with the spawn-closer foot.
@@ -1052,8 +1093,8 @@ def make_near_kick_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvC
   if "spawn_radius" in cfg.curriculum:
     cfg.curriculum["spawn_radius"].params.update(
       {
-        "start_radius": (0.50, 0.70),
-        "end_radius": (0.50, 0.70),
+        "start_radius": (0.30, 0.45),
+        "end_radius": (0.30, 0.45),
         "start_step": 0,
         "end_step": 1,
       }

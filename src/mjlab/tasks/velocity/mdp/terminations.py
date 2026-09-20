@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 import torch
 
 from mjlab.entity import Entity
+from mjlab.envs.mdp.terminations import bad_orientation
 from mjlab.managers.scene_entity_config import SceneEntityCfg
 from mjlab.sensor import ContactSensor
 
@@ -133,3 +134,20 @@ def root_clearance_below_minimum(
 
   clearance = base_terrain_clearance(env, sensor_name, asset_cfg.name)
   return clearance < minimum_height
+
+
+def stochastic_bad_orientation(
+  env: ManagerBasedRlEnv,
+  limit_angle: float,
+  probability: float = 0.01,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+) -> torch.Tensor:
+  """Terminate independently with the given probability while tilted too far.
+
+  ``limit_angle`` is in radians from upright. Recovering below the limit
+  immediately removes this termination risk.
+  """
+  if not 0.0 <= probability <= 1.0:
+    raise ValueError("probability must be between 0 and 1")
+  tilted = bad_orientation(env, limit_angle, asset_cfg)
+  return tilted & (torch.rand(tilted.shape, device=tilted.device) < probability)

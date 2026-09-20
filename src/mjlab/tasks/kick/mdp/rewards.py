@@ -268,6 +268,24 @@ def _plant_latch_mask(env: ManagerBasedRlEnv) -> torch.Tensor:
   return latch.at_plant.float()
 
 
+def _walk_block_after_plant_mask(
+  env: ManagerBasedRlEnv,
+  *,
+  restore_tracking_after_kick: bool,
+  ball_cfg: SceneEntityCfg = _DEFAULT_BALL_CFG,
+) -> torch.Tensor:
+  """1 while plant latch should suppress walk terms.
+
+  After ``kick_detected``, returns 0 when ``restore_tracking_after_kick`` so
+  gait / foot-offset rewards can pull the support leg back into walk.
+  """
+  block = _plant_latch_mask(env)
+  if not restore_tracking_after_kick:
+    return block
+  state = ensure_ball_phase_updated(env, ball_cfg_name=ball_cfg.name)
+  return block * (~state.kick_detected).float()
+
+
 _LATCH_BONUS_PREV = "_kick_latch_bonus_prev_at_plant"
 
 
@@ -939,6 +957,13 @@ def track_lin_vel_axis_for_kick(
   face_path_fov_clip: bool = False,
   fov_half_angle: float = 0.69,
   yaw_gain: float = 2.0,
+  require_support_plant_for_latch: bool = False,
+  support_plant_sagittal_target: float = 0.14,
+  support_plant_sagittal_tol: float = 0.10,
+  support_plant_lateral_target: float = 0.175,
+  support_plant_lateral_tol: float = 0.10,
+  require_swing_foot_for_latch: bool = False,
+  swing_foot_max_ball_distance: float = 0.38,
   arc_radius: float = 0.4,
   setup_enter_dist: float = 0.45,
   setup_exit_dist: float = 0.5,
@@ -992,6 +1017,13 @@ def track_lin_vel_axis_for_kick(
       face_path_fov_clip=face_path_fov_clip,
       fov_half_angle=fov_half_angle,
       yaw_gain=yaw_gain,
+      require_support_plant_for_latch=require_support_plant_for_latch,
+      support_plant_sagittal_target=support_plant_sagittal_target,
+      support_plant_sagittal_tol=support_plant_sagittal_tol,
+      support_plant_lateral_target=support_plant_lateral_target,
+      support_plant_lateral_tol=support_plant_lateral_tol,
+      require_swing_foot_for_latch=require_swing_foot_for_latch,
+      swing_foot_max_ball_distance=swing_foot_max_ball_distance,
       robot_cfg=robot,
       ball_cfg=ball_cfg,
     )
@@ -1069,6 +1101,13 @@ def track_ang_vel_z_for_kick(
   face_path_fov_clip: bool = False,
   fov_half_angle: float = 0.69,
   yaw_gain: float = 2.0,
+  require_support_plant_for_latch: bool = False,
+  support_plant_sagittal_target: float = 0.14,
+  support_plant_sagittal_tol: float = 0.10,
+  support_plant_lateral_target: float = 0.175,
+  support_plant_lateral_tol: float = 0.10,
+  require_swing_foot_for_latch: bool = False,
+  swing_foot_max_ball_distance: float = 0.38,
   arc_radius: float = 0.4,
   setup_enter_dist: float = 0.45,
   setup_exit_dist: float = 0.5,
@@ -1121,6 +1160,13 @@ def track_ang_vel_z_for_kick(
       face_path_fov_clip=face_path_fov_clip,
       fov_half_angle=fov_half_angle,
       yaw_gain=yaw_gain,
+      require_support_plant_for_latch=require_support_plant_for_latch,
+      support_plant_sagittal_target=support_plant_sagittal_target,
+      support_plant_sagittal_tol=support_plant_sagittal_tol,
+      support_plant_lateral_target=support_plant_lateral_target,
+      support_plant_lateral_tol=support_plant_lateral_tol,
+      require_swing_foot_for_latch=require_swing_foot_for_latch,
+      swing_foot_max_ball_distance=swing_foot_max_ball_distance,
       robot_cfg=robot,
       ball_cfg=ball_cfg,
     )
@@ -2289,6 +2335,47 @@ def _plant_box_score(
   peak = torch.sqrt(torch.clamp(sag_peak * lat_peak, min=0.0))
   w = float(funnel_weight)
   return w * funnel + (1.0 - w) * peak
+
+
+def support_plant_ready_mask(
+  env: ManagerBasedRlEnv,
+  command_name: str = "goal",
+  sagittal_target: float = 0.14,
+  sagittal_tol: float = 0.10,
+  lateral_target: float = 0.175,
+  lateral_tol: float = 0.10,
+  robot_cfg: SceneEntityCfg = _DEFAULT_ROBOT_CFG,
+  ball_cfg: SceneEntityCfg = _DEFAULT_BALL_CFG,
+  feet_cfg: SceneEntityCfg | None = None,
+) -> torch.Tensor:
+  """True when the support foot sits inside the plant-box tolerance."""
+  sag, lat, _ = _support_plant_offsets(env, command_name, robot_cfg, ball_cfg, feet_cfg)
+  return (torch.abs(sag - float(sagittal_target)) <= float(sagittal_tol)) & (
+    torch.abs(lat - float(lateral_target)) <= float(lateral_tol)
+  )
+
+
+def swing_foot_ready_mask(
+  env: ManagerBasedRlEnv,
+  max_ball_distance: float = 0.38,
+  robot_cfg: SceneEntityCfg = _DEFAULT_ROBOT_CFG,
+  ball_cfg: SceneEntityCfg = _DEFAULT_BALL_CFG,
+  feet_cfg: SceneEntityCfg | None = None,
+) -> torch.Tensor:
+  """True when the kicking foot is close enough to strike without a long reach.
+
+  Blocks early latch where the support foot is already by the ball but the
+  swing foot is still a full stride behind.
+  """
+  robot: Entity = env.scene[robot_cfg.name]
+  ball: Entity = env.scene[ball_cfg.name]
+  foot_ids = _resolve_foot_ids(robot, feet_cfg)
+  feet_xy = robot.data.body_link_pos_w[:, foot_ids, :2]
+  ball_xy = ball.data.root_link_pos_w[:, :2]
+  kicking_idx, _ = _kick_stance_foot_indices(env, robot, ball)
+  swing_xy = _gather_foot_tensor(feet_xy, kicking_idx)
+  dist = torch.linalg.norm(swing_xy - ball_xy, dim=-1)
+  return dist <= float(max_ball_distance)
 
 
 def support_plant_score(
@@ -3779,7 +3866,14 @@ class feet_swing_for_kick:
       ),
     )
     if disable_when_planted:
-      scale = scale * (1.0 - _plant_latch_mask(env))
+      scale = scale * (
+        1.0
+        - _walk_block_after_plant_mask(
+          env,
+          restore_tracking_after_kick=restore_tracking_after_kick,
+          ball_cfg=ball_cfg,
+        )
+      )
     return raw * scale
 
 
@@ -3855,7 +3949,14 @@ def feet_offset_x_for_kick(
     ),
   )
   if disable_when_planted:
-    scale = scale * (1.0 - _plant_latch_mask(env))
+    scale = scale * (
+      1.0
+      - _walk_block_after_plant_mask(
+        env,
+        restore_tracking_after_kick=restore_tracking_after_kick,
+        ball_cfg=ball_cfg,
+      )
+    )
   return raw * scale
 
 
@@ -3933,7 +4034,14 @@ def feet_offset_y_for_kick(
     ),
   )
   if disable_when_planted:
-    scale = scale * (1.0 - _plant_latch_mask(env))
+    scale = scale * (
+      1.0
+      - _walk_block_after_plant_mask(
+        env,
+        restore_tracking_after_kick=restore_tracking_after_kick,
+        ball_cfg=ball_cfg,
+      )
+    )
   return raw * scale
 
 
@@ -4204,5 +4312,12 @@ def knee_flex_cmd_excess_for_kick(
     ),
   )
   if disable_when_planted:
-    scale = scale * (1.0 - _plant_latch_mask(env))
+    scale = scale * (
+      1.0
+      - _walk_block_after_plant_mask(
+        env,
+        restore_tracking_after_kick=restore_tracking_after_kick,
+        ball_cfg=ball_cfg,
+      )
+    )
   return raw * scale

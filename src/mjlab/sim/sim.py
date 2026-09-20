@@ -117,6 +117,10 @@ class MujocoCfg:
 
   # Other.
   gravity: tuple[float, float, float] = (0.0, 0.0, -9.81)
+  density: float = 0.0
+  """Medium density for implicit fluid drag. ``0`` disables (MuJoCo default)."""
+  viscosity: float = 0.0
+  """Medium viscosity for implicit fluid drag. ``0`` disables (MuJoCo default)."""
   # Global MuJoCo option flags. Names match the XML <flag> attributes
   # (e.g. "contact", "gravity", "sensor"). See mjtDisableBit / mjtEnableBit.
   disableflags: tuple[str, ...] = ()
@@ -133,6 +137,8 @@ class MujocoCfg:
     model.opt.timestep = self.timestep
     model.opt.impratio = self.impratio
     model.opt.gravity[:] = self.gravity
+    model.opt.density = self.density
+    model.opt.viscosity = self.viscosity
     model.opt.iterations = self.iterations
     model.opt.tolerance = self.tolerance
     model.opt.ls_iterations = self.ls_iterations

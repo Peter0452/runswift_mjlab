@@ -489,6 +489,15 @@ def ensure_robot_ball_twist_command(
   face_path_fov_clip: bool = False,
   fov_half_angle: float = 0.69,  # ~75% of 105° HFOV → ±39°
   yaw_gain: float = 2.0,
+  # Latch only when support foot is in the plant box (blocks long reaches).
+  require_support_plant_for_latch: bool = False,
+  support_plant_sagittal_target: float = 0.14,
+  support_plant_sagittal_tol: float = 0.10,
+  support_plant_lateral_target: float = 0.175,
+  support_plant_lateral_tol: float = 0.10,
+  # Also wait for the swing foot to catch up (blocks early plant + drag).
+  require_swing_foot_for_latch: bool = False,
+  swing_foot_max_ball_distance: float = 0.38,
   force: bool = False,
   **_unused,
 ) -> None:
@@ -550,6 +559,33 @@ def ensure_robot_ball_twist_command(
   drive_hat = to_ball / ball_dist.unsqueeze(-1).clamp(min=1.0e-6)
   goal_dir = drive_hat
   near_plant = torch.zeros(env.num_envs, dtype=torch.bool, device=env.device)
+
+  support_ready = None
+  if require_support_plant_for_latch:
+    from mjlab.tasks.kick.mdp.rewards import support_plant_ready_mask
+
+    support_ready = support_plant_ready_mask(
+      env,
+      command_name=goal_command_name,
+      sagittal_target=float(support_plant_sagittal_target),
+      sagittal_tol=float(support_plant_sagittal_tol),
+      lateral_target=float(support_plant_lateral_target),
+      lateral_tol=float(support_plant_lateral_tol),
+      robot_cfg=robot_cfg,
+      ball_cfg=ball_cfg,
+    )
+
+  swing_ready = None
+  if require_swing_foot_for_latch:
+    from mjlab.tasks.kick.mdp.rewards import swing_foot_ready_mask
+
+    swing_ready = swing_foot_ready_mask(
+      env,
+      max_ball_distance=float(swing_foot_max_ball_distance),
+      robot_cfg=robot_cfg,
+      ball_cfg=ball_cfg,
+    )
+
   if orbit_to_plant_box:
     goal_dir = ball_to_goal_direction_xy(env, ball_xy, goal_command_name)
     offset = setup_offset_xy(
@@ -578,6 +614,8 @@ def ensure_robot_ball_twist_command(
       float(ready_waypoint_distance),
       facing_min=math.cos(float(ready_facing_angle)),
       hold_time_s=float(ready_hold_time_s),
+      support_ready=support_ready,
+      swing_ready=swing_ready,
     )
     # Approach-side catch: go to plant pose, then keep walking toward ball.
     if creep_through_plant:
@@ -622,6 +660,8 @@ def ensure_robot_ball_twist_command(
       float(ready_waypoint_distance),
       facing_min=math.cos(float(ready_facing_angle)),
       hold_time_s=float(ready_hold_time_s),
+      support_ready=support_ready,
+      swing_ready=swing_ready,
     )
     waypoint = behind_ball_waypoint_xy(
       env, ball_xy, float(approach_standoff), goal_command_name
@@ -747,6 +787,10 @@ def ensure_robot_ball_twist_command(
   env.extras["log"]["Metrics/twist_creep_through"] = float(creep_through_plant)
   env.extras["log"]["Metrics/twist_near_plant"] = near_plant.float().mean()
   env.extras["log"]["Metrics/twist_fov_clip"] = float(use_path_yaw)
+  if support_ready is not None:
+    env.extras["log"]["Metrics/support_plant_ready"] = support_ready.float().mean()
+  if swing_ready is not None:
+    env.extras["log"]["Metrics/swing_foot_ready"] = swing_ready.float().mean()
   if orbit_to_approach or orbit_to_plant_box:
     env.extras["log"]["Metrics/twist_waypoint_dist"] = wp_dist.mean()
   latch = get_approach_waypoint_latch(env)
@@ -787,6 +831,13 @@ def update_pref_pose_twist_command(
   face_path_fov_clip: bool = False,
   fov_half_angle: float = 0.69,
   yaw_gain: float = 2.0,
+  require_support_plant_for_latch: bool = False,
+  support_plant_sagittal_target: float = 0.14,
+  support_plant_sagittal_tol: float = 0.10,
+  support_plant_lateral_target: float = 0.175,
+  support_plant_lateral_tol: float = 0.10,
+  require_swing_foot_for_latch: bool = False,
+  swing_foot_max_ball_distance: float = 0.38,
   robot_cfg: SceneEntityCfg = _DEFAULT_ROBOT_CFG,
   ball_cfg: SceneEntityCfg = _DEFAULT_BALL_CFG,
   **_legacy,
@@ -829,6 +880,13 @@ def update_pref_pose_twist_command(
     face_path_fov_clip=face_path_fov_clip,
     fov_half_angle=fov_half_angle,
     yaw_gain=yaw_gain,
+    require_support_plant_for_latch=require_support_plant_for_latch,
+    support_plant_sagittal_target=support_plant_sagittal_target,
+    support_plant_sagittal_tol=support_plant_sagittal_tol,
+    support_plant_lateral_target=support_plant_lateral_target,
+    support_plant_lateral_tol=support_plant_lateral_tol,
+    require_swing_foot_for_latch=require_swing_foot_for_latch,
+    swing_foot_max_ball_distance=swing_foot_max_ball_distance,
     robot_cfg=robot_cfg,
     ball_cfg=ball_cfg,
     force=True,  # after resample, always rewrite

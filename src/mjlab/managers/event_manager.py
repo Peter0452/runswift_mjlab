@@ -290,7 +290,9 @@ class EventManager(ManagerBase):
         term_cfg.func(self._env, None, **term_cfg.params)
         fired = True
       elif mode == "post_reset":
-        assert env_ids is not None, "post_reset events require concrete env_ids, got None"
+        assert env_ids is not None, (
+          "post_reset events require concrete env_ids, got None"
+        )
         term_cfg.func(self._env, env_ids, **term_cfg.params)
         fired = True
       elif mode == "reset":
