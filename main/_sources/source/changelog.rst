@@ -30,6 +30,54 @@ Added
 Changed
 ^^^^^^^
 
+- K1 near-kick is alignment latch then strike. Yellow sits on the ball
+  (standoff 0, lateral 0). Latch sticks only after 0.10 s within 0.14 m and
+  20 degrees of ball→goal, with the support foot in the plant box
+  (~0.14±0.10 m sagittal, ~0.175±0.10 m lateral) **and** the swing foot
+  within 0.38 m of the ball. That blocks early plant (support near, swing
+  still a stride behind) that forced a long reach and body drag. A one-shot
+  ``plant_latch_bonus`` of +20 is paid on arrival, waypoint terms turn off,
+  and the teacher creeps through the ball. Before the latch, the three
+  waypoint rewards pay heading-gated closing speed at weights 1.5 / 1.5 /
+  1.0 (was 5 / 5 / 3) so approach cannot outpay latch.
+  ``support_plant_score`` (+5) shapes the stance foot into that box before
+  latch can fire. ``ball_touch_keepout`` and ``ball_proximity`` are off so
+  the old disk/ring cannot shove the robot back. Kick foot is the
+  spawn-inside leg (closer to the goal axis), not a fixed right foot.
+  ``ball_velocity_toward_goal`` is +4 (``clip(v·d̂, 0, 6)``, no decay,
+  latch-gated). Direction and loose/tight ballistic speed-match pay only for
+  0.3 s after detected contact. Feet swing, knee-flexion command, and
+  foot-offset terms switch off at latch. Orientation / base-height are −18 /
+  −14. The actor ``kick_range`` slot carries range-derived expected speed in
+  a warm-start-safe encoding. Wrong-foot/body contact and a second post-kick
+  contact remain failures. After latch, ``support_foot_planted`` (+1.5) holds
+  the stance foot; after a detected kick, ``post_kick_stance`` (+1.5) and
+  restored ``feet_swing`` / foot-offset walk terms pull recovery back into
+  gait (walk block clears on ``kick_detected``, not only on episode reset).
+- K1 kick ball/plane contacts are critically damped. The ball free-joint has
+  viscous damping 0.05 and ``solref=(0.02, 1.0)`` (timeconst, dampratio — not
+  COR). Kick terrain plane uses ``solref=(0.02, 1.0)``,
+  ``solimp=(0.99, 0.99, 0.01)``, friction ``(1, 0.005, 0.0001)``. Kick sim
+  enables air-like fluid drag (``density=1.2``, ``viscosity=1.8e-5``). The ball
+  uses ``condim=6`` (slide/spin/roll), ``friction=(1, 0.005, 0.0002)``, and
+  free-joint damping ``0.001`` so a kick can roll instead of skid. Kick sim
+  sets ``impratio=10`` and an elliptic friction cone (walk terrains
+  unchanged). A checker texture makes spin visible in play.
+- K1 approach-only kick: plant standoff 0.15 m, keep-out 0.09 m. After
+  arriving aligned (``d≤0.15`` × facing), yellow collapses onto the ball
+  (lateral stays), keep-out releases except support-foot/body, teacher
+  creeps, and ``ball_velocity_toward_goal`` + swing-foot strike turn on.
+- K1 approach-only kick: yellow waypoint is spawn-side offset
+  0.08–0.12 m off the ball→goal axis (hip half-width ~0.095 m) so the
+  swing foot lands on the kick line. Near-kick yellow is on the ball with no
+  lateral offset; kick foot is chosen at spawn from the inside leg.
+- K1 approach-only kick: ``waypoint_proximity`` is now
+  ``exp(-d²/σ²) × facing`` (yaw vs ball→goal, ``facing_std=0.40``), so the
+  magnet does not pay for standing on the marker while turned away.
+- K1 approach-only kick: closer/faster finish — waypoint standoff 0.32 m,
+  keep-out 0.25 m, cruise 1.35 m/s, and success inside 0.50 m of the ball
+  (was 0.40 / 0.30 / 1.1 / 0.80). Near-kick waypoint terms now target the
+  ball itself (standoff 0).
 - NuBots K1 walk: full shoulder-pitch authority, shoulder-roll ±30° around
   arms-down, stronger orientation (−10) / ``angular_momentum`` (−0.15), and
   speed-conditioned trunk ``ang_vel_xy`` / orientation penalties.

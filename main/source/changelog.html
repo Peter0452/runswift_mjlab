@@ -58,7 +58,7 @@
     <link rel="prev" title="Research" href="research.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-    <meta name="docbuild:last-update" content="Sep 21, 2026"/>
+    <meta name="docbuild:last-update" content="Sep 23, 2026"/>
   </head>
   
   
@@ -561,6 +561,54 @@ Actor and critic both omit <code class="docutils literal notranslate"><span clas
 <section id="changed">
 <h3>Changed<a class="headerlink" href="#changed" title="Link to this heading">#</a></h3>
 <ul class="simple">
+<li><p>K1 near-kick is alignment latch then strike. Yellow sits on the ball
+(standoff 0, lateral 0). Latch sticks only after 0.10 s within 0.14 m and
+20 degrees of ball→goal, with the support foot in the plant box
+(~0.14±0.10 m sagittal, ~0.175±0.10 m lateral) <strong>and</strong> the swing foot
+within 0.38 m of the ball. That blocks early plant (support near, swing
+still a stride behind) that forced a long reach and body drag. A one-shot
+<code class="docutils literal notranslate"><span class="pre">plant_latch_bonus</span></code> of +20 is paid on arrival, waypoint terms turn off,
+and the teacher creeps through the ball. Before the latch, the three
+waypoint rewards pay heading-gated closing speed at weights 1.5 / 1.5 /
+1.0 (was 5 / 5 / 3) so approach cannot outpay latch.
+<code class="docutils literal notranslate"><span class="pre">support_plant_score</span></code> (+5) shapes the stance foot into that box before
+latch can fire. <code class="docutils literal notranslate"><span class="pre">ball_touch_keepout</span></code> and <code class="docutils literal notranslate"><span class="pre">ball_proximity</span></code> are off so
+the old disk/ring cannot shove the robot back. Kick foot is the
+spawn-inside leg (closer to the goal axis), not a fixed right foot.
+<code class="docutils literal notranslate"><span class="pre">ball_velocity_toward_goal</span></code> is +4 (<code class="docutils literal notranslate"><span class="pre">clip(v·d̂,</span> <span class="pre">0,</span> <span class="pre">6)</span></code>, no decay,
+latch-gated). Direction and loose/tight ballistic speed-match pay only for
+0.3 s after detected contact. Feet swing, knee-flexion command, and
+foot-offset terms switch off at latch. Orientation / base-height are −18 /
+−14. The actor <code class="docutils literal notranslate"><span class="pre">kick_range</span></code> slot carries range-derived expected speed in
+a warm-start-safe encoding. Wrong-foot/body contact and a second post-kick
+contact remain failures. After latch, <code class="docutils literal notranslate"><span class="pre">support_foot_planted</span></code> (+1.5) holds
+the stance foot; after a detected kick, <code class="docutils literal notranslate"><span class="pre">post_kick_stance</span></code> (+1.5) and
+restored <code class="docutils literal notranslate"><span class="pre">feet_swing</span></code> / foot-offset walk terms pull recovery back into
+gait (walk block clears on <code class="docutils literal notranslate"><span class="pre">kick_detected</span></code>, not only on episode reset).</p></li>
+<li><p>K1 kick ball/plane contacts are critically damped. The ball free-joint has
+viscous damping 0.05 and <code class="docutils literal notranslate"><span class="pre">solref=(0.02,</span> <span class="pre">1.0)</span></code> (timeconst, dampratio — not
+COR). Kick terrain plane uses <code class="docutils literal notranslate"><span class="pre">solref=(0.02,</span> <span class="pre">1.0)</span></code>,
+<code class="docutils literal notranslate"><span class="pre">solimp=(0.99,</span> <span class="pre">0.99,</span> <span class="pre">0.01)</span></code>, friction <code class="docutils literal notranslate"><span class="pre">(1,</span> <span class="pre">0.005,</span> <span class="pre">0.0001)</span></code>. Kick sim
+enables air-like fluid drag (<code class="docutils literal notranslate"><span class="pre">density=1.2</span></code>, <code class="docutils literal notranslate"><span class="pre">viscosity=1.8e-5</span></code>). The ball
+uses <code class="docutils literal notranslate"><span class="pre">condim=6</span></code> (slide/spin/roll), <code class="docutils literal notranslate"><span class="pre">friction=(1,</span> <span class="pre">0.005,</span> <span class="pre">0.0002)</span></code>, and
+free-joint damping <code class="docutils literal notranslate"><span class="pre">0.001</span></code> so a kick can roll instead of skid. Kick sim
+sets <code class="docutils literal notranslate"><span class="pre">impratio=10</span></code> and an elliptic friction cone (walk terrains
+unchanged). A checker texture makes spin visible in play.</p></li>
+<li><p>K1 approach-only kick: plant standoff 0.15 m, keep-out 0.09 m. After
+arriving aligned (<code class="docutils literal notranslate"><span class="pre">d≤0.15</span></code> × facing), yellow collapses onto the ball
+(lateral stays), keep-out releases except support-foot/body, teacher
+creeps, and <code class="docutils literal notranslate"><span class="pre">ball_velocity_toward_goal</span></code> + swing-foot strike turn on.</p></li>
+<li><p>K1 approach-only kick: yellow waypoint is spawn-side offset
+0.08–0.12 m off the ball→goal axis (hip half-width ~0.095 m) so the
+swing foot lands on the kick line. Near-kick yellow is on the ball with no
+lateral offset; kick foot is chosen at spawn from the inside leg.</p></li>
+<li><p>K1 approach-only kick: <code class="docutils literal notranslate"><span class="pre">waypoint_proximity</span></code> is now
+<code class="docutils literal notranslate"><span class="pre">exp(-d²/σ²)</span> <span class="pre">×</span> <span class="pre">facing</span></code> (yaw vs ball→goal, <code class="docutils literal notranslate"><span class="pre">facing_std=0.40</span></code>), so the
+magnet does not pay for standing on the marker while turned away.</p></li>
+<li><p>K1 approach-only kick: closer/faster finish — waypoint standoff 0.32 m,
+keep-out 0.25 m, cruise 1.35 m/s, and success inside 0.50 m of the ball
+(was 0.40 / 0.30 / 1.1 / 0.80). Near-kick waypoint terms now target the
+ball itself (standoff 0).</p></li>
 <li><p>NuBots K1 walk: full shoulder-pitch authority, shoulder-roll ±30° around
 arms-down, stronger orientation (−10) / <code class="docutils literal notranslate"><span class="pre">angular_momentum</span></code> (−0.15), and
 speed-conditioned trunk <code class="docutils literal notranslate"><span class="pre">ang_vel_xy</span></code> / orientation penalties.</p></li>
@@ -1625,7 +1673,7 @@ By The mjlab Developers
   
   <div class="footer-item">
     <p class="last-updated">
-  Last updated on Sep 21, 2026.
+  Last updated on Sep 23, 2026.
   <br/>
 </p>
   </div>
