@@ -1515,6 +1515,29 @@ def trunk_height_floor(
   return torch.square(violation)
 
 
+def _speed_band_unit(
+  speed: torch.Tensor,
+  speed_band: tuple[float, float],
+  curve: str = "linear",
+  exp_k: float = 3.0,
+) -> torch.Tensor:
+  """Map speed into ``[0, 1]`` over ``[lo, hi]`` (0 below lo, 1 at/above hi).
+
+  ``curve="linear"``: uniform in speed.
+  ``curve="exp"``: ``(e^{k t} - 1) / (e^k - 1)`` with ``t`` the linear unit —
+  soft kicks get a small but nonzero gradient; payoff rises steeply toward ``hi``.
+  """
+  lo, hi = float(speed_band[0]), float(speed_band[1])
+  width = max(hi - lo, 1.0e-6)
+  t = torch.clamp((speed - lo) / width, min=0.0, max=1.0)
+  if curve == "linear":
+    return t
+  if curve == "exp":
+    k = max(float(exp_k), 1.0e-6)
+    return (torch.exp(k * t) - 1.0) / (math.exp(k) - 1.0)
+  raise ValueError(f"Unknown speed_band curve '{curve}' (expected 'linear' or 'exp')")
+
+
 def ball_velocity_toward_goal(
   env: ManagerBasedRlEnv,
   command_name: str = "goal",
@@ -1524,6 +1547,9 @@ def ball_velocity_toward_goal(
   min_reward_speed: float = 0.0,
   decay_time_s: float = 0.1,
   use_decay: bool = True,
+  speed_band: tuple[float, float] | None = None,
+  speed_band_curve: str = "linear",
+  speed_band_exp_k: float = 3.0,
   ball_stationary_speed_threshold: float = 0.1,
   kick_detection_speed_increase_threshold: float = 0.5,
   require_plant_latch: bool = False,
@@ -1539,9 +1565,13 @@ def ball_velocity_toward_goal(
 ) -> torch.Tensor:
   """Projected ball speed, optionally gated by a correct and stable strike.
 
-  ``r = clamp( (v · û_goal)_+ [* exp(-t_moving / τ)], 0, max_reward )``.
+  Default: ``r = clamp( (v · û_goal)_+ [* exp(-t_moving / τ)], 0, max_reward )``.
   With ``use_decay=False`` this is ``clip(v·d̂, 0, max_reward)`` — strength
   matters, unlike scale-free ``ball_approach_target`` (direction aux).
+
+  With ``speed_band=(lo, hi)``, strength is band-normalized instead
+  (see ``_speed_band_unit``). Use ``speed_band_curve="exp"`` for an
+  exponential payday from soft kicks up to ``hi`` (e.g. 0.5–10 m/s).
 
   With ``quality_gated=True``, body-to-goal yaw alignment and upright posture
   gate the outcome. Selected-foot proximity and support stability can be
@@ -1569,11 +1599,19 @@ def ball_velocity_toward_goal(
   )
 
   vel_toward_goal = torch.sum(ball_vel * goal_dir, dim=-1)
-  strength = torch.clamp(
-    vel_toward_goal - float(min_reward_speed),
-    min=0.0,
-    max=max(float(max_reward) - float(min_reward_speed), 0.0),
-  )
+  if speed_band is not None:
+    strength = _speed_band_unit(
+      vel_toward_goal,
+      speed_band,
+      curve=speed_band_curve,
+      exp_k=speed_band_exp_k,
+    )
+  else:
+    strength = torch.clamp(
+      vel_toward_goal - float(min_reward_speed),
+      min=0.0,
+      max=max(float(max_reward) - float(min_reward_speed), 0.0),
+    )
   if use_decay:
     decay = torch.exp(-state.time_since_moving_s / max(float(decay_time_s), 1.0e-6))
     reward = strength * decay
@@ -1638,6 +1676,13 @@ def ball_velocity_toward_goal(
   env.extras["log"]["Metrics/ball_vel_toward_goal_raw"] = vel_toward_goal.clamp(
     min=0.0
   ).mean()
+  if speed_band is not None:
+    env.extras["log"]["Metrics/ball_vel_band_unit"] = _speed_band_unit(
+      vel_toward_goal,
+      speed_band,
+      curve=speed_band_curve,
+      exp_k=speed_band_exp_k,
+    ).mean()
   return reward
 
 
@@ -2724,6 +2769,9 @@ def post_kick_upright(
   sigma: float = 0.20,
   contact_window_s: float = 1.0,
   min_kick_speed: float = 5.0,
+  speed_band: tuple[float, float] | None = None,
+  speed_band_curve: str = "linear",
+  speed_band_exp_k: float = 3.0,
   target_height: float | None = None,
   height_sigma: float = 0.08,
   ball_stationary_speed_threshold: float = 0.1,
@@ -2739,6 +2787,9 @@ def post_kick_upright(
   ≥5 m/s strong-kick flag) so discovery stages can shape balance after moderate
   strikes. When ``target_height`` is set, multiplies by a Gaussian on trunk
   height so crouch / collapse after contact is not rewarded.
+
+  With ``speed_band=(lo, hi)``, multiplies by the same band unit as
+  ``ball_velocity_toward_goal`` so harder kicks unlock more stand reward.
   """
   state = ensure_ball_phase_updated(
     env,
@@ -2766,10 +2817,22 @@ def post_kick_upright(
     height_score = torch.ones_like(upright)
     reward = upright
 
+  if speed_band is not None:
+    band = _speed_band_unit(
+      state.max_vel_toward_goal,
+      speed_band,
+      curve=speed_band_curve,
+      exp_k=speed_band_exp_k,
+    )
+    reward = reward * band
+  else:
+    band = torch.ones_like(reward)
+
   active = _post_kick_window_mask(state, contact_window_s, min_kick_speed)
   env.extras["log"]["Metrics/post_kick_upright"] = (active * reward).mean()
   env.extras["log"]["Metrics/post_kick_window"] = active.mean()
   env.extras["log"]["Metrics/post_kick_height_score"] = (active * height_score).mean()
+  env.extras["log"]["Metrics/post_kick_speed_band"] = (active * band).mean()
   return active * reward
 
 
@@ -2788,6 +2851,9 @@ def post_kick_stance(
   env: ManagerBasedRlEnv,
   contact_window_s: float = 1.5,
   min_kick_speed: float = 1.2,
+  speed_band: tuple[float, float] | None = None,
+  speed_band_curve: str = "linear",
+  speed_band_exp_k: float = 3.0,
   feet_distance_ref: float = 0.19,
   distance_sigma: float = 0.06,
   flat_sigma: float = 0.25,
@@ -2831,6 +2897,13 @@ def post_kick_stance(
   flat_score = torch.exp(-flat_err / float(flat_sigma) ** 2)
 
   reward = close_score * flat_score
+  if speed_band is not None:
+    reward = reward * _speed_band_unit(
+      state.max_vel_toward_goal,
+      speed_band,
+      curve=speed_band_curve,
+      exp_k=speed_band_exp_k,
+    )
   active = _post_kick_window_mask(state, contact_window_s, min_kick_speed)
   env.extras["log"]["Metrics/post_kick_stance"] = (active * reward).mean()
   env.extras["log"]["Metrics/post_kick_feet_lateral"] = (active * lateral).mean()

@@ -54,7 +54,10 @@ _PREF = {
 
 _TRUNK_HEIGHT_TARGET = 0.52
 _TRUNK_HEIGHT_MIN = 0.46
-_MIN_KICK_SPEED = 5.0  # "strong kick" threshold (post_kick_upright bonus)
+_MIN_KICK_SPEED = 5.0  # "strong kick" metric threshold
+# H1: upright only after a real kick (was 1.2 → soft-kick farm on model_1800).
+_POST_KICK_UPRIGHT_MIN_SPEED = 4.0
+_POST_KICK_UPRIGHT_WEIGHT = 5.0  # was 12.0 on model_1800
 # Dribble band: ball speed >= dribble_speed but projected speed toward goal
 # below this is treated as a slow nudge, not a real kick. Kept in sync with
 # ``ensure_ball_phase_updated``'s default ``min_kick_speed`` (first caller wins).
@@ -954,7 +957,7 @@ def make_near_kick_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvC
       }
     )
 
-  # Dense swing→ball bridge after plant (was removed; without it latch parks).
+  # Dense swing→ball bridge after plant (restored for H1 discovery).
   cfg.rewards["kick_contact_bridge"] = RewardTermCfg(
     func=kick_mdp.kick_contact_bridge,
     weight=3.0,
@@ -969,8 +972,7 @@ def make_near_kick_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvC
     },
   )
 
-  # Main payday dominates shaping: a visually plausible swing without ball
-  # speed is not a successful kick.
+  # Drop competing approach-stage terms; keep model_1800 kick payday set.
   for name in (
     "strike_ankle_pitch",
     "premature_kick_lunge",
@@ -984,7 +986,7 @@ def make_near_kick_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvC
     cfg.rewards.pop(name, None)
   cfg.rewards["post_kick_stance"] = RewardTermCfg(
     func=kick_mdp.post_kick_stance,
-    weight=1.5,
+    weight=3.0,
     params={
       "contact_window_s": 1.5,
       "min_kick_speed": _KICK_REWARD_GATE_SPEED,
@@ -992,13 +994,14 @@ def make_near_kick_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvC
       **robot_ball,
     },
   )
+  # Linear ball vel (model_1800 was w=4; H1.1 +1 → 5).
   cfg.rewards["ball_velocity_toward_goal"] = RewardTermCfg(
     func=kick_mdp.ball_velocity_toward_goal,
-    weight=4.0,
+    weight=5.0,
     params={
       "command_name": "goal",
       "ball_cfg": ball,
-      "max_reward": 6.0,
+      "max_reward": 7.0,
       "use_decay": False,
       "require_plant_latch": True,
     },
@@ -1036,15 +1039,15 @@ def make_near_kick_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvC
       "relative_sigma": 0.12,
     },
   )
-  # Balance after a real kick (≥1.2 m/s toward goal).
+  # H1 only change vs model_1800: upright gate 1.2→4.0, weight 12→5.
   cfg.rewards["post_kick_upright"] = RewardTermCfg(
     func=kick_mdp.post_kick_upright,
-    weight=12.0,
+    weight=_POST_KICK_UPRIGHT_WEIGHT,
     params={
       "asset_cfg": trunk,
       "ball_cfg": ball,
       "contact_window_s": 1.5,
-      "min_kick_speed": _KICK_REWARD_GATE_SPEED,
+      "min_kick_speed": _POST_KICK_UPRIGHT_MIN_SPEED,
       "target_height": _TRUNK_HEIGHT_TARGET,
       "height_sigma": 0.08,
       "sigma": 0.20,
@@ -1103,10 +1106,10 @@ def make_near_kick_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvC
     },
   )
 
-  # Slightly outside plant box — one step into plant, then strike.
-  cfg.events["reset_base"].params["radius_range"] = (0.30, 0.45)
+  # Near plant band with wider approach bearing (±60° → 120° wedge).
+  cfg.events["reset_base"].params["radius_range"] = (0.35, 0.55)
   cfg.events["reset_base"].params["spawn_on_approach_side"] = True
-  cfg.events["reset_base"].params["approach_spread"] = math.pi / 4.0
+  cfg.events["reset_base"].params["approach_spread"] = math.radians(120.0)
   # Yellow on the ball; kick with the spawn-closer foot.
   cfg.events["reset_base"].params["waypoint_lateral_range"] = (0.0, 0.0)
   cfg.events["reset_base"].params["fixed_kick_side"] = None
@@ -1118,8 +1121,8 @@ def make_near_kick_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvC
   if "spawn_radius" in cfg.curriculum:
     cfg.curriculum["spawn_radius"].params.update(
       {
-        "start_radius": (0.30, 0.45),
-        "end_radius": (0.30, 0.45),
+        "start_radius": (0.35, 0.55),
+        "end_radius": (0.35, 0.55),
         "start_step": 0,
         "end_step": 1,
       }
