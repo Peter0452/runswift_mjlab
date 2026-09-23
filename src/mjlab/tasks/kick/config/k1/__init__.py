@@ -1,9 +1,12 @@
 from mjlab.rl.runner import MjlabOnPolicyRunner
 from mjlab.tasks.registry import register_mjlab_task
+from mjlab.tasks.velocity.rl.amp_runner import VelocityAmpOnPolicyRunner
 
+from .amp_rl_cfg import k1_kick_near_amp_ppo_runner_cfg
 from .env_cfgs import (
   k1_arc_kick_env_cfg,
   k1_kick_approach_env_cfg,
+  k1_kick_near_amp_env_cfg,
   k1_kick_near_env_cfg,
 )
 from .rl_cfg import (
@@ -37,4 +40,13 @@ register_mjlab_task(
   play_env_cfg=k1_kick_near_env_cfg(play=True),
   rl_cfg=k1_kick_near_ppo_runner_cfg(),
   runner_cls=MjlabOnPolicyRunner,
+)
+
+# Stage-2 + kick AMP: style on until kick_detected, then off for settle.
+register_mjlab_task(
+  task_id="Mjlab-Kick-Near-Amp-Booster-K1",
+  env_cfg=k1_kick_near_amp_env_cfg(),
+  play_env_cfg=k1_kick_near_amp_env_cfg(play=True),
+  rl_cfg=k1_kick_near_amp_ppo_runner_cfg(),
+  runner_cls=VelocityAmpOnPolicyRunner,
 )

@@ -15,9 +15,66 @@ from mjlab.sensor import (
   ContactSensorCfg,
   ObjRef,
 )
+from mjlab.managers.curriculum_manager import CurriculumTermCfg
+from mjlab.managers.termination_manager import TerminationTermCfg
 from mjlab.tasks.velocity import mdp
 from mjlab.tasks.velocity.velocity_amp_env_cfg import make_velocity_env_cfg
 from mjlab.terrains.config import flat, random_rough, wave_terrain
+
+# Rough FT terrain mix (flat / random_rough / wave).
+_AMP_ROUGH_FT_MIX = (0.80, 0.10, 0.10)
+# Early FT: hold mid speeds until tracking recovers (~4k iters @ 24 steps/iter).
+_AMP_EARLY_VEL = {
+  "lin_vel_x": (-1.25, 1.5),
+  "lin_vel_y": (-1.5, 1.5),
+  "ang_vel_z": (-1.25, 1.25),
+}
+# After widen (matches prior max FT ranges).
+_AMP_MAX_VEL = {
+  "lin_vel_x": (-1.75, 2.0),
+  "lin_vel_y": (-1.8, 1.8),
+  "ang_vel_z": (-1.6, 1.6),
+}
+# PPO iters → env steps (num_steps_per_env=24).
+_AMP_VEL_WIDEN_STEP = 4000 * 24
+
+
+def _apply_amp_rough_ft_terrain(cfg: ManagerBasedRlEnvCfg) -> None:
+  """Fixed 80/10/10 flat/rough/wave; no terrain-level curriculum."""
+  assert cfg.scene.terrain is not None
+  assert cfg.scene.terrain.terrain_generator is not None
+  terrain_generator = cfg.scene.terrain.terrain_generator
+  terrain_generator.curriculum = False
+  flat_p, rough_p, wave_p = _AMP_ROUGH_FT_MIX
+  terrain_generator.sub_terrains = {
+    "flat": flat(proportion=flat_p),
+    "random_rough": random_rough(proportion=rough_p),
+    "wave_terrain": wave_terrain(proportion=wave_p),
+  }
+  if cfg.curriculum is not None:
+    cfg.curriculum.pop("terrain_levels", None)
+
+
+def _apply_amp_max_vel_curriculum(cfg: ManagerBasedRlEnvCfg) -> None:
+  """Start at vx≤1.5, widen to full FT ranges after ``_AMP_VEL_WIDEN_STEP``."""
+  assert cfg.commands is not None
+  twist_cmd = cfg.commands["twist"]
+  assert isinstance(twist_cmd, mdp.UniformVelocityCommandCfg)
+  twist_cmd.ranges.lin_vel_x = _AMP_EARLY_VEL["lin_vel_x"]
+  twist_cmd.ranges.lin_vel_y = _AMP_EARLY_VEL["lin_vel_y"]
+  twist_cmd.ranges.ang_vel_z = _AMP_EARLY_VEL["ang_vel_z"]
+
+  assert cfg.curriculum is not None
+  cfg.curriculum["command_vel"] = CurriculumTermCfg(
+    func=mdp.commands_vel,
+    params={
+      "command_name": "twist",
+      "velocity_stages": [
+        {"step": 0, **_AMP_EARLY_VEL},
+        {"step": _AMP_VEL_WIDEN_STEP, **_AMP_MAX_VEL},
+      ],
+    },
+  )
 
 
 def booster_k1_amp_rough_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
@@ -118,6 +175,9 @@ def booster_k1_amp_rough_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   assert cfg.curriculum is not None
   assert "command_vel" in cfg.curriculum
 
+  # Reset NaN/Inf physics envs instead of letting check_nan kill the whole run.
+  cfg.terminations["nan_state"] = TerminationTermCfg(func=mdp.nan_detection)
+
   if play:
     cfg.episode_length_s = int(1e9)
     cfg.observations["actor"].enable_corruption = False
@@ -125,19 +185,22 @@ def booster_k1_amp_rough_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
 
     if cfg.scene.terrain is not None:
       if cfg.scene.terrain.terrain_generator is not None:
-        # Fixed 80/10/10 flat / rough / wave for interactive rough tests.
-        cfg.scene.terrain.terrain_generator.curriculum = False
         cfg.scene.terrain.terrain_generator.num_cols = 5
         cfg.scene.terrain.terrain_generator.num_rows = 5
         cfg.scene.terrain.terrain_generator.border_width = 10.0
-        cfg.scene.terrain.terrain_generator.sub_terrains = {
-          "flat": flat(proportion=0.80),
-          "random_rough": random_rough(proportion=0.10),
-          "wave_terrain": wave_terrain(proportion=0.10),
-        }
-      if cfg.curriculum is not None:
-        cfg.curriculum.pop("terrain_levels", None)
+        _apply_amp_rough_ft_terrain(cfg)
 
+  return cfg
+
+
+def booster_k1_amp_rough_ft_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
+  """AMP rough fine-tune: 80/10/10 flat/rough/wave, velocity curriculum at max."""
+  cfg = booster_k1_amp_rough_env_cfg(play=play)
+  _apply_amp_rough_ft_terrain(cfg)
+  _apply_amp_max_vel_curriculum(cfg)
+  # Stronger tracking for rough FT (base AMP is 2.25 / 2.0).
+  cfg.rewards["track_linear_velocity"].weight = 3.0
+  cfg.rewards["track_angular_velocity"].weight = 2.5
   return cfg
 
 

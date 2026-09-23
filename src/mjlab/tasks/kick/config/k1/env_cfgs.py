@@ -76,3 +76,10 @@ def k1_kick_near_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     cfg.commands["goal"].fov_vis_range = 2.5
     cfg.commands["goal"].resampling_time_range = (1e9, 1e9)
   return cfg
+
+
+def k1_kick_near_amp_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
+  """Near kick + AMP obs (kick clips until contact; settle without style)."""
+  from mjlab.tasks.kick.config.k1.amp_wrapper import with_kick_amp_obs_group
+
+  return with_kick_amp_obs_group(k1_kick_near_env_cfg(play=play), style_weight=0.3)

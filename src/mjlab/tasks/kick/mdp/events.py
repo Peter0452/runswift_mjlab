@@ -498,6 +498,8 @@ def ensure_robot_ball_twist_command(
   # Also wait for the swing foot to catch up (blocks early plant + drag).
   require_swing_foot_for_latch: bool = False,
   swing_foot_max_ball_distance: float = 0.38,
+  # Post-kick stand hold for a predictable handoff pose (e.g. model_9950).
+  settle_time_s: float = 1.0,
   force: bool = False,
   **_unused,
 ) -> None:
@@ -511,6 +513,10 @@ def ensure_robot_ball_twist_command(
   pose the linear cmd continues toward the ball so kick setup can catch
   mid-stride. With ``face_path_fov_clip=True``, yaw faces the path but is
   clamped so the ball bearing stays within ``±fov_half_angle``.
+
+  After ``kick_detected``, holds stand ``(0,0,0)`` for ``settle_time_s``
+  (typically 0.5–1.5 s) so recovery lands in a stable pose for walk-policy
+  handoff; then resumes the normal teacher.
   """
   del env_ids, _unused
   step = int(env.common_step_counter)
@@ -775,6 +781,28 @@ def ensure_robot_ball_twist_command(
       twist_term.vel_command_b[pin, 8] = float(plant_feet_offset_x)
       twist_term.vel_command_b[pin, 9] = float(plant_feet_offset_y)
 
+  # Post-kick settle: stand cmd for T_settle (stable pose for walk handoff).
+  settle = torch.zeros(env.num_envs, dtype=torch.bool, device=env.device)
+  if float(settle_time_s) > 0.0:
+    from mjlab.tasks.kick.mdp.ball_phase import ensure_ball_phase_updated
+
+    phase = ensure_ball_phase_updated(
+      env,
+      ball_cfg_name=ball_cfg.name,
+      robot_cfg_name=robot_cfg.name,
+      goal_command_name=goal_command_name,
+    )
+    assert phase.kick_detected is not None
+    assert phase.time_since_kick_s is not None
+    settle = phase.kick_detected & (
+      phase.time_since_kick_s < float(settle_time_s)
+    )
+    if settle.any():
+      twist_term.vel_command_b[settle, 0:3] = 0.0
+      if twist_term.vel_command_b.shape[1] > 3:
+        twist_term.vel_command_b[settle, 3] = 0.0
+        twist_term.is_standing_env[settle] = True
+
   env._kick_robot_ball_twist_step = step
   env.extras.setdefault("log", {})
   env.extras["log"]["Metrics/twist_ball_dist"] = ball_dist.mean()
@@ -787,6 +815,7 @@ def ensure_robot_ball_twist_command(
   env.extras["log"]["Metrics/twist_creep_through"] = float(creep_through_plant)
   env.extras["log"]["Metrics/twist_near_plant"] = near_plant.float().mean()
   env.extras["log"]["Metrics/twist_fov_clip"] = float(use_path_yaw)
+  env.extras["log"]["Metrics/twist_post_kick_settle"] = settle.float().mean()
   if support_ready is not None:
     env.extras["log"]["Metrics/support_plant_ready"] = support_ready.float().mean()
   if swing_ready is not None:
@@ -838,6 +867,7 @@ def update_pref_pose_twist_command(
   support_plant_lateral_tol: float = 0.10,
   require_swing_foot_for_latch: bool = False,
   swing_foot_max_ball_distance: float = 0.38,
+  settle_time_s: float = 1.0,
   robot_cfg: SceneEntityCfg = _DEFAULT_ROBOT_CFG,
   ball_cfg: SceneEntityCfg = _DEFAULT_BALL_CFG,
   **_legacy,
@@ -887,6 +917,7 @@ def update_pref_pose_twist_command(
     support_plant_lateral_tol=support_plant_lateral_tol,
     require_swing_foot_for_latch=require_swing_foot_for_latch,
     swing_foot_max_ball_distance=swing_foot_max_ball_distance,
+    settle_time_s=settle_time_s,
     robot_cfg=robot_cfg,
     ball_cfg=ball_cfg,
     force=True,  # after resample, always rewrite

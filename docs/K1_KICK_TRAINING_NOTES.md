@@ -66,7 +66,7 @@ Current near-kick does this instead:
    closing speed toward the ball. Standing still is 0; backing up is
    negative. They **turn off after latch**.
 4. **Latch is the mode switch.** 0.05 s within 0.22 m of the ball and 20° of
-   ball→goal. Sticky `at_plant`. One-shot `plant_latch_bonus` (+3) on the
+   ball→goal. Sticky `at_plant`. One-shot `plant_latch_bonus` (+20) on the
    rising edge. After that, kick payday is allowed and waypoint payday stops.
 5. **Kick foot is the spawn-inside leg**, not a fixed right foot. Facing the
    ball, both feet are the same distance from the centre, so “closer” means
@@ -80,16 +80,19 @@ Current near-kick does this instead:
 |---|---|
 | Goal range | 8–12 m |
 | Yellow | ball centre (standoff 0, lateral 0) |
-| Spawn | (0.50, 0.70) m, approach side, `approach_spread=π/4` |
+| Spawn | (0.30, 0.45) m, approach side, `approach_spread=π/4` |
 | Episode | 7 s (play: infinite) |
-| Latch distance | 0.22 m |
+| Latch distance | 0.14 m (was 0.22 — early plant caused drag) |
 | Latch facing | 20° (`cos` gate) |
-| Latch hold | 0.05 s, then sticky |
+| Latch hold | 0.10 s, then sticky |
+| Latch plant gate | support foot within ±0.10 m of (0.14, 0.175) plant box |
+| Latch swing gate | kicking foot ≤ 0.25 m from ball (no mid-stride unlock) |
 | Kick foot | hip closer to ball→goal axis at spawn (`fixed_kick_side=None`) |
 
 `Metrics/waypoint_at_plant` is the fraction currently latched.
 `Metrics/plant_latch_arrival` is the rising-edge rate (same signal as the
-bonus).
+bonus). `Metrics/support_plant_ready` / `swing_foot_ready` are the plant
+gates.
 
 ### Teacher (`pref_pose_twist` + tracking)
 
@@ -109,21 +112,16 @@ walking **through** the ball (does not freeze).
 
 | Term | Weight | Pays |
 |---|---|---|
-| `waypoint_approach` | +5 | `max(0, v · d̂_ball)` × facing (`σ=0.40`); off after latch |
-| `waypoint_proximity` | +5 | same closing speed × facing; off after latch |
-| `waypoint_inv_distance` | +3 | signed closing speed (retreat negative); off after latch |
+| `waypoint_approach` | +1.5 | `max(0, v · d̂_ball)` × facing (`σ=0.40`); off after latch |
+| `waypoint_proximity` | +1.5 | same closing speed × facing; off after latch |
+| `waypoint_inv_distance` | +1.0 | signed closing speed (retreat negative); off after latch |
 | `ball_camera_cone` | +0.5 | ball in FOV |
-| `plant_latch_bonus` | +3 | **one step** when `at_plant` becomes 1 |
+| `plant_latch_bonus` | +20 | **one step** when `at_plant` becomes 1 |
 
-These three waypoint terms are the dense approach payday. They stay on until
-latch, so a policy that walks in fast and never plants can farm them for the
-whole 7 s. That is the current failure mode (see below).
-
-`plant_latch_bonus` is meant to make crossing the latch worth losing those
-terms. The function returns 0 or 1; weight 3. If `scale_rewards_by_dt` is
-on (`dt=0.02`), the episode sum is only ~0.06 — much smaller than a
-waypoint farm. `action_rate` is **−1.5 always** (BaseWalk); it does not
-change at latch.
+Waypoint sum is **4 × closing** (was 13) so approach still guides but does
+not outpay latch. Latch bonus +20 ≈ several seconds of farming in one
+commit; after that kick terms dominate. `action_rate` is **−1.5 always**
+(BaseWalk); it does not change at latch.
 
 ### Rewards after latch
 
@@ -134,9 +132,16 @@ change at latch.
 | `kick_direction_accuracy` | +2 | 0.3 s after detected foot–ball strike; angle Gaussian `σ=0.25` |
 | `kick_speed_loose` | +2 | same 0.3 s window; `‖v‖` vs `sqrt(g R)`, relative `σ=0.35` |
 | `kick_speed_tight` | +2 | same window, `σ=0.12` |
-| `post_kick_upright` | +2 | after ≥1.2 m/s toward goal; 1.5 s window |
+| `post_kick_upright` | +12 | after ≥1.2 m/s toward goal; 1.5 s window |
+| `support_plant_score` | +5 | support foot ~0.14 m behind + ~0.175 m beside ball; off after kick |
 | `wrong_ball_contact` | −4 | support foot or trunk (selected foot allowed) |
+| `support_foot_planted` | +1.5 | support foot slow while latched (pre-kick) |
+| `post_kick_stance` | +1.5 | 1.5 s after kick: feet close + flat (catch) |
 | `ball_dribble_penalty` | −2 | slow motion that is not a ≥1.2 m/s kick |
+
+Walk terms (`feet_swing` / offsets / knee) switch **off at latch** for the
+strike, then **on again after ``kick_detected``** so the support leg is pulled
+back into gait (recovery), not left dragging.
 
 Direction and both speed-match terms are **exactly zero** until a foot-contact
 speed jump, then zero again after 0.3 s. They are not “faster = more”.
@@ -147,8 +152,8 @@ for 8–12 m is about 8.9–10.8 m/s
 that expected speed in a warm-start-safe encoding.
 
 At latch, `feet_swing`, `knee_flex_cmd_excess`, `feet_offset_x`, and
-`feet_offset_y` turn off (`disable_when_planted`) so walk foot-placement
-does not fight the swing.
+`feet_offset_y` turn off for the strike; after `kick_detected` they turn
+back on so recovery re-enters walk gait.
 
 ### Walk regularizers (always on unless noted)
 
@@ -156,8 +161,8 @@ does not fight the swing.
 |---|---|
 | `tracking_lin_vel_x/y` | +1.5 / +1.5 |
 | `tracking_ang_vel` | +1.0 |
-| `orientation` | −18 |
-| `base_height` / `trunk_height_floor` | −14 / −14 |
+| `orientation` | −28 |
+| `base_height` / `trunk_height_floor` | −24 / −24 |
 | `feet_offset_x/y` | −8 / −12 (off after latch) |
 | `feet_swing` | +3 (off after latch) |
 | `knee_flex_cmd_excess` | −2.5 (off after latch) |
@@ -170,7 +175,7 @@ does not fight the swing.
 |---|---|
 | `ball_touch_keepout` | −8 disk made the robot back off before latch |
 | `ball_proximity` | [0.09, 0.25] ring fought yellow-on-ball |
-| `support_plant_score` / plant extras | no explicit plant stage |
+| `support_plant_score` extras (clear/bridge) | only plant box + planted kept |
 | `ball_approach_target` | scale-free cosine; replaced by projected speed + windows |
 | `ball_acceleration_toward_goal` | noisy; not used |
 | `target_reached` / `post_kick_stance` / `near_ball_wait` | leftover settle/wait magnets |
@@ -198,8 +203,8 @@ then climbs while `Metrics/waypoint_at_plant` collapses and
 `behind_ball_distance` grows (policy stays ~2 m out). Watch latch and
 `target_hit`, not mean reward.
 
-`plant_latch_bonus` is supposed to break that, but it is one-shot and small
-next to +5/+5/+3 closing speed over a full episode.
+With waypoint weights cut to 1.5/1.5/1.0 and latch +20, planting should beat
+a full-episode farm; watch `waypoint_at_plant` ↑ and waypoint episode sums ↓.
 
 ### Train / play
 
@@ -223,6 +228,22 @@ MUJOCO_GL=egl uv run play Mjlab-Kick-Near-Booster-K1 \
 Watch: `Metrics/waypoint_at_plant` ↑, `Metrics/plant_latch_arrival` ↑,
 `Episode_Reward/ball_velocity_toward_goal` ↑, `Metrics/target_hit` ↑,
 dribble near 0. Waypoint episode sums should **fall** once latch is common.
+
+### Ball / plane contact
+
+The old ball used `solref=(-200, restitution)` and kick passed
+`restitution=0`, which is **zero damping**, not a dead ball. Current kick
+contacts:
+
+| Geom | `solref` | Other |
+|---|---|---|
+| `ball_geom` | `(0.02, 1.0)` critically damped | `condim=6`, friction `(1, 0.005, 0.0002)`, free-joint damping `0.001` |
+| kick `terrain` plane | `(0.02, 1.0)` | `solimp=(0.99, 0.99, 0.01)`, friction `(1, 0.005, 0.0001)` |
+
+Kick sim also sets air-like `option.density=1.2` / `viscosity=1.8e-5`,
+`impratio=10`, and an elliptic friction cone so slide converts to roll.
+The plane stays infinite (not a 10×10 card). Walk terrains are unchanged.
+A checker on the ball makes spin visible.
 
 Then stage-3: full-range `Mjlab-Kick-Booster-K1`.
 

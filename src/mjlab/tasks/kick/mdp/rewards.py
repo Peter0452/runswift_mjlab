@@ -268,22 +268,40 @@ def _plant_latch_mask(env: ManagerBasedRlEnv) -> torch.Tensor:
   return latch.at_plant.float()
 
 
+def _kick_settled_mask(
+  env: ManagerBasedRlEnv,
+  *,
+  settle_time_s: float,
+  ball_cfg: SceneEntityCfg = _DEFAULT_BALL_CFG,
+) -> torch.Tensor:
+  """True once kick fired and ``time_since_kick_s >= settle_time_s``."""
+  state = ensure_ball_phase_updated(env, ball_cfg_name=ball_cfg.name)
+  assert state.kick_detected is not None
+  assert state.time_since_kick_s is not None
+  return state.kick_detected & (state.time_since_kick_s >= float(settle_time_s))
+
+
 def _walk_block_after_plant_mask(
   env: ManagerBasedRlEnv,
   *,
   restore_tracking_after_kick: bool,
+  settle_time_s: float = 1.0,
   ball_cfg: SceneEntityCfg = _DEFAULT_BALL_CFG,
 ) -> torch.Tensor:
   """1 while plant latch should suppress walk terms.
 
-  After ``kick_detected``, returns 0 when ``restore_tracking_after_kick`` so
+  After ``kick_detected``, keeps blocking through the settle window
+  (``T_settle``), then returns 0 when ``restore_tracking_after_kick`` so
   gait / foot-offset rewards can pull the support leg back into walk.
+  Settle holds a predictable stand pose for walk-policy handoff.
   """
   block = _plant_latch_mask(env)
   if not restore_tracking_after_kick:
     return block
-  state = ensure_ball_phase_updated(env, ball_cfg_name=ball_cfg.name)
-  return block * (~state.kick_detected).float()
+  settled = _kick_settled_mask(
+    env, settle_time_s=settle_time_s, ball_cfg=ball_cfg
+  )
+  return block * (~settled).float()
 
 
 _LATCH_BONUS_PREV = "_kick_latch_bonus_prev_at_plant"
@@ -830,6 +848,7 @@ def _plant_proximity_walk_scale(
   far_dist: float = 2.0,
   far_scale: float = 0.15,
   restore_after_kick: bool = True,
+  settle_time_s: float = 1.0,
   goal_command_name: str = "goal",
   arc_radius: float = 0.4,
   setup_enter_dist: float = 0.45,
@@ -849,7 +868,8 @@ def _plant_proximity_walk_scale(
   """Invert walk-farm incentive: full near plant, weak when far.
 
   ``scale = 1`` for ``pref_dist <= full_dist``, ``far_scale`` for
-  ``pref_dist >= far_dist``, linear in between. After ``kick_detected``,
+  ``pref_dist >= far_dist``, linear in between. After settle
+  (``kick_detected`` and ``time_since_kick_s >= settle_time_s``),
   optionally restores full scale so post-kick gait is not crushed.
   """
   from mjlab.tasks.kick.mdp.pref_pose import compute_reference_pose_xy
@@ -880,13 +900,10 @@ def _plant_proximity_walk_scale(
   t = ((pref_dist - float(full_dist)) / denom).clamp(0.0, 1.0)
   scale = (1.0 - t) + t * float(far_scale)
   if restore_after_kick:
-    state = ensure_ball_phase_updated(
-      env,
-      ball_cfg_name=ball_cfg.name,
-      robot_cfg_name=robot_cfg.name,
-      goal_command_name=goal_command_name,
+    settled = _kick_settled_mask(
+      env, settle_time_s=settle_time_s, ball_cfg=ball_cfg
     )
-    scale = torch.where(state.kick_detected, torch.ones_like(scale), scale)
+    scale = torch.where(settled, torch.ones_like(scale), scale)
   env.extras["log"]["Metrics/plant_walk_scale"] = scale.mean()
   env.extras["log"]["Metrics/pref_distance"] = pref_dist.mean()
   return scale
@@ -934,6 +951,7 @@ def track_lin_vel_axis_for_kick(
   plant_far_dist: float = 2.0,
   plant_far_scale: float = 0.15,
   restore_tracking_after_kick: bool = True,
+  settle_time_s: float = 1.0,
   # Paper robot→ball command (student): sync twist before measuring error.
   align_robot_ball: bool = True,
   cruise_speed: float = 0.7,
@@ -1024,6 +1042,7 @@ def track_lin_vel_axis_for_kick(
       support_plant_lateral_tol=support_plant_lateral_tol,
       require_swing_foot_for_latch=require_swing_foot_for_latch,
       swing_foot_max_ball_distance=swing_foot_max_ball_distance,
+      settle_time_s=settle_time_s,
       robot_cfg=robot,
       ball_cfg=ball_cfg,
     )
@@ -1044,6 +1063,7 @@ def track_lin_vel_axis_for_kick(
     far_dist=plant_far_dist,
     far_scale=plant_far_scale,
     restore_after_kick=restore_tracking_after_kick,
+    settle_time_s=settle_time_s,
     goal_command_name=goal_command_name,
     arc_radius=arc_radius,
     setup_enter_dist=setup_enter_dist,
@@ -1079,6 +1099,7 @@ def track_ang_vel_z_for_kick(
   plant_far_dist: float = 2.0,
   plant_far_scale: float = 0.15,
   restore_tracking_after_kick: bool = True,
+  settle_time_s: float = 1.0,
   align_robot_ball: bool = True,
   cruise_speed: float = 0.7,
   min_speed: float = 0.25,
@@ -1167,6 +1188,7 @@ def track_ang_vel_z_for_kick(
       support_plant_lateral_tol=support_plant_lateral_tol,
       require_swing_foot_for_latch=require_swing_foot_for_latch,
       swing_foot_max_ball_distance=swing_foot_max_ball_distance,
+      settle_time_s=settle_time_s,
       robot_cfg=robot,
       ball_cfg=ball_cfg,
     )
@@ -1186,6 +1208,7 @@ def track_ang_vel_z_for_kick(
     far_dist=plant_far_dist,
     far_scale=plant_far_scale,
     restore_after_kick=restore_tracking_after_kick,
+    settle_time_s=settle_time_s,
     goal_command_name=goal_command_name,
     arc_radius=arc_radius,
     setup_enter_dist=setup_enter_dist,
@@ -3628,6 +3651,7 @@ def _kick_phase_walk_scale(
   plant_far_dist: float = 2.0,
   plant_far_scale: float = 0.15,
   restore_tracking_after_kick: bool = True,
+  settle_time_s: float = 1.0,
   goal_command_name: str = "goal",
   arc_radius: float = 0.4,
   setup_enter_dist: float = 0.45,
@@ -3708,6 +3732,7 @@ def _kick_phase_walk_scale(
       far_dist=plant_far_dist,
       far_scale=plant_far_scale,
       restore_after_kick=restore_tracking_after_kick,
+      settle_time_s=settle_time_s,
       goal_command_name=goal_command_name,
       arc_radius=arc_radius,
       setup_enter_dist=setup_enter_dist,
@@ -3753,6 +3778,7 @@ def _pref_scale_kwargs(
   plant_far_dist: float = 2.0,
   plant_far_scale: float = 0.15,
   restore_tracking_after_kick: bool = True,
+  settle_time_s: float = 1.0,
 ) -> dict:
   return {
     "arc_scale": arc_scale,
@@ -3764,6 +3790,7 @@ def _pref_scale_kwargs(
     "plant_far_dist": plant_far_dist,
     "plant_far_scale": plant_far_scale,
     "restore_tracking_after_kick": restore_tracking_after_kick,
+    "settle_time_s": settle_time_s,
     "goal_command_name": goal_command_name,
     "arc_radius": arc_radius,
     "setup_enter_dist": setup_enter_dist,
@@ -3824,6 +3851,7 @@ class feet_swing_for_kick:
     plant_far_dist: float = 2.0,
     plant_far_scale: float = 0.15,
     restore_tracking_after_kick: bool = True,
+    settle_time_s: float = 1.0,
     disable_when_planted: bool = False,
   ) -> torch.Tensor:
     raw = self._inner(
@@ -3863,6 +3891,7 @@ class feet_swing_for_kick:
         plant_far_dist=plant_far_dist,
         plant_far_scale=plant_far_scale,
         restore_tracking_after_kick=restore_tracking_after_kick,
+        settle_time_s=settle_time_s,
       ),
     )
     if disable_when_planted:
@@ -3871,6 +3900,7 @@ class feet_swing_for_kick:
         - _walk_block_after_plant_mask(
           env,
           restore_tracking_after_kick=restore_tracking_after_kick,
+          settle_time_s=settle_time_s,
           ball_cfg=ball_cfg,
         )
       )
@@ -3907,6 +3937,7 @@ def feet_offset_x_for_kick(
   plant_far_dist: float = 2.0,
   plant_far_scale: float = 0.15,
   restore_tracking_after_kick: bool = True,
+  settle_time_s: float = 1.0,
   disable_when_planted: bool = False,
 ) -> torch.Tensor:
   """Walk sagittal foot stagger; attenuated in Setup, off in Strike."""
@@ -3946,6 +3977,7 @@ def feet_offset_x_for_kick(
       plant_far_dist=plant_far_dist,
       plant_far_scale=plant_far_scale,
       restore_tracking_after_kick=restore_tracking_after_kick,
+      settle_time_s=settle_time_s,
     ),
   )
   if disable_when_planted:
@@ -3954,6 +3986,7 @@ def feet_offset_x_for_kick(
       - _walk_block_after_plant_mask(
         env,
         restore_tracking_after_kick=restore_tracking_after_kick,
+        settle_time_s=settle_time_s,
         ball_cfg=ball_cfg,
       )
     )
@@ -3991,6 +4024,7 @@ def feet_offset_y_for_kick(
   plant_far_dist: float = 2.0,
   plant_far_scale: float = 0.15,
   restore_tracking_after_kick: bool = True,
+  settle_time_s: float = 1.0,
   disable_when_planted: bool = False,
 ) -> torch.Tensor:
   """Walk stance-width regularizer; attenuated in Setup, off in Strike."""
@@ -4031,6 +4065,7 @@ def feet_offset_y_for_kick(
       plant_far_dist=plant_far_dist,
       plant_far_scale=plant_far_scale,
       restore_tracking_after_kick=restore_tracking_after_kick,
+      settle_time_s=settle_time_s,
     ),
   )
   if disable_when_planted:
@@ -4039,6 +4074,7 @@ def feet_offset_y_for_kick(
       - _walk_block_after_plant_mask(
         env,
         restore_tracking_after_kick=restore_tracking_after_kick,
+        settle_time_s=settle_time_s,
         ball_cfg=ball_cfg,
       )
     )
@@ -4076,6 +4112,7 @@ def feet_distance_for_kick(
   plant_far_dist: float = 2.0,
   plant_far_scale: float = 0.15,
   restore_tracking_after_kick: bool = True,
+  settle_time_s: float = 1.0,
 ) -> torch.Tensor:
   """Lateral foot spacing band; attenuated in Setup, off in Strike."""
   from mjlab.tasks.velocity import mdp as velocity_mdp
@@ -4115,6 +4152,7 @@ def feet_distance_for_kick(
       plant_far_dist=plant_far_dist,
       plant_far_scale=plant_far_scale,
       restore_tracking_after_kick=restore_tracking_after_kick,
+      settle_time_s=settle_time_s,
     ),
   )
   return raw * scale
@@ -4145,6 +4183,7 @@ def feet_yaw_diff_for_kick(
   plant_far_dist: float = 2.0,
   plant_far_scale: float = 0.15,
   restore_tracking_after_kick: bool = True,
+  settle_time_s: float = 1.0,
 ) -> torch.Tensor:
   """Feet yaw gap; attenuated in Setup, off in Strike."""
   from mjlab.tasks.velocity import mdp as velocity_mdp
@@ -4175,6 +4214,7 @@ def feet_yaw_diff_for_kick(
       plant_far_dist=plant_far_dist,
       plant_far_scale=plant_far_scale,
       restore_tracking_after_kick=restore_tracking_after_kick,
+      settle_time_s=settle_time_s,
     ),
   )
   return raw * scale
@@ -4205,6 +4245,7 @@ def feet_yaw_mean_for_kick(
   plant_far_dist: float = 2.0,
   plant_far_scale: float = 0.15,
   restore_tracking_after_kick: bool = True,
+  settle_time_s: float = 1.0,
 ) -> torch.Tensor:
   """Mean foot yaw vs base; attenuated in Setup, off in Strike."""
   from mjlab.tasks.velocity import mdp as velocity_mdp
@@ -4235,6 +4276,7 @@ def feet_yaw_mean_for_kick(
       plant_far_dist=plant_far_dist,
       plant_far_scale=plant_far_scale,
       restore_tracking_after_kick=restore_tracking_after_kick,
+      settle_time_s=settle_time_s,
     ),
   )
   return raw * scale
@@ -4270,6 +4312,7 @@ def knee_flex_cmd_excess_for_kick(
   plant_far_dist: float = 2.0,
   plant_far_scale: float = 0.15,
   restore_tracking_after_kick: bool = True,
+  settle_time_s: float = 1.0,
   disable_when_planted: bool = False,
 ) -> torch.Tensor:
   """Knee crouch-cmd tax; soft in Setup, off in Strike so the swing leg can flex."""
@@ -4309,6 +4352,7 @@ def knee_flex_cmd_excess_for_kick(
       plant_far_dist=plant_far_dist,
       plant_far_scale=plant_far_scale,
       restore_tracking_after_kick=restore_tracking_after_kick,
+      settle_time_s=settle_time_s,
     ),
   )
   if disable_when_planted:
@@ -4317,6 +4361,7 @@ def knee_flex_cmd_excess_for_kick(
       - _walk_block_after_plant_mask(
         env,
         restore_tracking_after_kick=restore_tracking_after_kick,
+        settle_time_s=settle_time_s,
         ball_cfg=ball_cfg,
       )
     )

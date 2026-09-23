@@ -69,6 +69,8 @@ _AIR_VISCOSITY = 0.000018
 _POST_KICK_STABILITY_S = 1.0
 _TARGET_RADIUS = 1.0  # metres — ball stopped inside this of goal = hit
 _POST_KICK_WINDOW_S = 2.0  # T_window for target miss / settle
+# Stand-cmd hold after kick for a predictable handoff pose (walk policy).
+_SETTLE_TIME_S = 1.0  # mid of 0.5–1.5 s
 _DOUBLE_TOUCH_WINDOW_S = 0.10  # debounce before a second contact edge is illegal
 _BALL_SPAWN_XY_NOISE = 0.05  # ±m jitter on ball reset XY
 _BALL_OBS_NOISE = (-0.05, 0.05)  # actor ball_rel_pos uniform noise (m)
@@ -216,6 +218,7 @@ def make_arc_kick_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvCf
       "turn_speed": 1.0,
       "heading_deadzone": 0.05,
       "use_sampled_magnitudes": True,
+      "settle_time_s": _SETTLE_TIME_S,
       "robot_cfg": robot,
       "ball_cfg": ball,
     },
@@ -277,6 +280,7 @@ def make_arc_kick_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvCf
     "plant_far_dist": 2.0,
     "plant_far_scale": 0.15,
     "restore_tracking_after_kick": True,
+    "settle_time_s": _SETTLE_TIME_S,
     "goal_command_name": "goal",
     # Student tracking uses the same robot→ball twist as the teacher.
     "align_robot_ball": True,
@@ -337,6 +341,7 @@ def make_arc_kick_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvCf
         "plant_far_dist",
         "plant_far_scale",
         "restore_tracking_after_kick",
+        "settle_time_s",
       )
     },
   }
@@ -813,19 +818,20 @@ def make_near_kick_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvC
   # box — pelvis-only latch was paying for long reaches.
   cfg.rewards["support_plant_score"] = RewardTermCfg(
     func=kick_mdp.support_plant_score,
-    weight=5.0,
+    weight=2.0,
     params={
       "command_name": "goal",
       "sagittal_target": 0.14,
       "lateral_target": 0.175,
       "activate_inside_ball_distance": 0.85,
-      "stop_after_plant_latch": False,
+      # Stop farming plant once latch opens — force payoff into the kick.
+      "stop_after_plant_latch": True,
       **robot_ball,
     },
   )
   cfg.rewards["kicking_foot_strike"] = RewardTermCfg(
     func=kick_mdp.kicking_foot_strike_ball,
-    weight=2.0,
+    weight=5.0,
     params={
       "activate_inside_ball_distance": 0.85,
       "target_distance": 0.35,
@@ -837,13 +843,16 @@ def make_near_kick_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvC
       **robot_ball,
     },
   )
+  # Keep placement regularizers off at plant; allow feet_swing so the kick
+  # leg can still move into the ball after latch.
   for name in (
-    "feet_swing",
     "knee_flex_cmd_excess",
     "feet_offset_x",
     "feet_offset_y",
   ):
     cfg.rewards[name].params["disable_when_planted"] = True
+  if "feet_swing" in cfg.rewards:
+    cfg.rewards["feet_swing"].params["disable_when_planted"] = False
   # Ball-attached target (standoff 0, no lateral). Pay closing
   # speed, not a static stand-off magnet. Weights are weak vs latch so
   # PPO cannot farm approach forever (was 5/5/3 vs latch +3 once).
@@ -915,7 +924,7 @@ def make_near_kick_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvC
     "plant_root_lateral": 0.0,
     "plant_feet_offset_x": -0.02,
     "plant_feet_offset_y": 0.12,
-    "ready_waypoint_distance": 0.14,
+    "ready_waypoint_distance": 0.22,
     "slow_distance": 0.80,
     "cruise_speed": 0.9,
     "min_speed": 0.30,
@@ -923,12 +932,14 @@ def make_near_kick_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvC
     "use_sampled_magnitudes": False,
     "approach_standoff": 0.0,
     "plant_distance": 0.14,
-    "require_support_plant_for_latch": True,
+    "settle_time_s": _SETTLE_TIME_S,
+    # Soft latch: root near WP + facing only.
+    "require_support_plant_for_latch": False,
     "support_plant_sagittal_target": 0.14,
     "support_plant_sagittal_tol": 0.10,
     "support_plant_lateral_target": 0.175,
     "support_plant_lateral_tol": 0.10,
-    "require_swing_foot_for_latch": True,
+    "require_swing_foot_for_latch": False,
     "swing_foot_max_ball_distance": 0.25,
   }
   for name in ("tracking_lin_vel_x", "tracking_lin_vel_y", "tracking_ang_vel"):
@@ -938,15 +949,29 @@ def make_near_kick_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvC
     cfg.events["pref_pose_twist"].params.update(
       {
         **_plant_twist,
-        "ready_facing_angle": math.radians(20.0),
-        "ready_hold_time_s": 0.10,
+        "ready_facing_angle": math.radians(30.0),
+        "ready_hold_time_s": 0.05,
       }
     )
+
+  # Dense swing→ball bridge after plant (was removed; without it latch parks).
+  cfg.rewards["kick_contact_bridge"] = RewardTermCfg(
+    func=kick_mdp.kick_contact_bridge,
+    weight=3.0,
+    params={
+      "activate_inside_ball_distance": 0.85,
+      "closing_scale": 0.35,
+      "impulse_scale": 4.0,
+      "contact_bonus": 1.5,
+      "min_plant_score": 0.10,
+      "command_name": "goal",
+      **robot_ball,
+    },
+  )
 
   # Main payday dominates shaping: a visually plausible swing without ball
   # speed is not a successful kick.
   for name in (
-    "kick_contact_bridge",
     "strike_ankle_pitch",
     "premature_kick_lunge",
     "ball_approach_target",

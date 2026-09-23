@@ -50,6 +50,19 @@ class AmpRunner:
     env = self.env.unwrapped
     return env.step_dt if env.cfg.scale_rewards_by_dt else 1.0
 
+  def _get_amp_style_mask(self) -> torch.Tensor:
+    """Per-env mask: 1 while AMP style should shape the policy.
+
+    Kick Near-Amp: always-on until ``kick_detected``, then 0 so settle /
+    recovery train on task rewards only (no kick-style pressure).
+    Non-kick AMP envs: always 1.
+    """
+    env = self.env.unwrapped
+    phase = getattr(env, "_kick_ball_phase", None)
+    if phase is None or phase.kick_detected is None:
+      return torch.ones(env.num_envs, device=self.device, dtype=torch.float32)
+    return (~phase.kick_detected).to(dtype=torch.float32, device=self.device)
+
   def _get_amp_obs(self, obs: TensorDict) -> torch.Tensor:
     return torch.cat([obs[group] for group in self.amp_group_names], dim=-1)
 
@@ -82,13 +95,19 @@ class AmpRunner:
       next_amp_obs = self._get_amp_obs(obs)
       next_amp_history = self.alg.process_amp_step(next_amp_obs, dones)
       style_weight = self._compute_style_weight()
-      task_rewards = (1.0 - style_weight) * rewards
+      style_mask = self._get_amp_style_mask().view_as(rewards)
+      # After kick: full task reward, zero style (stabilisation without AMP).
+      active_w = style_weight * style_mask
+      task_rewards = (1.0 - active_w) * rewards
       style_rewards = (
-        style_weight
+        active_w
         * self._compute_style_reward_scale()
         * self.alg.predict_style_reward(next_amp_history).view_as(rewards)
       )
       rewards = task_rewards + style_rewards
+      log = extras.setdefault("log", {})
+      if isinstance(log, dict):
+        log["Metrics/amp_style_active"] = style_mask.mean()
       self._update_amp_metrics_log(
         extras=extras,
         dones=dones,

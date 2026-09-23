@@ -5,6 +5,7 @@ from mjlab.tasks.velocity.rl.amp_runner import VelocityAmpOnPolicyRunner
 from .env_cfgs import (
   booster_k1_amp_flat_env_cfg,
   booster_k1_amp_rough_env_cfg,
+  booster_k1_amp_rough_ft_env_cfg,
 )
 from .rl_cfg import (
   booster_k1_amp_ppo_runner_cfg,
@@ -25,6 +26,10 @@ def _with_amp_reset_cfg(env_cfg, runner_cfg):
 
 _AMP_TASKS = {
   "Rough-Amp": (booster_k1_amp_rough_env_cfg, booster_k1_amp_ppo_runner_cfg),
+  "Rough-Amp-DA": (
+    booster_k1_amp_rough_ft_env_cfg,
+    booster_k1_amp_ppo_symmetric_runner_cfg,
+  ),
   "Flat-Amp": (booster_k1_amp_flat_env_cfg, booster_k1_amp_ppo_runner_cfg),
   "Flat-Amp-DA": (
     booster_k1_amp_flat_env_cfg,

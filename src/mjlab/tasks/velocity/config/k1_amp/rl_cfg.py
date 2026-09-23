@@ -19,8 +19,11 @@ _AMP_SYMMETRY_CFG = {
   "data_augmentation_func": "mjlab.tasks.velocity.mdp.amp_symmetry:augment_symmetries",
 }
 
-# Whirlwind LAFAN + CMU-09 K1 retargets. Weights: WW 70% (equal per clip),
-# CMU 30% (duration-proportional within CMU so 09_12 dominates).
+# Whirlwind LAFAN + CMU-09 K1 retargets.
+# Stage A (default ``dataset_weights.json``): WW 50% equal; CMU 50% with
+# 09_12 dominant and sprints capped at 15% total mass.
+# Stage B (``dataset_weights_equal_cmu.json``): same 50/50 but CMU equal-clip —
+# swap this file in (or point here) when widening after ~4k iters.
 # rl_cfg.py → …/runswift_mjlab/src/mjlab/tasks/velocity/config/k1_amp
 # parents[6] = runswift_mjlab, parent of that = Project/RL
 _AMP_MIX_DIR = (
