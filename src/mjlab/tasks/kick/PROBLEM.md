@@ -37,7 +37,7 @@ Train a **Near kick** policy for Booster K1 that can eventually hand off to a
 | **2 — Polish Kick + transition** | Kick adapts to handoff states | Walk stays frozen |
 | **3 — Optional joint FT** | Only if 2 plateaus | Still preserve strike power |
 
-**Current stage: 0**
+**Current stage: 0** (Stage-1 play probe: Setup B FSM — see §10)
 
 ---
 
@@ -187,7 +187,29 @@ MUJOCO_GL=egl uv run train Mjlab-Kick-Near-Amp-Booster-K1 \
 
 - [`REWARDS_model_1800.md`](REWARDS_model_1800.md) — full math + explanation for every reward term in `near_amp_v1` / `model_1800` (saved `env.yaml`).
 
-## 10. Changelog (this document)
+---
+
+## 10. Stage-1 play — Setup B (Walk→Kick→Walk FSM)
+
+Hard switches in the **Kick Near-Amp env**:
+
+```text
+APPROACH (Walk @ ~1.5 m) → d_ball ≤ 0.55 m → KICK → settle 1 s → EXIT (Walk)
+```
+
+- Spawn: `radius_range ≈ (1.4, 1.6)` m, approach side
+- **Walk enter/exit:** AMP `model_9950` (75-D / 22-D); approach cmd toward ball
+- **Kick:** latest Near-Amp; arms freed while in Kick
+- Exit: seed `exit_vx` once (default 0); joystick owns cmd after
+
+```bash
+uv run --no-sync python -m mjlab.scripts.play_kick_to_walk --viewer viser
+# knobs: --spawn-radius-m 1.5 --kick-enter-m 0.55 --approach-speed 0.9
+```
+
+North stars: fall/hitch at both switches; Walk closes from 1.5 m; Kick still fires.
+
+## 11. Changelog (this document)
 
 | Date | Edit |
 |------|------|
@@ -196,3 +218,5 @@ MUJOCO_GL=egl uv run train Mjlab-Kick-Near-Amp-Booster-K1 \
 | 2026-09-23 | §8 suggestions from post-1800 experiments (H1–H4) |
 | 2026-09-23 | H1 implemented: restore 1800 rewards + upright gate 4.0 / w=5 |
 | 2026-09-23 | H1.1: `post_kick_stance` 1.5→2.5 |
+| 2026-09-23 | Setup B play FSM (`play-kick-to-walk`) |
+| 2026-09-24 | Setup B: Walk→Kick→Walk from ~1.5 m spawn |

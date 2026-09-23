@@ -523,6 +523,16 @@ def ensure_robot_ball_twist_command(
   if not force and getattr(env, "_kick_robot_ball_twist_step", -1) == step:
     return
 
+  # Setup B play: after Kick→Walk switch, leave twist to the FSM / viewer.
+  walk_mode = getattr(env, "_setup_b_walk_mode", None)
+  if (
+    walk_mode is not None
+    and isinstance(walk_mode, torch.Tensor)
+    and bool(walk_mode.all().item())
+  ):
+    env._kick_robot_ball_twist_step = step
+    return
+
   from mjlab.tasks.kick.mdp.geometry import ball_to_goal_direction_xy
   from mjlab.tasks.kick.mdp.pref_pose import setup_offset_xy
   from mjlab.tasks.velocity.mdp.velocity_command import UniformVelocityCommand
