@@ -51,17 +51,34 @@ class AmpRunner:
     return env.step_dt if env.cfg.scale_rewards_by_dt else 1.0
 
   def _get_amp_style_mask(self) -> torch.Tensor:
-    """Per-env mask: 1 while AMP style should shape the policy.
+    """Per-env AMP style scale in ``[0, 1]`` (multiplies base style weight).
 
-    Kick Near-Amp: always-on until ``kick_detected``, then 0 so settle /
-    recovery train on task rewards only (no kick-style pressure).
-    Non-kick AMP envs: always 1.
+    * Non-kick AMP (no ball): always 1.
+    * Kick AMP: ``(~kick_detected) * exp(-‖d_agent,ball‖² / σ²)`` with
+      ``σ² = 1.0`` by default — style fades when wandering far from the ball
+      so walking-style farming requires closing in. After ``kick_detected``,
+      scale is 0 so settle is task-only.
     """
     env = self.env.unwrapped
+    mask = torch.ones(env.num_envs, device=self.device, dtype=torch.float32)
+
     phase = getattr(env, "_kick_ball_phase", None)
-    if phase is None or phase.kick_detected is None:
-      return torch.ones(env.num_envs, device=self.device, dtype=torch.float32)
-    return (~phase.kick_detected).to(dtype=torch.float32, device=self.device)
+    if phase is not None and phase.kick_detected is not None:
+      mask = (~phase.kick_detected).to(dtype=torch.float32, device=self.device)
+
+    # Ball proximity gate (Kick-on-Walk-AMP / Near-Amp when ball is present).
+    entities = getattr(env.scene, "entities", None)
+    if entities is not None and "ball" in entities and "robot" in entities:
+      robot = env.scene["robot"]
+      ball = env.scene["ball"]
+      delta_xy = ball.data.root_link_pos_w[:, :2] - robot.data.root_link_pos_w[:, :2]
+      dist_sq = torch.sum(torch.square(delta_xy), dim=-1)
+      sigma_sq = float(getattr(env, "amp_style_proximity_sigma_sq", 1.0))
+      proximity = torch.exp(-dist_sq / max(sigma_sq, 1.0e-6))
+      mask = mask * proximity
+      self._amp_last_proximity = proximity
+
+    return mask
 
   def _get_amp_obs(self, obs: TensorDict) -> torch.Tensor:
     return torch.cat([obs[group] for group in self.amp_group_names], dim=-1)
@@ -107,7 +124,14 @@ class AmpRunner:
       rewards = task_rewards + style_rewards
       log = extras.setdefault("log", {})
       if isinstance(log, dict):
+        # Mean effective style scale (kick gate × proximity); ∈ [0, 1].
         log["Metrics/amp_style_active"] = style_mask.mean()
+        log["Metrics/amp_style_weight_effective"] = (
+          float(style_weight) * style_mask.mean()
+        )
+        proximity = getattr(self, "_amp_last_proximity", None)
+        if proximity is not None:
+          log["Metrics/amp_style_proximity"] = proximity.mean()
       self._update_amp_metrics_log(
         extras=extras,
         dones=dones,

@@ -422,6 +422,7 @@ def agent_approach_ball(
   env: ManagerBasedRlEnv,
   command_name: str = "goal",
   velocity_eps: float = 0.1,
+  min_ball_distance: float | None = None,
   robot_cfg: SceneEntityCfg = _DEFAULT_ROBOT_CFG,
   ball_cfg: SceneEntityCfg = _DEFAULT_BALL_CFG,
 ) -> torch.Tensor:
@@ -430,6 +431,10 @@ def agent_approach_ball(
   ``max(0, cos(v_agent, d_agent→ball)) / (1 + max(0, v_ball · d_target→ball))``
   when ``‖v_agent‖ > ε``, else 0. Inverse ball-progress scaling shrinks the
   approach signal once the ball is already moving toward the target.
+
+  Optional ``min_ball_distance`` zeros the term inside a radius. Thesis /
+  Kick-on-Walk-AMP leave this ``None`` so approach keeps pulling through
+  contact until the ball moves.
   """
   robot: Entity = env.scene[robot_cfg.name]
   ball: Entity = env.scene[ball_cfg.name]
@@ -456,6 +461,8 @@ def agent_approach_ball(
   ball_progress = torch.sum(ball_vel * d_target_ball, dim=-1).clamp(min=0.0)
   reward = cos_clip / (1.0 + ball_progress)
   reward = torch.where(agent_speed > velocity_eps, reward, torch.zeros_like(reward))
+  if min_ball_distance is not None:
+    reward = reward * (d_agent_norm > float(min_ball_distance)).float()
 
   env.extras["log"]["Metrics/agent_approach_ball"] = reward.mean()
   env.extras["log"]["Metrics/ball_distance"] = d_agent_norm.mean()
@@ -980,6 +987,8 @@ def track_lin_vel_axis_for_kick(
   support_plant_sagittal_tol: float = 0.10,
   support_plant_lateral_target: float = 0.175,
   support_plant_lateral_tol: float = 0.10,
+  require_com_over_plant_for_latch: bool = False,
+  com_over_plant_radius: float = 0.08,
   require_swing_foot_for_latch: bool = False,
   swing_foot_max_ball_distance: float = 0.38,
   arc_radius: float = 0.4,
@@ -1040,6 +1049,8 @@ def track_lin_vel_axis_for_kick(
       support_plant_sagittal_tol=support_plant_sagittal_tol,
       support_plant_lateral_target=support_plant_lateral_target,
       support_plant_lateral_tol=support_plant_lateral_tol,
+      require_com_over_plant_for_latch=require_com_over_plant_for_latch,
+      com_over_plant_radius=com_over_plant_radius,
       require_swing_foot_for_latch=require_swing_foot_for_latch,
       swing_foot_max_ball_distance=swing_foot_max_ball_distance,
       settle_time_s=settle_time_s,
@@ -1127,6 +1138,8 @@ def track_ang_vel_z_for_kick(
   support_plant_sagittal_tol: float = 0.10,
   support_plant_lateral_target: float = 0.175,
   support_plant_lateral_tol: float = 0.10,
+  require_com_over_plant_for_latch: bool = False,
+  com_over_plant_radius: float = 0.08,
   require_swing_foot_for_latch: bool = False,
   swing_foot_max_ball_distance: float = 0.38,
   arc_radius: float = 0.4,
@@ -1186,6 +1199,8 @@ def track_ang_vel_z_for_kick(
       support_plant_sagittal_tol=support_plant_sagittal_tol,
       support_plant_lateral_target=support_plant_lateral_target,
       support_plant_lateral_tol=support_plant_lateral_tol,
+      require_com_over_plant_for_latch=require_com_over_plant_for_latch,
+      com_over_plant_radius=com_over_plant_radius,
       require_swing_foot_for_latch=require_swing_foot_for_latch,
       swing_foot_max_ball_distance=swing_foot_max_ball_distance,
       settle_time_s=settle_time_s,
@@ -1553,6 +1568,9 @@ def ball_velocity_toward_goal(
   ball_stationary_speed_threshold: float = 0.1,
   kick_detection_speed_increase_threshold: float = 0.5,
   require_plant_latch: bool = False,
+  require_compact: bool = False,
+  compact_gap_max: float = 0.22,
+  compact_max_yaw_rad: float = math.radians(25.0),
   quality_gated: bool = False,
   gate_foot_proximity: bool = True,
   gate_support_stability: bool = True,
@@ -1619,6 +1637,18 @@ def ball_velocity_toward_goal(
     reward = strength
   if require_plant_latch:
     reward = reward * _plant_latch_mask(env)
+  if require_compact:
+    compact = swing_compact_ready_mask(
+      env,
+      gap_max=compact_gap_max,
+      max_yaw_rad=compact_max_yaw_rad,
+      command_name=command_name,
+      robot_cfg=robot_cfg,
+      ball_cfg=ball_cfg,
+      feet_cfg=feet_cfg,
+    )
+    reward = reward * compact.float()
+    env.extras["log"]["Metrics/ball_vel_compact_gate"] = compact.float().mean()
 
   if quality_gated:
     robot: Entity = env.scene[robot_cfg.name]
@@ -1970,6 +2000,9 @@ def kicking_foot_strike_ball(
   ball_stationary_speed_threshold: float = 0.1,
   kick_detection_speed_increase_threshold: float = 0.5,
   require_plant_latch: bool = False,
+  require_compact: bool = False,
+  compact_gap_max: float = 0.22,
+  compact_max_yaw_rad: float = math.radians(25.0),
   robot_cfg: SceneEntityCfg = _DEFAULT_ROBOT_CFG,
   ball_cfg: SceneEntityCfg = _DEFAULT_BALL_CFG,
   feet_cfg: SceneEntityCfg | None = None,
@@ -2020,6 +2053,18 @@ def kicking_foot_strike_ball(
     reward = active * (2.0 * proximity + strike_speed)
   if require_plant_latch:
     reward = reward * _plant_latch_mask(env)
+  if require_compact:
+    compact = swing_compact_ready_mask(
+      env,
+      gap_max=compact_gap_max,
+      max_yaw_rad=compact_max_yaw_rad,
+      command_name=command_name,
+      robot_cfg=robot_cfg,
+      ball_cfg=ball_cfg,
+      feet_cfg=feet_cfg,
+    )
+    reward = reward * compact.float()
+    env.extras["log"]["Metrics/strike_compact_gate"] = compact.float().mean()
   env.extras["log"]["Metrics/kicking_foot_ball_dist"] = (active * foot_dist).mean()
   env.extras["log"]["Metrics/kicking_foot_strike_speed"] = (
     active * strike_speed
@@ -2502,6 +2547,205 @@ def support_plant_score(
   return reward
 
 
+def com_over_plant_ready_mask(
+  env: ManagerBasedRlEnv,
+  com_radius: float = 0.08,
+  robot_cfg: SceneEntityCfg = _DEFAULT_ROBOT_CFG,
+  ball_cfg: SceneEntityCfg = _DEFAULT_BALL_CFG,
+  feet_cfg: SceneEntityCfg | None = None,
+) -> torch.Tensor:
+  """True when root XY (CoM proxy) sits within ``com_radius`` of the plant foot."""
+  robot: Entity = env.scene[robot_cfg.name]
+  ball: Entity = env.scene[ball_cfg.name]
+  foot_ids = _resolve_foot_ids(robot, feet_cfg)
+  feet_xy = robot.data.body_link_pos_w[:, foot_ids, :2]
+  _, support_idx = _kick_stance_foot_indices(env, robot, ball)
+  plant_xy = _gather_foot_tensor(feet_xy, support_idx)
+  root_xy = robot.data.root_link_pos_w[:, :2]
+  return torch.linalg.norm(root_xy - plant_xy, dim=-1) <= float(com_radius)
+
+
+def swing_compact_ready_mask(
+  env: ManagerBasedRlEnv,
+  gap_max: float = 0.22,
+  max_yaw_rad: float = math.radians(25.0),
+  command_name: str = "goal",
+  robot_cfg: SceneEntityCfg = _DEFAULT_ROBOT_CFG,
+  ball_cfg: SceneEntityCfg = _DEFAULT_BALL_CFG,
+  feet_cfg: SceneEntityCfg | None = None,
+) -> torch.Tensor:
+  """True when swing foot is laterally compact vs plant and Hip_Yaw is bounded.
+
+  Stage 2 compact-strike gate: blocks payday while the hip flares outward.
+  """
+  robot: Entity = env.scene[robot_cfg.name]
+  ball: Entity = env.scene[ball_cfg.name]
+  foot_ids = _resolve_foot_ids(robot, feet_cfg)
+  feet_xy = robot.data.body_link_pos_w[:, foot_ids, :2]
+  kicking_idx, support_idx = _kick_stance_foot_indices(env, robot, ball)
+  plant_xy = _gather_foot_tensor(feet_xy, support_idx)
+  swing_xy = _gather_foot_tensor(feet_xy, kicking_idx)
+
+  ball_xy = ball.data.root_link_pos_w[:, :2]
+  goal_dir = ball_to_goal_direction_xy(env, ball_xy, command_name)
+  left_dir = torch.stack((-goal_dir[:, 1], goal_dir[:, 0]), dim=-1)
+  gap_lat = torch.abs(torch.sum((swing_xy - plant_xy) * left_dir, dim=-1))
+
+  left_yaw_ids, _ = robot.find_joints("Left_Hip_Yaw")
+  right_yaw_ids, _ = robot.find_joints("Right_Hip_Yaw")
+  yaw_q = robot.data.joint_pos[:, [left_yaw_ids[0], right_yaw_ids[0]]]
+  swing_yaw = torch.abs(_gather_foot_tensor(yaw_q, kicking_idx))
+  return (gap_lat <= float(gap_max)) & (swing_yaw <= float(max_yaw_rad))
+
+
+def com_over_plant(
+  env: ManagerBasedRlEnv,
+  sigma: float = 0.08,
+  require_support_in_box: bool = True,
+  command_name: str = "goal",
+  sagittal_target: float = 0.20,
+  sagittal_tol: float = 0.14,
+  lateral_target: float = 0.13,
+  lateral_tol: float = 0.08,
+  activate_inside_ball_distance: float = 0.85,
+  robot_cfg: SceneEntityCfg = _DEFAULT_ROBOT_CFG,
+  ball_cfg: SceneEntityCfg = _DEFAULT_BALL_CFG,
+  feet_cfg: SceneEntityCfg | None = None,
+) -> torch.Tensor:
+  """P2 weight shift: dense lure pulling root XY over the plant foot.
+
+  CoM-shift proxy for single-support balance before swing liftoff.
+  """
+  robot: Entity = env.scene[robot_cfg.name]
+  ball: Entity = env.scene[ball_cfg.name]
+  foot_ids = _resolve_foot_ids(robot, feet_cfg)
+  feet_xy = robot.data.body_link_pos_w[:, foot_ids, :2]
+  _, support_idx = _kick_stance_foot_indices(env, robot, ball)
+  plant_xy = _gather_foot_tensor(feet_xy, support_idx)
+  root_xy = robot.data.root_link_pos_w[:, :2]
+
+  offset_dist = torch.linalg.norm(root_xy - plant_xy, dim=-1)
+  score = torch.exp(-torch.square(offset_dist) / max(float(sigma), 1.0e-6) ** 2)
+
+  if require_support_in_box:
+    sag, lat, _ = _support_plant_offsets(
+      env, command_name, robot_cfg, ball_cfg, feet_cfg
+    )
+    in_box = (torch.abs(sag - float(sagittal_target)) <= float(sagittal_tol)) & (
+      torch.abs(lat - float(lateral_target)) <= float(lateral_tol)
+    )
+    score = score * in_box.float()
+
+  in_zone = _kick_zone_mask(env, robot_cfg, ball_cfg, activate_inside_ball_distance)
+  reward = in_zone * score
+  env.extras["log"]["Metrics/com_over_plant_dist"] = offset_dist.mean()
+  env.extras["log"]["Metrics/com_over_plant_reward"] = reward.mean()
+  return reward
+
+
+def phase_audit_metrics(
+  env: ManagerBasedRlEnv,
+  com_radius: float = 0.08,
+  gap_max: float = 0.22,
+  max_yaw_rad: float = math.radians(25.0),
+  command_name: str = "goal",
+  sagittal_target: float = 0.20,
+  sagittal_tol: float = 0.14,
+  lateral_target: float = 0.13,
+  lateral_tol: float = 0.08,
+  robot_cfg: SceneEntityCfg = _DEFAULT_ROBOT_CFG,
+  ball_cfg: SceneEntityCfg = _DEFAULT_BALL_CFG,
+  feet_cfg: SceneEntityCfg | None = None,
+) -> torch.Tensor:
+  """Stage 0 instrumentation: log P2/P3/P4 eligibility without affecting reward."""
+  robot: Entity = env.scene[robot_cfg.name]
+  ball: Entity = env.scene[ball_cfg.name]
+  foot_ids = _resolve_foot_ids(robot, feet_cfg)
+  feet_xy = robot.data.body_link_pos_w[:, foot_ids, :2]
+  kicking_idx, support_idx = _kick_stance_foot_indices(env, robot, ball)
+  plant_xy = _gather_foot_tensor(feet_xy, support_idx)
+  swing_xy = _gather_foot_tensor(feet_xy, kicking_idx)
+
+  sag, lat, _ = _support_plant_offsets(
+    env, command_name, robot_cfg, ball_cfg, feet_cfg
+  )
+  foot_in_box = (torch.abs(sag - float(sagittal_target)) <= float(sagittal_tol)) & (
+    torch.abs(lat - float(lateral_target)) <= float(lateral_tol)
+  )
+  root_xy = robot.data.root_link_pos_w[:, :2]
+  com_over = torch.linalg.norm(root_xy - plant_xy, dim=-1) <= float(com_radius)
+  p2_ready = foot_in_box & com_over
+
+  ball_xy = ball.data.root_link_pos_w[:, :2]
+  goal_dir = ball_to_goal_direction_xy(env, ball_xy, command_name)
+  left_dir = torch.stack((-goal_dir[:, 1], goal_dir[:, 0]), dim=-1)
+  gap_lat = torch.abs(torch.sum((swing_xy - plant_xy) * left_dir, dim=-1))
+
+  left_yaw_ids, _ = robot.find_joints("Left_Hip_Yaw")
+  right_yaw_ids, _ = robot.find_joints("Right_Hip_Yaw")
+  yaw_q = robot.data.joint_pos[:, [left_yaw_ids[0], right_yaw_ids[0]]]
+  swing_yaw = torch.abs(_gather_foot_tensor(yaw_q, kicking_idx))
+  p3_compact = (gap_lat <= float(gap_max)) & (swing_yaw <= float(max_yaw_rad))
+
+  planted = _plant_latch_mask(env) > 0.5
+  p4_eligible = planted & p2_ready & p3_compact
+
+  env.extras["log"]["Metrics/phase_p2_ready"] = p2_ready.float().mean()
+  env.extras["log"]["Metrics/phase_p3_compact"] = p3_compact.float().mean()
+  env.extras["log"]["Metrics/phase_p4_strike_eligible"] = p4_eligible.float().mean()
+  return torch.zeros(env.num_envs, device=env.device)
+
+
+def swing_plant_lateral_gap(
+  env: ManagerBasedRlEnv,
+  command_name: str = "goal",
+  gap_max: float = 0.24,
+  require_plant_latch: bool = True,
+  activate_inside_ball_distance: float = 0.85,
+  ball_stationary_speed_threshold: float = 0.1,
+  kick_detection_speed_increase_threshold: float = 0.5,
+  robot_cfg: SceneEntityCfg = _DEFAULT_ROBOT_CFG,
+  ball_cfg: SceneEntityCfg = _DEFAULT_BALL_CFG,
+  feet_cfg: SceneEntityCfg | None = None,
+) -> torch.Tensor:
+  """Penalty when the swing foot drifts too far laterally from the plant foot.
+
+  Active during plant latch before ``kick_detected`` (same window as strike
+  setup). Returns ``relu(|lat(swing−plant)| − gap_max)`` in the kick frame
+  so a negative reward weight keeps the swing compact without clipping
+  sagittal strike speed.
+  """
+  state = ensure_ball_phase_updated(
+    env,
+    ball_stationary_speed_threshold=ball_stationary_speed_threshold,
+    kick_detection_speed_increase_threshold=kick_detection_speed_increase_threshold,
+    robot_cfg_name=robot_cfg.name,
+    ball_cfg_name=ball_cfg.name,
+    goal_command_name=command_name,
+  )
+  robot: Entity = env.scene[robot_cfg.name]
+  ball: Entity = env.scene[ball_cfg.name]
+  foot_ids = _resolve_foot_ids(robot, feet_cfg)
+  feet_xy = robot.data.body_link_pos_w[:, foot_ids, :2]
+  ball_xy = ball.data.root_link_pos_w[:, :2]
+  goal_dir = ball_to_goal_direction_xy(env, ball_xy, command_name)
+  left_dir = torch.stack((-goal_dir[:, 1], goal_dir[:, 0]), dim=-1)
+
+  kicking_idx, support_idx = _kick_stance_foot_indices(env, robot, ball)
+  swing_xy = _gather_foot_tensor(feet_xy, kicking_idx)
+  plant_xy = _gather_foot_tensor(feet_xy, support_idx)
+  gap = torch.abs(torch.sum((swing_xy - plant_xy) * left_dir, dim=-1))
+
+  in_zone = _kick_zone_mask(env, robot_cfg, ball_cfg, activate_inside_ball_distance)
+  active = in_zone * (~state.kick_detected).float()
+  if require_plant_latch:
+    active = active * _plant_latch_mask(env)
+  excess = torch.relu(gap - float(gap_max))
+  cost = active * excess
+  env.extras["log"]["Metrics/swing_plant_lateral_gap"] = (active * gap).mean()
+  return cost
+
+
 def strike_ankle_pitch(
   env: ManagerBasedRlEnv,
   command_name: str = "goal",
@@ -2856,18 +3100,25 @@ def post_kick_stance(
   speed_band_exp_k: float = 3.0,
   feet_distance_ref: float = 0.19,
   distance_sigma: float = 0.06,
+  sagittal_sigma: float = 0.10,
+  bos_sigma: float = 0.10,
   flat_sigma: float = 0.25,
+  command_name: str = "goal",
   ball_stationary_speed_threshold: float = 0.1,
   kick_detection_speed_increase_threshold: float = 0.5,
   robot_cfg: SceneEntityCfg = _DEFAULT_ROBOT_CFG,
   ball_cfg: SceneEntityCfg = _DEFAULT_BALL_CFG,
   feet_cfg: SceneEntityCfg | None = None,
 ) -> torch.Tensor:
-  """Reward standing recovery after a kick: feet close + soles flat.
+  """Reward post-kick recovery: swing beside plant + CoM in dual-support BoS.
 
-  Same activation window as ``post_kick_upright``. Returns
-  ``close_score * flat_score`` in ``[0, 1]`` so a splayed / tipped-foot finish
-  does not get paid after contact.
+  Same activation window as ``post_kick_upright``. Pays the product of:
+  - lateral feet spacing near hip-width
+  - swing not left forward of plant (sagittal retract in kick frame)
+  - root XY near the feet midpoint (both feet form the support polygon)
+  - soles flat
+
+  An extended follow-through with hip-width lateral alone no longer scores.
   """
   from mjlab.utils.lab_api.math import euler_xyz_from_quat
 
@@ -2875,18 +3126,38 @@ def post_kick_stance(
     env,
     ball_stationary_speed_threshold=ball_stationary_speed_threshold,
     kick_detection_speed_increase_threshold=kick_detection_speed_increase_threshold,
+    robot_cfg_name=robot_cfg.name,
     ball_cfg_name=ball_cfg.name,
+    goal_command_name=command_name,
   )
   robot: Entity = env.scene[robot_cfg.name]
+  ball: Entity = env.scene[ball_cfg.name]
   foot_ids = _resolve_foot_ids(robot, feet_cfg)
 
   foot_xy = robot.data.body_link_pos_w[:, foot_ids, :2]
-  _, _, yaw = euler_xyz_from_quat(robot.data.root_link_quat_w)
-  dx = foot_xy[:, 1, 0] - foot_xy[:, 0, 0]
-  dy = foot_xy[:, 1, 1] - foot_xy[:, 0, 1]
-  lateral = torch.abs(torch.cos(yaw) * dy - torch.sin(yaw) * dx)
+  kicking_idx, support_idx = _kick_stance_foot_indices(env, robot, ball)
+  swing_xy = _gather_foot_tensor(foot_xy, kicking_idx)
+  plant_xy = _gather_foot_tensor(foot_xy, support_idx)
+  delta = swing_xy - plant_xy
+
+  ball_xy = ball.data.root_link_pos_w[:, :2]
+  goal_dir = ball_to_goal_direction_xy(env, ball_xy, command_name)
+  left_dir = torch.stack((-goal_dir[:, 1], goal_dir[:, 0]), dim=-1)
+  gap_lat = torch.abs(torch.sum(delta * left_dir, dim=-1))
+  gap_sag = torch.abs(torch.sum(delta * goal_dir, dim=-1))
+
   close_score = torch.exp(
-    -torch.square(lateral - float(feet_distance_ref)) / float(distance_sigma) ** 2
+    -torch.square(gap_lat - float(feet_distance_ref)) / float(distance_sigma) ** 2
+  )
+  retract_score = torch.exp(
+    -torch.square(gap_sag) / max(float(sagittal_sigma), 1.0e-6) ** 2
+  )
+
+  feet_mid = 0.5 * (swing_xy + plant_xy)
+  root_xy = robot.data.root_link_pos_w[:, :2]
+  bos_dist = torch.linalg.norm(root_xy - feet_mid, dim=-1)
+  bos_score = torch.exp(
+    -torch.square(bos_dist) / max(float(bos_sigma), 1.0e-6) ** 2
   )
 
   foot_quat = robot.data.body_link_quat_w[:, foot_ids, :]
@@ -2896,7 +3167,7 @@ def post_kick_stance(
   flat_err = torch.sum(torch.square(roll) + torch.square(pitch), dim=-1)
   flat_score = torch.exp(-flat_err / float(flat_sigma) ** 2)
 
-  reward = close_score * flat_score
+  reward = close_score * retract_score * bos_score * flat_score
   if speed_band is not None:
     reward = reward * _speed_band_unit(
       state.max_vel_toward_goal,
@@ -2906,7 +3177,9 @@ def post_kick_stance(
     )
   active = _post_kick_window_mask(state, contact_window_s, min_kick_speed)
   env.extras["log"]["Metrics/post_kick_stance"] = (active * reward).mean()
-  env.extras["log"]["Metrics/post_kick_feet_lateral"] = (active * lateral).mean()
+  env.extras["log"]["Metrics/post_kick_feet_lateral"] = (active * gap_lat).mean()
+  env.extras["log"]["Metrics/post_kick_feet_sagittal"] = (active * gap_sag).mean()
+  env.extras["log"]["Metrics/post_kick_bos_dist"] = (active * bos_dist).mean()
   env.extras["log"]["Metrics/post_kick_feet_flat"] = (active * flat_score).mean()
   return active * reward
 
@@ -4439,3 +4712,199 @@ def knee_flex_cmd_excess_for_kick(
       )
     )
   return raw * scale
+
+
+# ---------------------------------------------------------------------------
+# Kick-on-Walk-AMP thesis rewards (DESIGN_kick_on_walk_amp.md §5)
+# ---------------------------------------------------------------------------
+
+
+def target_reached_walkamp(
+  env: ManagerBasedRlEnv,
+  command_name: str = "goal",
+  contact_window_steps: int = 50,
+  velocity_eps: float = 0.5,
+  sigma_sq: float = 0.9,
+  ball_stationary_speed_threshold: float = 0.5,
+  kick_detection_speed_increase_threshold: float = 0.5,
+  ball_cfg: SceneEntityCfg = _DEFAULT_BALL_CFG,
+) -> torch.Tensor:
+  """Sparse settle: ``exp(-‖d‖² / 0.9)`` when ``c_t > T_window`` and ball still."""
+  state = ensure_ball_phase_updated(
+    env,
+    ball_stationary_speed_threshold=ball_stationary_speed_threshold,
+    kick_detection_speed_increase_threshold=kick_detection_speed_increase_threshold,
+    ball_cfg_name=ball_cfg.name,
+    goal_command_name=command_name,
+  )
+  assert state.contact_counter is not None
+  ball: Entity = env.scene[ball_cfg.name]
+  ball_speed = torch.linalg.norm(ball.data.root_link_lin_vel_w[:, :2], dim=-1)
+  command = env.command_manager.get_command(command_name)
+  assert command is not None
+  goal_pos = command[:, :2] + env.scene.env_origins[:, :2]
+  dist_sq = torch.sum(
+    torch.square(goal_pos - ball.data.root_link_pos_w[:, :2]), dim=-1
+  )
+  active = (state.contact_counter > int(contact_window_steps)) & (
+    ball_speed < velocity_eps
+  )
+  reward = torch.where(
+    active, torch.exp(-dist_sq / sigma_sq), torch.zeros_like(dist_sq)
+  )
+  env.extras["log"]["Metrics/target_reached"] = reward.mean()
+  env.extras["log"]["Metrics/ball_goal_distance"] = torch.sqrt(dist_sq).mean()
+  return reward
+
+
+def ball_stagnant(
+  env: ManagerBasedRlEnv,
+  velocity_eps: float = 0.5,
+  max_ball_distance: float | None = None,
+  ball_cfg: SceneEntityCfg = _DEFAULT_BALL_CFG,
+  robot_cfg: SceneEntityCfg = _DEFAULT_ROBOT_CFG,
+) -> torch.Tensor:
+  """Binary 1 when ``‖v_ball‖ < ε`` (optionally only near the agent).
+
+  Thesis default is ungated at weight −0.01 (breaks rock-near-ball without a
+  kick). Kick-on-Walk-AMP gates with ``max_ball_distance=0.3`` and uses weight
+  −0.05 so still-ball in the arrival zone is strictly worse than survival.
+  """
+  ball: Entity = env.scene[ball_cfg.name]
+  speed = torch.linalg.norm(ball.data.root_link_lin_vel_w, dim=-1)
+  cost = (speed < velocity_eps).float()
+  if max_ball_distance is not None:
+    robot: Entity = env.scene[robot_cfg.name]
+    dist = torch.linalg.norm(
+      ball.data.root_link_pos_w[:, :2] - robot.data.root_link_pos_w[:, :2],
+      dim=-1,
+    )
+    cost = cost * (dist < float(max_ball_distance)).float()
+  env.extras["log"]["Metrics/ball_stagnant"] = cost.mean()
+  return cost
+
+
+def upright_tilt(
+  env: ManagerBasedRlEnv,
+  sigma_sq: float = 0.1,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ROBOT_CFG,
+) -> torch.Tensor:
+  """``exp(-θ² / σ²)`` with ``θ = arccos(ẑ_b · ẑ_w)``."""
+  asset: Entity = env.scene[asset_cfg.name]
+  if asset_cfg.body_ids:
+    quat = asset.data.body_link_quat_w[:, asset_cfg.body_ids, :].squeeze(1)
+  else:
+    quat = asset.data.root_link_quat_w
+  # Body +z in world = quat_apply(quat, [0,0,1]); dot world up = w component math.
+  up_b = torch.zeros(env.num_envs, 3, device=env.device)
+  up_b[:, 2] = 1.0
+  up_w = quat_apply(quat, up_b)
+  cos_theta = up_w[:, 2].clamp(-1.0, 1.0)
+  theta = torch.acos(cos_theta)
+  return torch.exp(-torch.square(theta) / sigma_sq)
+
+
+def fell_over_penalty(
+  env: ManagerBasedRlEnv,
+  limit_angle: float = 1.2217,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ROBOT_CFG,
+) -> torch.Tensor:
+  """Binary 1 when tilt ``θ > θ_limit`` (≈70°)."""
+  asset: Entity = env.scene[asset_cfg.name]
+  if asset_cfg.body_ids:
+    quat = asset.data.body_link_quat_w[:, asset_cfg.body_ids, :].squeeze(1)
+  else:
+    quat = asset.data.root_link_quat_w
+  up_b = torch.zeros(env.num_envs, 3, device=env.device)
+  up_b[:, 2] = 1.0
+  up_w = quat_apply(quat, up_b)
+  theta = torch.acos(up_w[:, 2].clamp(-1.0, 1.0))
+  return (theta > limit_angle).float()
+
+
+def fall_down(
+  env: ManagerBasedRlEnv,
+  minimum_height: float = 0.2,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ROBOT_CFG,
+) -> torch.Tensor:
+  """Binary 1 when trunk height ``z < z_falldown``."""
+  asset: Entity = env.scene[asset_cfg.name]
+  if asset_cfg.body_ids:
+    z = asset.data.body_link_pos_w[:, asset_cfg.body_ids, 2].squeeze(1)
+  else:
+    z = asset.data.root_link_pos_w[:, 2]
+  return (z < minimum_height).float()
+
+
+def dof_pos_limits_binary(
+  env: ManagerBasedRlEnv,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ROBOT_CFG,
+) -> torch.Tensor:
+  """Binary 1 if any soft joint limit is exceeded."""
+  asset: Entity = env.scene[asset_cfg.name]
+  soft = asset.data.soft_joint_pos_limits
+  assert soft is not None
+  q = asset.data.joint_pos[:, asset_cfg.joint_ids]
+  lo = soft[:, asset_cfg.joint_ids, 0]
+  hi = soft[:, asset_cfg.joint_ids, 1]
+  out = (q < lo) | (q > hi)
+  return out.any(dim=-1).float()
+
+
+def foot_slip_ungated(
+  env: ManagerBasedRlEnv,
+  sensor_name: str = "feet_ground_contact",
+  asset_cfg: SceneEntityCfg | None = None,
+) -> torch.Tensor:
+  """Feet xy-slip while in ground contact (no twist command gate)."""
+  if asset_cfg is None:
+    asset_cfg = SceneEntityCfg(
+      "robot", site_names=("left_foot", "right_foot")
+    )
+  asset: Entity = env.scene[asset_cfg.name]
+  contact_sensor: ContactSensor = env.scene[sensor_name]
+  assert contact_sensor.data.found is not None
+  in_contact = (contact_sensor.data.found > 0).float()
+  foot_vel_xy = asset.data.site_lin_vel_w[:, asset_cfg.site_ids, :2]
+  vel_sq = torch.sum(torch.square(foot_vel_xy), dim=-1)
+  return torch.sum(vel_sq * in_contact, dim=1)
+
+
+def arm_swing(
+  env: ManagerBasedRlEnv,
+  pitch_sum_thresh: float = 2.0,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ROBOT_CFG,
+) -> torch.Tensor:
+  """Penalty when both shoulder pitches share sign and |sum| > 2 rad."""
+  asset: Entity = env.scene[asset_cfg.name]
+  left_ids, _ = asset.find_joints("Left_Shoulder_Pitch")
+  right_ids, _ = asset.find_joints("Right_Shoulder_Pitch")
+  q_l = asset.data.joint_pos[:, left_ids[0]]
+  q_r = asset.data.joint_pos[:, right_ids[0]]
+  same_sign = (q_l * q_r) > 0.0
+  sum_abs = (q_l + q_r).abs()
+  active = same_sign & (sum_abs > pitch_sum_thresh)
+  # exp(-1 / (q_l + q_r)²) — large when sum is large.
+  denom = torch.square(q_l + q_r).clamp(min=1.0e-6)
+  raw = torch.exp(-1.0 / denom)
+  return torch.where(active, raw, torch.zeros_like(raw))
+
+
+def arm_posture(
+  env: ManagerBasedRlEnv,
+  sigma: float = 0.5,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ROBOT_CFG,
+) -> torch.Tensor:
+  """Mean L/R shoulder-roll deviation: ``exp(-Δ²/σ²) - 1`` ∈ (-1, 0]."""
+  asset: Entity = env.scene[asset_cfg.name]
+  left_ids, _ = asset.find_joints("Left_Shoulder_Roll")
+  right_ids, _ = asset.find_joints("Right_Shoulder_Roll")
+  default = asset.data.default_joint_pos
+  assert default is not None
+  q_l = asset.data.joint_pos[:, left_ids[0]]
+  q_r = asset.data.joint_pos[:, right_ids[0]]
+  d_l = default[:, left_ids[0]]
+  d_r = default[:, right_ids[0]]
+  term_l = torch.exp(-torch.square(q_l - d_l) / (sigma**2)) - 1.0
+  term_r = torch.exp(-torch.square(q_r - d_r) / (sigma**2)) - 1.0
+  return 0.5 * (term_l + term_r)

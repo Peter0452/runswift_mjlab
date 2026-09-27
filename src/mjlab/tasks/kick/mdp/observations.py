@@ -135,6 +135,61 @@ def kick_range_expected_speed(
   return (float(observation_scale) * normalized).unsqueeze(-1)
 
 
+def target_position(
+  env: ManagerBasedRlEnv,
+  command_name: str = "goal",
+  robot_cfg: SceneEntityCfg = _DEFAULT_ROBOT_CFG,
+  clip_distance: float = 15.0,
+) -> torch.Tensor:
+  """Goal position in the robot base frame (3-D; z = −root_z approx ground).
+
+  Kick-on-Walk-AMP actor/critic slot (§3.1 / §3.3).
+  """
+  robot: Entity = env.scene[robot_cfg.name]
+  command = env.command_manager.get_command(command_name)
+  assert command is not None, f"Command '{command_name}' not found."
+  goal_xy = command[:, :2] + env.scene.env_origins[:, :2]
+  goal_w = torch.cat(
+    [goal_xy, torch.zeros(env.num_envs, 1, device=env.device)], dim=-1
+  )
+  # Keep goal on the ground plane (z=0 world); relative z is −root height.
+  rel_w = goal_w - robot.data.root_link_pos_w
+  rel_b = quat_apply_inverse(robot.data.root_link_quat_w, rel_w)
+  return rel_b.clamp(-clip_distance, clip_distance)
+
+
+def ball_velocity_base(
+  env: ManagerBasedRlEnv,
+  robot_cfg: SceneEntityCfg = _DEFAULT_ROBOT_CFG,
+  ball_cfg: SceneEntityCfg = _DEFAULT_BALL_CFG,
+) -> torch.Tensor:
+  """Ball linear velocity in the robot base frame (critic privileged)."""
+  robot: Entity = env.scene[robot_cfg.name]
+  ball: Entity = env.scene[ball_cfg.name]
+  return quat_apply_inverse(
+    robot.data.root_link_quat_w, ball.data.root_link_lin_vel_w
+  )
+
+
+def ball_foot_contact(
+  env: ManagerBasedRlEnv,
+  sensor_name: str = "feet_ball_contact",
+) -> torch.Tensor:
+  """Binary L/R foot↔ball contact flags, shape ``[B, 2]``."""
+  if sensor_name not in env.scene.sensors:
+    return torch.zeros(env.num_envs, 2, device=env.device)
+  sensor = env.scene.sensors[sensor_name]
+  found = getattr(sensor.data, "found", None)
+  if found is None:
+    return torch.zeros(env.num_envs, 2, device=env.device)
+  # [B, N_feet, slots] → [B, N_feet]
+  per_foot = found.reshape(env.num_envs, -1, found.shape[-1]).any(dim=-1)
+  if per_foot.shape[1] == 1:
+    # Single reduced slot — duplicate so critic dim stays 2.
+    return per_foot.float().expand(-1, 2)
+  return per_foot[:, :2].float()
+
+
 def ball_vel_placeholder(
   env: ManagerBasedRlEnv,
 ) -> torch.Tensor:

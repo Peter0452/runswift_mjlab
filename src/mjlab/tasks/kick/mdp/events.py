@@ -18,6 +18,7 @@ from mjlab.tasks.kick.mdp.geometry import (
   update_plant_arrival_latch,
 )
 from mjlab.utils.lab_api.math import (
+  euler_xyz_from_quat,
   quat_apply,
   quat_apply_inverse,
   quat_from_euler_xyz,
@@ -153,6 +154,13 @@ def reset_robot_around_ball_facing(
   goal_command_name: str = "goal",
   waypoint_lateral_range: tuple[float, float] | None = None,
   fixed_kick_side: float | None = None,
+  # Recipe 1: mix Walk-enter-like handoff inits with Near spawn.
+  handoff_fraction: float = 0.0,
+  handoff_radius_range: tuple[float, float] = (0.30, 0.55),
+  handoff_bearing_noise: float = 0.40,
+  handoff_tilt_max: float = 0.35,
+  handoff_lin_vel_max: float = 0.55,
+  handoff_stand_s_range: tuple[float, float] = (0.3, 0.5),
   robot_cfg: SceneEntityCfg = _DEFAULT_ROBOT_CFG,
   ball_cfg: SceneEntityCfg = _DEFAULT_BALL_CFG,
 ) -> None:
@@ -170,6 +178,10 @@ def reset_robot_around_ball_facing(
   ``waypoint_lateral_range`` latches a spawn-side offset for the yellow
   approach waypoint (swing foot on the kick line). ``None`` keeps it on-axis.
   Kick foot is the spawn-closer leg unless ``fixed_kick_side`` is set.
+
+  With ``handoff_fraction`` > 0 (Recipe 1), that fraction of resets use a
+  Walk-enter-like state: tighter radius, yaw/tilt/vel noise, and a short
+  twist stand hold before the Near teacher resumes.
   """
   env_ids = resolve_env_ids(env, env_ids)
   robot: Entity = env.scene[robot_cfg.name]
@@ -177,12 +189,36 @@ def reset_robot_around_ball_facing(
 
   n = len(env_ids)
   device = env.device
-  radius = sample_uniform(
+  fraction = float(handoff_fraction)
+  is_handoff = (
+    sample_uniform(
+      torch.zeros(n, device=device),
+      torch.ones(n, device=device),
+      (n,),
+      device,
+    )
+    < fraction
+    if fraction > 0.0
+    else torch.zeros(n, dtype=torch.bool, device=device)
+  )
+
+  near_radius = sample_uniform(
     torch.full((n,), radius_range[0], device=device),
     torch.full((n,), radius_range[1], device=device),
     (n,),
     device,
   )
+  if is_handoff.any():
+    handoff_radius = sample_uniform(
+      torch.full((n,), handoff_radius_range[0], device=device),
+      torch.full((n,), handoff_radius_range[1], device=device),
+      (n,),
+      device,
+    )
+    radius = torch.where(is_handoff, handoff_radius, near_radius)
+  else:
+    radius = near_radius
+
   if spawn_on_approach_side:
     ball_state = ball.data.default_root_state[env_ids]
     ball_pos = ball_state[:, :3] + env.scene.env_origins[env_ids]
@@ -217,15 +253,57 @@ def reset_robot_around_ball_facing(
   robot_pos[:, 1] = ball_pos[:, 1] + radius * torch.sin(angle)
 
   yaw = torch.atan2(ball_pos[:, 1] - robot_pos[:, 1], ball_pos[:, 0] - robot_pos[:, 0])
-  zeros = torch.zeros(n, device=device)
-  robot_quat = quat_from_euler_xyz(zeros, zeros, yaw)
+  roll = torch.zeros(n, device=device)
+  pitch = torch.zeros(n, device=device)
+  root_vel = robot_state[:, 7:13].clone()
+  if is_handoff.any():
+    bearing = sample_uniform(
+      torch.full((n,), -float(handoff_bearing_noise), device=device),
+      torch.full((n,), float(handoff_bearing_noise), device=device),
+      (n,),
+      device,
+    )
+    yaw = yaw + torch.where(is_handoff, bearing, torch.zeros(n, device=device))
+    tilt = float(handoff_tilt_max)
+    roll_s = sample_uniform(
+      torch.full((n,), -tilt, device=device),
+      torch.full((n,), tilt, device=device),
+      (n,),
+      device,
+    )
+    pitch_s = sample_uniform(
+      torch.full((n,), -tilt, device=device),
+      torch.full((n,), tilt, device=device),
+      (n,),
+      device,
+    )
+    roll = torch.where(is_handoff, roll_s, roll)
+    pitch = torch.where(is_handoff, pitch_s, pitch)
+    # Random planar speed ≤ handoff_lin_vel_max, random heading.
+    speed = sample_uniform(
+      torch.zeros(n, device=device),
+      torch.full((n,), float(handoff_lin_vel_max), device=device),
+      (n,),
+      device,
+    )
+    heading = sample_uniform(
+      torch.full((n,), -math.pi, device=device),
+      torch.full((n,), math.pi, device=device),
+      (n,),
+      device,
+    )
+    root_vel[is_handoff, 0] = speed[is_handoff] * torch.cos(heading[is_handoff])
+    root_vel[is_handoff, 1] = speed[is_handoff] * torch.sin(heading[is_handoff])
+    root_vel[is_handoff, 2:6] = 0.0
+
+  robot_quat = quat_from_euler_xyz(roll, pitch, yaw)
 
   robot.write_root_link_pose_to_sim(
     torch.cat([robot_pos, robot_quat], dim=-1),
     env_ids=env_ids,
   )
   robot.write_root_link_velocity_to_sim(
-    robot_state[:, 7:13],
+    root_vel,
     env_ids=env_ids,
   )
   latch_spawn_waypoint_side(
@@ -237,6 +315,22 @@ def reset_robot_around_ball_facing(
     fixed_kick_side,
     goal_command_name,
   )
+
+  # Latch per-env stand duration for the twist teacher (Recipe 1).
+  stand_buf = getattr(env, "_kick_handoff_stand_s", None)
+  if stand_buf is None or stand_buf.shape[0] != env.num_envs:
+    env._kick_handoff_stand_s = torch.zeros(env.num_envs, device=env.device)
+    stand_buf = env._kick_handoff_stand_s
+  stand_buf[env_ids] = 0.0
+  if is_handoff.any():
+    lo, hi = float(handoff_stand_s_range[0]), float(handoff_stand_s_range[1])
+    stand_dur = sample_uniform(
+      torch.full((n,), lo, device=device),
+      torch.full((n,), hi, device=device),
+      (n,),
+      device,
+    )
+    stand_buf[env_ids[is_handoff]] = stand_dur[is_handoff]
 
 
 def update_approach_twist_command(
@@ -495,6 +589,9 @@ def ensure_robot_ball_twist_command(
   support_plant_sagittal_tol: float = 0.10,
   support_plant_lateral_target: float = 0.175,
   support_plant_lateral_tol: float = 0.10,
+  # Also require root (CoM proxy) over the plant foot before latch.
+  require_com_over_plant_for_latch: bool = False,
+  com_over_plant_radius: float = 0.08,
   # Also wait for the swing foot to catch up (blocks early plant + drag).
   require_swing_foot_for_latch: bool = False,
   swing_foot_max_ball_distance: float = 0.38,
@@ -591,6 +688,17 @@ def ensure_robot_ball_twist_command(
       ball_cfg=ball_cfg,
     )
 
+  com_ready = None
+  if require_com_over_plant_for_latch:
+    from mjlab.tasks.kick.mdp.rewards import com_over_plant_ready_mask
+
+    com_ready = com_over_plant_ready_mask(
+      env,
+      com_radius=float(com_over_plant_radius),
+      robot_cfg=robot_cfg,
+      ball_cfg=ball_cfg,
+    )
+
   swing_ready = None
   if require_swing_foot_for_latch:
     from mjlab.tasks.kick.mdp.rewards import swing_foot_ready_mask
@@ -632,6 +740,7 @@ def ensure_robot_ball_twist_command(
       hold_time_s=float(ready_hold_time_s),
       support_ready=support_ready,
       swing_ready=swing_ready,
+      com_ready=com_ready,
     )
     # Approach-side catch: go to plant pose, then keep walking toward ball.
     if creep_through_plant:
@@ -678,6 +787,7 @@ def ensure_robot_ball_twist_command(
       hold_time_s=float(ready_hold_time_s),
       support_ready=support_ready,
       swing_ready=swing_ready,
+      com_ready=com_ready,
     )
     waypoint = behind_ball_waypoint_xy(
       env, ball_xy, float(approach_standoff), goal_command_name
@@ -813,6 +923,22 @@ def ensure_robot_ball_twist_command(
         twist_term.vel_command_b[settle, 3] = 0.0
         twist_term.is_standing_env[settle] = True
 
+  # Recipe 1: episode-start stand hold after handoff-style reset.
+  handoff_hold = torch.zeros(env.num_envs, dtype=torch.bool, device=env.device)
+  handoff_stand_s = getattr(env, "_kick_handoff_stand_s", None)
+  if (
+    handoff_stand_s is not None
+    and isinstance(handoff_stand_s, torch.Tensor)
+    and handoff_stand_s.shape[0] == env.num_envs
+  ):
+    t_ep = env.episode_length_buf.float() * float(env.step_dt)
+    handoff_hold = (handoff_stand_s > 0.0) & (t_ep < handoff_stand_s)
+    if handoff_hold.any():
+      twist_term.vel_command_b[handoff_hold, 0:3] = 0.0
+      if twist_term.vel_command_b.shape[1] > 3:
+        twist_term.vel_command_b[handoff_hold, 3] = 0.0
+        twist_term.is_standing_env[handoff_hold] = True
+
   env._kick_robot_ball_twist_step = step
   env.extras.setdefault("log", {})
   env.extras["log"]["Metrics/twist_ball_dist"] = ball_dist.mean()
@@ -826,8 +952,11 @@ def ensure_robot_ball_twist_command(
   env.extras["log"]["Metrics/twist_near_plant"] = near_plant.float().mean()
   env.extras["log"]["Metrics/twist_fov_clip"] = float(use_path_yaw)
   env.extras["log"]["Metrics/twist_post_kick_settle"] = settle.float().mean()
+  env.extras["log"]["Metrics/twist_handoff_stand"] = handoff_hold.float().mean()
   if support_ready is not None:
     env.extras["log"]["Metrics/support_plant_ready"] = support_ready.float().mean()
+  if com_ready is not None:
+    env.extras["log"]["Metrics/com_over_plant_ready"] = com_ready.float().mean()
   if swing_ready is not None:
     env.extras["log"]["Metrics/swing_foot_ready"] = swing_ready.float().mean()
   if orbit_to_approach or orbit_to_plant_box:
@@ -875,6 +1004,8 @@ def update_pref_pose_twist_command(
   support_plant_sagittal_tol: float = 0.10,
   support_plant_lateral_target: float = 0.175,
   support_plant_lateral_tol: float = 0.10,
+  require_com_over_plant_for_latch: bool = False,
+  com_over_plant_radius: float = 0.08,
   require_swing_foot_for_latch: bool = False,
   swing_foot_max_ball_distance: float = 0.38,
   settle_time_s: float = 1.0,
@@ -925,6 +1056,8 @@ def update_pref_pose_twist_command(
     support_plant_sagittal_tol=support_plant_sagittal_tol,
     support_plant_lateral_target=support_plant_lateral_target,
     support_plant_lateral_tol=support_plant_lateral_tol,
+    require_com_over_plant_for_latch=require_com_over_plant_for_latch,
+    com_over_plant_radius=com_over_plant_radius,
     require_swing_foot_for_latch=require_swing_foot_for_latch,
     swing_foot_max_ball_distance=swing_foot_max_ball_distance,
     settle_time_s=settle_time_s,
@@ -1115,3 +1248,135 @@ def reset_strike_episode(
   ball_state[:, 7:10] = ball_lin_vel
   ball_state[:, 10:13] = 0.0
   ball.write_root_state_to_sim(ball_state, env_ids=env_ids)
+
+
+def reset_walkamp_kick_episode(
+  env: ManagerBasedRlEnv,
+  env_ids: torch.Tensor | None,
+  *,
+  buffer_path: str | None = None,
+  ball_x_max: float = 1.0,
+  ball_height: float = 0.08,
+  momentum_time_s: float = 0.3,
+  ball_x_min_base: float = 0.15,
+  target_distance_range: tuple[float, float] = (2.5, 8.5),
+  spawn_half_angle: float = math.pi / 2.0,
+  face_ball: bool = False,
+  goal_command_name: str = "goal",
+  ball_cfg: SceneEntityCfg = _DEFAULT_BALL_CFG,
+  robot_cfg: SceneEntityCfg = _DEFAULT_ROBOT_CFG,
+) -> None:
+  """Arrival-buffer robot reset + approach-cone ball/target spawn (§9.2–9.3).
+
+  Robot / ball / target are colinear on an approach axis sampled within
+  ``±spawn_half_angle`` of the arrival heading (default ±90°). Order is
+  robot → ball → target so the agent starts behind the ball relative to
+  the goal. With ``face_ball=False`` (default), arrival yaw is kept so the
+  ball may sit off-axis; ``True`` snaps yaw toward the ball.
+
+  Falls back to standing pose (``v_x=0``) when the buffer file is missing so
+  smoke tests and early play still work.
+  """
+  from mjlab.tasks.kick.mdp.arrival_buffer import (
+    apply_arrival_state,
+    apply_fallback_standing,
+    load_arrival_buffer,
+    sample_arrival_indices,
+  )
+  from mjlab.tasks.kick.mdp.ball_phase import reset_ball_phase_state
+
+  env_ids = resolve_env_ids(env, env_ids)
+  n = len(env_ids)
+  device = env.device
+
+  buffer = getattr(env, "_walkamp_arrival_buffer", None)
+  if buffer is None:
+    buffer = load_arrival_buffer(buffer_path, device=device)
+    env._walkamp_arrival_buffer = buffer
+
+  if buffer is not None and buffer["joint_pos"].shape[0] > 0:
+    indices = sample_arrival_indices(buffer, n, device)
+    v_x, robot_pos_w, robot_quat_w, lin_vel_w, ang_vel_w = apply_arrival_state(
+      env, env_ids, buffer, indices, robot_name=robot_cfg.name
+    )
+  else:
+    v_x, robot_pos_w, robot_quat_w, lin_vel_w, ang_vel_w = apply_fallback_standing(
+      env, env_ids, robot_name=robot_cfg.name
+    )
+
+  robot: Entity = env.scene[robot_cfg.name]
+  ball: Entity = env.scene[ball_cfg.name]
+
+  # Shared approach axis in robot base frame: robot → ball → target.
+  half = float(spawn_half_angle)
+  alpha = sample_uniform(
+    torch.full((n,), -half, device=device),
+    torch.full((n,), half, device=device),
+    (n,),
+    device,
+  )
+  r_min = ball_x_min_base + torch.clamp(v_x, min=0.0) * momentum_time_s
+  r_max = torch.full((n,), ball_x_max, device=device)
+  r_max = torch.maximum(r_max, r_min + 1.0e-3)
+  r_ball = sample_uniform(r_min, r_max, (n,), device)
+
+  R = sample_uniform(
+    torch.full((n,), target_distance_range[0], device=device),
+    torch.full((n,), target_distance_range[1], device=device),
+    (n,),
+    device,
+  )
+  # Keep target beyond the ball on the same ray.
+  R = torch.maximum(R, r_ball + 1.5)
+
+  cos_a = torch.cos(alpha)
+  sin_a = torch.sin(alpha)
+  offset_ball_b = torch.stack(
+    [r_ball * cos_a, r_ball * sin_a, torch.zeros(n, device=device)], dim=-1
+  )
+  offset_target_b = torch.stack(
+    [R * cos_a, R * sin_a, torch.zeros(n, device=device)], dim=-1
+  )
+  ball_pos_w = robot_pos_w + quat_apply(robot_quat_w, offset_ball_b)
+  ball_pos_w[:, 2] = _ball_resting_z(env, env_ids, ball_height)
+  target_w = robot_pos_w + quat_apply(robot_quat_w, offset_target_b)
+
+  ball_state = ball.data.default_root_state[env_ids].clone()
+  ball_state[:, 0:3] = ball_pos_w
+  ball_state[:, 3:7] = torch.tensor([1.0, 0.0, 0.0, 0.0], device=device)
+  ball_state[:, 7:] = 0.0
+  ball.write_root_state_to_sim(ball_state, env_ids=env_ids)
+
+  if face_ball:
+    roll, pitch, old_yaw = euler_xyz_from_quat(robot_quat_w)
+    face_yaw = torch.atan2(
+      ball_pos_w[:, 1] - robot_pos_w[:, 1],
+      ball_pos_w[:, 0] - robot_pos_w[:, 0],
+    )
+    new_quat = quat_from_euler_xyz(roll, pitch, face_yaw)
+    # Rotate planar world velocity by the yaw delta so base-frame arrival
+    # momentum stays consistent with the new heading.
+    delta = face_yaw - old_yaw
+    c, s = torch.cos(delta), torch.sin(delta)
+    root_state = robot.data.default_root_state[env_ids].clone()
+    root_state[:, 0:3] = robot_pos_w
+    root_state[:, 3:7] = new_quat
+    lin_w = lin_vel_w.clone()
+    ang_w = ang_vel_w.clone()
+    vx, vy = lin_w[:, 0], lin_w[:, 1]
+    lin_w[:, 0] = c * vx - s * vy
+    lin_w[:, 1] = s * vx + c * vy
+    wx, wy = ang_w[:, 0], ang_w[:, 1]
+    ang_w[:, 0] = c * wx - s * wy
+    ang_w[:, 1] = s * wx + c * wy
+    root_state[:, 7:10] = lin_w
+    root_state[:, 10:13] = ang_w
+    robot.write_root_state_to_sim(root_state, env_ids=env_ids)
+
+  # Goal command is env-local XY (world − env_origin).
+  goal_xy = target_w[:, :2] - env.scene.env_origins[env_ids, :2]
+  goal_term = env.command_manager.get_term(goal_command_name)
+  if goal_term is not None and hasattr(goal_term, "_command"):
+    goal_term._command[env_ids] = goal_xy
+
+  reset_ball_phase_state(env, env_ids)

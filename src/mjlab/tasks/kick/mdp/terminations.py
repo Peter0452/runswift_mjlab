@@ -421,3 +421,101 @@ def ball_too_far_strike(
   )
   env.extras["log"]["Metrics/strike_ball_distance"] = dist.mean()
   return dist > max_ball_distance
+
+
+# ---------------------------------------------------------------------------
+# Kick-on-Walk-AMP terminals (DESIGN §10 — latching c_t)
+# ---------------------------------------------------------------------------
+
+
+def target_hit_walkamp(
+  env: ManagerBasedRlEnv,
+  target_radius: float = 1.0,
+  ball_stationary_speed_threshold: float = 0.5,
+  min_stopped_time_s: float = 0.0,
+  kick_detection_speed_increase_threshold: float = 0.5,
+  command_name: str = "goal",
+  ball_cfg: SceneEntityCfg = _DEFAULT_BALL_CFG,
+  robot_cfg: SceneEntityCfg = _DEFAULT_ROBOT_CFG,
+) -> torch.Tensor:
+  """Success: ball stopped inside target (no c_t gate)."""
+  from mjlab.entity import Entity
+
+  state = ensure_ball_phase_updated(
+    env,
+    ball_stationary_speed_threshold=ball_stationary_speed_threshold,
+    kick_detection_speed_increase_threshold=kick_detection_speed_increase_threshold,
+    ball_cfg_name=ball_cfg.name,
+    goal_command_name=command_name,
+    robot_cfg_name=robot_cfg.name,
+  )
+  dist = _goal_ball_distance_xy(env, command_name, ball_cfg)
+  ball: Entity = env.scene[ball_cfg.name]
+  speed = torch.linalg.norm(ball.data.root_link_lin_vel_w, dim=-1)
+  stopped = speed < ball_stationary_speed_threshold
+  if min_stopped_time_s > 0.0:
+    stopped = stopped & (state.time_since_ball_stopped_s >= min_stopped_time_s)
+  hit = stopped & (dist < target_radius)
+  env.extras["log"]["Metrics/target_hit"] = hit.float().mean()
+  return hit
+
+
+def target_missed_walkamp(
+  env: ManagerBasedRlEnv,
+  target_radius: float = 1.0,
+  contact_window_steps: int = 50,
+  ball_stationary_speed_threshold: float = 0.5,
+  kick_detection_speed_increase_threshold: float = 0.5,
+  command_name: str = "goal",
+  ball_cfg: SceneEntityCfg = _DEFAULT_BALL_CFG,
+  robot_cfg: SceneEntityCfg = _DEFAULT_ROBOT_CFG,
+) -> torch.Tensor:
+  """Miss: ball stopped outside target after ``c_t > T_window``."""
+  from mjlab.entity import Entity
+
+  state = ensure_ball_phase_updated(
+    env,
+    ball_stationary_speed_threshold=ball_stationary_speed_threshold,
+    kick_detection_speed_increase_threshold=kick_detection_speed_increase_threshold,
+    ball_cfg_name=ball_cfg.name,
+    goal_command_name=command_name,
+    robot_cfg_name=robot_cfg.name,
+  )
+  assert state.contact_counter is not None
+  dist = _goal_ball_distance_xy(env, command_name, ball_cfg)
+  ball: Entity = env.scene[ball_cfg.name]
+  speed = torch.linalg.norm(ball.data.root_link_lin_vel_w, dim=-1)
+  missed = (
+    (state.contact_counter > int(contact_window_steps))
+    & (speed < ball_stationary_speed_threshold)
+    & (dist > target_radius)
+  )
+  env.extras["log"]["Metrics/target_missed"] = missed.float().mean()
+  return missed
+
+
+def double_touch_walkamp(
+  env: ManagerBasedRlEnv,
+  contact_window_steps: int = 50,
+  ball_stationary_speed_threshold: float = 0.5,
+  kick_detection_speed_increase_threshold: float = 0.5,
+  contact_distance: float = 0.22,
+  command_name: str = "goal",
+  ball_cfg: SceneEntityCfg = _DEFAULT_BALL_CFG,
+  robot_cfg: SceneEntityCfg = _DEFAULT_ROBOT_CFG,
+) -> torch.Tensor:
+  """Any feet/body–ball contact after ``c_t > T_window``."""
+  state = ensure_ball_phase_updated(
+    env,
+    ball_stationary_speed_threshold=ball_stationary_speed_threshold,
+    kick_detection_speed_increase_threshold=kick_detection_speed_increase_threshold,
+    ball_cfg_name=ball_cfg.name,
+    goal_command_name=command_name,
+    robot_cfg_name=robot_cfg.name,
+    contact_distance=contact_distance,
+  )
+  assert state.contact_counter is not None
+  assert state.agent_ball_contact is not None
+  illegal = (state.contact_counter > int(contact_window_steps)) & state.agent_ball_contact
+  env.extras["log"]["Metrics/double_touch"] = illegal.float().mean()
+  return illegal

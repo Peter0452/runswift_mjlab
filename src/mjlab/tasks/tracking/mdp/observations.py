@@ -28,6 +28,12 @@ def motion_anchor_pos_b(env: ManagerBasedRlEnv, command_name: str) -> torch.Tens
   return pos.view(env.num_envs, -1)
 
 
+def motion_style_z(env: ManagerBasedRlEnv, command_name: str) -> torch.Tensor:
+  """One-hot kick style for the clip this env is tracking. Shape (N, 3)."""
+  command = cast(MotionCommand, env.command_manager.get_term(command_name))
+  return command.style_z
+
+
 def motion_anchor_ori_b(env: ManagerBasedRlEnv, command_name: str) -> torch.Tensor:
   command = cast(MotionCommand, env.command_manager.get_term(command_name))
 

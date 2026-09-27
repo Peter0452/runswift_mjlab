@@ -75,6 +75,8 @@ def k1_kick_near_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     cfg.commands["goal"].fov_half_angle = 0.69
     cfg.commands["goal"].fov_vis_range = 2.5
     cfg.commands["goal"].resampling_time_range = (1e9, 1e9)
+    # Play / Setup B FSM: always start from configured Near radius (no mix).
+    cfg.events["reset_base"].params["handoff_fraction"] = 0.0
   return cfg
 
 
@@ -83,3 +85,17 @@ def k1_kick_near_amp_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   from mjlab.tasks.kick.config.k1.amp_wrapper import with_kick_amp_obs_group
 
   return with_kick_amp_obs_group(k1_kick_near_env_cfg(play=play), style_weight=0.3)
+
+
+def k1_kick_walkamp_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
+  """Kick-on-Walk-AMP: Flat AMP Walk + thesis kick (78/95, no AMP style)."""
+  from mjlab.tasks.kick.walkamp_kick_env_cfg import make_walkamp_kick_env_cfg
+
+  return make_walkamp_kick_env_cfg(play=play)
+
+
+def k1_kick_walkamp_amp_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
+  """Kick-on-Walk-AMP + kick AMP obs (style until ``kick_detected``)."""
+  from mjlab.tasks.kick.walkamp_kick_env_cfg import make_walkamp_kick_amp_env_cfg
+
+  return make_walkamp_kick_amp_env_cfg(play=play)

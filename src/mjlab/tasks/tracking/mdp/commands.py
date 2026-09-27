@@ -58,6 +58,21 @@ class MotionLoader:
     self.body_lin_vel_w = self._body_lin_vel_w[:, self._body_indexes]
     self.body_ang_vel_w = self._body_ang_vel_w[:, self._body_indexes]
     self.time_step_total = self.joint_pos.shape[0]
+    if "clip_ends" in data.files:
+      self.clip_ends = torch.tensor(data["clip_ends"], dtype=torch.long, device=device)
+      self.clip_starts = torch.cat(
+        [
+          torch.zeros(1, dtype=torch.long, device=device),
+          self.clip_ends[:-1],
+        ]
+      )
+    else:
+      self.clip_ends = None
+      self.clip_starts = None
+    if "clip_z" in data.files:
+      self.clip_z = torch.tensor(data["clip_z"], dtype=torch.float32, device=device)
+    else:
+      self.clip_z = None
 
 
 class MotionCommand(CommandTerm):
@@ -121,6 +136,20 @@ class MotionCommand(CommandTerm):
 
     self._ghost_model = None
     self._ghost_color = np.array(cfg.viz.ghost_color, dtype=np.float32)
+
+  def _clip_index(self, time_steps: torch.Tensor) -> torch.Tensor:
+    """Clip id for each frame. ``clip_ends`` are exclusive."""
+    ends = self.motion.clip_ends
+    assert ends is not None
+    return torch.bucketize(time_steps, ends, right=True).clamp(max=ends.numel() - 1)
+
+  @property
+  def style_z(self) -> torch.Tensor:
+    """One-hot style of the clip each env is tracking. Zeros if the file has none."""
+    styles = self.motion.clip_z
+    if styles is None:
+      return torch.zeros(self.num_envs, 3, device=self.device)
+    return styles[self._clip_index(self.time_steps)]
 
   @property
   def command(self) -> torch.Tensor:
@@ -261,25 +290,22 @@ class MotionCommand(CommandTerm):
     sampling_probabilities = (
       self.bin_failed_count + self.cfg.adaptive_uniform_ratio / float(self.bin_count)
     )
-    sampling_probabilities = torch.nn.functional.pad(
-      sampling_probabilities.unsqueeze(0).unsqueeze(0),
-      (0, self.cfg.adaptive_kernel_size - 1),  # Non-causal kernel
-      mode="replicate",
-    )
-    sampling_probabilities = torch.nn.functional.conv1d(
-      sampling_probabilities, self.kernel.view(1, 1, -1)
-    ).view(-1)
-
+    sampling_probabilities = self._smooth_bin_probs(sampling_probabilities)
     sampling_probabilities = sampling_probabilities / sampling_probabilities.sum()
 
-    sampled_bins = torch.multinomial(
-      sampling_probabilities, len(env_ids), replacement=True
-    )
-    self.time_steps[env_ids] = (
-      (sampled_bins + sample_uniform(0.0, 1.0, (len(env_ids),), device=self.device))
-      / self.bin_count
-      * (self.motion.time_step_total - 1)
-    ).long()
+    if self.motion.clip_ends is None:
+      sampled_bins = torch.multinomial(
+        sampling_probabilities, len(env_ids), replacement=True
+      )
+      self.time_steps[env_ids] = (
+        (sampled_bins + sample_uniform(0.0, 1.0, (len(env_ids),), device=self.device))
+        / self.bin_count
+        * (self.motion.time_step_total - 1)
+      ).long()
+    else:
+      self.time_steps[env_ids] = self._sample_frames_in_clips(
+        len(env_ids), sampling_probabilities
+      )
 
     # Update metrics.
     H = -(sampling_probabilities * (sampling_probabilities + 1e-12).log()).sum()
@@ -289,10 +315,90 @@ class MotionCommand(CommandTerm):
     self.metrics["sampling_top1_prob"][:] = pmax
     self.metrics["sampling_top1_bin"][:] = imax.float() / self.bin_count
 
-  def _uniform_sampling(self, env_ids: torch.Tensor):
-    self.time_steps[env_ids] = torch.randint(
-      0, self.motion.time_step_total, (len(env_ids),), device=self.device
+  def _smooth_bin_probs(self, probs: torch.Tensor) -> torch.Tensor:
+    """Failure-bin smoothing. Multi-clip files are smoothed inside each clip."""
+    ends = self.motion.clip_ends
+    if ends is None:
+      return self._conv_bins(probs)
+    smoothed = torch.zeros_like(probs)
+    starts = self.motion.clip_starts
+    assert starts is not None
+    for start, end in zip(starts.tolist(), ends.tolist(), strict=True):
+      bin_lo, bin_hi = self._clip_bin_range(start, end)
+      smoothed[bin_lo:bin_hi] = self._conv_bins(probs[bin_lo:bin_hi])
+    return smoothed
+
+  def _clip_bin_range(self, start: int, end: int) -> tuple[int, int]:
+    """Bins covering frames ``[start, end)``, without sharing a bin across clips."""
+    total = max(self.motion.time_step_total, 1)
+    bin_lo = (start * self.bin_count) // total
+    if end >= self.motion.time_step_total:
+      bin_hi = self.bin_count
+    else:
+      bin_hi = (end * self.bin_count) // total
+    return bin_lo, max(bin_hi, bin_lo + 1)
+
+  def _conv_bins(self, probs: torch.Tensor) -> torch.Tensor:
+    padded = torch.nn.functional.pad(
+      probs.view(1, 1, -1),
+      (0, self.cfg.adaptive_kernel_size - 1),  # Non-causal kernel
+      mode="replicate",
     )
+    return torch.nn.functional.conv1d(padded, self.kernel.view(1, 1, -1)).view(-1)
+
+  def _sample_frames_in_clips(
+    self, count: int, sampling_probabilities: torch.Tensor
+  ) -> torch.Tensor:
+    """Pick a kick uniformly, then a failure-biased frame inside that kick."""
+    ends = self.motion.clip_ends
+    starts = self.motion.clip_starts
+    assert ends is not None and starts is not None
+    clip_ids = torch.randint(0, ends.numel(), (count,), device=self.device)
+    frames = torch.empty(count, dtype=torch.long, device=self.device)
+    total = max(self.motion.time_step_total, 1)
+    for clip_id in range(ends.numel()):
+      selected = (clip_ids == clip_id).nonzero(as_tuple=False).view(-1)
+      if selected.numel() == 0:
+        continue
+      start = int(starts[clip_id])
+      end = int(ends[clip_id])
+      bin_lo, bin_hi = self._clip_bin_range(start, end)
+      clip_probs = sampling_probabilities[bin_lo:bin_hi]
+      clip_probs = clip_probs / clip_probs.sum().clamp_min(1e-8)
+      local_bins = torch.multinomial(clip_probs, selected.numel(), replacement=True)
+      draw = sample_uniform(0.0, 1.0, (selected.numel(),), device=self.device)
+      sampled = ((local_bins + bin_lo).float() + draw) / self.bin_count * (total - 1)
+      frames[selected] = sampled.long().clamp(start, end - 1)
+    return frames
+
+  def _start_mode_frames(self, env_ids: torch.Tensor) -> torch.Tensor:
+    """Play each kick from its own first frame, then the next kick."""
+    ends = self.motion.clip_ends
+    if ends is None:
+      return torch.zeros(len(env_ids), dtype=torch.long, device=self.device)
+    time_steps = self.time_steps[env_ids]
+    at_end = torch.isin(time_steps, ends) | (time_steps >= self.motion.time_step_total)
+    finished = (torch.bucketize(time_steps, ends, right=True) - 1).clamp(
+      min=0, max=ends.numel() - 1
+    )
+    next_clip = (finished + 1) % ends.numel()
+    starts = self.motion.clip_starts
+    assert starts is not None
+    restart = torch.zeros_like(time_steps)
+    return torch.where(at_end, starts[next_clip], restart)
+
+  def _uniform_sampling(self, env_ids: torch.Tensor):
+    ends = self.motion.clip_ends
+    starts = self.motion.clip_starts
+    if ends is None or starts is None:
+      self.time_steps[env_ids] = torch.randint(
+        0, self.motion.time_step_total, (len(env_ids),), device=self.device
+      )
+    else:
+      clip_ids = torch.randint(0, ends.numel(), (len(env_ids),), device=self.device)
+      span = (ends - starts).clamp(min=1)
+      draw = torch.rand(len(env_ids), device=self.device)
+      self.time_steps[env_ids] = starts[clip_ids] + (draw * span[clip_ids]).long()
     self.metrics["sampling_entropy"][:] = 1.0  # Maximum entropy for uniform.
     self.metrics["sampling_top1_prob"][:] = 1.0 / self.bin_count
     self.metrics["sampling_top1_bin"][:] = 0.5  # No specific bin preference.
@@ -318,7 +424,7 @@ class MotionCommand(CommandTerm):
 
   def _resample_command(self, env_ids: torch.Tensor):
     if self.cfg.sampling_mode == "start":
-      self.time_steps[env_ids] = 0
+      self.time_steps[env_ids] = self._start_mode_frames(env_ids)
     elif self.cfg.sampling_mode == "uniform":
       self._uniform_sampling(env_ids)
     else:
@@ -404,9 +510,23 @@ class MotionCommand(CommandTerm):
       delta_ori_w, self.body_pos_w - anchor_pos_w_repeat
     )
 
+  def _envs_leaving_motion(self) -> torch.Tensor:
+    """Envs whose clock just stepped off the current clip.
+
+    A single clip resamples only past the last frame. A multi-clip file also
+    resamples on the first frame of the next clip, so playback does not walk
+    from one kick into an unrelated one.
+    """
+    past_end = self.time_steps >= self.motion.time_step_total
+    clip_ends = self.motion.clip_ends
+    if clip_ends is None:
+      return torch.where(past_end)[0]
+    at_clip_end = torch.isin(self.time_steps, clip_ends)
+    return torch.where(past_end | at_clip_end)[0]
+
   def _update_command(self):
     self.time_steps += 1
-    env_ids = torch.where(self.time_steps >= self.motion.time_step_total)[0]
+    env_ids = self._envs_leaving_motion()
     if env_ids.numel() > 0:
       self._resample_command(env_ids)
       # _resample_command writes qpos/qvel but does not refresh derived

@@ -37,7 +37,8 @@ Train a **Near kick** policy for Booster K1 that can eventually hand off to a
 | **2 — Polish Kick + transition** | Kick adapts to handoff states | Walk stays frozen |
 | **3 — Optional joint FT** | Only if 2 plateaus | Still preserve strike power |
 
-**Current stage: 0** (Stage-1 play probe: Setup B FSM — see §10)
+**Current stage: 1 (Recipe C)** — frozen Walk `9950` enter+exit around Kick PPO
+(`--frozen-walk-handoff`). Recipe 1 synthetic mix remains available without the flag.
 
 ---
 
@@ -51,6 +52,7 @@ Primary (must move / hold):
 | `Metrics/strong_kick_detected` | Real power (≥ ~5 m/s) | > 0 and not collapsing to 0 |
 | `Metrics/ball_vel_toward_goal_raw` | Directional power | Tracks with kick speed |
 | Post-kick upright / stance (gated) | Settle for Walk | High **after** real kicks, not instead of them |
+| `Metrics/walk_exit_ok` / `walk_exit_fall` | Kick→Walk hold (Recipe C) | `ok` rising; `fall` not dominant |
 
 Secondary (context only — can rise while kick dies):
 
@@ -128,6 +130,7 @@ Update when Near defaults change.
 - Task: `Mjlab-Kick-Near-Amp-Booster-K1`
 - Spawn: radius `(0.35, 0.55)` m, approach wedge `120°`
 - **H1 + H1.1 in code:** `model_1800` landscape; upright gate 4.0 / w=5; `post_kick_stance` **w=2.5**
+- **Plant box (relaxed):** support foot **0.20 m** behind + **0.20 m** beside (±0.14 tol); was 0.14/0.175±0.10
 - `ball_velocity_toward_goal`: linear `max_reward=6`, weight **5** (was 4)
 - `post_kick_upright`: weight **5** (was 12), `min_kick_speed` **4.0** (was 1.2), window 1.5s
 - `post_kick_stance`: weight **2.5** (was 1.5)
@@ -161,24 +164,52 @@ cutting bridge+latch, 1.5s no-kick timeout. None recovered `kick_ball_speed`.
 **H1 — DONE** — power held; settle feet weaker than 1800.  
 **H1.1 — IN CODE** — `post_kick_stance` 1.5→2.5. Resume H1 `model_1500`/`2600`.
 
+**A — DONE (weak alone)** — `swing_plant_lateral_gap` w=−2.0, `gap_max=0.24`.
+Penalty ≈0 in train: plant lateral 0.20 already under leash; stretch was
+mostly sagittal reach across a wide plant.
+
+**B — DONE (weak alone)** — Plant lateral target 0.20→0.13. Soft latch +
+`lateral_tol=0.14` swallowed it; measured gap_lat/Hip_Yaw unchanged, power −0.65.
+
+**B2 — DONE (too tight)** — Hard plant latch + `lateral_tol=0.06`: power
+collapsed (ball-vel ~2 vs ~4.7).
+
+**S0/S1 — ABORTED** — CoM latch + 47-term stack: ball-vel ~1.5, latch starved.
+
+**LEAN — DONE** — 17 terms; CoM lure; plant latch tol 0.08; power recovering (~3.3).
+
+**S2 — DONE** — Compact strike gate on `kicking_foot_strike` +
+`ball_velocity_toward_goal`: payday only if `gap_lat ≤ 0.22` ∧ `|Hip_Yaw| ≤ 25°`.
+
+**S4 — IN CODE (active)** — Stronger post-kick recovery on `post_kick_stance`:
+swing beside plant (lateral ≈0.19 ∧ sagittal retract) × CoM over feet midpoint
+(BoS) × flat soles. Lean weight **2→4**. Does not touch pre-strike payday.
+
 **H2** — Linear discovery + light band bonus (only if H1 holds power).  
 **H3** — Fine-tune from 1800 settle (only after H1 power OK).  
 **H4** — AMP near-ball mask (later).
 
+Later if S4 holds: ankle (S3). If power dies → drop stance weight to 3 or widen
+`sagittal_sigma` / `bos_sigma` to 0.12.
+
 ### Active run
 
-- **Change:** H1.1 `post_kick_stance` weight 2.5
-- **Resume:** `2026-09-23_19-36-35_near_amp_h1_upright_gate_v1` / `model_2600` (or 1500)
-- **Watch:** `kick_ball_speed`, `strong_kick`, `Metrics/post_kick_feet_flat`, visual plant foot
+- **Change:** Stage 4 post-kick BoS (shape + w=4)
+- **Resume:** `2026-09-26_12-13-43_near_amp_lean_compact_v1` / `model_400`
+- **Keep:** lean 17 terms; Stage 2 compact gate; `--frozen-walk-handoff True`
+- **Watch:** `Metrics/post_kick_feet_sagittal`, `post_kick_bos_dist`, ball-vel /
+  `strong_kick` (must not collapse)
+- **Abort:** ball-vel ≲ 1.5 while stance↑ → loosen sigmas or drop weight to 3
 
 ```bash
 MUJOCO_GL=egl uv run train Mjlab-Kick-Near-Amp-Booster-K1 \
-  --env.scene.num-envs 10000 \
+  --env.scene.num-envs 4096 \
+  --frozen-walk-handoff True \
   --agent.experiment-name k1_kick_approach \
-  --agent.run-name near_amp_h1_stance_2p5_v1 \
+  --agent.run-name near_amp_lean_postkick_bos_v1 \
   --agent.resume True --agent.warm-start True \
-  --agent.load-run 2026-09-23_19-36-35_near_amp_h1_upright_gate_v1 \
-  --agent.load-checkpoint model_2600.pt
+  --agent.load-run 2026-09-26_12-13-43_near_amp_lean_compact_v1 \
+  --agent.load-checkpoint model_400.pt
 ```
 
 ---
@@ -194,20 +225,74 @@ MUJOCO_GL=egl uv run train Mjlab-Kick-Near-Amp-Booster-K1 \
 Hard switches in the **Kick Near-Amp env**:
 
 ```text
-APPROACH (Walk @ ~1.5 m) → d_ball ≤ 0.55 m → KICK → settle 1 s → EXIT (Walk)
+APPROACH (Walk @ ~1.5 m)
+  → hard stop d≤0.40 m + face + upright + slow + stand hold 0.3 s
+  → KICK → settle 1 s → EXIT (Walk)
 ```
 
-- Spawn: `radius_range ≈ (1.4, 1.6)` m, approach side
-- **Walk enter/exit:** AMP `model_9950` (75-D / 22-D); approach cmd toward ball
-- **Kick:** latest Near-Amp; arms freed while in Kick
-- Exit: seed `exit_vx` once (default 0); joystick owns cmd after
+**Option A enter gate (defaults):**
+- hard stop / band: `d_ball ≤ 0.40` m
+- `|bearing| ≤ 0.40` rad (~23°)
+- trunk tilt ≤ 0.35 rad (~20°): `g_z ≤ -cos(tilt)`
+- horizontal speed ≤ 0.55 m/s
+- gates held while standing **≥ 0.30 s**
 
 ```bash
 uv run --no-sync python -m mjlab.scripts.play_kick_to_walk --viewer viser
-# knobs: --spawn-radius-m 1.5 --kick-enter-m 0.55 --approach-speed 0.9
 ```
 
-North stars: fall/hitch at both switches; Walk closes from 1.5 m; Kick still fires.
+North stars: enter→exit completion rate (was ~21% distance-only); Kick power still fires.
+
+---
+
+## 10b. Stage 1 — Recipe 1 (handoff spawn mix)
+
+Train Kick only (Walk `9950` frozen). Resume kicking Near-Amp ckpt. **Keep H1/H1.1 rewards.**
+
+| Fraction | Init |
+|---------:|------|
+| 50% | Near spawn as today `(0.35, 0.55)` m |
+| 50% | **Handoff init** (Walk enter-like) |
+
+**Handoff init** (`reset_robot_around_ball_facing` + twist teacher):
+- `d ∈ [0.30, 0.55]` m (approach side)
+- `|bearing| ≤ 0.40` rad, tilt ≤ ~0.35 rad, `‖v_xy‖ ≤ 0.55`
+- Twist stand `(0,0,0)` for first 0.3–0.5 s, then Near teacher
+- Pose: Near/default joints (v1)
+- Play / Setup B: `handoff_fraction=0` (no mix)
+
+**Wired in:** `make_near_kick_env_cfg` sets `handoff_fraction=0.5`; metric
+`Metrics/twist_handoff_stand`.
+
+**Eval:** play FSM Option A — enter→exit rate + `kick_ball_speed` / `strong_kick` vs resume baseline.
+
+## 10c. Stage 1 — Recipe C (frozen Walk enter + exit)
+
+Train Kick with Walk `9950` frozen in the loop (`--frozen-walk-handoff True`).
+
+```text
+APPROACH (Walk @ ~1.5 m, Option A gates)
+  → KICK (student PPO; teacher on)
+  → EXIT when settle ∧ ball≥0.5 m
+      Walk hold T∈[0.5,1] s → +2 if upright / −5 if fall → done
+```
+
+- Spawn `(1.4, 1.6)` m, `handoff_fraction=0`
+- Walk-phase rewards zeroed (Kick buffer still gets student actions; advantage≈0)
+- Code: `mjlab/tasks/kick/rl/frozen_walk_handoff.py`, helpers in `mdp/walk_handoff.py`
+
+```bash
+MUJOCO_GL=egl uv run train Mjlab-Kick-Near-Amp-Booster-K1 \
+  --env.scene.num-envs 4096 \
+  --frozen-walk-handoff True \
+  --agent.experiment-name k1_kick_approach \
+  --agent.run-name near_amp_recipeC_frozen_walk_v1 \
+  --agent.resume True --agent.warm-start True \
+  --agent.load-run 2026-09-24_22-20-55_near_amp_recipe1_handoff_v1 \
+  --agent.load-checkpoint model_500.pt
+```
+
+**Abort:** power collapse while farming exit bonus / soft-kick to avoid handoff.
 
 ## 11. Changelog (this document)
 
@@ -220,3 +305,19 @@ North stars: fall/hitch at both switches; Walk closes from 1.5 m; Kick still fir
 | 2026-09-23 | H1.1: `post_kick_stance` 1.5→2.5 |
 | 2026-09-23 | Setup B play FSM (`play-kick-to-walk`) |
 | 2026-09-24 | Setup B: Walk→Kick→Walk from ~1.5 m spawn |
+| 2026-09-24 | Option A enter gate (face/upright/speed + 0.3s stand) |
+| 2026-09-24 | Recipe 1 handoff spawn `d ∈ [0.30, 0.55]` |
+| 2026-09-24 | Recipe 1 wired into Near train cfg (50/50 mix) |
+| 2026-09-24 | Recipe C: frozen Walk enter+exit train wrapper |
+| 2026-09-24 | Soft-brake approach below 1 m (~50% cruise by 0.45 m) |
+| 2026-09-24 | Relax Near plant box 0.14/0.175→0.20/0.20 (±0.14) |
+| 2026-09-25 | Recipe A: `swing_plant_lateral_gap` (latch, pre-kick; w=−2.0, gap_max=0.24) |
+| 2026-09-25 | Recipe B: plant lateral_target 0.20→0.13 (keep A; sagittal 0.20) |
+| 2026-09-25 | Option 2: `require_support_plant_for_latch=True`, lateral_tol 0.14→0.06 |
+| 2026-09-26 | Stage 0+1: phase_audit; com_over_plant + CoM latch; lateral_tol 0.08 |
+| 2026-09-26 | Lean Near: 47→17 principle terms; CoM lure only (no CoM latch) |
+| 2026-09-26 | Stage 2: compact gate on strike+ball_vel (gap≤0.22, |Hip_Yaw|≤25°) |
+| 2026-09-26 | Stage 4: post_kick_stance sag retract + BoS; lean w 2→4 |
+
+
+

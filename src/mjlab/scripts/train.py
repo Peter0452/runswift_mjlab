@@ -19,6 +19,10 @@ from mjlab.rl import (
   RslRlVecEnvWrapper,
 )
 from mjlab.scripts._cli import maybe_print_top_level_help
+from mjlab.tasks.kick.rl.frozen_walk_handoff import (
+  FrozenWalkHandoffCfg,
+  FrozenWalkHandoffWrapper,
+)
 from mjlab.tasks.registry import list_tasks, load_env_cfg, load_rl_cfg, load_runner_cls
 from mjlab.tasks.tracking.mdp import MotionCommandCfg
 from mjlab.utils.gpu import select_gpus
@@ -44,12 +48,34 @@ class TrainConfig:
   wandb_checkpoint_name: str | None = None
   """Optional checkpoint name within the W&B run to load (e.g. 'model_4000.pt')."""
   gpu_ids: list[int] | Literal["all"] | None = field(default_factory=lambda: [0])
+  frozen_walk_handoff: bool = False
+  """Recipe C: frozen Walk ``9950`` approach + exit around Kick PPO."""
+  frozen_walk: FrozenWalkHandoffCfg = field(default_factory=FrozenWalkHandoffCfg)
+  """Enter/exit gates and Walk checkpoint for ``--frozen-walk-handoff``."""
+  frozen_walk_spawn_m: float = 1.5
+  """Spawn radius when Recipe C is on (Walk approaches from here)."""
 
   @staticmethod
   def from_task(task_id: str) -> "TrainConfig":
     env_cfg = load_env_cfg(task_id)
     agent_cfg = load_rl_cfg(task_id)
     return TrainConfig(env=env_cfg, agent=agent_cfg)
+
+
+def _apply_frozen_walk_spawn(cfg: TrainConfig) -> None:
+  """Disable Recipe 1 mix; spawn far enough for Walk approach."""
+  r = float(cfg.frozen_walk_spawn_m)
+  events = cfg.env.events
+  if "reset_base" not in events:
+    return
+  params = events["reset_base"].params
+  params["radius_range"] = (r * 0.95, r * 1.05)
+  params["spawn_on_approach_side"] = True
+  params["handoff_fraction"] = 0.0
+  print(
+    f"[INFO] Recipe C spawn radius_range={params['radius_range']}  "
+    f"handoff_fraction=0"
+  )
 
 
 def run_train(task_id: str, cfg: TrainConfig, log_dir: Path) -> None:
@@ -110,6 +136,11 @@ def run_train(task_id: str, cfg: TrainConfig, log_dir: Path) -> None:
     cfg.env.sim.nan_guard.enabled = True
     print(f"[INFO] NaN guard enabled, output dir: {cfg.env.sim.nan_guard.output_dir}")
 
+  if cfg.frozen_walk_handoff:
+    if is_tracking_task:
+      raise ValueError("--frozen-walk-handoff is only for Kick Near training.")
+    _apply_frozen_walk_spawn(cfg)
+
   if rank == 0:
     print(f"[INFO] Logging experiment in directory: {log_dir}")
 
@@ -153,7 +184,16 @@ def run_train(task_id: str, cfg: TrainConfig, log_dir: Path) -> None:
 
   is_fast_sac = isinstance(cfg.agent, FastSacRunnerCfg)
   if is_fast_sac:
+    if cfg.frozen_walk_handoff:
+      raise ValueError("--frozen-walk-handoff is not supported with FastSAC.")
     env = FastSacVecEnvWrapper(env, clip_actions=cfg.agent.clip_actions)
+  elif cfg.frozen_walk_handoff:
+    env = FrozenWalkHandoffWrapper(
+      env,
+      clip_actions=cfg.agent.clip_actions,
+      cfg=cfg.frozen_walk,
+      kick_action_scale=cfg.env.actions["joint_pos"].scale,
+    )
   else:
     env = RslRlVecEnvWrapper(env, clip_actions=cfg.agent.clip_actions)
 

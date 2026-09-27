@@ -30,7 +30,19 @@ K1_PARALLEL_INVERTED_JOINT_INDICES: tuple[int, ...] = tuple(
   index for index in K1_INVERTED_JOINT_INDICES if index not in (15, 21)
 )
 POLICY_DIM_NO_BASE_LIN_VEL = 75
-CRITIC_EXTRA_DIM = 15
+POLICY_DIM_KICK_WALKAMP = 78
+CRITIC_EXTRA_DIM_WALK = 15
+CRITIC_EXTRA_DIM_KICK = 17
+# Backward-compatible alias (Walk AMP).
+CRITIC_EXTRA_DIM = CRITIC_EXTRA_DIM_WALK
+
+
+def _critic_extra_dim(policy_dim: int) -> int:
+  if policy_dim == POLICY_DIM_KICK_WALKAMP:
+    return CRITIC_EXTRA_DIM_KICK
+  if policy_dim == POLICY_DIM_NO_BASE_LIN_VEL:
+    return CRITIC_EXTRA_DIM_WALK
+  raise ValueError(f"Unknown policy dim {policy_dim}")
 
 
 def _augment_symmetries(
@@ -50,7 +62,7 @@ def _augment_symmetries(
         f"Unsupported actor observation dim: {actor_dim}. "
         f"Expected one of {SUPPORTED_POLICY_DIMS}."
       )
-    expected_critic_dim = actor_dim + CRITIC_EXTRA_DIM
+    expected_critic_dim = actor_dim + _critic_extra_dim(actor_dim)
     if critic_dim != expected_critic_dim:
       raise ValueError(
         f"Critic observation dim mismatch: got {critic_dim}, "
@@ -128,53 +140,41 @@ def flip_k1_policy_obs_left_right(
 ) -> torch.Tensor:
   obs = obs.clone()
   policy_dim = obs.shape[1]
-  num_linear_obs_blocks = _get_num_linear_obs_blocks(policy_dim)
-  if num_linear_obs_blocks is None:
+  layout = _get_policy_layout(policy_dim)
+  if layout is None:
     raise ValueError(
       f"Unsupported policy observation dim: {policy_dim}. "
       f"Expected one of {SUPPORTED_POLICY_DIMS}."
     )
 
-  # No leading base linear terms in the current velocity policy layout.
-  # Each 3D vector mirrors with [x, y, z] -> [x, -y, z].
-  for i in range(num_linear_obs_blocks):
-    start = i * 3
-    obs[:, start : start + 3] = obs[:, start : start + 3] * obs.new_tensor(
-      [1.0, -1.0, 1.0]
-    )
+  # Base ang vel + projected gravity (always first 6).
+  obs[:, 0:3] = obs[:, 0:3] * obs.new_tensor([-1.0, 1.0, -1.0])
+  obs[:, 3:6] = obs[:, 3:6] * obs.new_tensor([1.0, -1.0, 1.0])
 
-  base_offset = num_linear_obs_blocks * 3
+  # Optional kick slots: ball_rel_pos + target_pos (base-frame 3-vectors).
+  kick_start = 6
+  for i in range(layout["kick_vec_blocks"]):
+    s = kick_start + i * 3
+    obs[:, s : s + 3] = obs[:, s : s + 3] * obs.new_tensor([1.0, -1.0, 1.0])
 
-  # base ang vel
-  obs[:, base_offset : base_offset + 3] = obs[
-    :, base_offset : base_offset + 3
-  ] * obs.new_tensor([-1.0, 1.0, -1.0])
-  # projected gravity
-  obs[:, base_offset + 3 : base_offset + 6] = obs[
-    :, base_offset + 3 : base_offset + 6
-  ] * obs.new_tensor([1.0, -1.0, 1.0])
-
-  joint_pos_start = base_offset + 6
+  joint_pos_start = kick_start + layout["kick_vec_blocks"] * 3
   joint_vel_start = joint_pos_start + K1_JOINT_DIM
   last_actions_start = joint_vel_start + K1_JOINT_DIM
   command_start = last_actions_start + K1_ACTION_DIM
 
-  # joint pos
   obs[:, joint_pos_start:joint_vel_start] = _switch_k1_joints_left_right(
     obs[:, joint_pos_start:joint_vel_start], inverted_indices
   )
-  # joint vel
   obs[:, joint_vel_start:last_actions_start] = _switch_k1_joints_left_right(
     obs[:, joint_vel_start:last_actions_start], inverted_indices
   )
-  # last actions
   obs[:, last_actions_start:command_start] = _switch_k1_joints_left_right(
     obs[:, last_actions_start:command_start], inverted_indices
   )
-  # velocity command
-  obs[:, command_start : command_start + 3] = obs[
-    :, command_start : command_start + 3
-  ] * obs.new_tensor([1.0, -1.0, -1.0])
+  if layout["has_command"]:
+    obs[:, command_start : command_start + 3] = obs[
+      :, command_start : command_start + 3
+    ] * obs.new_tensor([1.0, -1.0, -1.0])
 
   return obs
 
@@ -184,43 +184,47 @@ def flip_k1_critic_obs_left_right(
   inverted_indices: tuple[int, ...] = K1_INVERTED_JOINT_INDICES,
 ) -> torch.Tensor:
   obs = obs.clone()
-  policy_dim = obs.shape[1] - CRITIC_EXTRA_DIM
-  if not _is_supported_policy_dim(policy_dim):
+  # Infer policy dim from known extras.
+  if obs.shape[1] == POLICY_DIM_KICK_WALKAMP + CRITIC_EXTRA_DIM_KICK:
+    policy_dim = POLICY_DIM_KICK_WALKAMP
+  elif obs.shape[1] == POLICY_DIM_NO_BASE_LIN_VEL + CRITIC_EXTRA_DIM_WALK:
+    policy_dim = POLICY_DIM_NO_BASE_LIN_VEL
+  else:
     raise ValueError(
       f"Unsupported critic observation dim: {obs.shape[1]}. "
-      f"Expected policy part of one of {SUPPORTED_POLICY_DIMS} "
-      f"plus {CRITIC_EXTRA_DIM} extra dims."
+      f"Expected {POLICY_DIM_NO_BASE_LIN_VEL}+{CRITIC_EXTRA_DIM_WALK} or "
+      f"{POLICY_DIM_KICK_WALKAMP}+{CRITIC_EXTRA_DIM_KICK}."
     )
 
-  # policy obs
   obs[:, :policy_dim] = flip_k1_policy_obs_left_right(
     obs[:, :policy_dim], inverted_indices
   )
 
-  # base lin vel: [x, y, z] -> [x, -y, z]
-  base_lin_vel_start = policy_dim
-  obs[:, base_lin_vel_start : base_lin_vel_start + 3] = obs[
-    :, base_lin_vel_start : base_lin_vel_start + 3
-  ] * obs.new_tensor([1.0, -1.0, 1.0])
+  if policy_dim == POLICY_DIM_NO_BASE_LIN_VEL:
+    # Walk: base_lin_vel + foot block.
+    base_lin_vel_start = policy_dim
+    obs[:, base_lin_vel_start : base_lin_vel_start + 3] = obs[
+      :, base_lin_vel_start : base_lin_vel_start + 3
+    ] * obs.new_tensor([1.0, -1.0, 1.0])
+    foot_height_start = policy_dim + 3
+  else:
+    # Kick-on-Walk: foot block then ball_velocity + ball_foot_contact.
+    foot_height_start = policy_dim
 
-  foot_height_start = policy_dim + 3
   foot_air_time_start = foot_height_start + 2
   foot_contact_start = foot_air_time_start + 2
   foot_contact_forces_start = foot_contact_start + 2
 
-  # foot height
   obs[:, [foot_height_start, foot_height_start + 1]] = obs[
     :, [foot_height_start + 1, foot_height_start]
   ]
-  # foot air time
   obs[:, [foot_air_time_start, foot_air_time_start + 1]] = obs[
     :, [foot_air_time_start + 1, foot_air_time_start]
   ]
-  # foot contact
   obs[:, [foot_contact_start, foot_contact_start + 1]] = obs[
     :, [foot_contact_start + 1, foot_contact_start]
   ]
-  # foot contact forces
+  # Swap L↔R force triples and negate F_y (DESIGN §6.1).
   obs[
     :,
     [
@@ -243,26 +247,43 @@ def flip_k1_critic_obs_left_right(
     ],
   ] * obs.new_tensor([1.0, -1.0, 1.0, 1.0, -1.0, 1.0])
 
+  if policy_dim == POLICY_DIM_KICK_WALKAMP:
+    ball_vel_start = foot_contact_forces_start + 6
+    ball_foot_start = ball_vel_start + 3
+    obs[:, ball_vel_start : ball_vel_start + 3] = obs[
+      :, ball_vel_start : ball_vel_start + 3
+    ] * obs.new_tensor([1.0, -1.0, 1.0])
+    obs[:, [ball_foot_start, ball_foot_start + 1]] = obs[
+      :, [ball_foot_start + 1, ball_foot_start]
+    ]
+
   return obs
 
 
-SUPPORTED_POLICY_DIMS = (POLICY_DIM_NO_BASE_LIN_VEL,)
+SUPPORTED_POLICY_DIMS = (POLICY_DIM_NO_BASE_LIN_VEL, POLICY_DIM_KICK_WALKAMP)
 
 
 def _is_supported_policy_dim(policy_dim: int) -> bool:
-  return _get_num_linear_obs_blocks(policy_dim) is not None
+  return policy_dim in SUPPORTED_POLICY_DIMS
+
+
+def _get_policy_layout(policy_dim: int) -> dict[str, int | bool] | None:
+  """Return layout metadata for Walk (75) or Kick-on-Walk-AMP (78)."""
+  if policy_dim == POLICY_DIM_NO_BASE_LIN_VEL:
+    # [ang(3), grav(3), q(22), qd(22), a(22), cmd(3)]
+    return {"kick_vec_blocks": 0, "has_command": True}
+  if policy_dim == POLICY_DIM_KICK_WALKAMP:
+    # [ang(3), grav(3), ball(3), target(3), q(22), qd(22), a(22)]
+    return {"kick_vec_blocks": 2, "has_command": False}
+  return None
 
 
 def _get_num_linear_obs_blocks(policy_dim: int) -> int | None:
-  """Infer number of leading 3D base linear vectors from policy dim.
-
-  Layout is:
-  [base_ang_vel(3), projected_gravity(3), joint_pos(22), joint_vel(22),
-   last_action(22), command(3)]
-  """
-  if policy_dim != POLICY_DIM_NO_BASE_LIN_VEL:
+  """Legacy helper — kick vectors are handled in ``_get_policy_layout``."""
+  layout = _get_policy_layout(policy_dim)
+  if layout is None:
     return None
-  return 0
+  return int(layout["kick_vec_blocks"])
 
 
 def _switch_k1_joints_left_right(

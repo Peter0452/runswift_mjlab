@@ -9,6 +9,7 @@ Example:
 
 from __future__ import annotations
 
+import math
 import os
 import re
 from dataclasses import asdict, dataclass
@@ -137,7 +138,15 @@ class KickToWalkPlayConfig:
   spawn_radius_m: float = 1.5
   """Robot–ball spawn distance (m)."""
   kick_enter_m: float = 0.55
-  """Walk→Kick when ball distance ≤ this (Near outer spawn)."""
+  """Hard-stop / enter-gate distance (m). Walk stands here until gates pass."""
+  enter_facing_rad: float = 0.40
+  """Max |bearing to ball| (rad) to enter Kick (~23°)."""
+  enter_tilt_max_rad: float = 0.35
+  """Max trunk tilt from upright (rad) (~20°)."""
+  enter_speed_max: float = 0.55
+  """Max horizontal base speed (m/s) to enter Kick."""
+  enter_stand_s: float = 0.30
+  """Hold stand + gates this long before Walk→Kick switch."""
   approach_speed: float = 0.9
   """Body-frame approach speed while Walk is closing on the ball."""
   approach_yaw_gain: float = 2.0
@@ -162,6 +171,10 @@ class WalkKickWalkFsmPolicy:
     walk_policy,
     settle_time_s: float,
     kick_enter_m: float,
+    enter_facing_rad: float,
+    enter_tilt_max_rad: float,
+    enter_speed_max: float,
+    enter_stand_s: float,
     approach_speed: float,
     approach_yaw_gain: float,
     approach_turn_speed: float,
@@ -177,6 +190,11 @@ class WalkKickWalkFsmPolicy:
     self.walk_policy = walk_policy
     self.settle_time_s = float(settle_time_s)
     self.kick_enter_m = float(kick_enter_m)
+    self.enter_facing_rad = float(enter_facing_rad)
+    self.enter_tilt_max_rad = float(enter_tilt_max_rad)
+    self.enter_speed_max = float(enter_speed_max)
+    self.enter_stand_s = float(enter_stand_s)
+    self.enter_upright_gz = -math.cos(self.enter_tilt_max_rad)
     self.approach_speed = float(approach_speed)
     self.approach_yaw_gain = float(approach_yaw_gain)
     self.approach_turn_speed = float(approach_turn_speed)
@@ -194,6 +212,7 @@ class WalkKickWalkFsmPolicy:
     self._last_walk_action = torch.zeros(n, len(_WALK_JOINTS), device=device)
     self._leg_scale_ratio = (self.walk_scale_legs / self.kick_scale).to(device)
     self._prev_ep_len = torch.zeros(n, dtype=torch.long, device=device)
+    self._enter_hold_s = torch.zeros(n, device=device)
 
   def _raw_env(self) -> ManagerBasedRlEnv:
     return self.env.unwrapped
@@ -203,6 +222,35 @@ class WalkKickWalkFsmPolicy:
     robot_xy = raw.scene["robot"].data.root_link_pos_w[:, :2]
     ball_xy = raw.scene["ball"].data.root_link_pos_w[:, :2]
     return torch.linalg.norm(ball_xy - robot_xy, dim=-1)
+
+  def _heading_err_to_ball(self) -> torch.Tensor:
+    raw = self._raw_env()
+    robot = raw.scene["robot"]
+    ball = raw.scene["ball"]
+    delta_w = torch.zeros(raw.num_envs, 3, device=raw.device)
+    delta_w[:, :2] = (
+      ball.data.root_link_pos_w[:, :2] - robot.data.root_link_pos_w[:, :2]
+    )
+    delta_b = quat_apply_inverse(yaw_quat(robot.data.root_link_quat_w), delta_w)
+    return wrap_to_pi(torch.atan2(delta_b[:, 1], delta_b[:, 0]))
+
+  def _enter_gates(self) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
+    """Facing + upright + slow enough (distance checked by caller)."""
+    raw = self._raw_env()
+    robot = raw.scene["robot"]
+    heading_err = self._heading_err_to_ball()
+    facing = heading_err.abs() <= self.enter_facing_rad
+    upright = robot.data.projected_gravity_b[:, 2] <= self.enter_upright_gz
+    speed = torch.linalg.norm(robot.data.root_link_lin_vel_b[:, :2], dim=-1)
+    slow = speed <= self.enter_speed_max
+    ok = facing & upright & slow
+    return ok, {
+      "facing": facing,
+      "upright": upright,
+      "slow": slow,
+      "heading_err": heading_err,
+      "speed": speed,
+    }
 
   def _free_arms(self, env_ids: torch.Tensor) -> None:
     if env_ids.numel() == 0:
@@ -259,8 +307,15 @@ class WalkKickWalkFsmPolicy:
       twist.vel_command_w[env_ids, :] = 0.0
       twist.vel_command_w[env_ids, 0] = twist.vel_command_b[env_ids, 0]
 
-  def _drive_approach(self, env_ids: torch.Tensor) -> None:
-    """Body-frame Walk cmd toward the ball + yaw to face it."""
+  def _drive_approach(
+    self, env_ids: torch.Tensor, *, stand_hold: torch.Tensor | None = None
+  ) -> None:
+    """Body-frame Walk cmd toward the ball + yaw to face it.
+
+    Soft-brakes below 1.0 m (→ ~50% cruise by 0.45 m) to limit overshoot
+    into the enter band. When ``stand_hold`` is set, zero lin vel and only
+    yaw-correct (pre-Kick enter gate).
+    """
     if env_ids.numel() == 0:
       return
     raw = self._raw_env()
@@ -278,38 +333,69 @@ class WalkKickWalkFsmPolicy:
     wz = (
       self.approach_yaw_gain * heading_err
     ).clamp(-self.approach_turn_speed, self.approach_turn_speed)
-    # Forward component along body-x toward ball; soften when bearing is large.
     face = (heading_err.abs() < 0.8).float()
-    speed = self.approach_speed * (0.35 + 0.65 * face)
+    # Full cruise ≥1.0 m; ~50% by 0.45 m (mild brake, not a crawl).
+    frac = ((dist - 0.45) / (1.0 - 0.45)).clamp(0.0, 1.0)
+    speed_scale = 0.50 + 0.50 * frac
+    speed = self.approach_speed * (0.35 + 0.65 * face) * speed_scale
     dir_b = delta_b[:, :2] / dist.unsqueeze(-1)
     vx = speed * dir_b[:, 0]
-    vy = speed * dir_b[:, 1] * 0.35  # light lateral; prefer yaw
+    vy = speed * dir_b[:, 1] * 0.35
+    standing = torch.zeros(env_ids.numel(), dtype=torch.bool, device=raw.device)
+    if stand_hold is not None:
+      hold = stand_hold[env_ids]
+      vx = torch.where(hold, torch.zeros_like(vx), vx)
+      vy = torch.where(hold, torch.zeros_like(vy), vy)
+      standing = hold
     self._set_twist(env_ids, vx, vy, wz, standing=False)
+    if bool(standing.any()):
+      # Mark standing flag only for hold envs (is_standing is per-env bool).
+      twist = raw.command_manager.get_term("twist")
+      if hasattr(twist, "is_standing_env"):
+        twist.is_standing_env[env_ids[standing]] = True
 
   def _update_phase(self) -> torch.Tensor:
     raw = self._raw_env()
+    dt = float(raw.step_dt)
     ep = raw.episode_length_buf
     reset = ep < self._prev_ep_len
     self._prev_ep_len = ep.clone()
     if bool(reset.any()):
       self._phase[reset] = _PHASE_APPROACH
       self._last_walk_action[reset] = 0.0
-      n_r = int(reset.sum().item())
-      print(f"[Walk↔Kick] reset → APPROACH n={n_r}")
+      self._enter_hold_s[reset] = 0.0
+      print(f"[Walk↔Kick] reset → APPROACH n={int(reset.sum().item())}")
 
     state = ensure_ball_phase_updated(raw, ball_cfg_name="ball")
     assert state.kick_detected is not None
     assert state.time_since_kick_s is not None
     dist = self._ball_dist()
+    in_band = dist <= self.kick_enter_m
+    gates_ok, gate_info = self._enter_gates()
 
-    # APPROACH → KICK
-    to_kick = (self._phase == _PHASE_APPROACH) & (dist <= self.kick_enter_m)
+    # APPROACH: in band → stand/hold while gates true; switch after enter_stand_s.
+    approaching = self._phase == _PHASE_APPROACH
+    holding = approaching & in_band
+    ready = holding & gates_ok
+    self._enter_hold_s = torch.where(
+      ready, self._enter_hold_s + dt, torch.zeros_like(self._enter_hold_s)
+    )
+    # Still in band but gates broken: keep small hold so we don't thrash, but
+    # require a fresh stand window once gates recover (zero above handles that).
+
+    to_kick = ready & (self._enter_hold_s >= self.enter_stand_s)
     if bool(to_kick.any()):
+      n = int(to_kick.sum().item())
+      d_mean = float(dist[to_kick].mean().item())
+      h_mean = float(gate_info["heading_err"][to_kick].abs().mean().item())
+      s_mean = float(gate_info["speed"][to_kick].mean().item())
       print(
-        f"[Walk↔Kick] APPROACH→KICK n={int(to_kick.sum().item())}  "
-        f"d≤{self.kick_enter_m:.2f}m  (free arms)"
+        f"[Walk↔Kick] APPROACH→KICK n={n}  "
+        f"d≈{d_mean:.2f}m  |bear|≈{h_mean:.2f}rad  "
+        f"speed≈{s_mean:.2f}  hold≥{self.enter_stand_s:.2f}s  (free arms)"
       )
       self._phase[to_kick] = _PHASE_KICK
+      self._enter_hold_s[to_kick] = 0.0
 
     # KICK → EXIT
     settled = state.kick_detected & (
@@ -324,6 +410,7 @@ class WalkKickWalkFsmPolicy:
       )
       self._phase[to_exit] = _PHASE_EXIT
       self._last_walk_action[to_exit] = 0.0
+      self._enter_hold_s[to_exit] = 0.0
       ids = to_exit.nonzero(as_tuple=False).flatten()
       self._set_twist(
         ids,
@@ -337,15 +424,13 @@ class WalkKickWalkFsmPolicy:
     walk_own = self._phase != _PHASE_KICK
     raw._setup_b_walk_mode = walk_own
 
-    # Free arms every Kick step.
     kick_ids = (self._phase == _PHASE_KICK).nonzero(as_tuple=False).flatten()
     self._free_arms(kick_ids)
 
-    # Approach: drive Walk cmd toward ball every frame.
     approach_ids = (self._phase == _PHASE_APPROACH).nonzero(
       as_tuple=False
     ).flatten()
-    self._drive_approach(approach_ids)
+    self._drive_approach(approach_ids, stand_hold=holding)
 
     return self._phase
 
@@ -431,8 +516,12 @@ def run_kick_to_walk_play(cfg: KickToWalkPlayConfig) -> None:
   print(f"[INFO]: Walk ckpt: {walk_ckpt}  (75-D AMP)")
   print(
     f"[INFO]: Walk→Kick→Walk  spawn≈{r:.2f}m  "
-    f"enter≤{cfg.kick_enter_m:.2f}m  settle={cfg.settle_time_s:.2f}s  "
-    f"approach_v={cfg.approach_speed:.2f}"
+    f"enter≤{cfg.kick_enter_m:.2f}m  "
+    f"face≤{cfg.enter_facing_rad:.2f}rad  "
+    f"tilt≤{cfg.enter_tilt_max_rad:.2f}rad  "
+    f"speed≤{cfg.enter_speed_max:.2f}  "
+    f"hold≥{cfg.enter_stand_s:.2f}s  "
+    f"settle={cfg.settle_time_s:.2f}s"
   )
 
   print(f"[INFO]: Loading Walk policy from {cfg.walk_task} …")
@@ -490,6 +579,10 @@ def run_kick_to_walk_play(cfg: KickToWalkPlayConfig) -> None:
     walk_policy=walk_policy,
     settle_time_s=cfg.settle_time_s,
     kick_enter_m=cfg.kick_enter_m,
+    enter_facing_rad=cfg.enter_facing_rad,
+    enter_tilt_max_rad=cfg.enter_tilt_max_rad,
+    enter_speed_max=cfg.enter_speed_max,
+    enter_stand_s=cfg.enter_stand_s,
     approach_speed=cfg.approach_speed,
     approach_yaw_gain=cfg.approach_yaw_gain,
     approach_turn_speed=cfg.approach_turn_speed,

@@ -63,12 +63,14 @@ def update_plant_arrival_latch(
   hold_time_s: float = 0.0,
   support_ready: torch.Tensor | None = None,
   swing_ready: torch.Tensor | None = None,
+  com_ready: torch.Tensor | None = None,
 ) -> torch.Tensor:
   """Sticky plant latch after continuously satisfying distance and alignment.
 
-  Optional ``support_ready`` / ``swing_ready`` gates delay latch until the
-  stance foot is planted and the swing foot is within reach — otherwise the
-  policy plants early and drags the trailing leg into the ball.
+  Optional ``support_ready`` / ``swing_ready`` / ``com_ready`` gates delay latch
+  until the stance foot is planted, the swing foot is within reach, and/or the
+  root (CoM proxy) sits over the plant foot — otherwise the policy plants early
+  and kicks without weight transfer.
   """
   latch = ensure_approach_waypoint_latch(env)
   ready = (wp_dist <= float(ready_distance)) & (facing >= float(facing_min))
@@ -76,6 +78,8 @@ def update_plant_arrival_latch(
     ready = ready & support_ready.bool()
   if swing_ready is not None:
     ready = ready & swing_ready.bool()
+  if com_ready is not None:
+    ready = ready & com_ready.bool()
   latch.ready_time_s = torch.where(
     ready,
     latch.ready_time_s + float(env.step_dt),

@@ -35,6 +35,10 @@ class BallPhaseState:
   time_since_ball_stopped_s: torch.Tensor | None = None
   strong_kick_detected: torch.Tensor | None = None
   time_since_strong_kick_s: torch.Tensor | None = None
+  # Latching contact step counter (Kick-on-Walk-AMP §10.5): 0 until first
+  # agent–ball touch, then +1 every step.
+  contact_has_occurred: torch.Tensor | None = None
+  contact_counter: torch.Tensor | None = None
 
 
 def _get_state(env: ManagerBasedRlEnv) -> BallPhaseState:
@@ -61,6 +65,8 @@ def init_ball_phase_state(env: ManagerBasedRlEnv) -> BallPhaseState:
     or state.time_since_strong_kick_s is None
     or state.prev_vel_toward_goal is None
     or state.delta_vel_toward_goal is None
+    or state.contact_has_occurred is None
+    or state.contact_counter is None
   )
   if not needs_alloc:
     return state
@@ -84,6 +90,8 @@ def init_ball_phase_state(env: ManagerBasedRlEnv) -> BallPhaseState:
   state.time_since_ball_stopped_s = torch.zeros(n, device=device)
   state.strong_kick_detected = torch.zeros(n, dtype=torch.bool, device=device)
   state.time_since_strong_kick_s = torch.zeros(n, device=device)
+  state.contact_has_occurred = torch.zeros(n, dtype=torch.bool, device=device)
+  state.contact_counter = torch.zeros(n, dtype=torch.long, device=device)
   return state
 
 
@@ -115,6 +123,10 @@ def reset_ball_phase_state(
   state.time_since_ball_stopped_s[env_ids] = 0.0
   state.strong_kick_detected[env_ids] = False
   state.time_since_strong_kick_s[env_ids] = 0.0
+  assert state.contact_has_occurred is not None
+  assert state.contact_counter is not None
+  state.contact_has_occurred[env_ids] = False
+  state.contact_counter[env_ids] = 0
 
 
 def ensure_ball_phase_updated(
@@ -296,6 +308,8 @@ def ensure_ball_phase_updated(
   assert state.prev_agent_ball_contact is not None
   assert state.post_kick_contact_count is not None
   assert state.kick_detected is not None
+  assert state.contact_has_occurred is not None
+  assert state.contact_counter is not None
   contact_edge = state.agent_ball_contact & ~state.prev_agent_ball_contact
   # The kick-producing contact is contact one. Count only later rising edges,
   # so a sustained strike contact is not mistaken for a double tap.
@@ -305,7 +319,14 @@ def ensure_ball_phase_updated(
     state.post_kick_contact_count
     + (state.kick_detected & contact_edge).to(state.post_kick_contact_count.dtype),
   )
+  # Latching ct: stays 0 until first touch, then +1 every control step.
+  state.contact_has_occurred = state.contact_has_occurred | state.agent_ball_contact
+  state.contact_counter = state.contact_counter + state.contact_has_occurred.long()
   state.prev_agent_ball_contact.copy_(state.agent_ball_contact)
+  env.extras["log"]["Metrics/contact_counter"] = state.contact_counter.float().mean()
+  env.extras["log"]["Metrics/contact_has_occurred"] = (
+    state.contact_has_occurred.float().mean()
+  )
 
   env.extras["log"]["Metrics/feet_ball_contact"] = (
     feet_contact.float().mean()

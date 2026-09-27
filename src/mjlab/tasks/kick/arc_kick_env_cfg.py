@@ -824,8 +824,14 @@ def make_near_kick_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvC
     weight=2.0,
     params={
       "command_name": "goal",
-      "sagittal_target": 0.14,
-      "lateral_target": 0.175,
+      # Sagittal stays relaxed; lateral tightened (Recipe B) so swing need
+      # not reach across a wide plant (A alone sat at gap≈0 under 0.24).
+      "sagittal_target": 0.20,
+      "lateral_target": 0.13,
+      "sagittal_sigma": 0.16,
+      "lateral_sigma": 0.12,
+      "sagittal_funnel": 0.16,
+      "lateral_funnel": 0.14,
       "activate_inside_ball_distance": 0.85,
       # Stop farming plant once latch opens — force payoff into the kick.
       "stop_after_plant_latch": True,
@@ -841,6 +847,9 @@ def make_near_kick_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvC
       "command_name": "goal",
       "require_kick_ready": False,
       "require_plant_latch": True,
+      "require_compact": True,
+      "compact_gap_max": 0.22,
+      "compact_max_yaw_rad": math.radians(25.0),
       "proximity_sigma": 0.30,
       "proximity_gated_speed": True,
       **robot_ball,
@@ -915,6 +924,48 @@ def make_near_kick_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvC
       **robot_ball,
     },
   )
+  # Recipe A: leash swing foot lateral excursion vs plant during latch→contact.
+  cfg.rewards["swing_plant_lateral_gap"] = RewardTermCfg(
+    func=kick_mdp.swing_plant_lateral_gap,
+    weight=-2.0,
+    params={
+      "gap_max": 0.24,
+      "require_plant_latch": True,
+      "activate_inside_ball_distance": 0.85,
+      "command_name": "goal",
+      **robot_ball,
+    },
+  )
+  # Stage 0: phase eligibility metrics (zero weight).
+  cfg.rewards["phase_audit"] = RewardTermCfg(
+    func=kick_mdp.phase_audit_metrics,
+    weight=0.0,
+    params={
+      "com_radius": 0.08,
+      "gap_max": 0.22,
+      "max_yaw_rad": math.radians(25.0),
+      "sagittal_target": 0.20,
+      "sagittal_tol": 0.14,
+      "lateral_target": 0.13,
+      "lateral_tol": 0.08,
+      **robot_ball,
+    },
+  )
+  # Stage 1: P2 weight-shift lure (root over plant when foot in box).
+  cfg.rewards["com_over_plant"] = RewardTermCfg(
+    func=kick_mdp.com_over_plant,
+    weight=1.5,
+    params={
+      "sigma": 0.08,
+      "require_support_in_box": True,
+      "sagittal_target": 0.20,
+      "sagittal_tol": 0.14,
+      "lateral_target": 0.13,
+      "lateral_tol": 0.08,
+      "activate_inside_ball_distance": 0.85,
+      **robot_ball,
+    },
+  )
 
   # Yellow sits on the ball (no standoff, no lateral). Face kick-axis in
   # the close zone; do not recycle last vx.
@@ -923,7 +974,7 @@ def make_near_kick_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvC
     "orbit_to_approach": True,
     "creep_through_plant": True,
     "creep_speed": 0.25,
-    "plant_root_behind": 0.10,
+    "plant_root_behind": 0.16,
     "plant_root_lateral": 0.0,
     "plant_feet_offset_x": -0.02,
     "plant_feet_offset_y": 0.12,
@@ -934,16 +985,18 @@ def make_near_kick_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvC
     "face_path_fov_clip": True,
     "use_sampled_magnitudes": False,
     "approach_standoff": 0.0,
-    "plant_distance": 0.14,
+    "plant_distance": 0.20,
     "settle_time_s": _SETTLE_TIME_S,
-    # Soft latch: root near WP + facing only.
-    "require_support_plant_for_latch": False,
-    "support_plant_sagittal_target": 0.14,
-    "support_plant_sagittal_tol": 0.10,
-    "support_plant_lateral_target": 0.175,
-    "support_plant_lateral_tol": 0.10,
+    # Stage 1: plant foot in box AND root (CoM proxy) over plant.
+    "require_support_plant_for_latch": True,
+    "support_plant_sagittal_target": 0.20,
+    "support_plant_sagittal_tol": 0.14,
+    "support_plant_lateral_target": 0.13,
+    "support_plant_lateral_tol": 0.08,
+    "require_com_over_plant_for_latch": True,
+    "com_over_plant_radius": 0.08,
     "require_swing_foot_for_latch": False,
-    "swing_foot_max_ball_distance": 0.25,
+    "swing_foot_max_ball_distance": 0.30,
   }
   for name in ("tracking_lin_vel_x", "tracking_lin_vel_y", "tracking_ang_vel"):
     if name in cfg.rewards:
@@ -984,6 +1037,7 @@ def make_near_kick_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvC
     "ball_proximity",
   ):
     cfg.rewards.pop(name, None)
+  # Stage 4: swing retract + CoM in dual-support BoS (not hip-width alone).
   cfg.rewards["post_kick_stance"] = RewardTermCfg(
     func=kick_mdp.post_kick_stance,
     weight=3.0,
@@ -991,6 +1045,9 @@ def make_near_kick_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvC
       "contact_window_s": 1.5,
       "min_kick_speed": _KICK_REWARD_GATE_SPEED,
       "feet_distance_ref": 0.19,
+      "sagittal_sigma": 0.10,
+      "bos_sigma": 0.10,
+      "command_name": "goal",
       **robot_ball,
     },
   )
@@ -1004,6 +1061,10 @@ def make_near_kick_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvC
       "max_reward": 7.0,
       "use_decay": False,
       "require_plant_latch": True,
+      "require_compact": True,
+      "compact_gap_max": 0.22,
+      "compact_max_yaw_rad": math.radians(25.0),
+      "robot_cfg": robot,
     },
   )
   cfg.rewards["kick_direction_accuracy"] = RewardTermCfg(
@@ -1113,6 +1174,17 @@ def make_near_kick_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvC
   # Yellow on the ball; kick with the spawn-closer foot.
   cfg.events["reset_base"].params["waypoint_lateral_range"] = (0.0, 0.0)
   cfg.events["reset_base"].params["fixed_kick_side"] = None
+  # Recipe 1: 50% Walk-enter-like handoff inits (frozen Walk 9950 eval).
+  cfg.events["reset_base"].params.update(
+    {
+      "handoff_fraction": 0.5,
+      "handoff_radius_range": (0.30, 0.55),
+      "handoff_bearing_noise": 0.40,
+      "handoff_tilt_max": 0.35,
+      "handoff_lin_vel_max": 0.55,
+      "handoff_stand_s_range": (0.3, 0.5),
+    }
+  )
   goal = cfg.commands["goal"]
   assert isinstance(goal, UniformGoalPositionCommandCfg)
   goal.distance_range = (8.0, 12.0)
@@ -1130,4 +1202,71 @@ def make_near_kick_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvC
 
   # Short horizon: plant + strike quickly; loitering is costly (wait penalty).
   cfg.episode_length_s = 7.0
+
+  # ---------------------------------------------------------------------------
+  # Lean principle Near (~17 terms). Stage 2: strike/ball-vel gated on
+  # compact swing (gap_lat ≤ 0.22 ∧ |Hip_Yaw| ≤ 25°) so payday cannot buy
+  # a flared hip. CoM remains a lure only (not a latch gate).
+  # ---------------------------------------------------------------------------
+  _LEAN: dict[str, float] = {
+    # P1 approach
+    "tracking_lin_vel_x": 1.5,
+    "tracking_lin_vel_y": 1.5,
+    "tracking_ang_vel": 1.0,
+    "waypoint_approach": 1.5,
+    # P2 plant + weight (BoS then CoM lure)
+    "support_plant_score": 2.0,
+    "com_over_plant": 1.5,
+    # P4 strike payday (one foot closer + ball outcome)
+    "kicking_foot_strike": 3.0,
+    "ball_velocity_toward_goal": 5.0,
+    # Balance / dual-support vibe
+    "orientation": -15.0,
+    "base_height": -12.0,
+    "feet_yaw_diff": -2.0,
+    "feet_yaw_mean": -2.0,
+    # P5 settle: swing beside plant + CoM in BoS (stronger vs payday)
+    "post_kick_stance": 4.0,
+    "action_rate": -1.0,
+    "wrong_ball_contact": -3.0,
+    "survival": 0.15,
+    # Stage 0 metrics (tiny weight so the term still runs)
+    "phase_audit": 1.0e-6,
+  }
+  for name in list(cfg.rewards.keys()):
+    if name not in _LEAN:
+      cfg.rewards.pop(name)
+    else:
+      cfg.rewards[name].weight = _LEAN[name]
+
+  # Soft plant latch: foot in box unlocks strike. CoM lure only (not a gate).
+  for name in ("tracking_lin_vel_x", "tracking_lin_vel_y", "tracking_ang_vel"):
+    if name in cfg.rewards:
+      cfg.rewards[name].params["require_com_over_plant_for_latch"] = False
+      cfg.rewards[name].params["support_plant_lateral_tol"] = 0.08
+  if "pref_pose_twist" in cfg.events:
+    cfg.events["pref_pose_twist"].params["require_com_over_plant_for_latch"] = False
+    cfg.events["pref_pose_twist"].params["support_plant_lateral_tol"] = 0.08
+  if "com_over_plant" in cfg.rewards:
+    cfg.rewards["com_over_plant"].params["lateral_tol"] = 0.08
+  if "phase_audit" in cfg.rewards:
+    cfg.rewards["phase_audit"].params["lateral_tol"] = 0.08
+  # Stage 2 compact strike gate (already set on term params above; reaffirm).
+  if "kicking_foot_strike" in cfg.rewards:
+    cfg.rewards["kicking_foot_strike"].params.update(
+      {
+        "require_compact": True,
+        "compact_gap_max": 0.22,
+        "compact_max_yaw_rad": math.radians(25.0),
+      }
+    )
+  if "ball_velocity_toward_goal" in cfg.rewards:
+    cfg.rewards["ball_velocity_toward_goal"].params.update(
+      {
+        "require_compact": True,
+        "compact_gap_max": 0.22,
+        "compact_max_yaw_rad": math.radians(25.0),
+      }
+    )
+
   return cfg
