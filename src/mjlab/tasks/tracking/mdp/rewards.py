@@ -113,6 +113,75 @@ def motion_global_body_angular_velocity_error_exp(
   return torch.exp(-error.mean(-1) / std**2)
 
 
+def action_smoothness(env: ManagerBasedRlEnv) -> torch.Tensor:
+  """Penalize action acceleration, clamped so one spike cannot dominate."""
+  action_acc = (
+    env.action_manager.action
+    - 2 * env.action_manager.prev_action
+    + env.action_manager.prev_prev_action
+  )
+  return torch.sum(torch.square(action_acc), dim=1).clamp(0.0, 10.0)
+
+
+def feet_slip(
+  env: ManagerBasedRlEnv,
+  command_name: str,
+  sensor_name: str,
+  body_names: tuple[str, ...],
+  threshold: float = 1.0,
+) -> torch.Tensor:
+  """Penalize horizontal foot speed while that foot is on the ground."""
+  command = cast(MotionCommand, env.command_manager.get_term(command_name))
+  sensor: ContactSensor = env.scene[sensor_name]
+  assert sensor.data.force is not None
+  force = sensor.data.force
+  body_index = {name: i for i, name in enumerate(command.cfg.body_names)}
+  speeds = []
+  contacts = []
+  for slot, name in enumerate(sensor.primary_names):
+    if name not in body_names:
+      continue
+    body = body_index[name]
+    speed_xy = torch.linalg.norm(command.robot_body_lin_vel_w[:, body, :2], dim=-1)
+    contact = torch.linalg.norm(force[:, slot], dim=-1) > threshold
+    speeds.append(speed_xy)
+    contacts.append(contact)
+  foot_speed = torch.stack(speeds, dim=1)
+  foot_contact = torch.stack(contacts, dim=1)
+  slipping = torch.where(foot_contact, foot_speed, torch.zeros_like(foot_speed))
+  return torch.sum(torch.square(slipping), dim=-1)
+
+
+def no_fly(
+  env: ManagerBasedRlEnv,
+  command_name: str,
+  body_names: tuple[str, ...],
+  height: float = 0.05,
+) -> torch.Tensor:
+  """1 when every selected foot is above ``height`` at the same time."""
+  command = cast(MotionCommand, env.command_manager.get_term(command_name))
+  body_index = {name: i for i, name in enumerate(command.cfg.body_names)}
+  indexes = [body_index[name] for name in body_names]
+  foot_z = command.robot_body_pos_w[:, indexes, 2] - env.scene.env_origins[:, 2:3]
+  return torch.all(foot_z > height, dim=-1).float()
+
+
+def ee_body_pos_fall_penalty(
+  env: ManagerBasedRlEnv,
+  command_name: str,
+  threshold: float,
+  body_names: tuple[str, ...],
+) -> torch.Tensor:
+  """1 when a foot or hand height leaves the reference by more than ``threshold``."""
+  command = cast(MotionCommand, env.command_manager.get_term(command_name))
+  body_indexes = _get_body_indexes(command, body_names)
+  error = torch.abs(
+    command.body_pos_relative_w[:, body_indexes, -1]
+    - command.robot_body_pos_w[:, body_indexes, -1]
+  )
+  return torch.any(error > threshold, dim=-1).float()
+
+
 def self_collision_cost(
   env: ManagerBasedRlEnv,
   sensor_name: str,
