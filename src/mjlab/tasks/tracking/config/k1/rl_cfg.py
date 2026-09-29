@@ -44,3 +44,12 @@ def booster_k1_kick_tracking_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
     num_steps_per_env=24,
     max_iterations=30_000,
   )
+
+
+def booster_k1_kick_stage2_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
+  """Same network and log folder as stage 1, so ``model_29999.pt`` can be resumed.
+
+  ``rsl_rl`` adds ``max_iterations`` on top of the loaded iteration, and it
+  only searches for checkpoints inside this experiment directory.
+  """
+  return booster_k1_kick_tracking_ppo_runner_cfg()

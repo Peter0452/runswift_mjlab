@@ -9,6 +9,7 @@ import numpy as np
 import torch
 
 from mjlab.managers import CommandTerm, CommandTermCfg
+from mjlab.tasks.tracking.mdp.shot import reset_kick_shot
 from mjlab.utils.lab_api.math import (
   matrix_from_quat,
   quat_apply,
@@ -73,6 +74,60 @@ class MotionLoader:
       self.clip_z = torch.tensor(data["clip_z"], dtype=torch.float32, device=device)
     else:
       self.clip_z = None
+    if "clip_names" in data.files:
+      self.clip_names = [str(name) for name in data["clip_names"]]
+    else:
+      self.clip_names = None
+    if "clip_z_names" in data.files:
+      self.clip_z_names = [str(name) for name in data["clip_z_names"]]
+    else:
+      self.clip_z_names = None
+    # 0 = right foot, 1 = left foot. Missing means every clip is right-footed.
+    if "clip_kick_foot" in data.files:
+      self.clip_kick_foot = torch.tensor(
+        data["clip_kick_foot"], dtype=torch.long, device=device
+      )
+    else:
+      self.clip_kick_foot = None
+
+
+def estimate_clip_strike_positions(
+  foot_pos: torch.Tensor,
+  clip_ends: torch.Tensor,
+  ball_z: float,
+) -> torch.Tensor:
+  """Ball center for each clip, in the motion frame.
+
+  The strike is the first frame after the foot's highest point where the foot
+  descends through ``ball_z``. If it never crosses, the fastest horizontal
+  step after the peak is used. Returned z is ``ball_z``.
+  """
+  strikes = []
+  ends = [int(end) for end in clip_ends]
+  starts = [0, *ends[:-1]]
+  for start, end in zip(starts, ends, strict=True):
+    foot = foot_pos[start:end]
+    peak = int(torch.argmax(foot[:, 2]))
+    z = foot[:, 2]
+    crosses = (z[:-1] >= ball_z) & (z[1:] < ball_z)
+    crosses[:peak] = False
+    if bool(crosses.any()):
+      frame = int(torch.argmax(crosses.int()))
+    else:
+      step = foot[1:, :2] - foot[:-1, :2]
+      speed = torch.linalg.norm(step, dim=-1)
+      speed[:peak] = -1.0
+      frame = int(torch.argmax(speed)) + 1
+    strikes.append(
+      torch.stack(
+        (
+          foot[frame, 0],
+          foot[frame, 1],
+          foot.new_tensor(ball_z),
+        )
+      )
+    )
+  return torch.stack(strikes)
 
 
 class MotionCommand(CommandTerm):
@@ -136,6 +191,9 @@ class MotionCommand(CommandTerm):
 
     self._ghost_model = None
     self._ghost_color = np.array(cfg.viz.ghost_color, dtype=np.float32)
+    self._clip_strike = self._build_clip_strikes()
+    self._ignore_scrubber = False
+    self._ignore_clip_menu = False
 
   def _clip_index(self, time_steps: torch.Tensor) -> torch.Tensor:
     """Clip id for each frame. ``clip_ends`` are exclusive."""
@@ -150,6 +208,13 @@ class MotionCommand(CommandTerm):
     if styles is None:
       return torch.zeros(self.num_envs, 3, device=self.device)
     return styles[self._clip_index(self.time_steps)]
+
+  def kick_foot_is_left(self) -> torch.Tensor:
+    """True when the clip being tracked swings the left foot."""
+    feet = self.motion.clip_kick_foot
+    if feet is None:
+      return torch.zeros(self.num_envs, dtype=torch.bool, device=self.device)
+    return feet[self._clip_index(self.time_steps)].bool()
 
   @property
   def command(self) -> torch.Tensor:
@@ -349,11 +414,11 @@ class MotionCommand(CommandTerm):
   def _sample_frames_in_clips(
     self, count: int, sampling_probabilities: torch.Tensor
   ) -> torch.Tensor:
-    """Pick a kick uniformly, then a failure-biased frame inside that kick."""
+    """Pick a kick, then a failure-biased frame inside that kick."""
     ends = self.motion.clip_ends
     starts = self.motion.clip_starts
     assert ends is not None and starts is not None
-    clip_ids = torch.randint(0, ends.numel(), (count,), device=self.device)
+    clip_ids = self._sample_clip_ids(count)
     frames = torch.empty(count, dtype=torch.long, device=self.device)
     total = max(self.motion.time_step_total, 1)
     for clip_id in range(ends.numel()):
@@ -387,6 +452,24 @@ class MotionCommand(CommandTerm):
     restart = torch.zeros_like(time_steps)
     return torch.where(at_end, starts[next_clip], restart)
 
+  def _prefix_sampling(self, env_ids: torch.Tensor) -> None:
+    """Uniform clip, then a frame in the first ``start_fraction`` of that clip."""
+    ends = self.motion.clip_ends
+    starts = self.motion.clip_starts
+    fraction = float(self.cfg.start_fraction)
+    device = self.time_steps.device
+    if ends is None or starts is None:
+      window = max(int(self.motion.time_step_total * fraction), 1)
+      self.time_steps[env_ids] = torch.randint(
+        0, window, (len(env_ids),), device=device
+      )
+      return
+    clip_ids = self._sample_clip_ids(len(env_ids))
+    span = (ends - starts).clamp(min=1)
+    window = (span.float() * fraction).long().clamp(min=1)
+    draw = torch.rand(len(env_ids), device=device)
+    self.time_steps[env_ids] = starts[clip_ids] + (draw * window[clip_ids].float()).long()
+
   def _uniform_sampling(self, env_ids: torch.Tensor):
     ends = self.motion.clip_ends
     starts = self.motion.clip_starts
@@ -395,13 +478,32 @@ class MotionCommand(CommandTerm):
         0, self.motion.time_step_total, (len(env_ids),), device=self.device
       )
     else:
-      clip_ids = torch.randint(0, ends.numel(), (len(env_ids),), device=self.device)
+      clip_ids = self._sample_clip_ids(len(env_ids))
       span = (ends - starts).clamp(min=1)
       draw = torch.rand(len(env_ids), device=self.device)
       self.time_steps[env_ids] = starts[clip_ids] + (draw * span[clip_ids]).long()
     self.metrics["sampling_entropy"][:] = 1.0  # Maximum entropy for uniform.
     self.metrics["sampling_top1_prob"][:] = 1.0 / self.bin_count
     self.metrics["sampling_top1_bin"][:] = 0.5  # No specific bin preference.
+
+  def _sample_clip_ids(self, count: int) -> torch.Tensor:
+    """Draw clip ids. ``left_clip_prob`` is the chance of a left-foot kick."""
+    ends = self.motion.clip_ends
+    assert ends is not None
+    device = self.time_steps.device
+    n_clips = int(ends.numel())
+    prob = float(getattr(self.cfg, "left_clip_prob", 0.5))
+    feet = getattr(self.motion, "clip_kick_foot", None)
+    if feet is None or prob == 0.5:
+      return torch.randint(0, n_clips, (count,), device=device)
+    left = (feet == 1).nonzero(as_tuple=False).view(-1)
+    right = (feet == 0).nonzero(as_tuple=False).view(-1)
+    if left.numel() == 0 or right.numel() == 0:
+      return torch.randint(0, n_clips, (count,), device=device)
+    choose_left = torch.rand(count, device=device) < prob
+    left_pick = left[torch.randint(0, int(left.numel()), (count,), device=device)]
+    right_pick = right[torch.randint(0, int(right.numel()), (count,), device=device)]
+    return torch.where(choose_left, left_pick, right_pick)
 
   def _write_reference_state_to_sim(
     self,
@@ -427,6 +529,8 @@ class MotionCommand(CommandTerm):
       self.time_steps[env_ids] = self._start_mode_frames(env_ids)
     elif self.cfg.sampling_mode == "uniform":
       self._uniform_sampling(env_ids)
+    elif self.cfg.sampling_mode == "prefix":
+      self._prefix_sampling(env_ids)
     else:
       assert self.cfg.sampling_mode == "adaptive"
       self._adaptive_sampling(env_ids)
@@ -479,6 +583,89 @@ class MotionCommand(CommandTerm):
       joint_pos,
       joint_vel,
     )
+    self._place_ball_at_clip_strike(env_ids)
+
+  def _build_clip_strikes(self) -> torch.Tensor | None:
+    """Estimated ball position of each clip, or None when placement is off."""
+    if not self.cfg.place_ball_at_strike:
+      return None
+    ends = self.motion.clip_ends
+    if ends is None:
+      raise ValueError("place_ball_at_strike requires a motion file with clip_ends")
+    height = self.cfg.strike_height
+    if height is None:
+      height = 0.11
+    starts = torch.cat(
+      [torch.zeros(1, dtype=torch.long, device=ends.device), ends[:-1]]
+    )
+    strikes = []
+    for clip_id, (start, end) in enumerate(zip(starts.tolist(), ends.tolist(), strict=True)):
+      left = (
+        self.motion.clip_kick_foot is not None
+        and int(self.motion.clip_kick_foot[clip_id]) == 1
+      )
+      foot_name = "left_foot_link" if left else self.cfg.strike_body_name
+      foot_index = self.cfg.body_names.index(foot_name)
+      foot = self.motion.body_pos_w[start:end, foot_index]
+      strikes.append(
+        estimate_clip_strike_positions(foot, torch.tensor([end - start]), height)[0]
+      )
+    strikes = torch.stack(strikes)
+    names = self.motion.clip_names or [str(i) for i in range(strikes.shape[0])]
+    for name, strike in zip(names, strikes, strict=True):
+      print(
+        f"[INFO] {name} ball "
+        f"({strike[0]:.2f}, {strike[1]:.2f}, {strike[2]:.2f})"
+      )
+    return strikes
+
+  def _place_ball_at_clip_strike(self, env_ids: torch.Tensor) -> None:
+    """Put the ball on the estimated strike of the clip each env is playing."""
+    if self._clip_strike is None or env_ids.numel() == 0:
+      return
+    name = self.cfg.ball_entity_name
+    if name not in self._env.scene.entities:
+      return
+    ball: Entity = self._env.scene[name]
+    clip_ids = self._clip_index(self.time_steps[env_ids])
+    pose = ball.data.default_root_state[env_ids].clone()
+    pose[:, 0:3] = self._clip_strike[clip_ids] + self._env.scene.env_origins[env_ids]
+    pose[:, 7:13] = 0.0
+    x_half, y_half = self.cfg.strike_pos_noise
+    if x_half or y_half:
+      pose[:, 0] += sample_uniform(-x_half, x_half, (len(env_ids),), device=self.device)
+      pose[:, 1] += sample_uniform(-y_half, y_half, (len(env_ids),), device=self.device)
+    vx_half, vy_half = self.cfg.strike_vel_noise
+    if vx_half or vy_half:
+      pose[:, 7] += sample_uniform(-vx_half, vx_half, (len(env_ids),), device=self.device)
+      pose[:, 8] += sample_uniform(-vy_half, vy_half, (len(env_ids),), device=self.device)
+    ball.write_root_state_to_sim(pose, env_ids=env_ids)
+    reset_kick_shot(self._env, env_ids)
+
+  def _clip_menu_labels(self) -> list[str]:
+    assert self.motion.clip_ends is not None
+    names = self.motion.clip_names or [
+      f"clip {i}" for i in range(int(self.motion.clip_ends.numel()))
+    ]
+    labels = []
+    for i, name in enumerate(names):
+      short = name.removesuffix("_left").removesuffix("_stageii")
+      styles = self.motion.clip_z
+      style_names = self.motion.clip_z_names
+      feet = self.motion.clip_kick_foot
+      foot = ""
+      if feet is not None:
+        foot = " left" if int(feet[i]) == 1 else " right"
+      if styles is not None and style_names is not None:
+        style = style_names[int(torch.argmax(styles[i]))]
+        short = f"{short}{foot} ({style})"
+      labels.append(short)
+    return labels
+
+  def _strike_note(self, clip_id: int) -> str:
+    assert self._clip_strike is not None
+    strike = self._clip_strike[clip_id]
+    return f"Ball ({strike[0]:.2f}, {strike[1]:.2f}, {strike[2]:.2f})"
 
   def update_relative_body_poses(self) -> None:
     """Recompute ``body_pos_relative_w`` and ``body_quat_relative_w``.
@@ -648,6 +835,8 @@ class MotionCommand(CommandTerm):
 
       @scrubber.on_update
       def _(_) -> None:
+        if self._ignore_scrubber:
+          return
         idx = get_env_idx()
         self.time_steps[idx] = int(scrubber.value)
         if on_change is not None:
@@ -663,6 +852,59 @@ class MotionCommand(CommandTerm):
             "CUSTOM",
             {"type": "gui_reset", "all_envs": all_envs_cb.value},
           )
+
+      if self._clip_strike is not None and self.motion.clip_starts is not None:
+        labels = self._clip_menu_labels()
+        clip_menu = server.gui.add_dropdown(
+          "Clip",
+          options=labels,
+          initial_value=labels[0],
+        )
+        strike_note = server.gui.add_markdown(self._strike_note(0))
+        clip_buttons = server.gui.add_button_group(
+          "",
+          options=["Previous", "Next"],
+        )
+
+        def _select_clip(clip_id: int) -> None:
+          assert self.motion.clip_starts is not None
+          count = len(labels)
+          clip_id = clip_id % count
+          frame = int(self.motion.clip_starts[clip_id])
+          self._ignore_scrubber = True
+          self._ignore_clip_menu = True
+          scrubber.value = frame
+          clip_menu.value = labels[clip_id]
+          strike_note.content = self._strike_note(clip_id)
+          self._ignore_scrubber = False
+          self._ignore_clip_menu = False
+          if request_action is not None:
+            request_action(
+              "CUSTOM",
+              {"type": "gui_reset", "all_envs": all_envs_cb.value},
+            )
+
+        @clip_menu.on_update
+        def _(_) -> None:
+          if self._ignore_clip_menu:
+            return
+          _select_clip(labels.index(clip_menu.value))
+
+        @clip_buttons.on_click
+        def _(event) -> None:
+          current = labels.index(clip_menu.value)
+          step = -1 if event.target.value == "Previous" else 1
+          _select_clip(current + step)
+
+        @scrubber.on_update
+        def _sync_clip_note(_) -> None:
+          if self._ignore_scrubber or self.motion.clip_ends is None:
+            return
+          clip_id = int(self._clip_index(torch.tensor([int(scrubber.value)])))
+          self._ignore_clip_menu = True
+          clip_menu.value = labels[clip_id]
+          strike_note.content = self._strike_note(clip_id)
+          self._ignore_clip_menu = False
 
     self._scrubber_handles = (scrubber, all_envs_cb, start_btn)
     self._set_scrubber_disabled(True)
@@ -700,6 +942,7 @@ class MotionCommand(CommandTerm):
       self.joint_pos[env_ids],
       self.joint_vel[env_ids],
     )
+    self._place_ball_at_clip_strike(env_ids)
 
 
 @dataclass(kw_only=True)
@@ -715,7 +958,19 @@ class MotionCommandCfg(CommandTermCfg):
   adaptive_lambda: float = 0.8
   adaptive_uniform_ratio: float = 0.1
   adaptive_alpha: float = 0.001
-  sampling_mode: Literal["adaptive", "uniform", "start"] = "adaptive"
+  sampling_mode: Literal["adaptive", "uniform", "start", "prefix"] = "adaptive"
+  # Fraction of each clip used by ``sampling_mode="prefix"``.
+  start_fraction: float = 0.05
+  # Chance a sampled clip swings the left foot. 0.5 keeps the two feet equal.
+  left_clip_prob: float = 0.5
+  # Reset the ball onto each clip's estimated right-foot strike.
+  place_ball_at_strike: bool = False
+  strike_body_name: str = "right_foot_link"
+  ball_entity_name: str = "ball"
+  strike_height: float | None = None
+  # Half-width of the uniform jitter added on top of the strike. Zero is exact.
+  strike_pos_noise: tuple[float, float] = (0.0, 0.0)
+  strike_vel_noise: tuple[float, float] = (0.0, 0.0)
 
   @dataclass
   class VizCfg:

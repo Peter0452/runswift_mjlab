@@ -166,6 +166,24 @@ def no_fly(
   return torch.all(foot_z > height, dim=-1).float()
 
 
+def base_height_too_low(
+  env: ManagerBasedRlEnv,
+  command_name: str,
+  threshold: float = 0.48,
+) -> torch.Tensor:
+  """Meters the trunk is below ``threshold``, unless that is the clip height.
+
+  The floor is the reference trunk height when the clip itself is under
+  ``threshold``. Matching the clip pays nothing.
+  """
+  command = cast(MotionCommand, env.command_manager.get_term(command_name))
+  origin_z = env.scene.env_origins[:, 2]
+  robot_z = command.robot_anchor_pos_w[:, 2] - origin_z
+  reference_z = command.anchor_pos_w[:, 2] - origin_z
+  floor = torch.minimum(reference_z, robot_z.new_full(robot_z.shape, threshold))
+  return torch.clamp(floor - robot_z, min=0.0)
+
+
 def ee_body_pos_fall_penalty(
   env: ManagerBasedRlEnv,
   command_name: str,

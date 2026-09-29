@@ -5,8 +5,10 @@ the tracking control rate (50 Hz) and stored in one file. ``clip_ends`` marks
 where each kick stops so training samples a trajectory, then a frame inside it,
 instead of walking from the end of one kick into the start of the next.
 
-``10_04`` is a straight walk and is left out. ``clip_z`` is a 3-way one-hot
-style for the kick being tracked:
+``10_04`` is a straight walk and is left out. Each right-foot clip is mirrored
+across the sagittal plane and stored again, so training draws a left-foot and a
+right-foot kick equally often. ``clip_z`` is a 3-way one-hot style for the kick
+being tracked, and it is the same for a clip and its mirror:
 
 - planted: ``10_01``, ``10_02``
 - running: ``10_03``
@@ -99,6 +101,52 @@ def _clip_kinematics(
   }
 
 
+def _mirrored_name(name: str) -> str:
+  """Swap a left/right body or joint name. Unpaired names stay put."""
+  if name.startswith("Left"):
+    return "Right" + name[4:]
+  if name.startswith("left"):
+    return "right" + name[4:]
+  if name.startswith("Right"):
+    return "Left" + name[5:]
+  if name.startswith("right"):
+    return "left" + name[5:]
+  return name
+
+
+def _mirror_joint_sign(name: str) -> float:
+  """Roll and yaw flip under a left-right reflection. Pitch does not."""
+  if name.endswith("_Roll") or name.endswith("_Yaw"):
+    return -1.0
+  return 1.0
+
+
+def mirror_kick_state(
+  joint_names: tuple[str, ...] | list[str],
+  joint_pos: np.ndarray,
+  joint_vel: np.ndarray,
+  root_pos: np.ndarray,
+  root_quat_wxyz: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+  """Reflect a kick through the sagittal plane.
+
+  Verified against forward kinematics: roll and yaw joint angles flip sign,
+  root y flips, and the root quaternion becomes ``(w, -x, y, -z)``.
+  """
+  names = list(joint_names)
+  pair = [_mirrored_name(name) for name in names]
+  index = [names.index(name) for name in pair]
+  sign = np.array([_mirror_joint_sign(name) for name in names], dtype=np.float32)
+  joint_pos_m = joint_pos[:, index] * sign
+  joint_vel_m = joint_vel[:, index] * sign
+  root_pos_m = root_pos.copy()
+  root_pos_m[:, 1] *= -1.0
+  root_quat_m = root_quat_wxyz.copy()
+  root_quat_m[:, 1] *= -1.0
+  root_quat_m[:, 3] *= -1.0
+  return joint_pos_m, joint_vel_m, root_pos_m, root_quat_m
+
+
 def style_one_hot(stem: str) -> np.ndarray:
   """Return the 3-D one-hot style for a kick clip stem."""
   try:
@@ -150,6 +198,7 @@ def convert_kick_clips(
   clip_ends: list[int] = []
   names: list[str] = []
   styles: list[np.ndarray] = []
+  kick_foot: list[int] = []
   cursor = 0
   dt = 1.0 / fps
   for path in clips:
@@ -170,24 +219,35 @@ def convert_kick_clips(
     root_pos = prepared.root_pos.cpu().numpy()
     root_quat_xyzw = prepared.base_quat.cpu().numpy()
     root_quat_wxyz = root_quat_xyzw[:, [3, 0, 1, 2]]
-    parts.append(
-      _clip_kinematics(
-        model,
-        data,
-        body_ids=body_ids,
-        joint_qadr=joint_qadr,
-        joint_pos=joint_pos,
-        joint_vel=joint_vel,
-        root_pos=root_pos,
-        root_quat_wxyz=root_quat_wxyz,
-        dt=dt,
+    style = style_one_hot(path.stem)
+    for foot, pos, vel, root, quat, name in (
+      (0, joint_pos, joint_vel, root_pos, root_quat_wxyz, path.stem),
+      (
+        1,
+        *mirror_kick_state(
+          robot.joint_names, joint_pos, joint_vel, root_pos, root_quat_wxyz
+        ),
+        f"{path.stem}_left",
+      ),
+    ):
+      parts.append(
+        _clip_kinematics(
+          model,
+          data,
+          body_ids=body_ids,
+          joint_qadr=joint_qadr,
+          joint_pos=pos,
+          joint_vel=vel,
+          root_pos=root,
+          root_quat_wxyz=quat,
+          dt=dt,
+        )
       )
-    )
-    part = parts[-1]
-    cursor += part["joint_pos"].shape[0]
-    clip_ends.append(cursor)
-    names.append(path.stem)
-    styles.append(style_one_hot(path.stem))
+      cursor += parts[-1]["joint_pos"].shape[0]
+      clip_ends.append(cursor)
+      names.append(name)
+      styles.append(style)
+      kick_foot.append(foot)
 
   clip_z = np.stack(styles)
   stacked = {
@@ -201,6 +261,7 @@ def convert_kick_clips(
     clip_names=np.array(names),
     clip_z=clip_z,
     clip_z_names=np.array(KICK_STYLES),
+    clip_kick_foot=np.array(kick_foot, dtype=np.int64),
     body_names=np.array(robot.body_names),
     joint_names=np.array(robot.joint_names),
     **stacked,
@@ -210,7 +271,7 @@ def convert_kick_clips(
     print(f"  {name}: {label} {style.astype(int).tolist()}")
   print(
     f"Wrote {stacked['joint_pos'].shape[0]} frames @ {fps:.0f} Hz "
-    f"({len(clips)} clips, {stacked['joint_pos'].shape[1]} DoF, "
+    f"({len(names)} clips, {stacked['joint_pos'].shape[1]} DoF, "
     f"{stacked['body_pos_w'].shape[1]} bodies) to {dst}"
   )
   return dst

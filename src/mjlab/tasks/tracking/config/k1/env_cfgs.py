@@ -8,6 +8,7 @@ can resume the same input.
 """
 
 from mjlab.asset_zoo.props.ball import get_ball_radius, get_ball_spec
+from mjlab.asset_zoo.props.goal import get_goal_spec
 from mjlab.asset_zoo.robots.booster_k1.k1_constants import (
   K1_ACTION_SCALE,
   get_k1_robot_cfg,
@@ -24,6 +25,7 @@ from mjlab.sensor import ContactMatch, ContactSensorCfg
 from mjlab.tasks.kick.mdp.commands import UniformGoalPositionCommandCfg
 from mjlab.tasks.tracking.config.k1.kick_motion import KICK_TRACKING_NPZ
 from mjlab.tasks.tracking.mdp import MotionCommandCfg
+from mjlab.tasks.tracking.mdp.events import place_goal_at_command
 from mjlab.tasks.tracking.mdp.observations import (
   ball_pos_b,
   motion_style_z,
@@ -31,9 +33,23 @@ from mjlab.tasks.tracking.mdp.observations import (
 )
 from mjlab.tasks.tracking.mdp.rewards import (
   action_smoothness,
+  base_height_too_low,
   ee_body_pos_fall_penalty,
   feet_slip,
   no_fly,
+)
+from mjlab.tasks.tracking.mdp.shot_rewards import (
+  ball_contact_orientation,
+  ball_over_line,
+  ball_velocity,
+  error_ball_to_target,
+  penalize_self_contact_feet,
+  penalize_weak_foot_contact,
+  robot_ball_contact,
+  robot_ball_contact_count,
+  robot_com_ball_distance,
+  robot_feet_ball_distance,
+  robot_torso_ball_distance,
 )
 from mjlab.tasks.tracking.tracking_env_cfg import make_tracking_env_cfg
 from mjlab.utils.noise import UniformNoiseCfg as Unoise
@@ -64,6 +80,20 @@ _FEET = ("left_foot_link", "right_foot_link")
 _BALL_POS_HISTORY = 5
 # Static tracking-stage ball, in front of the env origin. Reward stays motion-only.
 _BALL_POS = (0.35, -0.15, get_ball_radius())
+# Target point is straight ahead. Stage 2 scores the ball with a Gaussian of this width.
+_GOAL_DISTANCE = (4.0, 8.0)
+_GOAL_REWARD_STD = 1.0
+
+
+def _ball_foot_sensor(name: str, foot: str) -> ContactSensorCfg:
+  return ContactSensorCfg(
+    name=name,
+    primary=ContactMatch(mode="subtree", pattern=foot, entity="robot"),
+    secondary=ContactMatch(mode="body", pattern="ball", entity="ball"),
+    fields=("found", "force"),
+    reduce="netforce",
+    num_slots=1,
+  )
 
 
 def _with_history(terms: dict[str, ObservationTermCfg], names: tuple[str, ...]) -> None:
@@ -71,7 +101,9 @@ def _with_history(terms: dict[str, ObservationTermCfg], names: tuple[str, ...]) 
     terms[name].history_length = _PROPRIO_HISTORY
 
 
-def booster_k1_kick_tracking_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
+def booster_k1_kick_tracking_env_cfg(
+  play: bool = False, stage: int = 1
+) -> ManagerBasedRlEnvCfg:
   """Create the flat-plane K1 kick tracking configuration."""
   cfg = make_tracking_env_cfg()
   cfg.scene.entities = {
@@ -80,10 +112,20 @@ def booster_k1_kick_tracking_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg
       spec_fn=get_ball_spec,
       init_state=EntityCfg.InitialStateCfg(pos=_BALL_POS),
     ),
+    # Mid frame, 2.40 m × 1.60 m. The mouth is moved onto the goal command
+    # after each reset; this pose is only the pre-reset default.
+    "goal": EntityCfg(
+      spec_fn=get_goal_spec,
+      init_state=EntityCfg.InitialStateCfg(
+        pos=(5.5, 0.0, 0.0),
+        rot=(0.70710678118, 0.0, 0.0, 0.70710678118),
+      ),
+    ),
   }
   cfg.scene.num_envs = 4096
-  cfg.scene.env_spacing = 8.0
-  cfg.sim.nconmax = 64
+  # Farther than the 8 m goal so one env's frame does not reach the next.
+  cfg.scene.env_spacing = 20.0
+  cfg.sim.nconmax = 128
   cfg.sim.njmax = 300
 
   cfg.scene.sensors = (
@@ -121,10 +163,15 @@ def booster_k1_kick_tracking_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg
   motion_cmd.body_names = K1_TRACKED_BODY_NAMES
   motion_cmd.adaptive_kernel_size = 3
   cfg.commands["goal"] = UniformGoalPositionCommandCfg(
-    distance_range=(2.5, 8.5),
-    angle_range=(-1.5708, 1.5708),
+    distance_range=_GOAL_DISTANCE,
+    angle_range=(0.0, 0.0),
     resampling_time_range=(1.0e9, 1.0e9),
     debug_vis=False,
+  )
+  cfg.events["place_goal"] = EventTermCfg(
+    func=place_goal_at_command,
+    mode="post_reset",
+    params={"command_name": "goal", "asset_cfg": SceneEntityCfg("goal")},
   )
   cfg.events["reset_ball"] = EventTermCfg(
     func=reset_root_state_uniform,
@@ -199,6 +246,11 @@ def booster_k1_kick_tracking_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg
     weight=-0.05,
     params={"command_name": "motion", "body_names": _FEET, "height": 0.05},
   )
+  cfg.rewards["base_height"] = RewardTermCfg(
+    func=base_height_too_low,
+    weight=-20.0,
+    params={"command_name": "motion", "threshold": 0.48},
+  )
   cfg.rewards["action_smoothness"] = RewardTermCfg(
     func=action_smoothness, weight=-0.0015
   )
@@ -213,6 +265,11 @@ def booster_k1_kick_tracking_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg
   )
   cfg.viewer.body_name = "Trunk"
 
+  if stage == 2:
+    _apply_kick_stage2(cfg, motion_cmd)
+  elif stage != 1:
+    raise ValueError(f"K1 kick stage must be 1 or 2, got {stage}")
+
   if play:
     cfg.episode_length_s = int(1e9)
     cfg.observations["actor"].enable_corruption = False
@@ -220,5 +277,63 @@ def booster_k1_kick_tracking_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg
     motion_cmd.pose_range = {}
     motion_cmd.velocity_range = {}
     motion_cmd.sampling_mode = "start"
+    motion_cmd.place_ball_at_strike = True
+    motion_cmd.strike_body_name = "right_foot_link"
+    motion_cmd.strike_height = get_ball_radius()
+    motion_cmd.strike_pos_noise = (0.0, 0.0)
+    motion_cmd.strike_vel_noise = (0.0, 0.0)
+    cfg.events["reset_ball"].params["pose_range"] = {}
 
   return cfg
+
+
+def _apply_kick_stage2(cfg: ManagerBasedRlEnvCfg, motion_cmd: MotionCommandCfg) -> None:
+  """Static ball on the clip strike, kick rewards, looser failure limits."""
+  motion_cmd.sampling_mode = "prefix"
+  motion_cmd.start_fraction = 0.05
+  motion_cmd.left_clip_prob = 0.6
+  motion_cmd.place_ball_at_strike = True
+  motion_cmd.strike_body_name = "right_foot_link"
+  motion_cmd.strike_height = get_ball_radius()
+  motion_cmd.strike_pos_noise = (0.1, 0.1)
+  motion_cmd.strike_vel_noise = (0.05, 0.05)
+  cfg.events["reset_ball"].params["pose_range"] = {}
+  cfg.rewards["motion_global_root_pos"].weight = 1.0
+  cfg.terminations["anchor_pos"].params["threshold"] = 0.5
+  cfg.terminations["ee_body_pos"].params["threshold"] = 0.35
+  cfg.scene.sensors = (
+    *cfg.scene.sensors,
+    _ball_foot_sensor("ball_foot_contact", "right_foot_link"),
+    _ball_foot_sensor("ball_left_foot_contact", "left_foot_link"),
+  )
+  cfg.rewards["error_ball_to_target"] = RewardTermCfg(
+    func=error_ball_to_target, weight=8.0, params={"std": _GOAL_REWARD_STD}
+  )
+  cfg.rewards["ball_contact_orientation"] = RewardTermCfg(
+    func=ball_contact_orientation, weight=1.7
+  )
+  cfg.rewards["robot_feet_ball_distance"] = RewardTermCfg(
+    func=robot_feet_ball_distance, weight=0.8, params={"std": 0.5}
+  )
+  cfg.rewards["robot_com_ball_distance"] = RewardTermCfg(
+    func=robot_com_ball_distance, weight=0.8, params={"std": 0.5}
+  )
+  cfg.rewards["robot_torso_ball_distance"] = RewardTermCfg(
+    func=robot_torso_ball_distance, weight=0.8, params={"std": 0.5}
+  )
+  cfg.rewards["robot_ball_contact"] = RewardTermCfg(
+    func=robot_ball_contact, weight=0.8
+  )
+  cfg.rewards["robot_ball_contact_count"] = RewardTermCfg(
+    func=robot_ball_contact_count, weight=0.8
+  )
+  cfg.rewards["ball_velocity"] = RewardTermCfg(
+    func=ball_velocity, weight=0.45, params={"std": 1.0}
+  )
+  cfg.rewards["ball_over_line"] = RewardTermCfg(func=ball_over_line, weight=0.4)
+  cfg.rewards["penalize_weak_foot_contact"] = RewardTermCfg(
+    func=penalize_weak_foot_contact, weight=-0.4
+  )
+  cfg.rewards["penalize_self_contact_feet"] = RewardTermCfg(
+    func=penalize_self_contact_feet, weight=-0.16
+  )
