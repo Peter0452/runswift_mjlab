@@ -7,14 +7,26 @@ Ball and target positions are in the observation so a later shooting stage
 can resume the same input.
 """
 
+from dataclasses import replace
+
 from mjlab.asset_zoo.props.ball import get_ball_radius, get_ball_spec
 from mjlab.asset_zoo.props.goal import get_goal_spec
 from mjlab.asset_zoo.robots.booster_k1.k1_constants import (
   K1_ACTION_SCALE,
   get_k1_robot_cfg,
 )
-from mjlab.entity import EntityCfg
+from mjlab.asset_zoo.robots.booster_k1.k1_whirlwind_constants import (
+  ACTUATOR_E4310,
+  ACTUATOR_E4315,
+  ACTUATOR_E6408,
+  ACTUATOR_E6416,
+  ACTUATOR_HT4438,
+  ACTUATOR_K1_ANKLE,
+  ACTUATOR_R14,
+)
+from mjlab.entity import EntityArticulationInfoCfg, EntityCfg
 from mjlab.envs import ManagerBasedRlEnvCfg
+from mjlab.envs.mdp import dr
 from mjlab.envs.mdp.actions import JointPositionActionCfg
 from mjlab.envs.mdp.events import reset_root_state_uniform
 from mjlab.managers.event_manager import EventTermCfg
@@ -37,6 +49,7 @@ from mjlab.tasks.tracking.mdp.rewards import (
   ee_body_pos_fall_penalty,
   feet_slip,
   no_fly,
+  stand_joint_pose,
 )
 from mjlab.tasks.tracking.mdp.shot_rewards import (
   ball_contact_orientation,
@@ -52,6 +65,7 @@ from mjlab.tasks.tracking.mdp.shot_rewards import (
   robot_torso_ball_distance,
 )
 from mjlab.tasks.tracking.tracking_env_cfg import make_tracking_env_cfg
+from mjlab.tasks.velocity.mdp.amp_terrain_dr import randomize_terrain_contact
 from mjlab.utils.noise import UniformNoiseCfg as Unoise
 
 K1_TRACKED_BODY_NAMES = (
@@ -99,6 +113,114 @@ def _ball_foot_sensor(name: str, foot: str) -> ContactSensorCfg:
 def _with_history(terms: dict[str, ObservationTermCfg], names: tuple[str, ...]) -> None:
   for name in names:
     terms[name].history_length = _PROPRIO_HISTORY
+
+
+# AMP walk startup and push ranges. The kick keeps its clip-aligned spawn pose.
+_AMP_PUSH_RANGE = {
+  "x": (-0.28, 0.28),
+  "y": (-0.28, 0.28),
+  "z": (-0.2, 0.2),
+  "roll": (-0.52, 0.52),
+  "pitch": (-0.52, 0.52),
+  "yaw": (-0.78, 0.78),
+}
+# Peak torque from the AMP walk motors. The kick clip stays flat at that peak.
+_AMP_EFFORT_BY_EXPR = {
+  ".*_Hip_Pitch": ACTUATOR_E6408.effort_limit,
+  ".*_Hip_Roll": ACTUATOR_E4315.effort_limit,
+  ".*_Hip_Yaw": ACTUATOR_E4310.effort_limit,
+  ".*_Knee_Pitch": ACTUATOR_E6416.effort_limit,
+  ".*_Ankle_Pitch": ACTUATOR_K1_ANKLE.effort_limit,
+  ".*_Ankle_Roll": ACTUATOR_K1_ANKLE.effort_limit,
+  ".*_Shoulder_Pitch": ACTUATOR_R14.effort_limit,
+  "Head_Yaw": ACTUATOR_HT4438.effort_limit,
+}
+
+
+_AMP_RESET_VELOCITY = {
+  "x": (-1.0, 1.0),
+  "y": (-1.0, 1.0),
+  "z": (0.01, 0.3),
+  "roll": (-0.1, 0.1),
+  "pitch": (-0.1, 0.1),
+  "yaw": (-0.5, 0.5),
+}
+
+
+def _match_amp_walk_dr(cfg: ManagerBasedRlEnvCfg) -> None:
+  """Use the AMP walk's robot randomization on the kick tracker.
+
+  Friction, encoder bias, PD gains, trunk and limb inertia, ground contact,
+  command delay, push, reset velocity, joint-velocity reset, joint-velocity
+  observation noise, and peak torque match the walk. The torque clip stays
+  flat at that peak. The clip pose offset stays, and the ground stays a plane.
+  """
+  robot = cfg.scene.entities["robot"]
+  articulation = robot.articulation
+  assert articulation is not None
+  robot.articulation = EntityArticulationInfoCfg(
+    actuators=tuple(
+      replace(
+        actuator,
+        delay_min_lag=2,
+        delay_max_lag=8,
+        delay_hold_prob=0.3,
+        effort_limit=_AMP_EFFORT_BY_EXPR[actuator.target_names_expr[0]],
+      )
+      for actuator in articulation.actuators
+    ),
+    soft_joint_pos_limit_factor=articulation.soft_joint_pos_limit_factor,
+  )
+
+  cfg.events.pop("base_com", None)
+  cfg.events["push_robot"].interval_range_s = (1.5, 4.0)
+  cfg.events["push_robot"].params["velocity_range"] = _AMP_PUSH_RANGE
+  cfg.events["encoder_bias"].params["bias_range"] = (-0.015, 0.015)
+  cfg.events["foot_friction"].params["ranges"] = (0.75, 1.25)
+  cfg.events["pd_gains"] = EventTermCfg(
+    mode="startup",
+    func=dr.pd_gains,
+    params={
+      "asset_cfg": SceneEntityCfg("robot", actuator_names=".*"),
+      "operation": "scale",
+      "kp_range": (0.8, 1.2),
+      "kd_range": (0.8, 1.2),
+    },
+  )
+  cfg.events["trunk_inertia"] = EventTermCfg(
+    mode="startup",
+    func=dr.pseudo_inertia,
+    params={
+      "asset_cfg": SceneEntityCfg("robot", body_names=("Trunk",)),
+      "alpha_range": (-0.05, 0.05),
+      "t_range": (-0.05, 0.05),
+    },
+  )
+  cfg.events["limb_inertia"] = EventTermCfg(
+    mode="startup",
+    func=dr.pseudo_inertia,
+    params={
+      "asset_cfg": SceneEntityCfg("robot", body_names=(r"(?!Trunk$).*",)),
+      "alpha_range": (-0.05, 0.05),
+      "t_range": (-0.025, 0.025),
+    },
+  )
+  cfg.events["terrain_contact"] = EventTermCfg(
+    func=randomize_terrain_contact,
+    mode="startup",
+    params={
+      "asset_cfg": SceneEntityCfg("terrain"),
+      "solref_ranges": {0: (0.006, 0.03), 1: (0.95, 1.05)},
+      "solimp_ranges": {0: (0.88, 0.92), 1: (0.94, 0.99), 2: (0.003, 0.01)},
+      "shared_random": True,
+    },
+  )
+
+  motion_cmd = cfg.commands["motion"]
+  assert isinstance(motion_cmd, MotionCommandCfg)
+  motion_cmd.velocity_range = _AMP_RESET_VELOCITY
+  motion_cmd.joint_velocity_range = (-0.1, 0.1)
+  cfg.observations["actor"].terms["joint_vel"].noise = Unoise(n_min=-1.5, n_max=1.5)
 
 
 def booster_k1_kick_tracking_env_cfg(
@@ -229,7 +351,7 @@ def booster_k1_kick_tracking_env_cfg(
   cfg.events["foot_friction"].params[
     "asset_cfg"
   ].geom_names = r"^(left|right)_foot[0-5]_collision$"
-  cfg.events["base_com"].params["asset_cfg"].body_names = ("Trunk",)
+  _match_amp_walk_dr(cfg)
   cfg.terminations["ee_body_pos"].params["body_names"] = _EE_BODIES
   cfg.rewards["feet_slip"] = RewardTermCfg(
     func=feet_slip,
@@ -276,6 +398,7 @@ def booster_k1_kick_tracking_env_cfg(
     cfg.events.pop("push_robot", None)
     motion_cmd.pose_range = {}
     motion_cmd.velocity_range = {}
+    motion_cmd.joint_velocity_range = (0.0, 0.0)
     motion_cmd.sampling_mode = "start"
     motion_cmd.place_ball_at_strike = True
     motion_cmd.strike_body_name = "right_foot_link"
@@ -337,3 +460,29 @@ def _apply_kick_stage2(cfg: ManagerBasedRlEnvCfg, motion_cmd: MotionCommandCfg) 
   cfg.rewards["penalize_self_contact_feet"] = RewardTermCfg(
     func=penalize_self_contact_feet, weight=-0.16
   )
+
+
+def booster_k1_kick_box_env_cfg(*, play: bool = False) -> ManagerBasedRlEnvCfg:
+  """Stage 2 kick, with the ball within 0.5 m of that clip's strike.
+
+  The clip is chosen first. Its estimated strike is the ball center, and x
+  and y are then uniform in ±0.5 m. Rewards match stage 2, plus the stand
+  pose after the ball has gone. Observation size matches stage 2, so a
+  stage-2 checkpoint still loads.
+  """
+  cfg = booster_k1_kick_tracking_env_cfg(play=play, stage=2)
+  motion_cmd = cfg.commands["motion"]
+  assert isinstance(motion_cmd, MotionCommandCfg)
+  motion_cmd.ball_spawn_regions = None
+  motion_cmd.ball_spawn_range = None
+  motion_cmd.strike_pos_noise = (0.5, 0.5)
+  motion_cmd.strike_vel_noise = (0.0, 0.0)
+  motion_cmd.stand_after_kick = True
+  motion_cmd.ball_gone_distance = 1.0
+  motion_cmd.stand_height = 0.5125
+  cfg.rewards["stand_joint_pose"] = RewardTermCfg(
+    func=stand_joint_pose,
+    weight=1.0,
+    params={"command_name": "motion", "std": 0.5},
+  )
+  return cfg

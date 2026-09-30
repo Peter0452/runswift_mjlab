@@ -4,10 +4,12 @@ from mjlab.tasks.velocity.rl.amp_runner import VelocityAmpOnPolicyRunner
 
 from .env_cfgs import (
   booster_k1_amp_flat_env_cfg,
+  booster_k1_amp_kick_handoff_env_cfg,
   booster_k1_amp_rough_env_cfg,
   booster_k1_amp_rough_ft_env_cfg,
 )
 from .rl_cfg import (
+  booster_k1_amp_kick_handoff_runner_cfg,
   booster_k1_amp_ppo_runner_cfg,
   booster_k1_amp_ppo_symmetric_runner_cfg,
 )
@@ -48,3 +50,14 @@ for use_muon in (False, True):
       rl_cfg=rl_cfg,
       runner_cls=VelocityAmpOnPolicyRunner,
     )
+
+_handoff_rl = booster_k1_amp_kick_handoff_runner_cfg()
+register_mjlab_task(
+  task_id="Mjlab-Velocity-Rough-Amp-DA-Muon-Booster-K1-KickHandoff",
+  env_cfg=_with_amp_reset_cfg(booster_k1_amp_kick_handoff_env_cfg(), _handoff_rl),
+  play_env_cfg=_with_amp_reset_cfg(
+    booster_k1_amp_kick_handoff_env_cfg(play=True), _handoff_rl
+  ),
+  rl_cfg=_handoff_rl,
+  runner_cls=VelocityAmpOnPolicyRunner,
+)

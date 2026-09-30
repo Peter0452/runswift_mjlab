@@ -166,6 +166,20 @@ def no_fly(
   return torch.all(foot_z > height, dim=-1).float()
 
 
+def stand_joint_pose(
+  env: ManagerBasedRlEnv,
+  command_name: str,
+  std: float,
+) -> torch.Tensor:
+  """Match the AMP walk stand. Zero until the ball has left and the clip is over."""
+  command = cast(MotionCommand, env.command_manager.get_term(command_name))
+  if not command.cfg.stand_after_kick:
+    return torch.zeros(env.num_envs, device=env.device)
+  error = torch.sum(torch.square(command.robot_joint_pos - command.joint_pos), dim=-1)
+  reward = torch.exp(-error / std**2)
+  return torch.where(command.standing, reward, torch.zeros_like(reward))
+
+
 def base_height_too_low(
   env: ManagerBasedRlEnv,
   command_name: str,

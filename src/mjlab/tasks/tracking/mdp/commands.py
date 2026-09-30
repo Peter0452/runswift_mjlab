@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Literal
 import numpy as np
 import torch
 
+from mjlab.asset_zoo.robots.booster_k1.k1_whirlwind_constants import HOME_KEYFRAME
 from mjlab.managers import CommandTerm, CommandTermCfg
 from mjlab.tasks.tracking.mdp.shot import reset_kick_shot
 from mjlab.utils.lab_api.math import (
@@ -192,6 +193,18 @@ class MotionCommand(CommandTerm):
     self._ghost_model = None
     self._ghost_color = np.array(cfg.viz.ghost_color, dtype=np.float32)
     self._clip_strike = self._build_clip_strikes()
+    self._ball_xy = torch.zeros(self.num_envs, 2, device=self.device)
+    self._ball_xy_set = torch.zeros(self.num_envs, dtype=torch.bool, device=self.device)
+    self._clip_done = torch.zeros(self.num_envs, dtype=torch.bool, device=self.device)
+    self._standing = torch.zeros(self.num_envs, dtype=torch.bool, device=self.device)
+    self._stand_xy = torch.zeros(self.num_envs, 2, device=self.device)
+    self._stand_quat = torch.zeros(self.num_envs, 4, device=self.device)
+    self._stand_quat[:, 0] = 1.0
+    self._stand_joint_pos = torch.tensor(
+      [HOME_KEYFRAME.joint_pos.get(name, 0.0) for name in self.robot.joint_names],
+      dtype=torch.float32,
+      device=self.device,
+    )
     self._ignore_scrubber = False
     self._ignore_clip_menu = False
 
@@ -217,16 +230,29 @@ class MotionCommand(CommandTerm):
     return feet[self._clip_index(self.time_steps)].bool()
 
   @property
+  def standing(self) -> torch.Tensor:
+    """True once the clip is over and the ball has left the robot."""
+    return self._standing
+
+  @property
   def command(self) -> torch.Tensor:
     return torch.cat([self.joint_pos, self.joint_vel], dim=1)
 
   @property
   def joint_pos(self) -> torch.Tensor:
-    return self.motion.joint_pos[self.time_steps]
+    pos = self.motion.joint_pos[self.time_steps]
+    if self.cfg.stand_after_kick and bool(self._standing.any()):
+      pos = pos.clone()
+      pos[self._standing] = self._stand_joint_pos
+    return pos
 
   @property
   def joint_vel(self) -> torch.Tensor:
-    return self.motion.joint_vel[self.time_steps]
+    vel = self.motion.joint_vel[self.time_steps]
+    if self.cfg.stand_after_kick and bool(self._clip_done.any()):
+      vel = vel.clone()
+      vel[self._clip_done] = 0.0
+    return vel
 
   @property
   def body_pos_w(self) -> torch.Tensor:
@@ -240,22 +266,41 @@ class MotionCommand(CommandTerm):
 
   @property
   def body_lin_vel_w(self) -> torch.Tensor:
-    return self.motion.body_lin_vel_w[self.time_steps]
+    vel = self.motion.body_lin_vel_w[self.time_steps]
+    if self.cfg.stand_after_kick and bool(self._clip_done.any()):
+      vel = vel.clone()
+      vel[self._clip_done] = 0.0
+    return vel
 
   @property
   def body_ang_vel_w(self) -> torch.Tensor:
-    return self.motion.body_ang_vel_w[self.time_steps]
+    vel = self.motion.body_ang_vel_w[self.time_steps]
+    if self.cfg.stand_after_kick and bool(self._clip_done.any()):
+      vel = vel.clone()
+      vel[self._clip_done] = 0.0
+    return vel
 
   @property
   def anchor_pos_w(self) -> torch.Tensor:
-    return (
+    pos = (
       self.motion.body_pos_w[self.time_steps, self.motion_anchor_body_index]
       + self._env.scene.env_origins
     )
+    if self.cfg.stand_after_kick and bool(self._standing.any()):
+      pos = pos.clone()
+      pos[self._standing, 0:2] = self._stand_xy[self._standing]
+      pos[self._standing, 2] = (
+        self.cfg.stand_height + self._env.scene.env_origins[self._standing, 2]
+      )
+    return pos
 
   @property
   def anchor_quat_w(self) -> torch.Tensor:
-    return self.motion.body_quat_w[self.time_steps, self.motion_anchor_body_index]
+    quat = self.motion.body_quat_w[self.time_steps, self.motion_anchor_body_index]
+    if self.cfg.stand_after_kick and bool(self._standing.any()):
+      quat = quat.clone()
+      quat[self._standing] = self._stand_quat[self._standing]
+    return quat
 
   @property
   def anchor_lin_vel_w(self) -> torch.Tensor:
@@ -465,10 +510,170 @@ class MotionCommand(CommandTerm):
       )
       return
     clip_ids = self._sample_clip_ids(len(env_ids))
+    self.time_steps[env_ids] = self._frames_in_clip_prefix(clip_ids)
+
+  def _frames_in_clip_prefix(self, clip_ids: torch.Tensor) -> torch.Tensor:
+    """A frame in the first ``start_fraction`` of each given clip."""
+    ends = self.motion.clip_ends
+    starts = self.motion.clip_starts
+    assert ends is not None and starts is not None
+    fraction = float(self.cfg.start_fraction)
     span = (ends - starts).clamp(min=1)
     window = (span.float() * fraction).long().clamp(min=1)
-    draw = torch.rand(len(env_ids), device=device)
-    self.time_steps[env_ids] = starts[clip_ids] + (draw * window[clip_ids].float()).long()
+    draw = torch.rand(clip_ids.shape[0], device=clip_ids.device)
+    return starts[clip_ids] + (draw * window[clip_ids].float()).long()
+
+  def _ball_box_active(self) -> bool:
+    return (
+      self.cfg.ball_spawn_range is not None or self.cfg.ball_spawn_regions is not None
+    )
+
+  def _set_box_kick(self, env_ids: torch.Tensor) -> None:
+    """Spawn the ball in range and play a clip that can reach it.
+
+    With ``ball_spawn_regions``, planted clips use the near box and running
+    or moving clips use the far box. ``y >= 0`` is a left-foot clip. Play mode
+    already chose the clip, so the ball is drawn inside that clip's box.
+    """
+    if self.cfg.ball_spawn_regions is not None:
+      self._set_region_kick(env_ids)
+      return
+    if self.cfg.sampling_mode == "start":
+      self.time_steps[env_ids] = self._start_mode_frames(env_ids)
+      feet = self._feet_at(self.time_steps[env_ids])
+      self._ball_xy[env_ids] = self._sample_box_xy(len(env_ids), feet)
+    else:
+      xy = self._sample_box_xy(len(env_ids), None)
+      self._ball_xy[env_ids] = xy
+      feet = (xy[:, 1] >= 0).long()
+      clip_ids = self._clip_ids_for_feet(feet)
+      self.time_steps[env_ids] = self._frames_in_clip_prefix(clip_ids)
+    self._ball_xy_set[env_ids] = True
+
+  def _set_region_kick(self, env_ids: torch.Tensor) -> None:
+    """Ball in a style's reach, then a clip of that style and foot."""
+    count = len(env_ids)
+    device = self.time_steps.device
+    if self.cfg.sampling_mode == "start":
+      self.time_steps[env_ids] = self._start_mode_frames(env_ids)
+      frames = self.time_steps[env_ids]
+      feet = self._feet_at(frames)
+      planted = self._planted_at(frames)
+    else:
+      planted = torch.rand(count, device=device) < 0.5
+      feet = torch.randint(0, 2, (count,), device=device)
+      clip_ids = self._clip_ids_for_region(feet, planted)
+      self.time_steps[env_ids] = self._frames_in_clip_prefix(clip_ids)
+    self._ball_xy[env_ids] = self._sample_region_xy(planted, feet)
+    self._ball_xy_set[env_ids] = True
+
+  def _feet_at(self, frames: torch.Tensor) -> torch.Tensor:
+    """1 for a left-foot clip, 0 for a right-foot clip."""
+    feet = getattr(self.motion, "clip_kick_foot", None)
+    if feet is None:
+      return torch.zeros(frames.shape[0], dtype=torch.long, device=frames.device)
+    return feet[self._clip_index(frames)].long()
+
+  def _clip_planted_mask(self) -> torch.Tensor:
+    """True for clips whose style one-hot is planted."""
+    ends = self.motion.clip_ends
+    assert ends is not None
+    n_clips = int(ends.numel())
+    styles = getattr(self.motion, "clip_z", None)
+    names = getattr(self.motion, "clip_z_names", None)
+    if styles is None or names is None or "planted" not in names:
+      return torch.ones(n_clips, dtype=torch.bool, device=self.time_steps.device)
+    index = names.index("planted")
+    return styles[:, index] > 0.5
+
+  def _planted_at(self, frames: torch.Tensor) -> torch.Tensor:
+    return self._clip_planted_mask()[self._clip_index(frames)]
+
+  def _clip_ids_for_region(
+    self, feet: torch.Tensor, planted: torch.Tensor
+  ) -> torch.Tensor:
+    """Uniform clip of the requested foot and style. Planted is one reach."""
+    ends = self.motion.clip_ends
+    assert ends is not None
+    n_clips = int(ends.numel())
+    recorded = getattr(self.motion, "clip_kick_foot", None)
+    if recorded is None:
+      return torch.randint(0, n_clips, (feet.shape[0],), device=feet.device)
+    clip_planted = self._clip_planted_mask()
+    valid = (feet[:, None] == recorded[None, :]) & (
+      planted[:, None] == clip_planted[None, :]
+    )
+    empty = ~valid.any(dim=-1)
+    if bool(empty.any()):
+      valid = valid.clone()
+      valid[empty] = feet[empty, None] == recorded[None, :]
+    probs = valid.float()
+    probs = probs / probs.sum(dim=-1, keepdim=True)
+    return torch.multinomial(probs, 1).squeeze(-1)
+
+  def _sample_region_xy(
+    self, planted: torch.Tensor, feet: torch.Tensor
+  ) -> torch.Tensor:
+    """Ball xy inside the planted box or the running/moving box."""
+    regions = self.cfg.ball_spawn_regions
+    assert regions is not None
+    device = planted.device
+    xy = torch.empty(planted.shape[0], 2, device=device)
+    for is_planted, key in ((True, "planted"), (False, "reach")):
+      mask = planted if is_planted else ~planted
+      if not bool(mask.any()):
+        continue
+      (x_lo, x_hi), (y_lo, y_hi) = regions[key]
+      count = int(mask.sum())
+      xy[mask, 0] = sample_uniform(x_lo, x_hi, (count,), device=device)
+      magnitude = sample_uniform(y_lo, y_hi, (count,), device=device)
+      sign = torch.where(
+        feet[mask] == 1,
+        torch.ones(count, device=device),
+        -torch.ones(count, device=device),
+      )
+      xy[mask, 1] = magnitude * sign
+    return xy
+
+  def _clip_ids_for_feet(self, feet: torch.Tensor) -> torch.Tensor:
+    """Uniform clip among those that swing the requested foot."""
+    ends = self.motion.clip_ends
+    assert ends is not None
+    device = feet.device
+    n_clips = int(ends.numel())
+    recorded = getattr(self.motion, "clip_kick_foot", None)
+    if recorded is None:
+      return torch.randint(0, n_clips, (feet.shape[0],), device=device)
+    left = (recorded == 1).nonzero(as_tuple=False).view(-1)
+    right = (recorded == 0).nonzero(as_tuple=False).view(-1)
+    if left.numel() == 0 or right.numel() == 0:
+      return torch.randint(0, n_clips, (feet.shape[0],), device=device)
+    choose_left = feet == 1
+    left_pick = left[torch.randint(0, int(left.numel()), (feet.shape[0],), device=device)]
+    right_pick = right[torch.randint(0, int(right.numel()), (feet.shape[0],), device=device)]
+    return torch.where(choose_left, left_pick, right_pick)
+
+  def _sample_box_xy(
+    self, count: int, feet: torch.Tensor | None
+  ) -> torch.Tensor:
+    """Ball xy in the motion frame. ``feet`` restricts y to that foot's half."""
+    (x_lo, x_hi), (y_lo, y_hi) = self.cfg.ball_spawn_range
+    assert self.cfg.ball_spawn_range is not None
+    device = self.time_steps.device
+    xy = torch.empty(count, 2, device=device)
+    xy[:, 0] = sample_uniform(x_lo, x_hi, (count,), device=device)
+    if feet is None:
+      xy[:, 1] = sample_uniform(y_lo, y_hi, (count,), device=device)
+      return xy
+    left = feet == 1
+    y_mid = 0.0
+    left_lo, left_hi = max(y_lo, y_mid), y_hi
+    right_lo, right_hi = y_lo, min(y_hi, y_mid)
+    if left.any():
+      xy[left, 1] = sample_uniform(left_lo, left_hi, (int(left.sum()),), device=device)
+    if (~left).any():
+      xy[~left, 1] = sample_uniform(right_lo, right_hi, (int((~left).sum()),), device=device)
+    return xy
 
   def _uniform_sampling(self, env_ids: torch.Tensor):
     ends = self.motion.clip_ends
@@ -525,7 +730,12 @@ class MotionCommand(CommandTerm):
     self.robot.reset(env_ids=env_ids)
 
   def _resample_command(self, env_ids: torch.Tensor):
-    if self.cfg.sampling_mode == "start":
+    if self.cfg.stand_after_kick:
+      self._clip_done[env_ids] = False
+      self._standing[env_ids] = False
+    if self._ball_box_active():
+      self._set_box_kick(env_ids)
+    elif self.cfg.sampling_mode == "start":
       self.time_steps[env_ids] = self._start_mode_frames(env_ids)
     elif self.cfg.sampling_mode == "uniform":
       self._uniform_sampling(env_ids)
@@ -565,13 +775,19 @@ class MotionCommand(CommandTerm):
     root_ang_vel += rand_samples[:, 3:]
 
     joint_pos = self.joint_pos[env_ids].clone()
-    joint_vel = self.joint_vel[env_ids]
+    joint_vel = self.joint_vel[env_ids].clone()
 
     joint_pos += sample_uniform(
       lower=self.cfg.joint_position_range[0],
       upper=self.cfg.joint_position_range[1],
       size=joint_pos.shape,
       device=joint_pos.device,  # type: ignore
+    )
+    joint_vel += sample_uniform(
+      lower=self.cfg.joint_velocity_range[0],
+      upper=self.cfg.joint_velocity_range[1],
+      size=joint_vel.shape,
+      device=joint_vel.device,  # type: ignore
     )
 
     self._write_reference_state_to_sim(
@@ -621,7 +837,9 @@ class MotionCommand(CommandTerm):
 
   def _place_ball_at_clip_strike(self, env_ids: torch.Tensor) -> None:
     """Put the ball on the estimated strike of the clip each env is playing."""
-    if self._clip_strike is None or env_ids.numel() == 0:
+    if env_ids.numel() == 0:
+      return
+    if not self._ball_box_active() and self._clip_strike is None:
       return
     name = self.cfg.ball_entity_name
     if name not in self._env.scene.entities:
@@ -629,7 +847,29 @@ class MotionCommand(CommandTerm):
     ball: Entity = self._env.scene[name]
     clip_ids = self._clip_index(self.time_steps[env_ids])
     pose = ball.data.default_root_state[env_ids].clone()
-    pose[:, 0:3] = self._clip_strike[clip_ids] + self._env.scene.env_origins[env_ids]
+    origin = self._env.scene.env_origins[env_ids]
+    if self._ball_box_active():
+      missing = ~self._ball_xy_set[env_ids]
+      if bool(missing.any()):
+        sub = env_ids[missing]
+        frames = self.time_steps[sub]
+        if self.cfg.ball_spawn_regions is not None:
+          self._ball_xy[sub] = self._sample_region_xy(
+            self._planted_at(frames), self._feet_at(frames)
+          )
+        else:
+          self._ball_xy[sub] = self._sample_box_xy(len(sub), self._feet_at(frames))
+        self._ball_xy_set[sub] = True
+      height = self.cfg.strike_height if self.cfg.strike_height is not None else 0.11
+      pose[:, 0] = self._ball_xy[env_ids, 0] + origin[:, 0]
+      pose[:, 1] = self._ball_xy[env_ids, 1] + origin[:, 1]
+      pose[:, 2] = height + origin[:, 2]
+      pose[:, 7:13] = 0.0
+      self._ball_xy_set[env_ids] = False
+      ball.write_root_state_to_sim(pose, env_ids=env_ids)
+      reset_kick_shot(self._env, env_ids)
+      return
+    pose[:, 0:3] = self._clip_strike[clip_ids] + origin
     pose[:, 7:13] = 0.0
     x_half, y_half = self.cfg.strike_pos_noise
     if x_half or y_half:
@@ -696,6 +936,11 @@ class MotionCommand(CommandTerm):
     self.body_pos_relative_w = delta_pos_w + quat_apply(
       delta_ori_w, self.body_pos_w - anchor_pos_w_repeat
     )
+    if self.cfg.stand_after_kick and bool(self._standing.any()):
+      # Body tracking would keep pulling toward the kick. The stand target is
+      # the joint command and the upright anchor, so drop that pull.
+      self.body_pos_relative_w[self._standing] = self.robot_body_pos_w[self._standing]
+      self.body_quat_relative_w[self._standing] = self.robot_body_quat_w[self._standing]
 
   def _envs_leaving_motion(self) -> torch.Tensor:
     """Envs whose clock just stepped off the current clip.
@@ -711,15 +956,37 @@ class MotionCommand(CommandTerm):
     at_clip_end = torch.isin(self.time_steps, clip_ends)
     return torch.where(past_end | at_clip_end)[0]
 
+  def _ball_is_gone(self) -> torch.Tensor:
+    """Ball planar distance from the trunk is past ``ball_gone_distance``."""
+    ball: Entity = self._env.scene[self.cfg.ball_entity_name]
+    delta = ball.data.root_link_pos_w[:, :2] - self.robot_anchor_pos_w[:, :2]
+    return torch.linalg.norm(delta, dim=-1) > self.cfg.ball_gone_distance
+
+  def _latch_stand(self, env_ids: torch.Tensor) -> None:
+    """Stand where the robot is, upright, in the AMP walk pose."""
+    self._standing[env_ids] = True
+    self._stand_xy[env_ids] = self.robot_anchor_pos_w[env_ids, :2]
+    self._stand_quat[env_ids] = yaw_quat(self.robot_anchor_quat_w[env_ids])
+
   def _update_command(self):
-    self.time_steps += 1
-    env_ids = self._envs_leaving_motion()
-    if env_ids.numel() > 0:
-      self._resample_command(env_ids)
-      # _resample_command writes qpos/qvel but does not refresh derived
-      # quantities; forward() so update_relative_body_poses reads the
-      # post-teleport robot anchor instead of the stale pre-resample pose.
-      self._env.sim.forward()
+    if self.cfg.stand_after_kick:
+      self.time_steps[~self._clip_done] += 1
+      finished = self._envs_leaving_motion()
+      if finished.numel() > 0:
+        self._clip_done[finished] = True
+        self.time_steps[finished] = (self.time_steps[finished] - 1).clamp(min=0)
+      enter = self._clip_done & ~self._standing & self._ball_is_gone()
+      if bool(enter.any()):
+        self._latch_stand(enter.nonzero(as_tuple=False).view(-1))
+    else:
+      self.time_steps += 1
+      env_ids = self._envs_leaving_motion()
+      if env_ids.numel() > 0:
+        self._resample_command(env_ids)
+        # _resample_command writes qpos/qvel but does not refresh derived
+        # quantities; forward() so update_relative_body_poses reads the
+        # post-teleport robot anchor instead of the stale pre-resample pose.
+        self._env.sim.forward()
 
     self.update_relative_body_poses()
 
@@ -933,6 +1200,9 @@ class MotionCommand(CommandTerm):
     perturbations to pose, velocity, or joint positions.
     """
     self.time_steps[env_ids] = frame
+    if self.cfg.stand_after_kick:
+      self._clip_done[env_ids] = False
+      self._standing[env_ids] = False
     self._write_reference_state_to_sim(
       env_ids,
       self.body_pos_w[env_ids, 0],
@@ -954,6 +1224,7 @@ class MotionCommandCfg(CommandTermCfg):
   pose_range: dict[str, tuple[float, float]] = field(default_factory=dict)
   velocity_range: dict[str, tuple[float, float]] = field(default_factory=dict)
   joint_position_range: tuple[float, float] = (-0.52, 0.52)
+  joint_velocity_range: tuple[float, float] = (0.0, 0.0)
   adaptive_kernel_size: int = 1
   adaptive_lambda: float = 0.8
   adaptive_uniform_ratio: float = 0.1
@@ -965,6 +1236,20 @@ class MotionCommandCfg(CommandTermCfg):
   left_clip_prob: float = 0.5
   # Reset the ball onto each clip's estimated right-foot strike.
   place_ball_at_strike: bool = False
+  # When set, ((x_lo, x_hi), (y_lo, y_hi)) replaces the strike. The clip foot
+  # matches the ball side: y >= 0 is a left-foot kick.
+  ball_spawn_range: tuple[tuple[float, float], tuple[float, float]] | None = None
+  # Style reaches that replace ``ball_spawn_range``. Each value is
+  # ((x_lo, x_hi), (|y|_lo, |y|_hi)). "planted" is the planted clips.
+  # "reach" is the running and moving clips. The sign of y is the foot.
+  ball_spawn_regions: (
+    dict[str, tuple[tuple[float, float], tuple[float, float]]] | None
+  ) = None
+  # After the clip, once the ball is this far from the trunk, track the AMP
+  # walk stand instead of starting another kick.
+  stand_after_kick: bool = False
+  ball_gone_distance: float = 1.0
+  stand_height: float = 0.5125
   strike_body_name: str = "right_foot_link"
   ball_entity_name: str = "ball"
   strike_height: float | None = None

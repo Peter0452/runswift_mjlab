@@ -108,6 +108,16 @@ def booster_k1_amp_ppo_runner_cfg(use_muon: bool = False) -> AmpOnPolicyRunnerCf
   )
 
 
+def booster_k1_amp_kick_handoff_runner_cfg() -> AmpOnPolicyRunnerCfg:
+  """Short warm-start fine-tune of the rough AMP walk on kick handoffs."""
+  cfg = booster_k1_amp_ppo_symmetric_runner_cfg(use_muon=True)
+  cfg.algorithm.learning_rate = 2.0e-4
+  cfg.max_iterations = 12_000
+  cfg.experiment_name = "k1_velocity_amp_symmetric_muon_wwcmu50_roughft"
+  cfg.run_name = "kickhandoff"
+  return cfg
+
+
 def booster_k1_amp_ppo_symmetric_runner_cfg(
   use_muon: bool = False,
 ) -> AmpOnPolicyRunnerCfg:

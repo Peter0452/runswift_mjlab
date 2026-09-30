@@ -10,13 +10,14 @@ from mjlab.asset_zoo.robots.booster_k1.whirlwind_sensors import (
 )
 from mjlab.envs import ManagerBasedRlEnvCfg
 from mjlab.envs.mdp.actions import JointPositionActionCfg
+from mjlab.managers.curriculum_manager import CurriculumTermCfg
+from mjlab.managers.event_manager import EventTermCfg
+from mjlab.managers.termination_manager import TerminationTermCfg
 from mjlab.sensor import (
   ContactMatch,
   ContactSensorCfg,
   ObjRef,
 )
-from mjlab.managers.curriculum_manager import CurriculumTermCfg
-from mjlab.managers.termination_manager import TerminationTermCfg
 from mjlab.tasks.velocity import mdp
 from mjlab.tasks.velocity.velocity_amp_env_cfg import make_velocity_env_cfg
 from mjlab.terrains.config import flat, random_rough, wave_terrain
@@ -37,6 +38,13 @@ _AMP_MAX_VEL = {
 }
 # PPO iters → env steps (num_steps_per_env=24).
 _AMP_VEL_WIDEN_STEP = 4000 * 24
+# Kick-handoff FT only: one more widen after the rough-walk ranges.
+_HANDOFF_VEL_WIDEN_STEP = 8000 * 24
+_HANDOFF_LATE_VEL = {
+  "lin_vel_x": (-2.0, 2.5),
+  "lin_vel_y": (-2.0, 2.0),
+  "ang_vel_z": (-1.8, 1.8),
+}
 
 
 def _apply_amp_rough_ft_terrain(cfg: ManagerBasedRlEnvCfg) -> None:
@@ -201,6 +209,31 @@ def booster_k1_amp_rough_ft_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   # Stronger tracking for rough FT (base AMP is 2.25 / 2.0).
   cfg.rewards["track_linear_velocity"].weight = 3.0
   cfg.rewards["track_angular_velocity"].weight = 2.5
+  return cfg
+
+
+def booster_k1_amp_kick_handoff_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
+  """Rough-walk fine-tune. 35% of resets are a live kick, then a small command.
+
+  The other resets stay on the AMP motion pool, so the gait keeps training.
+  After a kick the command is a stand or a twist inside ±0.5, until the
+  normal resampler replaces it.
+  """
+  cfg = booster_k1_amp_rough_ft_env_cfg(play=play)
+  assert cfg.curriculum is not None
+  stages = cfg.curriculum["command_vel"].params["velocity_stages"]
+  stages.append({"step": _HANDOFF_VEL_WIDEN_STEP, **_HANDOFF_LATE_VEL})
+  cfg.events["kick_handoff"] = EventTermCfg(
+    func=mdp.kick_handoff_reset,
+    mode="post_reset",
+    params={
+      "fraction": 0.0 if play else 0.35,
+      "stand_prob": 0.5,
+      "cmd_limit": 0.5,
+      "batch_size": 32,
+      "kick_checkpoints": tuple(str(path) for path in mdp.DEFAULT_KICK_CKPTS),
+    },
+  )
   return cfg
 
 
