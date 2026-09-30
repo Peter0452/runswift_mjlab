@@ -8,9 +8,9 @@ from typing import TYPE_CHECKING, Literal
 import numpy as np
 import torch
 
-from mjlab.asset_zoo.robots.booster_k1.k1_whirlwind_constants import HOME_KEYFRAME
 from mjlab.managers import CommandTerm, CommandTermCfg
 from mjlab.tasks.tracking.mdp.shot import reset_kick_shot
+from mjlab.tasks.tracking.mdp.stand_blend import StandBlendCache, build_stand_blend
 from mjlab.utils.lab_api.math import (
   matrix_from_quat,
   quat_apply,
@@ -200,11 +200,26 @@ class MotionCommand(CommandTerm):
     self._stand_xy = torch.zeros(self.num_envs, 2, device=self.device)
     self._stand_quat = torch.zeros(self.num_envs, 4, device=self.device)
     self._stand_quat[:, 0] = 1.0
-    self._stand_joint_pos = torch.tensor(
-      [HOME_KEYFRAME.joint_pos.get(name, 0.0) for name in self.robot.joint_names],
-      dtype=torch.float32,
-      device=self.device,
+    self._blend_step = torch.zeros(self.num_envs, dtype=torch.long, device=self.device)
+    self._stand_clip = torch.zeros(self.num_envs, dtype=torch.long, device=self.device)
+    n_bodies = len(cfg.body_names)
+    self._blend_joint_pos = torch.zeros(
+      self.num_envs, self.motion.joint_pos.shape[-1], device=self.device
     )
+    self._blend_joint_vel = torch.zeros_like(self._blend_joint_pos)
+    self._blend_body_pos = torch.zeros(self.num_envs, n_bodies, 3, device=self.device)
+    self._blend_body_quat = torch.zeros(self.num_envs, n_bodies, 4, device=self.device)
+    self._blend_body_quat[..., 0] = 1.0
+    self._blend_body_lin_vel = torch.zeros_like(self._blend_body_pos)
+    self._blend_body_ang_vel = torch.zeros_like(self._blend_body_pos)
+    self._stand_cache: StandBlendCache | None = None
+    if cfg.stand_after_kick:
+      self._stand_cache = build_stand_blend(
+        cfg.motion_file,
+        tuple(cfg.body_names),
+        stand_height=cfg.stand_height,
+        device=self.device,
+      )
     self._ignore_scrubber = False
     self._ignore_clip_menu = False
 
@@ -243,7 +258,7 @@ class MotionCommand(CommandTerm):
     pos = self.motion.joint_pos[self.time_steps]
     if self.cfg.stand_after_kick and bool(self._standing.any()):
       pos = pos.clone()
-      pos[self._standing] = self._stand_joint_pos
+      pos[self._standing] = self._blend_joint_pos[self._standing]
     return pos
 
   @property
@@ -251,25 +266,35 @@ class MotionCommand(CommandTerm):
     vel = self.motion.joint_vel[self.time_steps]
     if self.cfg.stand_after_kick and bool(self._clip_done.any()):
       vel = vel.clone()
-      vel[self._clip_done] = 0.0
+      held = self._clip_done & ~self._standing
+      vel[held] = 0.0
+      vel[self._standing] = self._blend_joint_vel[self._standing]
     return vel
 
   @property
   def body_pos_w(self) -> torch.Tensor:
-    return (
-      self.motion.body_pos_w[self.time_steps] + self._env.scene.env_origins[:, None, :]
-    )
+    pos = self.motion.body_pos_w[self.time_steps] + self._env.scene.env_origins[:, None, :]
+    if self.cfg.stand_after_kick and bool(self._standing.any()):
+      pos = pos.clone()
+      pos[self._standing] = self._blend_body_pos[self._standing]
+    return pos
 
   @property
   def body_quat_w(self) -> torch.Tensor:
-    return self.motion.body_quat_w[self.time_steps]
+    quat = self.motion.body_quat_w[self.time_steps]
+    if self.cfg.stand_after_kick and bool(self._standing.any()):
+      quat = quat.clone()
+      quat[self._standing] = self._blend_body_quat[self._standing]
+    return quat
 
   @property
   def body_lin_vel_w(self) -> torch.Tensor:
     vel = self.motion.body_lin_vel_w[self.time_steps]
     if self.cfg.stand_after_kick and bool(self._clip_done.any()):
       vel = vel.clone()
-      vel[self._clip_done] = 0.0
+      held = self._clip_done & ~self._standing
+      vel[held] = 0.0
+      vel[self._standing] = self._blend_body_lin_vel[self._standing]
     return vel
 
   @property
@@ -277,38 +302,26 @@ class MotionCommand(CommandTerm):
     vel = self.motion.body_ang_vel_w[self.time_steps]
     if self.cfg.stand_after_kick and bool(self._clip_done.any()):
       vel = vel.clone()
-      vel[self._clip_done] = 0.0
+      held = self._clip_done & ~self._standing
+      vel[held] = 0.0
+      vel[self._standing] = self._blend_body_ang_vel[self._standing]
     return vel
 
   @property
   def anchor_pos_w(self) -> torch.Tensor:
-    pos = (
-      self.motion.body_pos_w[self.time_steps, self.motion_anchor_body_index]
-      + self._env.scene.env_origins
-    )
-    if self.cfg.stand_after_kick and bool(self._standing.any()):
-      pos = pos.clone()
-      pos[self._standing, 0:2] = self._stand_xy[self._standing]
-      pos[self._standing, 2] = (
-        self.cfg.stand_height + self._env.scene.env_origins[self._standing, 2]
-      )
-    return pos
+    return self.body_pos_w[:, self.motion_anchor_body_index]
 
   @property
   def anchor_quat_w(self) -> torch.Tensor:
-    quat = self.motion.body_quat_w[self.time_steps, self.motion_anchor_body_index]
-    if self.cfg.stand_after_kick and bool(self._standing.any()):
-      quat = quat.clone()
-      quat[self._standing] = self._stand_quat[self._standing]
-    return quat
+    return self.body_quat_w[:, self.motion_anchor_body_index]
 
   @property
   def anchor_lin_vel_w(self) -> torch.Tensor:
-    return self.motion.body_lin_vel_w[self.time_steps, self.motion_anchor_body_index]
+    return self.body_lin_vel_w[:, self.motion_anchor_body_index]
 
   @property
   def anchor_ang_vel_w(self) -> torch.Tensor:
-    return self.motion.body_ang_vel_w[self.time_steps, self.motion_anchor_body_index]
+    return self.body_ang_vel_w[:, self.motion_anchor_body_index]
 
   @property
   def robot_joint_pos(self) -> torch.Tensor:
@@ -936,11 +949,6 @@ class MotionCommand(CommandTerm):
     self.body_pos_relative_w = delta_pos_w + quat_apply(
       delta_ori_w, self.body_pos_w - anchor_pos_w_repeat
     )
-    if self.cfg.stand_after_kick and bool(self._standing.any()):
-      # Body tracking would keep pulling toward the kick. The stand target is
-      # the joint command and the upright anchor, so drop that pull.
-      self.body_pos_relative_w[self._standing] = self.robot_body_pos_w[self._standing]
-      self.body_quat_relative_w[self._standing] = self.robot_body_quat_w[self._standing]
 
   def _envs_leaving_motion(self) -> torch.Tensor:
     """Envs whose clock just stepped off the current clip.
@@ -963,13 +971,32 @@ class MotionCommand(CommandTerm):
     return torch.linalg.norm(delta, dim=-1) > self.cfg.ball_gone_distance
 
   def _latch_stand(self, env_ids: torch.Tensor) -> None:
-    """Stand where the robot is, upright, in the AMP walk pose."""
+    """Start the blend from the last kick frame into the AMP walk pose."""
     self._standing[env_ids] = True
+    self._blend_step[env_ids] = 0
+    self._stand_clip[env_ids] = self._clip_index(self.time_steps[env_ids])
     self._stand_xy[env_ids] = self.robot_anchor_pos_w[env_ids, :2]
     self._stand_quat[env_ids] = yaw_quat(self.robot_anchor_quat_w[env_ids])
 
+  def _fill_stand_reference(self) -> None:
+    """Write the baked blend for envs that are standing."""
+    cache = self._stand_cache
+    if cache is None or not bool(self._standing.any()):
+      return
+    ids = self._standing.nonzero(as_tuple=False).view(-1)
+    clip = self._stand_clip[ids]
+    sample = self._blend_step[ids].clamp(max=cache.steps)
+    origin = self._env.scene.env_origins[ids]
+    self._blend_joint_pos[ids] = cache.joint_pos[clip, sample]
+    self._blend_joint_vel[ids] = cache.joint_vel[clip, sample]
+    self._blend_body_pos[ids] = cache.body_pos[clip, sample] + origin[:, None, :]
+    self._blend_body_quat[ids] = cache.body_quat[clip, sample]
+    self._blend_body_lin_vel[ids] = cache.body_lin_vel[clip, sample]
+    self._blend_body_ang_vel[ids] = cache.body_ang_vel[clip, sample]
+
   def _update_command(self):
     if self.cfg.stand_after_kick:
+      already = self._standing.clone()
       self.time_steps[~self._clip_done] += 1
       finished = self._envs_leaving_motion()
       if finished.numel() > 0:
@@ -978,6 +1005,11 @@ class MotionCommand(CommandTerm):
       enter = self._clip_done & ~self._standing & self._ball_is_gone()
       if bool(enter.any()):
         self._latch_stand(enter.nonzero(as_tuple=False).view(-1))
+      cache = self._stand_cache
+      if cache is not None:
+        moving = already & (self._blend_step < cache.steps)
+        self._blend_step[moving] += 1
+      self._fill_stand_reference()
     else:
       self.time_steps += 1
       env_ids = self._envs_leaving_motion()

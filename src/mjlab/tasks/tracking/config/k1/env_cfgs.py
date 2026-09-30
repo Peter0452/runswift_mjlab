@@ -48,6 +48,8 @@ from mjlab.tasks.tracking.mdp.rewards import (
   base_height_too_low,
   ee_body_pos_fall_penalty,
   feet_slip,
+  foot_sole_penetration,
+  joint_velocity_over_motor,
   no_fly,
   stand_joint_pose,
 )
@@ -376,6 +378,7 @@ def booster_k1_kick_tracking_env_cfg(
   cfg.rewards["action_smoothness"] = RewardTermCfg(
     func=action_smoothness, weight=-0.0015
   )
+  cfg.rewards["motion_global_root_ori"].weight = 0.7
   cfg.rewards["ee_body_pos_fall"] = RewardTermCfg(
     func=ee_body_pos_fall_penalty,
     weight=-100.0,
@@ -466,9 +469,10 @@ def booster_k1_kick_box_env_cfg(*, play: bool = False) -> ManagerBasedRlEnvCfg:
   """Stage 2 kick, with the ball within 0.5 m of that clip's strike.
 
   The clip is chosen first. Its estimated strike is the ball center, and x
-  and y are then uniform in ±0.5 m. Rewards match stage 2, plus the stand
-  pose after the ball has gone. Observation size matches stage 2, so a
-  stage-2 checkpoint still loads.
+  and y are then uniform in ±0.5 m. Rewards match stage 2. After the ball has
+  gone, the reference blends from the last kick frame into the stand over one
+  second, and body tracking stays on that blend. Observation size matches
+  stage 2, so a stage-2 checkpoint still loads.
   """
   cfg = booster_k1_kick_tracking_env_cfg(play=play, stage=2)
   motion_cmd = cfg.commands["motion"]
@@ -484,5 +488,18 @@ def booster_k1_kick_box_env_cfg(*, play: bool = False) -> ManagerBasedRlEnvCfg:
     func=stand_joint_pose,
     weight=1.0,
     params={"command_name": "motion", "std": 0.5},
+  )
+  # Self-collision, joint position limits, slip, and the fall terms already
+  # run for the whole episode. These two cover the recovery: a sole driven
+  # through the floor, and a joint spun past the motor.
+  cfg.rewards["foot_sole_penetration"] = RewardTermCfg(
+    func=foot_sole_penetration,
+    weight=-50.0,
+    params={"command_name": "motion", "body_names": _FEET, "clearance": 0.01},
+  )
+  cfg.rewards["joint_velocity_over_motor"] = RewardTermCfg(
+    func=joint_velocity_over_motor,
+    weight=-0.1,
+    params={"command_name": "motion"},
   )
   return cfg

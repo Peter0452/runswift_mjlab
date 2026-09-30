@@ -1,6 +1,7 @@
 from mjlab.envs.mdp import *  # noqa: F401, F403
 
 from . import walk_params as walk_params  # noqa: F401
+from .approach import *  # noqa: F403
 from .curriculums import *  # noqa: F403
 from .events import *  # noqa: F403
 from .kick_handoff import DEFAULT_KICK_CKPTS as DEFAULT_KICK_CKPTS

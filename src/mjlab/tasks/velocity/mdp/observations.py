@@ -19,6 +19,11 @@ _DEFAULT_ASSET_CFG = SceneEntityCfg("robot")
 _GAIT_STATE: dict[int, dict[str, Any]] = {}
 
 
+def constant_zeros(env: ManagerBasedRlEnv, dim: int) -> torch.Tensor:
+  """Fixed zero command slots. Stage 1 holds these until a later stage fills them."""
+  return torch.zeros(env.num_envs, int(dim), device=env.device)
+
+
 def foot_height(env: ManagerBasedRlEnv, sensor_name: str) -> torch.Tensor:
   """Per-foot vertical clearance above terrain.
 

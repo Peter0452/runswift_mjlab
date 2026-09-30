@@ -8,6 +8,7 @@ from mjlab.sensor import ContactSensor
 from mjlab.utils.lab_api.math import quat_error_magnitude
 
 from .commands import MotionCommand
+from .stand_blend import SOLE_OFFSET, motor_limits
 
 if TYPE_CHECKING:
   from mjlab.envs import ManagerBasedRlEnv
@@ -212,6 +213,42 @@ def ee_body_pos_fall_penalty(
     - command.robot_body_pos_w[:, body_indexes, -1]
   )
   return torch.any(error > threshold, dim=-1).float()
+
+
+def foot_sole_penetration(
+  env: ManagerBasedRlEnv,
+  command_name: str,
+  body_names: tuple[str, ...],
+  clearance: float = 0.01,
+) -> torch.Tensor:
+  """Meters a foot sole is below the ground while recovering to the stand.
+
+  The foot-link origin sits about ``SOLE_OFFSET`` above a flat sole. Active
+  only after the clip, so the kick plant is not punished for the same estimate.
+  """
+  command = cast(MotionCommand, env.command_manager.get_term(command_name))
+  indexes = _get_body_indexes(command, body_names)
+  sole = (
+    command.robot_body_pos_w[:, indexes, 2]
+    - env.scene.env_origins[:, None, 2]
+    - SOLE_OFFSET
+  )
+  depth = torch.clamp(-(sole + clearance), min=0.0).sum(dim=-1)
+  return torch.where(command.standing, depth, torch.zeros_like(depth))
+
+
+def joint_velocity_over_motor(
+  env: ManagerBasedRlEnv,
+  command_name: str,
+) -> torch.Tensor:
+  """Rad/s each joint is past its motor speed limit, during the stand blend."""
+  command = cast(MotionCommand, env.command_manager.get_term(command_name))
+  velocity = command.robot_joint_vel
+  limits = velocity.new_tensor(
+    [motor_limits(name)[3] for name in command.robot.joint_names]
+  )
+  excess = torch.clamp(velocity.abs() - limits, min=0.0).sum(dim=-1)
+  return torch.where(command.standing, excess, torch.zeros_like(excess))
 
 
 def self_collision_cost(

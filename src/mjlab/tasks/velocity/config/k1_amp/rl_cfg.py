@@ -108,6 +108,21 @@ def booster_k1_amp_ppo_runner_cfg(use_muon: bool = False) -> AmpOnPolicyRunnerCf
   )
 
 
+def booster_k1_kick_stage1_runner_cfg() -> AmpOnPolicyRunnerCfg:
+  """Flat DA-Muon walk runner for kick stage 1. Dataset stays the 50/50 mix."""
+  cfg = booster_k1_amp_ppo_symmetric_runner_cfg(use_muon=True)
+  cfg.experiment_name = "k1_kick_stage1_amp"
+  return cfg
+
+
+def booster_k1_kick_approach_runner_cfg() -> AmpOnPolicyRunnerCfg:
+  """Approach stage. Same walk AMP runner, separate log directory."""
+  cfg = booster_k1_kick_stage1_runner_cfg()
+  cfg.experiment_name = "k1_kick_approach_amp"
+  cfg.run_name = "approach"
+  return cfg
+
+
 def booster_k1_amp_kick_handoff_runner_cfg() -> AmpOnPolicyRunnerCfg:
   """Short warm-start fine-tune of the rough AMP walk on kick handoffs."""
   cfg = booster_k1_amp_ppo_symmetric_runner_cfg(use_muon=True)
