@@ -115,7 +115,8 @@ class RewardManager(ManagerBase):
       term_cfg.func.reset(env_ids=env_ids)
     return extras
 
-  def compute(self, dt: float) -> torch.Tensor:
+  def compute(self, dt: float, invalid: torch.Tensor | None = None) -> torch.Tensor:
+    """Sum the weighted terms. Envs in ``invalid`` get zero for every term."""
     self._reward_buf[:] = 0.0
     scale = dt if self._scale_by_dt else 1.0
     for term_idx, (name, term_cfg) in enumerate(
@@ -129,6 +130,9 @@ class RewardManager(ManagerBase):
       value = value * term_cfg.weight * scale
       # NaN/Inf can occur from corrupted physics state; zero them to avoid policy crash.
       value = torch.nan_to_num(value, nan=0.0, posinf=0.0, neginf=0.0)
+      # A blown-up state gives huge finite values too; drop them entirely.
+      if invalid is not None:
+        value = torch.where(invalid, torch.zeros_like(value), value)
       self._reward_buf += value
       self._episode_sums[name] += value
       self._step_reward[:, term_idx] = value / scale

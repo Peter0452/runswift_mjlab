@@ -22,6 +22,10 @@ class TerminationTermCfg(ManagerTermBaseCfg):
   time_out: bool = False
   """Whether the term contributes towards episodic timeouts."""
 
+  invalid_state: bool = False
+  """Whether the physics state is garbage when the term fires (e.g. a sim
+  blow-up). The env zeroes the step reward of those envs."""
+
 
 class TerminationManager(ManagerBase):
   """Manages termination conditions for the environment.
@@ -50,6 +54,7 @@ class TerminationManager(ManagerBase):
       self.num_envs, device=self.device, dtype=torch.bool
     )
     self._terminated_buf = torch.zeros_like(self._truncated_buf)
+    self._invalid_buf = torch.zeros_like(self._truncated_buf)
 
   def __str__(self) -> str:
     msg = f"<TerminationManager> contains {len(self._term_names)} active terms.\n"
@@ -83,6 +88,11 @@ class TerminationManager(ManagerBase):
   def terminated(self) -> torch.Tensor:
     return self._terminated_buf
 
+  @property
+  def invalid_state(self) -> torch.Tensor:
+    """Envs flagged by an ``invalid_state`` term this step."""
+    return self._invalid_buf
+
   # Methods.
 
   def reset(
@@ -102,6 +112,7 @@ class TerminationManager(ManagerBase):
   def compute(self) -> torch.Tensor:
     self._truncated_buf[:] = False
     self._terminated_buf[:] = False
+    self._invalid_buf[:] = False
     for name, term_cfg in zip(self._term_names, self._term_cfgs, strict=False):
       value = term_cfg.func(self._env, **term_cfg.params)
       self._check_term_shape(name, value)
@@ -109,6 +120,8 @@ class TerminationManager(ManagerBase):
         self._truncated_buf |= value
       else:
         self._terminated_buf |= value
+      if term_cfg.invalid_state:
+        self._invalid_buf |= value
       self._term_dones[name][:] = value
     return self._truncated_buf | self._terminated_buf
 

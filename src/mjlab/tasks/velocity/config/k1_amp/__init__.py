@@ -3,12 +3,14 @@ from mjlab.tasks.velocity.config.k1_amp.amp_wrapper import with_amp_obs_group
 from mjlab.tasks.velocity.rl.amp_runner import VelocityAmpOnPolicyRunner
 
 from .env_cfgs import (
+  KICK_STYLE_WEIGHT,
   booster_k1_amp_flat_env_cfg,
   booster_k1_amp_kick_handoff_env_cfg,
   booster_k1_amp_rough_env_cfg,
   booster_k1_amp_rough_ft_env_cfg,
   booster_k1_kick_approach_env_cfg,
   booster_k1_kick_stage1_env_cfg,
+  booster_k1_kick_stage3_env_cfg,
 )
 from .rl_cfg import (
   booster_k1_amp_kick_handoff_runner_cfg,
@@ -16,6 +18,7 @@ from .rl_cfg import (
   booster_k1_amp_ppo_symmetric_runner_cfg,
   booster_k1_kick_approach_runner_cfg,
   booster_k1_kick_stage1_runner_cfg,
+  booster_k1_kick_stage3_runner_cfg,
 )
 
 
@@ -63,6 +66,27 @@ register_mjlab_task(
     booster_k1_kick_approach_env_cfg(play=True), _approach_rl
   ),
   rl_cfg=_approach_rl,
+  runner_cls=VelocityAmpOnPolicyRunner,
+)
+
+
+def _with_kick_style(env_cfg):
+  """The AMP wrapper sets style weight 0.3; the kick stage uses less."""
+  style = env_cfg.curriculum["amp_style_weight"].params
+  style["start_weight"] = style["end_weight"] = KICK_STYLE_WEIGHT
+  return env_cfg
+
+
+_stage3_rl = booster_k1_kick_stage3_runner_cfg()
+register_mjlab_task(
+  task_id="Mjlab-Velocity-Kick-Stage3-Amp-DA-Muon-Booster-K1",
+  env_cfg=_with_kick_style(
+    _with_amp_reset_cfg(booster_k1_kick_stage3_env_cfg(), _stage3_rl)
+  ),
+  play_env_cfg=_with_kick_style(
+    _with_amp_reset_cfg(booster_k1_kick_stage3_env_cfg(play=True), _stage3_rl)
+  ),
+  rl_cfg=_stage3_rl,
   runner_cls=VelocityAmpOnPolicyRunner,
 )
 

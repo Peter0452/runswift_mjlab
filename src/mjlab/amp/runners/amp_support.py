@@ -58,8 +58,14 @@ class AmpRunner:
       ``σ² = 1.0`` by default — style fades when wandering far from the ball
       so walking-style farming requires closing in. After ``kick_detected``,
       scale is 0 so settle is task-only.
+    * A task that sets ``env.amp_style_gate`` ([N] in ``[0, 1]``) owns the
+      gate outright (e.g. style off only around each kick of a multi-kick
+      episode); the latch and proximity gate are skipped.
     """
     env = self.env.unwrapped
+    gate = getattr(env, "amp_style_gate", None)
+    if gate is not None:
+      return gate.to(dtype=torch.float32, device=self.device)
     mask = torch.ones(env.num_envs, device=self.device, dtype=torch.float32)
 
     phase = getattr(env, "_kick_ball_phase", None)
@@ -113,19 +119,25 @@ class AmpRunner:
       next_amp_history = self.alg.process_amp_step(next_amp_obs, dones)
       style_weight = self._compute_style_weight()
       style_mask = self._get_amp_style_mask().view_as(rewards)
+      style_pred = self.alg.predict_style_reward(next_amp_history).view_as(rewards)
+      logged_mask = style_mask
+      if getattr(self.env.unwrapped, "amp_style_gate", None) is not None:
+        # Task-owned gate: gated-off envs get the mean style of the others
+        # instead of none, so stepping into the gate is not a reward drop the
+        # policy learns to avoid.
+        on = style_mask > 0.5
+        fill = style_pred[on].mean() if on.any() else style_pred.mean()
+        style_pred = torch.where(on, style_pred, fill)
+        style_mask = torch.ones_like(style_mask)
       # After kick: full task reward, zero style (stabilisation without AMP).
       active_w = style_weight * style_mask
       task_rewards = (1.0 - active_w) * rewards
-      style_rewards = (
-        active_w
-        * self._compute_style_reward_scale()
-        * self.alg.predict_style_reward(next_amp_history).view_as(rewards)
-      )
+      style_rewards = active_w * self._compute_style_reward_scale() * style_pred
       rewards = task_rewards + style_rewards
       log = extras.setdefault("log", {})
       if isinstance(log, dict):
         # Mean effective style scale (kick gate × proximity); ∈ [0, 1].
-        log["Metrics/amp_style_active"] = style_mask.mean()
+        log["Metrics/amp_style_active"] = logged_mask.mean()
         log["Metrics/amp_style_weight_effective"] = (
           float(style_weight) * style_mask.mean()
         )

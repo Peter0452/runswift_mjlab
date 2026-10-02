@@ -26,9 +26,7 @@ _AMP_SYMMETRY_CFG = {
 # swap this file in (or point here) when widening after ~4k iters.
 # rl_cfg.py → …/runswift_mjlab/src/mjlab/tasks/velocity/config/k1_amp
 # parents[6] = runswift_mjlab, parent of that = Project/RL
-_AMP_MIX_DIR = (
-  Path(__file__).resolve().parents[6].parent / "data" / "amp_mix_ww_cmu"
-)
+_AMP_MIX_DIR = Path(__file__).resolve().parents[6].parent / "data" / "amp_mix_ww_cmu"
 _AMP_MIX_WEIGHTS_FILE = _AMP_MIX_DIR / "dataset_weights.json"
 
 
@@ -120,6 +118,37 @@ def booster_k1_kick_approach_runner_cfg() -> AmpOnPolicyRunnerCfg:
   cfg = booster_k1_kick_stage1_runner_cfg()
   cfg.experiment_name = "k1_kick_approach_amp"
   cfg.run_name = "approach"
+  return cfg
+
+
+KICK_MAX_ACTION_STD = 0.6
+
+
+def booster_k1_kick_stage3_runner_cfg() -> AmpOnPolicyRunnerCfg:
+  """Kick stage. Same walk AMP runner; the task gates style off around kicks."""
+  cfg = booster_k1_kick_stage1_runner_cfg()
+  cfg.experiment_name = "k1_kick_stage3_amp"
+  cfg.run_name = "stage3"
+  # Half the walk's entropy bonus: kick rewards already drive exploration, and
+  # action noise grew unchecked in stage3_v2/v3.
+  cfg.algorithm.entropy_coef = 0.005
+  # Longer horizon (~4 s at 50 Hz instead of ~2 s). With 0.99 a fall cost
+  # only ~24 in discounted value against ~36 for a kick, and every
+  # continuation of v8 drifted toward riskier kicks (falls 2 s after kicks
+  # 37 % → 66 % of all falls).
+  cfg.algorithm.gamma = 0.995
+  # Cap action noise: it grew in every kick run (v3 0.48→1.47, v5 0.82→1.40),
+  # inflating action_rate and falls. v4 kicked well at 0.55–0.7.
+  assert cfg.actor.distribution_cfg is not None
+  cfg.actor.distribution_cfg = dict(
+    cfg.actor.distribution_cfg, std_range=(0.05, KICK_MAX_ACTION_STD)
+  )
+  cfg.algorithm.symmetry_cfg = dict(
+    _AMP_SYMMETRY_CFG,
+    data_augmentation_func=(
+      "mjlab.tasks.velocity.mdp.amp_symmetry:augment_symmetries_kick_loop"
+    ),
+  )
   return cfg
 
 

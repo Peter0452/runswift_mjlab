@@ -190,8 +190,11 @@ def booster_k1_amp_rough_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   assert cfg.curriculum is not None
   assert "command_vel" in cfg.curriculum
 
-  # Reset NaN/Inf physics envs instead of letting check_nan kill the whole run.
-  cfg.terminations["nan_state"] = TerminationTermCfg(func=mdp.nan_detection)
+  # Reset NaN/Inf or blown-up envs instead of letting check_nan kill the run,
+  # and zero their step reward so one diverged sim cannot wreck the critic.
+  cfg.terminations["nan_state"] = TerminationTermCfg(
+    func=mdp.physics_blowup, params={"max_qvel": 200.0}, invalid_state=True
+  )
 
   if play:
     cfg.episode_length_s = int(1e9)
@@ -290,9 +293,7 @@ def _append_kick_stage1_command_slots(cfg: ManagerBasedRlEnvCfg) -> None:
     terms["kick_direction"] = ObservationTermCfg(
       func=mdp.constant_zeros, params={"dim": 2}
     )
-    terms["kick_range"] = ObservationTermCfg(
-      func=mdp.constant_zeros, params={"dim": 3}
-    )
+    terms["kick_range"] = ObservationTermCfg(func=mdp.constant_zeros, params={"dim": 3})
     if group == "critic":
       for key in _KICK_STAGE1_CRITIC_TAIL:
         terms[key] = terms.pop(key)
@@ -351,14 +352,14 @@ def _get_approach_ball_spec() -> mujoco.MjSpec:
 
 
 def _configure_approach_observations(cfg: ManagerBasedRlEnvCfg) -> None:
-  """Replace the zero kick slots. Critic speed-limit carries the true ball."""
+  """Replace the zero kick slots. The critic's command carries the true ball."""
   for group, privileged in (("actor", False), ("critic", True)):
     terms = cfg.observations[group].terms
-    terms["command"] = ObservationTermCfg(func=mdp.approach_command_obs)
-    terms["speed_limit"] = ObservationTermCfg(
-      func=mdp.approach_speed_limit_obs,
+    terms["command"] = ObservationTermCfg(
+      func=mdp.approach_command_obs,
       params={"privileged": privileged},
     )
+    terms["speed_limit"] = ObservationTermCfg(func=mdp.approach_speed_limit_obs)
     terms["kick_direction"] = ObservationTermCfg(func=mdp.approach_kick_direction_obs)
     terms["kick_range"] = ObservationTermCfg(func=mdp.approach_kick_range_obs)
 
@@ -381,15 +382,16 @@ def _free_head_posture(cfg: ManagerBasedRlEnvCfg) -> None:
 def booster_k1_kick_approach_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   """Stage-1 walk resumed into the approach task.
 
-  Linear velocity tracking is off. The yaw channel is still tracked. A hidden
-  walk-speed flag keeps the gait terms active until the robot is standing in
-  the wedge.
+  Velocity tracking is off; the policy picks its own path under per-episode
+  speed limits. A hidden walk-speed flag keeps the gait terms active until the
+  robot is lined up in the wedge.
   """
   cfg = booster_k1_kick_stage1_env_cfg(play=play)
   assert cfg.commands is not None
   assert cfg.curriculum is not None
   cfg.curriculum.pop("command_vel", None)
-  cfg.commands["twist"] = mdp.ApproachYawCommandCfg()
+  # Play draws the target, kick line and camera FOV.
+  cfg.commands["twist"] = mdp.ApproachYawCommandCfg(debug_vis=play)
   cfg.scene.entities["ball"] = EntityCfg(spec_fn=_get_approach_ball_spec)
   cfg.scene.sensors = tuple(cfg.scene.sensors) + (
     ContactSensorCfg(
@@ -409,6 +411,7 @@ def booster_k1_kick_approach_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg
   _free_head_posture(cfg)
 
   cfg.rewards["track_linear_velocity"].weight = 0.0
+  cfg.rewards["track_angular_velocity"].weight = 0.0
   cfg.rewards["approach_align"] = RewardTermCfg(func=mdp.approach_align, weight=80.0)
   cfg.rewards["approach_close"] = RewardTermCfg(func=mdp.approach_close, weight=100.0)
   cfg.rewards["approach_stand"] = RewardTermCfg(func=mdp.approach_stand, weight=2.0)
@@ -416,6 +419,120 @@ def booster_k1_kick_approach_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg
     func=mdp.approach_bad_contact, weight=-20.0
   )
   cfg.rewards["approach_view"] = RewardTermCfg(func=mdp.approach_view, weight=0.5)
+  # Line the body up on the way in (≤1.5 m, in the wedge), not at the ball.
+  cfg.rewards["approach_heading"] = RewardTermCfg(
+    func=mdp.approach_heading, weight=50.0
+  )
+  # Extra speed earns at most ~2 (close) to ~3 (align near the ball) per m/s.
+  cfg.rewards["approach_speed_limit"] = RewardTermCfg(
+    func=mdp.approach_speed_limit, weight=-10.0
+  )
+  return cfg
+
+
+# AMP style weight for the kick stage, applied at registration after the AMP
+# wrapper. 0.15 in v12b–v16; v14 (style 0) showed the drift is not caused by
+# the discriminator, while less style let the posture degrade (trunk tilt
+# ~15° vs 3.5° for the walker), so v17 is back at the walk's 0.3.
+KICK_STYLE_WEIGHT = 0.3
+
+
+def booster_k1_kick_stage3_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
+  """Stage 3: approach, kick, recover and repeat, warm-started from stage 2.
+
+  Same actor layout as the approach stage. A flat plane keeps ball physics
+  predictable. Targets are 1–10 m away in short/medium/long bins; reaching
+  one places the next. Rewards follow the kick reward list: ball vision, kick
+  direction alignment, walk speed and its limit, kick direction, kick
+  velocity and its accuracy, ball avoidance and single-foot avoidance.
+  """
+  cfg = booster_k1_kick_approach_env_cfg(play=play)
+  if not play:
+    cfg.episode_length_s = 30.0
+  assert cfg.scene.terrain is not None
+  cfg.scene.terrain.terrain_type = "plane"
+  cfg.scene.terrain.terrain_generator = None
+  assert cfg.curriculum is not None
+  cfg.curriculum.pop("terrain_levels", None)
+
+  assert cfg.commands is not None
+  cfg.commands["twist"] = mdp.KickLoopCommandCfg(debug_vis=play)
+  cfg.scene.sensors = tuple(cfg.scene.sensors) + (
+    ContactSensorCfg(
+      name="body_ball_contact",
+      primary=ContactMatch(
+        mode="body",
+        entity="robot",
+        pattern=r".*",
+        exclude=("left_foot_link", "right_foot_link"),
+      ),
+      secondary=ContactMatch(mode="body", pattern="ball", entity="ball"),
+      fields=("found",),
+      reduce="none",
+      num_slots=1,
+    ),
+  )
+
+  # A different ball every episode, so the kick does not depend on one ball:
+  # mass ±30 % (inertia scaled with it), sliding friction ±30 %, rolling
+  # resistance 0.6–1.6×.
+  cfg.events["ball_mass"] = EventTermCfg(
+    mode="reset",
+    func=mdp.dr.pseudo_inertia,
+    params={
+      "asset_cfg": SceneEntityCfg("ball", body_names=(".*",)),
+      "alpha_range": (-0.18, 0.17),
+    },
+  )
+  cfg.events["ball_friction"] = EventTermCfg(
+    mode="reset",
+    func=mdp.dr.geom_friction,
+    params={
+      "asset_cfg": SceneEntityCfg("ball", geom_names=("ball_collision",)),
+      "operation": "scale",
+      "ranges": {0: (0.7, 1.3), 2: (0.6, 1.6)},
+      "axes": [0, 2],
+    },
+  )
+
+  # Replaced: standing still at the ball, the gated heading term and the
+  # instantaneous speed limit.
+  for name in ("approach_stand", "approach_heading", "approach_speed_limit"):
+    cfg.rewards[name].weight = 0.0
+
+  # Event rewards pay once (value × weight × dt): 900 → 18 per perfect kick.
+  # Kicks must clearly outweigh the risk of a fall (−10 plus the per-step
+  # rewards it forfeits), or the policy learns not to kick (stage3_v1).
+  terms = {
+    "ball_vision": (mdp.approach_view, 1.0),
+    "kick_dir_alignment": (mdp.kick_dir_alignment, 50.0),
+    "walk_speed": (mdp.walk_speed, 2.0),
+    "walk_speed_limit": (mdp.walk_speed_limit, -10.0),
+    "kick_direction": (mdp.kick_direction, 900.0),
+    "kick_vel": (mdp.kick_vel, 900.0),
+    "kick_vel_accurate": (mdp.kick_vel_accurate, 300.0),
+    "ball_avoidance": (mdp.ball_avoidance, -5.0),
+    "single_feet_avoidance": (mdp.single_feet_avoidance, -5.0),
+    "kick_goal": (mdp.kick_goal, 1500.0),
+    "kick_lined_up": (mdp.kick_lined_up, 200.0),
+    "kick_double_touch": (mdp.kick_double_touch, -200.0),
+    "post_kick_stability": (mdp.post_kick_stability, 4.0),
+    "fall": (mdp.is_terminated, -1000.0),
+    # Lean costs: ~0.07/s at the walker's 3.5°, ~1.3/s at 15° (v13/v16 mean).
+    "trunk_tilt": (mdp.flat_orientation_l2, -20.0),
+    "kick_fall": (mdp.kick_fall, -2500.0),
+  }
+  # Keep the per-step reward of staying up positive (~+1/s): in stage3_v2 a
+  # global time cost plus action_rate on noisy kicking actions made it −3 to
+  # −10/s, and the policy learned to fall at once. Kicks are abrupt, so
+  # action_rate is lighter here than in the walk.
+  cfg.rewards["action_rate_l2"].weight = -0.03
+  # Joint-limit use grew 5–7× in every long kick run (v8–v15) as falls rose;
+  # at −1 the term was ~0.1 per episode against ~230 of kick rewards.
+  cfg.rewards["dof_pos_limits"].weight = -10.0
+  cfg.rewards.pop("approach_view")
+  for name, (func, weight) in terms.items():
+    cfg.rewards[name] = RewardTermCfg(func=func, weight=weight)
   return cfg
 
 

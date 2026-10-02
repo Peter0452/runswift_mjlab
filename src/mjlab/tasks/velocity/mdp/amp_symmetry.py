@@ -31,6 +31,8 @@ K1_PARALLEL_INVERTED_JOINT_INDICES: tuple[int, ...] = tuple(
 )
 POLICY_DIM_NO_BASE_LIN_VEL = 75
 POLICY_DIM_KICK_STAGE1 = 83
+# Kick loop: the stage-1 yaw-command slot carries the ball-memory age.
+KICK_LOOP_AGE_SLOT = 74
 POLICY_DIM_KICK_WALKAMP = 78
 CRITIC_EXTRA_DIM_WALK = 15
 CRITIC_EXTRA_DIM_KICK = 17
@@ -117,6 +119,26 @@ def augment_symmetries(
   return _augment_symmetries(obs, actions, K1_INVERTED_JOINT_INDICES)
 
 
+def augment_symmetries_kick_loop(
+  env: VecEnv, obs: TensorDict | None, actions: torch.Tensor | None
+) -> tuple[TensorDict | None, torch.Tensor | None]:
+  """``augment_symmetries`` for the kick loop: slot 74 holds the ball-memory
+  age, not a yaw rate, so the mirror keeps it instead of negating it."""
+  del env
+  kept = None
+  if obs is not None:
+    kept = (
+      obs["actor"][:, KICK_LOOP_AGE_SLOT].clone(),
+      obs["critic"][:, KICK_LOOP_AGE_SLOT].clone(),
+    )
+  obs, actions = _augment_symmetries(obs, actions, K1_INVERTED_JOINT_INDICES)
+  if obs is not None and kept is not None:
+    n = kept[0].shape[0]
+    obs["actor"][n:, KICK_LOOP_AGE_SLOT] = kept[0]
+    obs["critic"][n:, KICK_LOOP_AGE_SLOT] = kept[1]
+  return obs, actions
+
+
 def augment_symmetries_parallel(
   env: VecEnv, obs: TensorDict | None, actions: torch.Tensor | None
 ) -> tuple[TensorDict | None, torch.Tensor | None]:
@@ -177,10 +199,9 @@ def flip_k1_policy_obs_left_right(
       :, command_start : command_start + 3
     ] * obs.new_tensor([1.0, -1.0, -1.0])
   if obs.shape[1] == POLICY_DIM_KICK_STAGE1:
-    # See-ball, privileged ball x, and the range one-hot stay put.
-    # Privileged ball y and the kick-direction sine flip. Stage 1 stores
-    # zeros in these slots, so this is an identity for that task.
-    obs[:, command_start + 5] = -obs[:, command_start + 5]
+    # Speed limits (magnitudes) and the range one-hot stay put; the
+    # kick-direction sine flips. Stage 1 stores zeros in these slots, so this
+    # is an identity for that task.
     obs[:, command_start + 7] = -obs[:, command_start + 7]
 
   return obs
@@ -285,8 +306,8 @@ def _get_policy_layout(policy_dim: int) -> dict[str, int | bool] | None:
   """Return layout metadata for Walk (75) or Kick-on-Walk-AMP (78)."""
   if policy_dim in (POLICY_DIM_NO_BASE_LIN_VEL, POLICY_DIM_KICK_STAGE1):
     # Walk: [ang(3), grav(3), q(22), qd(22), a(22), cmd(3)].
-    # The 8-slot tail keeps see-ball, ball x, and the range one-hot, and
-    # flips privileged ball y plus the kick-direction sine.
+    # The 8-slot tail keeps the speed limits and the range one-hot, and
+    # flips the kick-direction sine.
     return {"kick_vec_blocks": 0, "has_command": True}
   if policy_dim == POLICY_DIM_KICK_WALKAMP:
     # [ang(3), grav(3), ball(3), target(3), q(22), qd(22), a(22)]

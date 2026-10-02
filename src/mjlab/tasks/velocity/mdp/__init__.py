@@ -6,6 +6,7 @@ from .curriculums import *  # noqa: F403
 from .events import *  # noqa: F403
 from .kick_handoff import DEFAULT_KICK_CKPTS as DEFAULT_KICK_CKPTS
 from .kick_handoff import kick_handoff_reset as kick_handoff_reset
+from .kick_loop import *  # noqa: F403
 from .kick_prior import *  # noqa: F403
 from .observations import *  # noqa: F403
 from .rewards import *  # noqa: F403

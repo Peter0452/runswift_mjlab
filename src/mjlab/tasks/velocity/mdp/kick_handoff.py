@@ -166,9 +166,7 @@ class kick_handoff_reset:
       env_cfg.commands["goal"].debug_vis = False
 
     agent_cfg = load_rl_cfg(self.kick_task)
-    kick_env = ManagerBasedRlEnv(
-      cfg=env_cfg, device=str(device), render_mode=None
-    )
+    kick_env = ManagerBasedRlEnv(cfg=env_cfg, device=str(device), render_mode=None)
     wrapped = RslRlVecEnvWrapper(kick_env, clip_actions=agent_cfg.clip_actions)
     runner_cls = load_runner_cls(self.kick_task) or MjlabOnPolicyRunner
     runner = runner_cls(wrapped, asdict(agent_cfg), device=str(device))
@@ -278,7 +276,9 @@ class kick_handoff_reset:
   def _snapshot(self, raw, newly: torch.Tensor, buf: dict[str, torch.Tensor]) -> None:
     robot = raw.scene["robot"]
     origin = raw.scene.env_origins[: newly.shape[0]]
-    buf["pos"][newly] = robot.data.root_link_pos_w[: newly.shape[0]][newly] - origin[newly]
+    buf["pos"][newly] = (
+      robot.data.root_link_pos_w[: newly.shape[0]][newly] - origin[newly]
+    )
     buf["quat"][newly] = robot.data.root_link_quat_w[: newly.shape[0]][newly]
     buf["lin"][newly] = robot.data.root_link_lin_vel_w[: newly.shape[0]][newly]
     buf["ang"][newly] = robot.data.root_link_ang_vel_w[: newly.shape[0]][newly]

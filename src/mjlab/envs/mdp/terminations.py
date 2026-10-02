@@ -47,3 +47,14 @@ def root_height_below_minimum(
 def nan_detection(env: ManagerBasedRlEnv) -> torch.Tensor:
   """Terminate environments that have NaN/Inf values in their physics state."""
   return NanGuard.detect_nans(env.sim.data)
+
+
+def physics_blowup(env: ManagerBasedRlEnv, max_qvel: float = 200.0) -> torch.Tensor:
+  """NaN/Inf state, or any |qvel| above ``max_qvel``.
+
+  A diverging sim reaches huge but finite velocities a step or more before it
+  turns NaN. Rewards computed from that state are garbage, and one such sample
+  can blow up the critic. Healthy K1 rollouts stay under ~70.
+  """
+  qvel = env.sim.data.qvel
+  return NanGuard.detect_nans(env.sim.data) | (qvel.abs().amax(dim=-1) > max_qvel)
