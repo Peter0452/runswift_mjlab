@@ -37,6 +37,14 @@ class AmpPPO(PPO):
     muon_weight_decay: float = 0.0,
     muon_momentum: float = 0.95,
     muon_ns_steps: int = 5,
+    caps_temporal_coef: float = 0.0,
+    caps_spatial_coef: float = 0.0,
+    caps_spatial_sigma: float = 0.05,
+    caps_near_ball_scale: float = 1.0,
+    caps_near_ball_dist: float = 0.8,
+    caps_ball_slot: int = 72,
+    imitation_coef: float = 0.0,
+    imitation_decay_updates: int = 1000,
     device: Union[str, torch.device] = "cpu",
     **kwargs,
   ):
@@ -45,6 +53,26 @@ class AmpPPO(PPO):
     )
     self.amp = amp
     self.use_smooth_ratio_clipping = use_smooth_ratio_clipping
+    # CAPS smoothness of the deterministic action (Mysore et al., 2021).
+    self.caps_temporal_coef = caps_temporal_coef
+    self.caps_spatial_coef = caps_spatial_coef
+    self.caps_spatial_sigma = caps_spatial_sigma
+    # Kick tasks: scale CAPS on samples whose actor ball estimate (slots
+    # caps_ball_slot, +1) is within caps_near_ball_dist, so the kick swing is
+    # less smoothed than walking. 1.0 = uniform CAPS.
+    self.caps_near_ball_scale = caps_near_ball_scale
+    self.caps_near_ball_dist = caps_near_ball_dist
+    self.caps_ball_slot = caps_ball_slot
+    # Teacher imitation (L5, e.g. B-Human's kick near the ball): the runner
+    # stores teacher actions + a mask per rollout step (record_teacher); the
+    # update adds coef_eff * MSE(actor mean, teacher) on masked samples and
+    # the given action columns. coef_eff decays linearly to 0.
+    self.imitation_coef = imitation_coef
+    self.imitation_decay_updates = max(1, int(imitation_decay_updates))
+    self._imit_updates = 0
+    self._teacher_actions: torch.Tensor | None = None
+    self._teacher_mask: torch.Tensor | None = None
+    self.imitation_cols: list[int] | None = None
 
     # Rebuild optimizer to include discriminator parameters alongside actor+critic
     params = [
@@ -124,6 +152,96 @@ class AmpPPO(PPO):
     """Predict style reward for a flattened AMP history."""
     return self.amp.predict_style_reward(amp_history)
 
+  def _actor_mean(self, obs, latent_noise: float = 0.0) -> torch.Tensor:
+    """Deterministic action; optional Gaussian noise on the normalized input."""
+    assert self.actor.distribution is not None
+    latent = self.actor.get_latent(obs)
+    if latent_noise > 0.0:
+      latent = latent + latent_noise * torch.randn_like(latent)
+    return self.actor.distribution.deterministic_output(self.actor.mlp(latent))
+
+  def _caps_losses(self, batch, n: int) -> tuple[torch.Tensor, torch.Tensor]:
+    """CAPS terms on the deterministic action, which is what runs on hardware.
+
+    Reward penalties on the sampled action are dominated by exploration noise,
+    which the policy cannot change; these see the mean directly.
+    Temporal: change between consecutive steps of the same episode, from the
+    rollout. Spatial: change under small noise on the normalized input. With
+    caps_near_ball_scale != 1, samples near the ball are weighted by it.
+    """
+    storage = self.storage
+    assert storage is not None
+    steps, envs = storage.num_transitions_per_env, storage.num_envs
+    t = torch.randint(0, steps - 1, (n,), device=self.device)
+    e = torch.randint(0, envs, (n,), device=self.device)
+    same_episode = (storage.dones[t, e, 0] == 0).float()
+    obs_t = storage.observations[t, e]
+    mu_t = self._actor_mean(obs_t)
+    mu_next = self._actor_mean(storage.observations[t + 1, e])
+    w_t = same_episode * self._caps_weight(obs_t)
+    temporal = ((mu_next - mu_t).pow(2).mean(-1) * w_t).sum() / (
+      same_episode.sum().clamp(min=1.0)
+    )
+    obs = batch.observations[:n]
+    w_s = self._caps_weight(obs)
+    spatial = (
+      (self._actor_mean(obs, self.caps_spatial_sigma) - self._actor_mean(obs))
+      .pow(2)
+      .mean(-1)
+      * w_s
+    ).mean()
+    return temporal, spatial
+
+  def imitation_coef_eff(self) -> float:
+    frac = 1.0 - self._imit_updates / self.imitation_decay_updates
+    return self.imitation_coef * max(0.0, frac)
+
+  def record_teacher(self, actions: torch.Tensor, mask: torch.Tensor) -> None:
+    """Store the teacher action / mask for the transition being collected."""
+    storage = self.storage
+    assert storage is not None
+    if self._teacher_actions is None:
+      steps, envs = storage.num_transitions_per_env, storage.num_envs
+      # Allocated outside inference mode so the update can reset / read them.
+      with torch.inference_mode(False):
+        self._teacher_actions = torch.zeros(
+          steps, envs, actions.shape[-1], device=self.device
+        )
+        self._teacher_mask = torch.zeros(
+          steps, envs, dtype=torch.bool, device=self.device
+        )
+    assert self._teacher_mask is not None
+    i = storage.step
+    self._teacher_actions[i] = actions.to(self.device)
+    self._teacher_mask[i] = mask.to(self.device)
+
+  def _imitation_loss(self, n: int) -> torch.Tensor | None:
+    if self._teacher_actions is None or self._teacher_mask is None:
+      return None
+    idx = self._teacher_mask.nonzero(as_tuple=False)
+    if len(idx) == 0:
+      return None
+    pick = idx[torch.randint(0, len(idx), (min(n, len(idx)),), device=self.device)]
+    # Rollout buffers were filled in inference mode: copy them into normal
+    # tensors before they enter the autograd graph.
+    pick = pick.clone()
+    obs = self.storage.observations[pick[:, 0], pick[:, 1]]
+    mu = self._actor_mean(obs)
+    target = self._teacher_actions[pick[:, 0], pick[:, 1]].clone()
+    if self.imitation_cols is not None:
+      cols = torch.tensor([int(c) for c in self.imitation_cols], device=self.device)
+      mu, target = mu.index_select(1, cols), target.index_select(1, cols)
+    return (mu - target).pow(2).mean()
+
+  def _caps_weight(self, obs) -> torch.Tensor:
+    """Per-sample CAPS weight: caps_near_ball_scale near the ball, else 1."""
+    actor = obs["actor"] if "actor" in obs.keys() else None
+    if self.caps_near_ball_scale == 1.0 or actor is None:
+      return torch.ones(obs.batch_size[0], device=self.device)
+    k = self.caps_ball_slot
+    near = actor[..., k : k + 2].norm(dim=-1) < self.caps_near_ball_dist
+    return torch.where(near, self.caps_near_ball_scale, 1.0)
+
   def update(self) -> dict[str, dict[str, float]]:  # noqa: C901
     """Perform the AMP/PPO update step.
 
@@ -155,6 +273,10 @@ class AmpPPO(PPO):
     mean_kl_divergence = torch.zeros(1, device=self.device)
     mean_rnd_loss = torch.zeros(1, device=self.device) if self.rnd else None
     mean_symmetry_loss = torch.zeros(1, device=self.device) if self.symmetry else None
+    use_caps = self.caps_temporal_coef > 0.0 or self.caps_spatial_coef > 0.0
+    mean_caps_temporal = torch.zeros(1, device=self.device)
+    mean_imitation = torch.zeros(1, device=self.device)
+    mean_caps_spatial = torch.zeros(1, device=self.device)
 
     if self.actor.is_recurrent or self.critic.is_recurrent:
       generator = self.storage.recurrent_mini_batch_generator(
@@ -266,6 +388,17 @@ class AmpPPO(PPO):
         + self.value_loss_coef * value_loss
         - self.entropy_coef * entropy_batch.mean()
       )
+      imit_coef = self.imitation_coef_eff()
+      if imit_coef > 0.0:
+        imit = self._imitation_loss(original_batch_size)
+        if imit is not None:
+          loss = loss + imit_coef * imit
+          mean_imitation += imit.detach()
+      if use_caps:
+        caps_t, caps_s = self._caps_losses(batch, original_batch_size)
+        loss = loss + self.caps_temporal_coef * caps_t + self.caps_spatial_coef * caps_s
+        mean_caps_temporal += caps_t.detach()
+        mean_caps_spatial += caps_s.detach()
       rnd_loss = (
         self.rnd.compute_loss(batch.observations[:original_batch_size])
         if self.rnd
@@ -352,8 +485,28 @@ class AmpPPO(PPO):
       self.rnd.update_normalization(obs)
 
     self.storage.clear()
+    if self.imitation_coef > 0.0:
+      self._imit_updates += 1
+      if self._teacher_mask is not None:
+        self._teacher_mask.zero_()
 
     loss_dict = {
+      **(
+        {
+          "caps_temporal": (mean_caps_temporal / num_updates).item(),
+          "caps_spatial": (mean_caps_spatial / num_updates).item(),
+        }
+        if use_caps
+        else {}
+      ),
+      **(
+        {
+          "imitation": (mean_imitation / num_updates).item(),
+          "imitation_coef": self.imitation_coef_eff(),
+        }
+        if self.imitation_coef > 0.0
+        else {}
+      ),
       "value": mean_value_loss,
       "surrogate": mean_surrogate_loss,
       "entropy": mean_entropy,

@@ -71,7 +71,7 @@ register_mjlab_task(
 
 
 def _with_kick_style(env_cfg):
-  """The AMP wrapper sets style weight 0.3; the kick stage uses less."""
+  """The AMP wrapper sets style weight 0.3; the kick stage sets its own."""
   style = env_cfg.curriculum["amp_style_weight"].params
   style["start_weight"] = style["end_weight"] = KICK_STYLE_WEIGHT
   return env_cfg

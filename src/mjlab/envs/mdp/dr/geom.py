@@ -147,6 +147,38 @@ def geom_friction(
   )
 
 
+@requires_model_fields("geom_solref")
+def geom_solref(
+  env: ManagerBasedRlEnv,
+  env_ids: torch.Tensor | None,
+  ranges: Ranges,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+  distribution: Distribution | str = "uniform",
+  operation: Operation | str = "abs",
+  axes: list[int] | None = None,
+  shared_random: bool = False,
+) -> None:
+  """Randomize geom contact softness ``solref`` = (timeconst, dampratio).
+
+  With the default positive solref, a smaller dampratio gives a bouncier
+  contact; a larger timeconst gives a softer one.
+  """
+  _randomize_model_field(
+    env,
+    env_ids,
+    "geom_solref",
+    entity_type="geom",
+    ranges=ranges,
+    distribution=distribution,
+    operation=operation,
+    asset_cfg=asset_cfg,
+    axes=axes,
+    shared_random=shared_random,
+    default_axes=[0, 1],
+    valid_axes=[0, 1],
+  )
+
+
 @requires_model_fields("geom_pos")
 def geom_pos(
   env: ManagerBasedRlEnv,

@@ -23,6 +23,22 @@ class AmpRslRlPpoAlgorithmCfg(RslRlPpoAlgorithmCfg):
 
   class_name: str = "mjlab.amp.algorithms.amp_ppo:AmpPPO"
   """Fully qualified class name for the AMP PPO implementation."""
+  caps_temporal_coef: float = 0.0
+  """CAPS temporal smoothness of the deterministic action (0 = off)."""
+  caps_spatial_coef: float = 0.0
+  """CAPS spatial smoothness: action change under input noise (0 = off)."""
+  caps_spatial_sigma: float = 0.05
+  """Input noise for the spatial term, in normalized-observation units."""
+  caps_near_ball_scale: float = 1.0
+  """CAPS weight on samples whose actor ball estimate is near (kick tasks)."""
+  caps_near_ball_dist: float = 0.8
+  """Distance (m) under which a sample counts as near the ball."""
+  caps_ball_slot: int = 72
+  """Actor observation index of the ball x (y follows)."""
+  imitation_coef: float = 0.0
+  """Teacher imitation (kick tasks): MSE weight on near-ball teacher actions (0 = off)."""
+  imitation_decay_updates: int = 1000
+  """Updates over which the imitation weight decays linearly to 0."""
 
 
 @dataclass

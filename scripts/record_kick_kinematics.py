@@ -19,8 +19,10 @@ from mjlab.rl import RslRlVecEnvWrapper
 from mjlab.rl.runner import MjlabOnPolicyRunner
 from mjlab.tasks.kick.mdp.ball_phase import ensure_ball_phase_updated
 from mjlab.tasks.registry import load_env_cfg, load_rl_cfg, load_runner_cls
+from mjlab.utils.os import (
+  get_wandb_checkpoint_path,  # noqa: F401 — unused keep import light
+)
 from mjlab.utils.torch import configure_torch_backends
-from mjlab.utils.os import get_wandb_checkpoint_path  # noqa: F401 — unused keep import light
 
 
 def _parse_args() -> argparse.Namespace:

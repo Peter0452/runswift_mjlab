@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable
 
 import numpy as np
 import torch
@@ -31,6 +31,8 @@ from mjlab.utils.lab_api.math import (
 )
 
 if TYPE_CHECKING:
+  import viser
+
   from mjlab.envs import ManagerBasedRlEnv
   from mjlab.viewer.debug_visualizer import DebugVisualizer
 
@@ -42,6 +44,10 @@ YAW_ALIGN_LIMIT = 0.4
 # Body-heading shaping starts this far from the ball, inside the wedge, so the
 # robot lines up on the way in rather than turning next to the ball.
 HEADING_SHAPING_DISTANCE = 1.5
+# Side kicks (v52): standing beside the kick line facing the ball (|alpha| and
+# |yaw error| near 90°) counts as lined up, at this extra angle so a kick from
+# behind stays slightly preferred.
+SIDE_KICK_COST = 0.2
 BALL_DISTANCE_RANGE = (1.0, 4.0)
 TARGET_DISTANCE_RANGE = (4.0, 8.0)
 # Ball spawn bearing from the trunk heading; inside the camera cone with margin
@@ -80,6 +86,15 @@ def approach_alpha(
   cross = axis[:, 0] * to_robot[:, 1] - axis[:, 1] * to_robot[:, 0]
   dot = (axis * to_robot).sum(dim=-1)
   return torch.atan2(cross, dot)
+
+
+def side_aware_angle(angle: torch.Tensor, cost: float = SIDE_KICK_COST) -> torch.Tensor:
+  """|angle| folded so ±90° counts like 0 (plus ``cost``): min(|a|, ||a| − π/2| + cost).
+
+  Non-negative; every user of alpha and yaw error takes the magnitude.
+  """
+  mag = angle.abs()
+  return torch.minimum(mag, (mag - 0.5 * math.pi).abs() + cost)
 
 
 def range_one_hot(
@@ -240,20 +255,75 @@ class ApproachYawCommand(CommandTerm):
     self.yaw_error = torch.zeros(n, device=device)
     self.azimuth = torch.zeros(n, device=device)
     self.time_since_seen = torch.zeros(n, device=device)
+    # Without odometry: the last sighting in the trunk frame and the yaw then.
+    self.last_seen_ball_b = torch.zeros(n, 2, device=device)
+    self.last_seen_yaw = torch.zeros(n, device=device)
+    # v56: the memory was judged stale (see memory_invalidate); side of the
+    # robot (+1 left, -1 right) where the ball was last remembered.
+    self.ball_lost = torch.zeros(n, dtype=torch.bool, device=device)
+    self.lost_dir = torch.ones(n, device=device)
+    # Vision delay / dropout for the actor's ball (history of detections).
+    hist = int(cfg.vision_delay_steps[1]) + 1
+    self._det_hist_b = torch.zeros(n, hist, 2, device=device)
+    self._det_hist_vis = torch.zeros(n, hist, dtype=torch.bool, device=device)
+    self._det_lag = torch.zeros(n, dtype=torch.long, device=device)
     # exp(-time since seen / tau); only filled with ``ball_memory``.
     self.ball_age_obs = torch.zeros(n, device=device)
     self.metrics["abs_alpha"] = torch.zeros(n, device=device)
     self.metrics["see_ball"] = torch.zeros(n, device=device)
+    # Viewer override of speed_limit (all envs), set up by create_gui.
+    self._limit_override: viser.GuiCheckboxHandle | None = None
+    self._limit_sliders: list[viser.GuiSliderHandle] = []
 
   @property
   def command(self) -> torch.Tensor:
     return self.vel_command_b
+
+  def _apply_limit_override(self) -> None:
+    if self._limit_override is not None and self._limit_override.value:
+      for i, s in enumerate(self._limit_sliders):
+        self.speed_limit[:, i] = s.value
+
+  def _resample(self, env_ids: torch.Tensor) -> None:
+    # After subclasses' _resample_command, so the override wins on reset too.
+    super()._resample(env_ids)
+    self._apply_limit_override()
+
+  def compute(self, dt: float) -> None:
+    super().compute(dt)
+    self._apply_limit_override()
+
+  def create_gui(
+    self,
+    name: str,
+    server: viser.ViserServer,
+    get_env_idx: Callable[[], int],
+    on_change: Callable[[], None] | None = None,
+    request_action: Callable[[str, Any], None] | None = None,
+  ) -> None:
+    """Sliders for the |vx|, |vy|, |wz| limits the policy observes."""
+    del get_env_idx, on_change, request_action
+    init = self.speed_limit[0].tolist()
+    with server.gui.add_folder(f"{name.capitalize()} speed limit"):
+      self._limit_override = server.gui.add_checkbox("Override", initial_value=False)
+      self._limit_sliders = [
+        server.gui.add_slider(
+          label, min=0.0, max=3.0, step=0.05, initial_value=round(float(v), 2)
+        )
+        for label, v in zip(("|vx| max", "|vy| max", "|wz| max"), init, strict=True)
+      ]
 
   def _update_metrics(self) -> None:
     self.metrics["abs_alpha"][:] = self.abs_alpha
     self.metrics["see_ball"][:] = self.see_ball
 
   def _resample_command(self, env_ids: torch.Tensor) -> None:
+    lo, hi = self.cfg.vision_delay_steps
+    if hi > 0 and len(env_ids) > 0:
+      self._det_lag[env_ids] = torch.randint(
+        int(lo), int(hi) + 1, (len(env_ids),), device=self.device
+      )
+    self._det_hist_vis[env_ids] = False
     self._spawn_ball_and_target(env_ids)
     ranges = (self.cfg.speed_limit_vx, self.cfg.speed_limit_vy, self.cfg.speed_limit_wz)
     for i, (low, high) in enumerate(ranges):
@@ -280,6 +350,21 @@ class ApproachYawCommand(CommandTerm):
       # Vision noise grows with range: sigma = base + rel * distance.
       sigma = base_sigma + rel_sigma * true_ball_b.norm(dim=-1, keepdim=True)
       seen_b = true_ball_b + sigma * torch.randn_like(true_ball_b)
+    # Detection model for the actor only (rewards keep the true visibility):
+    # a seen ball is missed with probability vision_dropout, and the detection
+    # the policy gets is _det_lag steps old (per episode).
+    det = visible
+    if self.cfg.vision_dropout > 0.0:
+      det = det & (torch.rand_like(dist) >= self.cfg.vision_dropout)
+    if self._det_hist_b.shape[1] > 1:
+      self._det_hist_b[:] = torch.roll(self._det_hist_b, 1, dims=1)
+      self._det_hist_vis[:] = torch.roll(self._det_hist_vis, 1, dims=1)
+      self._det_hist_b[:, 0] = seen_b
+      self._det_hist_vis[:, 0] = det
+      rows = torch.arange(self.num_envs, device=self.device)
+      seen_b = self._det_hist_b[rows, self._det_lag]
+      det = self._det_hist_vis[rows, self._det_lag]
+    visible = det
     self.masked_ball_b[:] = seen_b * visible.unsqueeze(-1)
 
     # The kick direction uses the ball only where the camera last saw it.
@@ -294,12 +379,32 @@ class ApproachYawCommand(CommandTerm):
       # Out of view, report where the ball was last seen, in the current
       # trunk frame (on hardware: the ball model carried by odometry).
       robot_pos = self.robot.data.root_link_pos_w
-      rel = torch.zeros_like(robot_pos)
-      rel[:, :2] = self.last_seen_ball_w - robot_pos[:, :2]
-      rel[:, 2] = ball_pos[:, 2] - robot_pos[:, 2]
-      memory_b = quat_apply_inverse(self.robot.data.root_link_quat_w, rel)[:, :2]
+      yaw = _yaw_angle(self.robot.data.root_link_quat_w)
+      self.last_seen_ball_b[:] = torch.where(
+        visible.unsqueeze(-1), seen_b, self.last_seen_ball_b
+      )
+      self.last_seen_yaw[:] = torch.where(visible, yaw, self.last_seen_yaw)
+      if self.cfg.memory_odometry:
+        rel = torch.zeros_like(robot_pos)
+        rel[:, :2] = self.last_seen_ball_w - robot_pos[:, :2]
+        rel[:, 2] = ball_pos[:, 2] - robot_pos[:, 2]
+        rel[:, 2] = 0.0
+        memory_b = quat_apply_inverse(yaw_quat(self.robot.data.root_link_quat_w), rel)[
+          :, :2
+        ]
+      else:
+        # As the robot runner does it: the last sighting turned back by the
+        # IMU yaw change since, with no translation (no odometry).
+        dyaw = -wrap_to_pi(yaw - self.last_seen_yaw)
+        c, s_ = dyaw.cos(), dyaw.sin()
+        mb = self.last_seen_ball_b
+        memory_b = torch.stack(
+          (c * mb[:, 0] - s_ * mb[:, 1], s_ * mb[:, 0] + c * mb[:, 1]), dim=-1
+        )
       self.masked_ball_b[:] = torch.where(visible.unsqueeze(-1), seen_b, memory_b)
       self.ball_age_obs[:] = torch.exp(-self.time_since_seen / self.cfg.ball_memory_tau)
+      if self.cfg.memory_invalidate:
+        self._invalidate_memory(memory_b, visible, ball_pos[:, 2])
     self.kick_dir_b[:] = kick_direction_b(
       self.target_w, self.last_seen_ball_w, self.robot.data.root_link_quat_w
     )
@@ -314,6 +419,57 @@ class ApproachYawCommand(CommandTerm):
       lined_up, torch.zeros_like(dist), torch.full_like(dist, WALK_COMMAND_SPEED)
     )
     self.vel_command_b[:, 1:] = 0.0
+
+  def _invalidate_memory(
+    self, memory_b: torch.Tensor, visible: torch.Tensor, ball_z: torch.Tensor
+  ) -> None:
+    """v56: mark the remembered ball as lost when it should be seen but is not.
+
+    Lost when the remembered spot is in the camera view (within
+    ``memory_view_range``) and nothing was detected for ``memory_lost_in_view_s``,
+    or nothing was detected for ``memory_lost_timeout_s`` wherever it points.
+    While lost the actor gets ball (0, 0) and age 0 ("search"), and the head
+    sweeps. The runner must apply the same rule (KICK_LOOP_POLICY_IO.md).
+    """
+    robot_pos = self.robot.data.root_link_pos_w
+    rel = torch.zeros_like(robot_pos)
+    rel[:, :2] = memory_b
+    mem_w = robot_pos + quat_apply(yaw_quat(self.robot.data.root_link_quat_w), rel)
+    mem_w[:, 2] = ball_z
+    head_pos = self.robot.data.body_link_pos_w[:, self._head_id]
+    head_quat = self.robot.data.body_link_quat_w[:, self._head_id]
+    head_rel = quat_apply_inverse(head_quat, mem_w - head_pos)
+    depth, az, el = camera_angles(head_rel, self.cfg.camera_pitch)
+    in_view = in_camera_view(
+      depth, az, el, self.cfg.fov_half_angle, self.cfg.fov_vertical_half_angle
+    ) & (memory_b.norm(dim=-1) <= self.cfg.memory_view_range)
+    t = self.time_since_seen
+    stale = (in_view & (t >= self.cfg.memory_lost_in_view_s)) | (
+      t >= self.cfg.memory_lost_timeout_s
+    )
+    newly = stale & ~self.ball_lost & ~visible
+    side = torch.where(memory_b[:, 1] >= 0.0, 1.0, -1.0)
+    self.lost_dir[:] = torch.where(newly, side, self.lost_dir)
+    self.ball_lost[:] = (self.ball_lost | stale) & ~visible
+    lost = self.ball_lost.unsqueeze(-1)
+    if self.cfg.lost_virtual_ball:
+      # v56d: a virtual ball fixed beside the robot on the side the ball was
+      # last remembered; the policy turns toward it with its existing
+      # approach skill and, since it turns with the robot, keeps turning until
+      # the real ball is detected. Age keeps decaying (no new input meaning).
+      ang = self.cfg.lost_virtual_bearing
+      r = self.cfg.lost_virtual_range
+      virt = torch.stack(
+        (
+          torch.full_like(self.lost_dir, r * math.cos(ang)),
+          self.lost_dir * r * math.sin(ang),
+        ),
+        dim=-1,
+      )
+      self.masked_ball_b[:] = torch.where(lost, virt, self.masked_ball_b)
+    else:
+      self.masked_ball_b[:] = torch.where(lost, 0.0, self.masked_ball_b)
+      self.ball_age_obs[:] = torch.where(self.ball_lost, 0.0, self.ball_age_obs)
 
   def _debug_vis_impl(self, visualizer: DebugVisualizer) -> None:
     """Target, ball-to-target line, and camera FOV edges (green: ball seen)."""
@@ -364,12 +520,36 @@ class ApproachYawCommand(CommandTerm):
     # The robot faces the ball; the kick line can point anywhere.
     half = self.cfg.spawn_view_half_angle
     angle = robot_yaw + torch.empty(n, device=device).uniform_(-half, half)
-    radius = torch.empty(n, device=device).uniform_(*BALL_DISTANCE_RANGE)
+    radius = torch.empty(n, device=device).uniform_(*self.cfg.ball_distance_range)
+    drill = torch.rand(n, device=device) < self.cfg.side_drill_prob
+    if bool(drill.any()):
+      # Side drill (v52): ball close in front, target off to the side.
+      radius[drill] = torch.empty(int(drill.sum()), device=device).uniform_(
+        *self.cfg.side_drill_ball_distance
+      )
     offset = torch.stack((angle.cos(), angle.sin()), dim=-1) * radius.unsqueeze(-1)
     ball_xy = robot_xy + offset
     self.last_seen_ball_w[env_ids] = ball_xy
     self.time_since_seen[env_ids] = 0.0
+    self.ball_lost[env_ids] = False
+    self.lost_dir[env_ids] = 1.0
+    rel = torch.zeros(n, 3, device=device)
+    rel[:, :2] = offset
+    self.last_seen_ball_b[env_ids] = quat_apply_inverse(yaw_quat(pose[:, 3:7]), rel)[
+      :, :2
+    ]
+    self.last_seen_yaw[env_ids] = robot_yaw
     self._place_target(env_ids, ball_xy)
+    if bool(drill.any()):
+      ids = drill.nonzero(as_tuple=False).squeeze(-1)
+      lo, hi = self.cfg.side_drill_angle
+      off = torch.empty(len(ids), device=device).uniform_(lo, hi)
+      side = torch.where(torch.rand(len(ids), device=device) < 0.5, -1.0, 1.0)
+      heading = robot_yaw[ids] + side * off
+      dist = (self.target_w[env_ids[ids]] - ball_xy[ids]).norm(dim=-1)
+      self.target_w[env_ids[ids]] = ball_xy[ids] + torch.stack(
+        (heading.cos(), heading.sin()), dim=-1
+      ) * dist.unsqueeze(-1)
 
     state = self.ball.data.default_root_state[env_ids].clone()
     state[:, 0:2] = ball_xy
@@ -377,6 +557,13 @@ class ApproachYawCommand(CommandTerm):
     state[:, 3:7] = 0.0
     state[:, 3] = 1.0
     state[:, 7:] = 0.0
+    lo, hi = self.cfg.ball_spawn_speed
+    if hi > 0.0:
+      # Rolling start (v51): random speed and direction.
+      speed = torch.empty(n, device=device).uniform_(lo, hi)
+      heading = torch.rand(n, device=device) * (2.0 * math.pi)
+      state[:, 7] = speed * heading.cos()
+      state[:, 8] = speed * heading.sin()
     self.ball.write_root_state_to_sim(state, env_ids)
 
   def _place_target(self, env_ids: torch.Tensor, ball_xy: torch.Tensor) -> None:
@@ -410,11 +597,15 @@ class ApproachYawCommand(CommandTerm):
 
     alpha = approach_alpha(robot_pos[:, :2], ball_pos[:, :2], self.target_w)
     dist = torch.linalg.norm(robot_pos[:, :2] - ball_pos[:, :2], dim=-1)
-    in_wedge = alpha.abs() <= WEDGE_HALF_ANGLE
 
     to_target = self.target_w - ball_pos[:, :2]
     kick_heading = torch.atan2(to_target[:, 1], to_target[:, 0])
     yaw_error = wrap_to_pi(kick_heading - _yaw_angle(robot_quat))
+    if self.cfg.side_kicks:
+      # v52: beside the line, facing the ball, is lined up too (side kick).
+      alpha = side_aware_angle(alpha)
+      yaw_error = side_aware_angle(yaw_error)
+    in_wedge = alpha.abs() <= WEDGE_HALF_ANGLE
 
     head_rel = quat_apply_inverse(head_quat, ball_pos - head_pos)
     depth, azimuth, elevation = camera_angles(head_rel, self.cfg.camera_pitch)
@@ -425,8 +616,17 @@ class ApproachYawCommand(CommandTerm):
       self.cfg.fov_half_angle,
       self.cfg.fov_vertical_half_angle,
     )
+    if self.cfg.fov_half_angle >= math.pi:
+      # Perfect perception (evaluation only): the ball is always seen.
+      visible = torch.ones_like(visible)
 
-    true_ball_b = quat_apply_inverse(robot_quat, ball_pos - robot_pos)[:, :2]
+    # Ball in the robot's level ground frame (runswift vision / base_link):
+    # trunk origin projected to the ground, rotated by trunk yaw only. Before
+    # v49 the full trunk orientation was used, so a 5–10° lean moved the ball
+    # 4–9 cm (the ball is ~0.5 m below the trunk), which the robot never sees.
+    rel = ball_pos - robot_pos
+    rel[:, 2] = 0.0
+    true_ball_b = quat_apply_inverse(yaw_quat(robot_quat), rel)[:, :2]
     return (
       alpha,
       dist,
@@ -457,6 +657,21 @@ class ApproachYawCommandCfg(CommandTermCfg):
   """
   camera_pitch: float = 0.0
   """Pitch of the optical axis below the head link x-axis (rad, positive down)."""
+  vision_dropout: float = 0.0
+  """Probability per step that a ball in view is not detected (actor only)."""
+  vision_delay_steps: tuple[int, int] = (0, 0)
+  """Per-episode delay of the actor's ball detection, in policy steps."""
+  side_kicks: bool = False
+  """Count standing beside the kick line facing the ball as lined up (v52)."""
+  side_drill_prob: float = 0.0
+  """Share of episodes starting with the ball close and the target to the side."""
+  side_drill_ball_distance: tuple[float, float] = (0.4, 1.0)
+  side_drill_angle: tuple[float, float] = (math.radians(60.0), math.radians(110.0))
+  """Target bearing from the ball, off the robot's heading, in a side drill (rad)."""
+  ball_spawn_speed: tuple[float, float] = (0.0, 0.0)
+  """Initial ball speed range (m/s), random direction; 0 = static ball."""
+  ball_distance_range: tuple[float, float] = BALL_DISTANCE_RANGE
+  """Distance of the spawned ball from the robot (m)."""
   spawn_view_half_angle: float = SPAWN_VIEW_HALF_ANGLE
   """Max bearing of the spawned ball from the trunk heading (rad)."""
   speed_limit_vx: tuple[float, float] = SPEED_LIMIT_VX
@@ -469,6 +684,23 @@ class ApproachYawCommandCfg(CommandTermCfg):
   """Out of view, give the last-seen ball (in the current trunk frame) instead
   of zeros, and its age in slot 74. Off for the approach stage."""
   ball_memory_tau: float = 2.0
+  memory_invalidate: bool = False
+  """v56: judge the memory stale (ball lost, search) by the rules below."""
+  memory_lost_in_view_s: float = 0.5
+  """Remembered spot in view but nothing detected for this long: lost."""
+  memory_lost_timeout_s: float = 1.5
+  """Nothing detected for this long, wherever the memory points: lost."""
+  lost_virtual_ball: bool = False
+  """v56d: while lost, show a virtual ball beside the robot instead of (0, 0)."""
+  lost_virtual_bearing: float = 1.6
+  """Bearing of the virtual ball from the heading (rad), on the lost side."""
+  lost_virtual_range: float = 2.0
+  """Distance of the virtual ball (m)."""
+  memory_view_range: float = 3.0
+  """Only remembered spots this close count for the in-view rule (m)."""
+  memory_odometry: bool = True
+  """Carry the out-of-view ball with the robot's true motion (odometry). False
+  turns the last sighting by the yaw change only, as the robot runner does."""
   ball_obs_noise: tuple[float, float] = (0.0, 0.0)
   """Actor ball noise while seen: sigma = base + rel * distance (m, per axis)."""
   """Age time constant (s): slot 74 = exp(-time since seen / tau)."""

@@ -95,6 +95,22 @@ class AmpRunner:
     self._amp_style_reward_sum.zero_()
     self._amp_task_reward_sum.zero_()
 
+  def _record_teacher(self, obs) -> None:
+    """B-Human's kick policy as the teacher within IMITATION_DIST of a visible
+    ball (kick tasks); its leg actions are imitated (see AmpPPO)."""
+    env = self.env.unwrapped
+    if not hasattr(self, "_teacher"):
+      from mjlab.scripts.play_bhuman_kick import BHumanKickPlayConfig, BHumanKickPolicy
+
+      self._teacher = BHumanKickPolicy(
+        env, BHumanKickPlayConfig(num_envs=env.num_envs, print_kicks=False)
+      )
+      self.alg.imitation_cols = [int(c) for c in self._teacher.leg_cols.tolist()]
+    cmd = env.command_manager.get_term("twist")
+    teacher_actions = self._teacher(obs)
+    mask = (cmd.dist <= 1.1) & ~cmd.ball_lost
+    self.alg.record_teacher(teacher_actions, mask)
+
   def _amp_collect_step(
     self,
     obs: TensorDict,
@@ -106,6 +122,8 @@ class AmpRunner:
     the final (potentially AMP-combined) rewards.
     """
     actions = self.alg.act(obs)
+    if getattr(self.alg, "imitation_coef", 0.0) > 0.0:
+      self._record_teacher(obs)
     if self._amp_enabled:
       self.alg.act_amp(amp_obs)
 

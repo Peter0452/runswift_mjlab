@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 from mjlab.amp.runners import (
@@ -28,6 +29,9 @@ _AMP_SYMMETRY_CFG = {
 # parents[6] = runswift_mjlab, parent of that = Project/RL
 _AMP_MIX_DIR = Path(__file__).resolve().parents[6].parent / "data" / "amp_mix_ww_cmu"
 _AMP_MIX_WEIGHTS_FILE = _AMP_MIX_DIR / "dataset_weights.json"
+_AMP_KICK_MIX_DIR = _AMP_MIX_DIR.parent / "amp_mix_ww_cmu_kicks_v2"
+_AMP_KICK_MIX_WEIGHTS = _AMP_KICK_MIX_DIR / "dataset_weights.json"
+KICK_STYLE_AMP_DATA = True
 
 
 def _amp_mix_dataset() -> tuple[str, list[float] | None]:
@@ -137,6 +141,20 @@ def booster_k1_kick_stage3_runner_cfg() -> AmpOnPolicyRunnerCfg:
   # continuation of v8 drifted toward riskier kicks (falls 2 s after kicks
   # 37 % → 66 % of all falls).
   cfg.algorithm.gamma = 0.995
+  # Smooth deterministic actions (CAPS). The action_rate reward did not reduce
+  # jitter: in the runner sim v17/v18 jittered 13x the deployed walk policy.
+  # 1.0 / 0.5 (v19) reached ~2x the walk's jitter but cut kick accuracy
+  # (93% -> 81%) and raised falls (0.2% -> 4.2%); v20 at 0.3 / 0.1 kept the
+  # kick but jittered 4.5x. v21/v22 at 0.5 / 0.2 kept 94-95% accuracy but
+  # jitter swung 2.1-4.8x between checkpoints; v23 at 0.8 / 0.3 still ~4x
+  # while active. v24 uses 1.0 / 0.4.
+  # v42 (0.6 / 0.25 everywhere): kick swing p50 3.51 → 3.94 m/s but leg
+  # jitter +7–9 % at matched walking speed. v43: full CAPS while walking,
+  # half within 0.8 m of the ball (actor ball estimate) for the kick swing.
+  cfg.algorithm.caps_temporal_coef = 1.0
+  cfg.algorithm.caps_spatial_coef = 0.4
+  cfg.algorithm.caps_near_ball_scale = 0.5
+  cfg.algorithm.caps_near_ball_dist = 0.8
   # Cap action noise: it grew in every kick run (v3 0.48→1.47, v5 0.82→1.40),
   # inflating action_rate and falls. v4 kicked well at 0.55–0.7.
   assert cfg.actor.distribution_cfg is not None
@@ -149,6 +167,22 @@ def booster_k1_kick_stage3_runner_cfg() -> AmpOnPolicyRunnerCfg:
       "mjlab.tasks.velocity.mdp.amp_symmetry:augment_symmetries_kick_loop"
     ),
   )
+  # K4 (v59): walk data plus kick clips recorded in our sim — B-Human's
+  # side-foot kicks and our own front kicks (data/kick_clips, 20 % of style
+  # samples) — with style kept on near the ball (KICK_STYLE_AMP), so both kick
+  # styles are "natural" and the outcome rewards choose between them.
+  genes = json.loads(os.environ.get("KICK_GENES", "{}") or "{}")
+  if "desired_kl" in genes:
+    cfg.algorithm.desired_kl = float(genes["desired_kl"])
+  # L5 teacher imitation (B-Human near-ball leg actions), off by default.
+  if float(genes.get("imitation_coef", 0.0)) > 0.0:
+    cfg.algorithm.imitation_coef = float(genes["imitation_coef"])
+    cfg.algorithm.imitation_decay_updates = int(genes.get("imitation_decay_updates", 1000))
+  use_kick_data = bool(genes.get("amp_kick_data", KICK_STYLE_AMP_DATA))
+  if use_kick_data and _AMP_KICK_MIX_WEIGHTS.is_file():
+    meta = json.loads(_AMP_KICK_MIX_WEIGHTS.read_text())
+    cfg.dataset_root = str(_AMP_KICK_MIX_DIR)
+    cfg.dataset_weights = [float(w) for w in meta["weights"]]
   return cfg
 
 

@@ -56,6 +56,9 @@ class PlayConfig:
   """Disable all termination conditions (useful for viewing motions with dummy agents)."""
   gait_frequency: float | None = None
   """Pin twist gait frequency (Hz) when the task uses 4-D velocity commands."""
+  speed_limit: tuple[float, float, float] | None = None
+  """Pin the observed |vx| |vy| |wz| limits (approach/kick tasks), e.g. 0.8 0.5 1.0.
+  In viser they can also be changed live under Commands."""
   log_root: str = "logs/rsl_rl"
   """Root directory under which experiment logs are written."""
 
@@ -90,6 +93,21 @@ def run_play(task_id: str, cfg: PlayConfig):
       f = float(cfg.gait_frequency)
       ranges.gait_frequency = (f, f)
       print(f"[INFO]: Gait frequency pinned to {f:.2f} Hz")
+
+  if cfg.speed_limit is not None:
+    twist = env_cfg.commands.get("twist")
+    if twist is None or not hasattr(twist, "speed_limit_vx"):
+      print("[WARN]: --speed-limit ignored (task has no approach speed limits)")
+    else:
+      vx, vy, wz = (float(v) for v in cfg.speed_limit)
+      twist.speed_limit_vx = (vx, vx)
+      twist.speed_limit_vy = (vy, vy)
+      twist.speed_limit_wz = (wz, wz)
+      # Kick-loop resamples from its own cap ramp; pin that too.
+      if getattr(twist, "speed_cap_final", None) is not None:
+        twist.speed_cap_final = ((vx, vx), (vy, vy), (wz, wz))
+        twist.speed_cap_start_max = (vx, vy, wz)
+      print(f"[INFO]: Speed limits pinned to vx={vx} vy={vy} wz={wz}")
 
   # Check if this is a tracking task by checking for motion command.
   is_tracking_task = "motion" in env_cfg.commands and isinstance(
