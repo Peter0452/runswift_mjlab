@@ -445,12 +445,87 @@ def booster_k1_kick_approach_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg
 # ("k.<NAME>", applied in mdp/kick_loop.py). Empty outside the search.
 KICK_GENES: dict = json.loads(os.environ.get("KICK_GENES", "{}") or "{}")
 KICK_STYLE_WEIGHT = float(KICK_GENES.get("style_w", 0.3))
+TOUCHDOWN_SPEED_WEIGHT = 15.0
 # v29 tried 0.45 with the walking-pose terms (the AMP mix is (1 − w)·task +
 # w·style, so it also cut the kick rewards by 21 %): the gait improved but kick
 # quality fell 0.84 → 0.78. From v30 the pose terms hold the gait at 0.3.
 
 
 K1_CAMERA_HALF_FOV = (1.211259 / 2.0, 0.733038 / 2.0)
+
+
+# Hard leg torque limits (N*m), user 2026-10-07: B-Human's kick clip
+# (K1_Ball.yaml torque_clipping). The motor ratings in k1_whirlwind_constants
+# (knee 112, hip roll 76, hip pitch 68, hip yaw / ankle 38.3) are believed to
+# be no-load numbers; the real loaded limits are not measured yet - replace
+# these when they are. B-Human's own note on "real" limits: 80/60/40/70/36/36.
+LEG_TORQUE_CLIP = {
+  ".*_Hip_Pitch": 50.0,
+  ".*_Hip_Roll": 50.0,
+  ".*_Hip_Yaw": 30.0,
+  ".*_Knee_Pitch": 60.0,
+  ".*_Ankle_.*": 30.0,
+}
+
+
+# Joint-target clip of k1_policy_runner (walk_policy_amp_v1.Q_ABS_LIMITS): the
+# runner (robot, runswift fixture) clips every target to these. Training did
+# not until 2026-10-07; x4_g004_70 pressed hip roll up to 0.38 rad past the
+# 0.40 rad stop around kicks and lost its aim under the clip (86 % -> 19 %).
+DEPLOY_Q_LIMITS = {
+  "Head_Yaw": (-1.0, 1.0),
+  "Head_Pitch": (-0.349, 0.855),
+  "Left_Shoulder_Pitch": (-3.316, 1.22),
+  "Left_Shoulder_Roll": (-1.74, 1.57),
+  "Left_Elbow_Pitch": (-2.27, 2.27),
+  "Left_Elbow_Yaw": (-2.44, 0.0),
+  "Right_Shoulder_Pitch": (-3.316, 1.22),
+  "Right_Shoulder_Roll": (-1.57, 1.74),
+  "Right_Elbow_Pitch": (-2.27, 2.27),
+  "Right_Elbow_Yaw": (0.0, 2.44),
+  ".*_Hip_Pitch": (-3.0, 2.21),
+  "Left_Hip_Roll": (-0.4, 1.57),
+  "Right_Hip_Roll": (-1.57, 0.4),
+  ".*_Hip_Yaw": (-1.0, 1.0),
+  ".*_Knee_Pitch": (0.0, 2.23),
+  ".*_Ankle_Pitch": (-0.87, 0.345),
+  ".*_Ankle_Roll": (-0.345, 0.345),
+}
+
+
+def _deployment_match(cfg: ManagerBasedRlEnvCfg) -> None:
+  """Match the deployed robot path (2026-10-07, user-approved), each a gene:
+  deploy_clip (runner joint-target clip), delay_from_zero (motor delay range
+  0-40 ms instead of 10-40: the runswift fixture and maybe the robot have
+  less), ball_origin / ball_origin_jitter (vision base_link between the
+  feet, 2 cm jitter for the remaining uncertainty)."""
+  import dataclasses
+
+  if float(KICK_GENES.get("deploy_clip", 1.0)) > 0.5:
+    cfg.actions["joint_pos"].clip = dict(DEPLOY_Q_LIMITS)  # ty: ignore[unresolved-attribute]
+  if float(KICK_GENES.get("delay_from_zero", 1.0)) > 0.5:
+    robot = cfg.scene.entities["robot"]
+    robot.articulation = dataclasses.replace(
+      robot.articulation,
+      actuators=tuple(
+        dataclasses.replace(a, delay_min_lag=0) for a in robot.articulation.actuators
+      ),
+    )
+  # ball_origin / ball_origin_jitter: set at the end of the stage-3 builder
+  # (the twist command cfg is replaced after this runs).
+
+
+def _clip_leg_torque(cfg: ManagerBasedRlEnvCfg) -> None:
+  import dataclasses
+
+  robot = cfg.scene.entities["robot"]
+  acts = []
+  for a in robot.articulation.actuators:
+    lim = LEG_TORQUE_CLIP.get(a.target_names_expr[0])
+    if lim is not None:
+      a = dataclasses.replace(a, effort_limit=min(a.effort_limit, lim))
+    acts.append(a)
+  robot.articulation = dataclasses.replace(robot.articulation, actuators=tuple(acts))
 
 
 def booster_k1_kick_stage3_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
@@ -465,6 +540,9 @@ def booster_k1_kick_stage3_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   cfg = booster_k1_kick_approach_env_cfg(play=play)
   if not play:
     cfg.episode_length_s = 30.0
+  if float(KICK_GENES.get("torque_clip", 1.0)) > 0.5:
+    _clip_leg_torque(cfg)
+  _deployment_match(cfg)
   assert cfg.scene.terrain is not None
   # v48: field-like surface instead of a perfect plane: 60 % flat, 40 % gentle
   # bumps (heights 0–2 cm, 5 mm steps, 0.2 m between samples) on large patches
@@ -536,14 +614,19 @@ def booster_k1_kick_stage3_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   # A different ball every episode, so the kick does not depend on one ball:
   # mass ±30 % (inertia scaled with it), sliding friction ±30 %, rolling
   # resistance 0.6–1.6×.
+  # Size too (user 2026-10-08): radius 0.07–0.13 m and mass 0.05–0.45 kg
+  # (e^{2α} × 0.1 kg), drawn independently; real balls from B-Human's 0.095 m /
+  # 0.29 kg to a FIFA size 5 (0.11 m / 0.43 kg). The key stays "ball_mass" so
+  # tools that pop it get the fixed nominal ball.
   cfg.events["ball_mass"] = EventTermCfg(
     mode="reset",
-    func=mdp.dr.pseudo_inertia,
+    func=mdp.ball_size_mass,
     params={
-      "asset_cfg": SceneEntityCfg("ball", body_names=(".*",)),
-      # v34: mass ×0.5–2.5 (0.05–0.25 kg) for harder, more varied kicks
-      # (×0.7–1.4 before). e^{2α} scales mass and inertia.
-      "alpha_range": (-0.347, 0.458),
+      "radius_range": (0.07, 0.13),
+      "alpha_range": (-0.347, 0.752),
+      "nominal_mass": _APPROACH_BALL_MASS,
+      "geom_cfg": SceneEntityCfg("ball", geom_names=("ball_collision",)),
+      "body_cfg": SceneEntityCfg("ball", body_names=("ball",)),
     },
   )
   cfg.events["ball_friction"] = EventTermCfg(
@@ -692,9 +775,27 @@ def booster_k1_kick_stage3_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     "single_feet_avoidance": (mdp.single_feet_avoidance, -5.0),
     "kick_goal": (mdp.kick_goal, 1500.0),
     "kick_lined_up": (mdp.kick_lined_up, 200.0),
+    # Time to kick (2026-10-07, user priority): per-step cost until the next
+    # kick (no zone, so no fence). Off by default; gene w.kick_time_cost.
+    "kick_time_cost": (mdp.kick_time_cost, 0.0),
+    # Fast turns toward the kick line near the ball (gene w.turn_rate_track).
+    "turn_rate_track": (mdp.turn_rate_track, 0.0),
+    # Long kicks without a speed cap (gene w.long_kick_speed_linear).
+    "long_kick_speed_linear": (mdp.long_kick_speed_linear, 0.0),
+    # Situational style choice from running outcome statistics (gene).
+    "style_advantage": (mdp.style_advantage, 0.0),
     "kick_double_touch": (mdp.kick_double_touch, -200.0),
     "post_kick_stability": (mdp.post_kick_stability, 4.0),
     "fall": (mdp.is_terminated, -1000.0),
+    # Staying up must always pay (2026-10-09): with cold starts and far / behind
+    # balls the episode's task reward went to -72 while a fall cost ~-20, and
+    # h018 learned to end every episode in 0.7 s. +2/s is the same for every
+    # policy that stays up. Gene w.alive.
+    "alive": (mdp.is_alive, 2.0),
+    # B-Human's power cost (2026-10-09 review: power -2e-3, sum(max(tau*qdot,
+    # 0))): energy-efficient, smoother and softer steps. Off unless the gene
+    # w.joint_power sets it (~-0.2/s at 100 W with -2e-3).
+    "joint_power": (mdp.joint_power_penalty, 0.0),
     # Lean costs: ~0.07/s at the walker's 3.5°, ~1.3/s at 15° (v13/v16 mean).
     "trunk_tilt": (mdp.flat_orientation_l2, -20.0),
     "kick_fall": (mdp.kick_fall, -2500.0),
@@ -728,6 +829,10 @@ def booster_k1_kick_stage3_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     # Side-foot strike (B-Human style): off; an experiment / gene only.
     "side_foot_strike": (mdp.side_foot_strike, 0.0),
     "search_backward": (mdp.search_backward, -5.0),
+    # Kick styles (2026-10-06): live only with k.STYLE_MAP "range" / "free".
+    "inside_foot_style": (mdp.inside_foot_style, 0.0),
+    "hop_kick_style": (mdp.hop_kick_style, 0.0),
+    "hop_kick_fall": (mdp.hop_kick_fall, 0.0),
     # v54: short / medium passes paid for stopping near the target (v53 kicked
     # short targets at 1.8× the needed speed; the goal counts a ball passing
     # the target, so overshooting cost nothing).
@@ -758,6 +863,23 @@ def booster_k1_kick_stage3_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     params={
       "axis": 1,
       "sensor_name": "feet_ground_contact",
+      "asset_cfg": SceneEntityCfg(
+        "robot", body_names=("left_foot_link", "right_foot_link")
+      ),
+      # 2026-10-08: the first 60 ms of each contact are free, so the foot can
+      # land heel first and roll flat instead of slapping the sole down (loud
+      # steps on the robot). Gene foot_flat_settle_s.
+      "settle_s": float(KICK_GENES.get("foot_flat_settle_s", 0.06)),
+    },
+  )
+  # Quiet landings (2026-10-08): squared downward foot speed in the last 3 cm
+  # before touchdown. Gene w.touchdown_speed.
+  cfg.rewards["touchdown_speed"] = RewardTermCfg(
+    func=mdp.touchdown_speed,
+    weight=-TOUCHDOWN_SPEED_WEIGHT,
+    params={
+      "sensor_name": "feet_ground_contact",
+      "height_sensor_name": "foot_height_scan",
       "asset_cfg": SceneEntityCfg(
         "robot", body_names=("left_foot_link", "right_foot_link")
       ),
@@ -792,11 +914,130 @@ def booster_k1_kick_stage3_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
         terms[name] = (rg.make_expr_term(entry["expr"]), float(entry["weight"]))
       else:
         func = getattr(mdp, entry.get("term", name))
-        terms[name] = (func, float(entry.get("weight", terms.get(name, (None, 0.0))[1])))
+        terms[name] = (
+          func,
+          float(entry.get("weight", terms.get(name, (None, 0.0))[1])),
+        )
   for name, (func, weight) in terms.items():
     weight = float(KICK_GENES.get(f"w.{name}", weight))
     cfg.rewards[name] = RewardTermCfg(func=func, weight=weight)
+  # Leg joints and their actuators in the same order for joint_power.
+  legs = tuple(
+    f".*_{j}"
+    for j in (
+      "Hip_Pitch",
+      "Hip_Roll",
+      "Hip_Yaw",
+      "Knee_Pitch",
+      "Ankle_Pitch",
+      "Ankle_Roll",
+    )
+  )
+  cfg.rewards["joint_power"].params = {
+    "asset_cfg": SceneEntityCfg(
+      "robot", joint_names=legs, actuator_names=legs, preserve_order=True
+    )
+  }
+  # Genes for base reward terms too (e.g. w.action_rate_l2), 2026-10-08.
+  for name in list(cfg.rewards):
+    if (
+      name not in terms and f"w.{name}" in KICK_GENES and cfg.rewards[name] is not None
+    ):
+      cfg.rewards[name].weight = float(KICK_GENES[f"w.{name}"])
+  # L2 (constraints): "c.<term>": r holds that penalty's cost at r x its
+  # warm-up level with an adaptive multiplier (mdp/constraints.py).
+  from mjlab.tasks.velocity.mdp.constraints import constraint_term
+
+  for name in list(cfg.rewards):
+    ratio = KICK_GENES.get(f"c.{name}")
+    term = cfg.rewards[name]
+    if ratio is not None and term is not None and term.weight < 0:
+      term.func = constraint_term(
+        term.func, name, float(ratio), float(KICK_GENES.get("c_lr", 5.0e-4)),
+        abs(float(term.weight)),
+      )  # fmt: skip
+      term.weight = -1.0
+  twist = cfg.commands["twist"]
+  twist.ball_origin = str(KICK_GENES.get("ball_origin", "feet"))  # ty: ignore[unresolved-attribute]
+  twist.ball_origin_jitter = float(KICK_GENES.get("ball_origin_jitter", 0.02))  # ty: ignore[unresolved-attribute]
+  # Heavier balls in training (user 2026-10-07: heavy ball too): gene
+  # ball_mass_alpha_max raises the mass DR ceiling (0.55 -> up to 0.30 kg).
+  # Since 2026-10-08 the default ceiling (0.752, 0.45 kg) is above the old
+  # genes' 0.55, so the gene only ever raises it.
+  if "ball_mass_alpha_max" in KICK_GENES and "ball_mass" in cfg.events:
+    lo, hi = cfg.events["ball_mass"].params["alpha_range"]
+    hi = max(hi, float(KICK_GENES["ball_mass_alpha_max"]))
+    cfg.events["ball_mass"].params["alpha_range"] = (lo, hi)
+  if "ball_radius_max" in KICK_GENES and "ball_mass" in cfg.events:
+    lo, _ = cfg.events["ball_mass"].params["radius_range"]
+    cfg.events["ball_mass"].params["radius_range"] = (
+      lo,
+      float(KICK_GENES["ball_radius_max"]),
+    )
+  # L3 (scenarios): "s.<field>" sets a scenario field of the kick command
+  # (spawn_any_prob, far_spawn_prob, world_ball_prob, cap_low_prob, ...).
+  for key, value in KICK_GENES.items():
+    if key.startswith("s."):
+      field = key[2:]
+      if not hasattr(twist, field):
+        raise KeyError(f"KICK_GENES: unknown scenario field {field}")
+      setattr(twist, field, type(getattr(twist, field))(value))
+  if float(KICK_GENES.get("foot_capsules", 0.0)) > 0.5:
+    _use_foot_capsules(cfg)
   return cfg
+
+
+# The runner's (and runswift's) K1 scene collides the feet through five 1 cm
+# sole capsules instead of the foot mesh (2026-10-09): our kicks deflect
+# +-20 deg there. Gene foot_capsules trains on that foot (same link frame and
+# mesh in both models).
+_FOOT_CAPSULES = (
+  ((0.09, -0.025, -0.028), (0.02, -0.025, -0.028)),
+  ((-0.058, -0.0125, -0.028), (0.11, -0.0125, -0.028)),
+  ((-0.064, 0.0, -0.028), (0.116, 0.0, -0.028)),
+  ((-0.058, 0.0125, -0.028), (0.11, 0.0125, -0.028)),
+  ((0.09, 0.025, -0.028), (0.02, 0.025, -0.028)),
+)
+
+
+def _capsule_foot_spec() -> mujoco.MjSpec:
+  from mjlab.asset_zoo.robots.booster_k1.k1_whirlwind_constants import get_spec
+
+  spec = get_spec()
+  for side in ("left", "right"):
+    mesh_geom = spec.geom(f"{side}_foot_collision")
+    body = mesh_geom.parent
+    for i, (a, b) in enumerate(_FOOT_CAPSULES):
+      g = mesh_geom if i == 2 else body.add_geom()
+      if i != 2:
+        g.name = f"{side}_footc{i + 1}_collision"
+      g.type = mujoco.mjtGeom.mjGEOM_CAPSULE
+      g.meshname = ""
+      g.fromto = (*a, *b)
+      g.size = (0.01, 0.0, 0.0)
+      g.group = 3
+  return spec
+
+
+def _use_foot_capsules(cfg: ManagerBasedRlEnvCfg) -> None:
+  import dataclasses
+
+  robot = cfg.scene.entities["robot"]
+  foot = r"^(left|right)_foot(c[0-9])?_collision$"
+  cols = []
+  for c in robot.collisions:
+    kw = {}
+    for f in ("condim", "priority", "friction", "solref"):
+      v = getattr(c, f, None)
+      if isinstance(v, dict):
+        kw[f] = {
+          (foot if k == r"^(left|right)_foot_collision$" else k): x
+          for k, x in v.items()
+        }
+    cols.append(dataclasses.replace(c, **kw))
+  cfg.scene.entities["robot"] = dataclasses.replace(
+    robot, spec_fn=_capsule_foot_spec, collisions=tuple(cols)
+  )
 
 
 def booster_k1_amp_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
@@ -824,4 +1065,19 @@ def booster_k1_amp_flat_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     twist_cmd.ranges.lin_vel_y = (-2.0, 2.0)
     twist_cmd.ranges.ang_vel_z = (-3.7, 3.7)
 
+  return cfg
+
+
+def with_stand_start(cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvCfg:
+  """Cold starts after the motion reset (2026-10-09): a share of episodes
+  starts standing still (gene stand_start_prob, default 0.25)."""
+  cfg.events["stand_start"] = EventTermCfg(
+    mode="reset",
+    func=mdp.stand_start,
+    # Off (2026-10-09 03:10): every child with stand starts at 0.35 collapsed
+    # 80-140 iterations in (h018_c0/c1, h019_c0/c1/c2: episodes end in ~1 s on
+    # illegal_contact); the same genes without them (exp_nostand) stayed
+    # healthy. The gene is ignored until the cause is found.
+    params={"prob": 0.0},
+  )
   return cfg

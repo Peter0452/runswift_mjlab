@@ -1262,19 +1262,52 @@ def htwk_feet_orientation_contact_gated(
   sensor_name: str,
   asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
   threshold: float = 1.0,
+  settle_s: float = 0.0,
 ) -> torch.Tensor:
   """Foot roll/pitch penalty only while that foot is in contact.
 
   During swing the ankle is free to dorsiflex so the whole sole clears the
   ground instead of pivoting on the toe with the heel up.
+
+  ``settle_s`` exempts the first part of each contact: penalised from the first
+  contact frame, the cheapest landing is a flat sole slapped down at once
+  (loud on the real robot, 2026-10-08); with a settle window the foot may land
+  heel first and roll flat, and the stance stays flat after it.
   """
   asset: Entity = env.scene[asset_cfg.name]
   roll, pitch, _ = euler_xyz_from_quat(
     asset.data.body_link_quat_w[:, asset_cfg.body_ids].reshape(-1, 4)
   )
   angle = wrap_to_pi(roll if axis == 0 else pitch).reshape(env.num_envs, -1)
-  contact = _htwk_contact(env, sensor_name, threshold).float()
-  return torch.sum(torch.square(angle) * contact, dim=1)
+  contact = _htwk_contact(env, sensor_name, threshold)
+  if settle_s > 0.0:
+    sensor: ContactSensor = env.scene[sensor_name]
+    assert sensor.data.current_contact_time is not None
+    contact = contact & (sensor.data.current_contact_time >= settle_s)
+  return torch.sum(torch.square(angle) * contact.float(), dim=1)
+
+
+def touchdown_speed(
+  env: ManagerBasedRlEnv,
+  sensor_name: str,
+  height_sensor_name: str,
+  asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
+  near_height: float = 0.03,
+  threshold: float = 1.0,
+) -> torch.Tensor:
+  """Squared downward speed of a swing foot about to land (sole within
+  ``near_height`` of the ground, not yet in contact): a foot that decelerates
+  before touchdown lands quietly (2026-10-08, loud steps on the robot).
+  Logs ``Metrics/touchdown_speed``, the mean downward speed in that zone."""
+  asset: Entity = env.scene[asset_cfg.name]
+  vz = asset.data.body_link_lin_vel_w[:, asset_cfg.body_ids, 2]
+  heights = env.scene[height_sensor_name].data.heights
+  contact = _htwk_contact(env, sensor_name, threshold)
+  zone = (heights < near_height) & ~contact
+  down = torch.clamp(-vz, min=0.0) * zone.float()
+  n = zone.float().sum().clamp(min=1.0)
+  env.extras["log"]["Metrics/touchdown_speed"] = down.sum() / n
+  return torch.sum(torch.square(down), dim=1)
 
 
 def htwk_swing_sole_clearance(

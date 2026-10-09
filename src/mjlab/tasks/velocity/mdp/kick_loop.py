@@ -20,7 +20,10 @@ import torch
 
 from mjlab.entity import Entity
 from mjlab.envs.mdp.actions import JointPositionAction, JointPositionActionCfg
+from mjlab.envs.mdp.dr._core import _get_entity_indices
 from mjlab.envs.mdp.events import push_by_setting_velocity
+from mjlab.managers.event_manager import RecomputeLevel, requires_model_fields
+from mjlab.managers.scene_entity_config import SceneEntityCfg
 from mjlab.tasks.velocity.mdp.approach import (
   BALL_RADIUS,
   NOMINAL_ROOT_HEIGHT,
@@ -32,6 +35,7 @@ from mjlab.tasks.velocity.mdp.approach import (
   _command,
   _current,
   _yaw_angle,
+  ball_radius,
 )
 from mjlab.utils.lab_api.math import quat_apply_inverse, quat_mul, yaw_quat
 
@@ -140,6 +144,32 @@ KICK_SPEED_3D = True
 KICK_STYLE_AMP = True
 # K4b (v60): kick quality × this when the support foot is off the ground.
 SUPPORT_PLANT_FACTOR = 0.5
+# Kick styles in one policy (2026-10-06, user): B-Human's inside-foot kick and
+# a hop kick, chosen by situation without new inputs. STYLE_MAP:
+#   "off"   - no style terms (champion recipe);
+#   "range" - short / medium kicks with the inside of the foot, long kicks
+#             with a hop (the range one-hot already tells the policy which);
+#   "free"  - both styles paid in every range, outcome rewards pick.
+# Evidence (kick_anatomy, x4 champion): its hop long kicks reach 5.93 m/s vs
+# 5.09 planted at equal aim; B-Human's inside-foot kicks are 99 % within 20 deg
+# and its short passes softer (2.6 vs 3.9 m/s).
+STYLE_MAP = "off"
+# Inside-foot target: signed foot yaw to the kick line (toe-out positive),
+# raised from INSIDE_YAW_START to π/2 in INSIDE_YAW_STEP steps whenever
+# INSIDE_SUCCESS of the styled kicks match (B-Human raises its sole-yaw target
+# 0 -> 90 deg by hand; our ramp-reward attempt at a fixed 90 deg found 1 %).
+INSIDE_YAW_START = 0.35
+INSIDE_YAW_STEP = 0.15
+INSIDE_SIGMA = 0.35
+INSIDE_SUCCESS = 0.4
+# Share of a styled kick's quality (all kick rewards) that depends on using
+# the mapped style (B-Human scales its direction reward by 0.5 + 0.5 x sole).
+STYLE_SHARE_INSIDE = 0.5
+STYLE_SHARE_HOP = 0.0
+# Range styles: quality factor for a short / medium kick without the support
+# foot on the ground (the inside-foot pass is a planted kick; sty_power/17149
+# hopped into 56 % of its passes and late falls rose 0.35 -> 1.8 %).
+SHORT_PLANT_FACTOR = 1.0
 KICK_SWING_MIN = 1.0
 KICK_SWING_SPAN = 1.5
 # Scripted head (v21): the policy pointed the camera up near the pitch limit
@@ -204,6 +234,9 @@ WALK_POSE_MIN_DIST = 1.0
 # near time = time within NEAR_DISTANCE before the kick. A multiplier, not a
 # time cost: zone-tied time costs fenced the ball off in stage3_v1.
 PROMPT_KICK_TAU = 1.5
+# Promptness floor: the kick-reward factor after a long dither near the ball
+# (0.5 = a slow kick still earns half; gene k.PROMPT_FLOOR, 2026-10-07).
+PROMPT_FLOOR = 0.5
 KNEE_GAP_SCALE = 0.02
 
 
@@ -401,6 +434,20 @@ class KickLoopCommand(ApproachYawCommand):
     # Kicking-foot yaw relative to the kick direction at contact, |rad| (side
     # foot ≈ π/2, front ≈ 0).
     self.kick_foot_yaw = zeros()
+    # Situational style statistics (2026-10-07, user: learn when front or side
+    # foot is best given speed and accuracy). Cells: range bin (3) x redirect
+    # (3); styles: front / side / other, x hop (6). EMA of the outcome score.
+    self.style_score = torch.zeros(9, 6, device=dev)
+    self.style_count = torch.zeros(9, 6, device=dev)
+    self.kick_style_adv = zeros()
+    # Style at contact: inside-foot match (0-1, current curriculum target) and
+    # hop (both feet off the ground).
+    self.kick_inside = zeros()
+    self.kick_hop = flag()
+    self.last_kick_hop = flag()
+    self.inside_target = INSIDE_YAW_START
+    self.inside_hit = 0.0
+    self.inside_count = 0
     self.kick_loft = torch.ones(n, device=dev)
     self.kick_cos = zeros()
     self.kick_speed_req = zeros()
@@ -532,7 +579,16 @@ class KickLoopCommand(ApproachYawCommand):
         self.speed_limit[env_ids, i] = torch.empty(
           len(env_ids), device=self.device
         ).uniform_(lo, top)
-    if self.cfg.rsi_files and len(env_ids) > 0:
+      if self.cfg.cap_low_prob > 0.0:
+        # L3: some episodes at runswift's low caps (0.5 / 0.3 / 0.6, +-10 %).
+        low = torch.rand(len(env_ids), device=self.device) < self.cfg.cap_low_prob
+        caps = torch.tensor((0.5, 0.3, 0.6), device=self.device)
+        jit = 1.0 + 0.1 * (2 * torch.rand(len(env_ids), 3, device=self.device) - 1)
+        self.speed_limit[env_ids] = torch.where(
+          low.unsqueeze(-1), caps * jit, self.speed_limit[env_ids]
+        )
+    # Recorded mid-kick starts bring their own targets: off while a range is pinned.
+    if self.cfg.rsi_files and len(env_ids) > 0 and self._range_pin is None:
       self._reference_state_init(env_ids)
 
   def _load_rsi(self) -> list[tuple[float, dict[str, torch.Tensor]]]:
@@ -602,9 +658,16 @@ class KickLoopCommand(ApproachYawCommand):
         d["joint_pos"][j], d["joint_vel"][j], env_ids=ids
       )
       ball_rel = rot(d["ball_pos"][j] - root_c)
+      # Clips were recorded with the nominal ball; a larger ball is pushed
+      # away from the robot by the extra radius so it does not start inside
+      # the foot, and sits on the ground.
+      dr = ball_radius(self._env, ids) - BALL_RADIUS
+      away = ball_rel[:, :2] / ball_rel[:, :2].norm(dim=-1, keepdim=True).clamp(
+        min=1e-6
+      )
       ball_n = root_n.clone()
-      ball_n[:, :2] = root_n[:, :2] + ball_rel[:, :2]
-      ball_n[:, 2] = ground + d["ball_pos"][j][:, 2]
+      ball_n[:, :2] = root_n[:, :2] + ball_rel[:, :2] + away * dr.unsqueeze(-1)
+      ball_n[:, 2] = ground + d["ball_pos"][j][:, 2] + dr
       bstate = self.ball.data.default_root_state[ids].clone()
       bstate[:, 0:3] = ball_n
       bstate[:, 3:7] = torch.tensor([1.0, 0.0, 0.0, 0.0], device=dev)
@@ -625,6 +688,65 @@ class KickLoopCommand(ApproachYawCommand):
       dist = (self.target_w[ids] - ball_n[:, :2]).norm(dim=-1)
       self.goal_tol[ids] = goal_tolerance(dist)
       self.rsi_start[ids] = True
+
+  def _replace_targets(self, env_ids: torch.Tensor, ball_xy: torch.Tensor) -> None:
+    super()._replace_targets(env_ids, ball_xy)
+    self.goal_tol[env_ids] = goal_tolerance(self.target_dist[env_ids])
+    self.kicked_since_target[env_ids] = False
+    self.lined_up_latched[env_ids] = False
+
+  def _style_stats_update(
+    self, kick, foot_yaw, kick_heading, to_target, ball_speed
+  ) -> None:
+    """Per kick: outcome score (aim x speed for the range) per situation cell
+    and style; kick_style_adv = this style's EMA score minus the cell's
+    count-weighted mean score (what using this style is worth here)."""
+    if not bool(kick.any()):
+      self.kick_style_adv[:] = 0.0
+      return
+    fy = torch.rad2deg(foot_yaw)
+    st = torch.where(fy < 30, 0, torch.where((fy >= 60) & (fy <= 120), 1, 2))
+    gnd = self._env.scene["feet_ground_contact"].data.found
+    if gnd is not None:
+      hop = ~(gnd.reshape(self.num_envs, -1)[:, :2] > 0).any(-1)
+      st = torch.where(hop, st + 3, st)
+    td = to_target.norm(dim=-1)
+    rb = torch.where(td < 4, 0, torch.where(td < 8, 1, 2))
+    yaw = _yaw_angle(self.robot.data.root_link_quat_w)
+    red = torch.rad2deg(
+      torch.atan2(torch.sin(kick_heading - yaw), torch.cos(kick_heading - yaw)).abs()
+    )
+    sb = torch.where(red < 30, 0, torch.where(red < 60, 1, 2))
+    cell = rb * 3 + sb
+    cos = (self.ball.data.root_link_lin_vel_w[:, :2] * to_target).sum(-1) / (
+      ball_speed * td
+    ).clamp(min=1.0e-6)
+    aim = torch.exp(-torch.square(torch.acos(cos.clamp(-1, 1)) / KICK_AIM_SIGMA))
+    speed3 = self.ball.data.root_link_lin_vel_w.norm(dim=-1)
+    ratio = speed3 / required_kick_speed(td, self.cfg.ball_roll_decel).clamp(min=0.5)
+    spd = torch.where(
+      rb == 2, (ratio / 1.5).clamp(max=1.0), (1.0 - (ratio - 1.0).abs()).clamp(min=0.0)
+    )
+    score = aim * spd
+    k = kick.nonzero(as_tuple=False).squeeze(-1)
+    idx = cell[k] * 6 + st[k]
+    flat_s = self.style_score.view(-1)
+    flat_c = self.style_count.view(-1)
+    n_add = torch.bincount(idx, minlength=54).float()
+    s_add = torch.bincount(idx, weights=score[k], minlength=54)
+    a = (n_add * STYLE_STATS_RATE).clamp(max=1.0)
+    mean_new = s_add / n_add.clamp(min=1.0)
+    upd = n_add > 0
+    first = upd & (flat_c == 0)
+    flat_s[:] = torch.where(
+      first, mean_new, torch.where(upd, flat_s + a * (mean_new - flat_s), flat_s)
+    )
+    flat_c[:] = flat_c * (1.0 - STYLE_STATS_RATE * 0.1) + n_add
+    w = self.style_count / self.style_count.sum(dim=1, keepdim=True).clamp(min=1e-6)
+    cell_mean = (w * self.style_score).sum(dim=1)
+    seen = self.style_count[cell, st] >= STYLE_STATS_MIN
+    adv = torch.where(seen, self.style_score[cell, st] - cell_mean[cell], 0.0)
+    self.kick_style_adv[:] = torch.where(kick, adv, 0.0)
 
   def _update_command(self) -> None:
     self._own_steps += 1
@@ -703,6 +825,51 @@ class KickLoopCommand(ApproachYawCommand):
       torch.sin(foot_yaw - kick_heading), torch.cos(foot_yaw - kick_heading)
     )
     self.kick_foot_yaw[:] = torch.where(kick, rel_yaw.abs(), self.kick_foot_yaw)
+    self._style_stats_update(kick, rel_yaw.abs(), kick_heading, to_target, ball_speed)
+    if STYLE_MAP != "off":
+      # Inside of the foot: left foot toe-out = +yaw, right foot toe-out = -yaw.
+      toe_out = rel_yaw * torch.where(which == 0, 1.0, -1.0)
+      amount = torch.where(toe_out > 0.5 * math.pi, math.pi - toe_out, toe_out)
+      gap = (self.inside_target - amount).clamp(min=0.0)
+      inside = torch.exp(-torch.square(gap / INSIDE_SIGMA))
+      gnd = self._env.scene["feet_ground_contact"].data.found
+      hop = (
+        ~(gnd.reshape(self.num_envs, -1)[:, :2] > 0).any(-1)
+        if gnd is not None
+        else torch.zeros_like(kick)
+      )
+      long_now = self.kick_range[:, 2] > 0.5
+      if STYLE_MAP == "range":
+        share = torch.where(long_now, STYLE_SHARE_HOP, STYLE_SHARE_INSIDE)
+        match = torch.where(long_now, hop.float(), inside)
+        quality = quality * (1.0 - share + share * match)
+        if SHORT_PLANT_FACTOR < 1.0:
+          quality = quality * torch.where(long_now | ~hop, 1.0, SHORT_PLANT_FACTOR)
+        styled = kick & ~long_now
+      else:
+        styled = kick
+      self.kick_inside[:] = torch.where(kick, inside, self.kick_inside)
+      self.kick_hop[:] = torch.where(kick, hop, self.kick_hop)
+      self.last_kick_hop[:] = torch.where(kick, hop, self.last_kick_hop)
+      n_st = int(styled.sum())
+      if n_st > 0:
+        hit = float((inside[styled] > 0.5).float().mean())
+        a = min(1.0, LONG_BAND_EMA * n_st)
+        self.inside_hit += a * (hit - self.inside_hit)
+        self.inside_count += n_st
+        if (
+          self.inside_hit >= INSIDE_SUCCESS
+          and self.inside_count >= 200
+          and self.inside_target < 0.5 * math.pi
+        ):
+          self.inside_target = min(0.5 * math.pi, self.inside_target + INSIDE_YAW_STEP)
+          self.inside_count = 0
+          self.inside_hit = 0.0
+      log = self._env.extras.setdefault("log", {})
+      log["Metrics/inside_target"] = self.inside_target
+      log["Metrics/inside_hit"] = self.inside_hit
+      if kick.any():
+        log["Metrics/hop_share"] = float(hop[kick].float().mean())
     self.kick_quality[:] = torch.where(kick, quality, self.kick_quality)
     self.last_kick_quality[:] = torch.where(kick, quality, self.last_kick_quality)
     self.kick_body_speed[:] = torch.where(kick, body, self.kick_body_speed)
@@ -835,6 +1002,8 @@ class KickLoopCommandCfg(ApproachYawCommandCfg):
   range_edges: tuple[float, float] = RANGE_EDGES
   near_distance: float = NEAR_DISTANCE
   rsi_files: tuple[tuple[str, float], ...] = ()
+  cap_low_prob: float = 0.0
+  """L3: share of episodes at runswift's low caps (0.5 / 0.3 / 0.6)."""
   """K4b: (npz path, probability) of starting an episode mid-kick from that set."""
   heading_far: float = HEADING_FAR
   ball_roll_decel: float = BALL_ROLL_DECEL
@@ -998,12 +1167,14 @@ TRACK_BRAKE_MIN_DIST = 1.0
 
 
 def walk_speed_track(
-  env: ManagerBasedRlEnv, min_dist: float = TRACK_CAP_MIN_DIST
+  env: ManagerBasedRlEnv, min_dist: float | None = None
 ) -> torch.Tensor:
   """1 − |speed toward the ball − vx cap| / cap, clipped at 0: peaks at the
   cap, linear on both sides. Only with the ball beyond ``min_dist`` and after
   the post-kick window."""
   cmd = _kick_command(env)
+  # Read at call time so the gene k.TRACK_CAP_MIN_DIST applies (2026-10-08).
+  min_dist = TRACK_CAP_MIN_DIST if min_dist is None else min_dist
   _, dist, _, _, _, _, _, ball_b = _current(env)
   robot: Entity = env.scene["robot"]
   heading = ball_b / ball_b.norm(dim=-1, keepdim=True).clamp(min=1.0e-6)
@@ -1061,7 +1232,9 @@ def kick_direction(env: ManagerBasedRlEnv) -> torch.Tensor:
 
 def _promptness(cmd: KickLoopCommand) -> torch.Tensor:
   """1 for a kick right on arrival, 0.5 for a long dither near the ball."""
-  return 0.5 + 0.5 * torch.exp(-cmd.kick_near_time / PROMPT_KICK_TAU)
+  return PROMPT_FLOOR + (1.0 - PROMPT_FLOOR) * torch.exp(
+    -cmd.kick_near_time / PROMPT_KICK_TAU
+  )
 
 
 # K3 (v58): long-kick power pays only aimed kicks, exp(−err² / 0.05) (B-Human's
@@ -1133,6 +1306,92 @@ def side_foot_strike(env: ManagerBasedRlEnv) -> torch.Tensor:
   y = cmd.kick_foot_yaw
   side = torch.minimum(y, math.pi - y).clamp(min=0.0) / (0.5 * math.pi)
   return cmd.kick_event.float() * side * _aim(cmd) * cmd.kick_quality
+
+
+def inside_foot_style(env: ManagerBasedRlEnv) -> torch.Tensor:
+  """Per kick: inside-foot match to the current target (signed toe-out yaw,
+  B-Human's 90 deg at the end of the curriculum) x aim x quality. STYLE_MAP
+  "range": short / medium kicks only; "free": every kick."""
+  cmd = _kick_command(env)
+  k = cmd.kick_event
+  if STYLE_MAP == "range":
+    k = k & ~cmd.kick_long
+  elif STYLE_MAP == "off":
+    k = k & False
+  return k.float() * cmd.kick_inside * _aim(cmd) * cmd.kick_quality
+
+
+def hop_kick_style(env: ManagerBasedRlEnv) -> torch.Tensor:
+  """Per kick struck with both feet off the ground: power (speed over the
+  needed speed, capped at 1) x aim x quality. A weak hop earns nothing.
+  STYLE_MAP "range": long kicks only; "free": every kick."""
+  cmd = _kick_command(env)
+  k = cmd.kick_event & cmd.kick_hop
+  if STYLE_MAP == "range":
+    k = k & cmd.kick_long
+  elif STYLE_MAP == "off":
+    k = k & False
+  power = (cmd.kick_speed / cmd.kick_speed_req.clamp(min=0.5)).clamp(max=1.0)
+  return k.float() * power * _aim(cmd) * cmd.kick_quality
+
+
+def hop_kick_fall(env: ManagerBasedRlEnv) -> torch.Tensor:
+  """A fall within POST_KICK_WINDOW of a hop kick (on top of kick_fall): a
+  hop only pays if the robot lands it."""
+  cmd = _kick_command(env)
+  fell = env.termination_manager.terminated
+  return (fell & cmd.last_kick_hop & (cmd.time_since_kick < POST_KICK_WINDOW)).float()
+
+
+TURN_TRACK_DIST = 2.0
+TURN_TRACK_ERR = 0.5
+
+
+def turn_rate_track(env: ManagerBasedRlEnv) -> torch.Tensor:
+  """Near the ball (< TURN_TRACK_DIST) and misaligned with the kick line: turn
+  at the yaw-rate cap toward it (2026-10-07, user: fast turns within the
+  joint range, for time to kick). sign(err) * wz / wz_cap in [0, 1] times
+  min(|err| / TURN_TRACK_ERR, 1); 0 once aligned, while the ball is unknown
+  or lost, and in the second after a kick."""
+  cmd = _kick_command(env)
+  robot: Entity = env.scene["robot"]
+  wz = robot.data.root_link_ang_vel_b[:, 2]
+  cap = cmd.speed_limit[:, 2].clamp(min=0.1)
+  err = cmd.yaw_error
+  toward = (torch.sign(err) * wz / cap).clamp(0.0, 1.0)
+  need = (err.abs() / TURN_TRACK_ERR).clamp(max=1.0)
+  gate = (cmd.dist < TURN_TRACK_DIST) & ~cmd.ball_lost & (cmd.time_since_kick >= 1.0)
+  if hasattr(cmd, "never_seen"):
+    gate = gate & ~cmd.never_seen
+  return gate.float() * toward * need
+
+
+LONG_LINEAR_REF = 8.0
+LONG_LINEAR_CLIP = 2.0
+
+
+def long_kick_speed_linear(env: ManagerBasedRlEnv) -> torch.Tensor:
+  """Per long (>= 8 m) kick: 3D ball speed / LONG_LINEAR_REF, uncapped up to
+  LONG_LINEAR_CLIP (16 m/s), x sharp aim x quality (2026-10-07, user: long
+  kicks without restriction, as strong as or stronger than B-Human; air balls
+  are fine - no loft factor). B-Human's ball_kick_velocity_strong is linear too."""
+  cmd = _kick_command(env)
+  lk = cmd.kick_event & cmd.kick_long
+  speed = (cmd.kick_speed / LONG_LINEAR_REF).clamp(max=LONG_LINEAR_CLIP)
+  return lk.float() * speed * _long_aim(cmd) * cmd.kick_quality
+
+
+STYLE_STATS_RATE = 0.01
+STYLE_STATS_MIN = 20.0
+
+
+def style_advantage(env: ManagerBasedRlEnv) -> torch.Tensor:
+  """Per kick: how much better (or worse) this kick's style does than the
+  average style in this situation, from running statistics of the policy's own
+  kicks (aim x speed for the range), clipped to +-0.5. Pulls style choice to
+  whatever works best where, without hand-coding which style is best."""
+  cmd = _kick_command(env)
+  return cmd.kick_event.float() * cmd.kick_style_adv.clamp(-0.5, 0.5)
 
 
 def kick_rest_accuracy(env: ManagerBasedRlEnv) -> torch.Tensor:
@@ -1445,6 +1704,87 @@ def ball_relocate_unseen(
   ball.write_root_state_to_sim(st, env_ids=ids)
 
 
+@requires_model_fields(
+  "geom_size",
+  "geom_rbound",
+  "geom_aabb",
+  "body_mass",
+  "body_inertia",
+  recompute=RecomputeLevel.set_const,
+)
+def ball_size_mass(
+  env: ManagerBasedRlEnv,
+  env_ids: torch.Tensor | None,
+  radius_range: tuple[float, float] = (0.07, 0.13),
+  alpha_range: tuple[float, float] = (-0.347, 0.752),
+  nominal_mass: float = 0.1,
+  *,
+  geom_cfg: SceneEntityCfg,
+  body_cfg: SceneEntityCfg,
+) -> None:
+  """A different ball every episode (user 2026-10-08): collision radius uniform
+  in ``radius_range`` and mass ``nominal_mass * e^{2 alpha}``, independent;
+  thin-shell inertia 2/3 m r^2 to match the collision geom. Spawns read the
+  radius back (``ball_radius``); the visual mesh keeps the nominal size."""
+  if env_ids is None:
+    env_ids = torch.arange(env.num_envs, device=env.device)
+  env_ids = env_ids.to(env.device, dtype=torch.long)
+  ball: Entity = env.scene["ball"]
+  n = len(env_ids)
+  r = torch.empty(n, device=env.device).uniform_(*radius_range)
+  alpha = torch.empty(n, device=env.device).uniform_(*alpha_range)
+  m = nominal_mass * torch.exp(2.0 * alpha)
+  g = _get_entity_indices(ball.indexing, geom_cfg, "geom", False)
+  b = _get_entity_indices(ball.indexing, body_cfg, "body", False)
+  model = env.sim.model
+  model.geom_size[env_ids[:, None], g[None, :], 0] = r[:, None]
+  model.geom_rbound[env_ids[:, None], g[None, :]] = r[:, None]
+  model.geom_aabb[env_ids[:, None], g[None, :], 1] = r[:, None, None].expand(
+    -1, len(g), 3
+  )
+  model.body_mass[env_ids[:, None], b[None, :]] = m[:, None]
+  inertia = (2.0 / 3.0) * m * r * r
+  model.body_inertia[env_ids[:, None], b[None, :]] = inertia[:, None, None].expand(
+    -1, len(b), 3
+  )
+
+
+def stand_start(
+  env: ManagerBasedRlEnv,
+  env_ids: torch.Tensor | None,
+  prob: float = 0.25,
+) -> None:
+  """Cold starts (2026-10-09): with probability ``prob`` the robot starts
+  still, upright in its default pose (position and heading from the motion
+  reset kept). Every reset came from moving motion clips, and the runner
+  sim showed falls within 0.8 s of a standing start with the ball behind
+  (runswift goal grid, "away" starts). Must run after the motion reset."""
+  if env_ids is None:
+    env_ids = torch.arange(env.num_envs, device=env.device)
+  pick = torch.rand(len(env_ids), device=env.device) < prob
+  if not bool(pick.any()):
+    return
+  ids = env_ids[pick]
+  robot: Entity = env.scene["robot"]
+  q = robot.data.root_link_quat_w[ids]
+  yaw = torch.atan2(
+    2 * (q[:, 0] * q[:, 3] + q[:, 1] * q[:, 2]), 1 - 2 * (q[:, 2] ** 2 + q[:, 3] ** 2)
+  )
+  half = 0.5 * yaw
+  zero = torch.zeros_like(half)
+  state = robot.data.default_root_state[ids].clone()
+  state[:, :2] = robot.data.root_link_pos_w[ids, :2]
+  state[:, 2] = state[:, 2] + env.scene.env_origins[ids, 2]
+  state[:, 3:7] = torch.stack((half.cos(), zero, zero, half.sin()), dim=-1)
+  state[:, 7:] = 0.0
+  robot.write_root_state_to_sim(state, env_ids=ids)
+  robot.write_joint_state_to_sim(
+    robot.data.default_joint_pos[ids].clone(),
+    torch.zeros_like(robot.data.default_joint_vel[ids]),
+    env_ids=ids,
+  )
+
+
 # K3 (v58): B-Human's sim2real torque clip for the K1 legs (Nm). Our sim allows
 # 68 / 76 / 38 / 112 / 38 / 38; v57's long kicks reach knee p90 88 Nm.
 TORQUE_SOFT_LIMIT = {
@@ -1626,9 +1966,17 @@ __all__ = [
   "kick_rest_accuracy",
   "search_turn",
   "side_foot_strike",
+  "inside_foot_style",
+  "turn_rate_track",
+  "long_kick_speed_linear",
+  "style_advantage",
+  "hop_kick_style",
+  "hop_kick_fall",
   "torque_over_soft_limit",
   "search_backward",
   "ball_relocate_unseen",
+  "ball_size_mass",
+  "stand_start",
   "long_kick_underpower",
   "trunk_pitch_band",
   "walk_base_height",

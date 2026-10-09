@@ -1,5 +1,6 @@
 """Script to play RL agent with RSL-RL."""
 
+import math
 import os
 import sys
 import time as _time
@@ -59,6 +60,18 @@ class PlayConfig:
   speed_limit: tuple[float, float, float] | None = None
   """Pin the observed |vx| |vy| |wz| limits (approach/kick tasks), e.g. 0.8 0.5 1.0.
   In viser they can also be changed live under Commands."""
+  kick_range: Literal["short", "medium", "long"] | None = None
+  """Kick tasks: place targets only in this range class's distance band (with the
+  default edges: short < 4 m, medium 4-8 m, long >= 8 m). In viser it can also be
+  changed live under Commands."""
+  ball_distance: str | None = None
+  """Kick tasks: ball spawn distance range (m) as "lo,hi", e.g. 4,10."""
+  ball_bearing: str | None = None
+  """Kick tasks: ball spawn bearing range (deg, robot frame) as "lo,hi", e.g.
+  150,210 = behind the robot."""
+  perfect_ball: bool = False
+  """Kick tasks: exact ball every step at any bearing (as runswift's fixture
+  feeds it), instead of the head-camera model."""
   log_root: str = "logs/rsl_rl"
   """Root directory under which experiment logs are written."""
 
@@ -108,6 +121,34 @@ def run_play(task_id: str, cfg: PlayConfig):
         twist.speed_cap_final = ((vx, vx), (vy, vy), (wz, wz))
         twist.speed_cap_start_max = (vx, vy, wz)
       print(f"[INFO]: Speed limits pinned to vx={vx} vy={vy} wz={wz}")
+
+  twist = env_cfg.commands.get("twist")
+  if twist is not None and hasattr(twist, "ball_distance_range"):
+    if cfg.ball_distance is not None:
+      lo, hi = (float(v) for v in cfg.ball_distance.split(","))
+      twist.ball_distance_range = (lo, hi)
+    if cfg.ball_bearing is not None:
+      lo, hi = (math.radians(float(v)) for v in cfg.ball_bearing.split(","))
+      twist.spawn_view_center = 0.5 * (lo + hi)
+      twist.spawn_view_half_angle = 0.5 * (hi - lo)
+      twist.side_drill_prob = 0.0
+    if cfg.kick_range is not None:
+      from mjlab.tasks.velocity.mdp.approach import KICK_RANGE_NAMES, range_bin
+
+      twist.kick_range = KICK_RANGE_NAMES.index(cfg.kick_range)
+      band = range_bin(twist.target_distance_bins, twist.range_edges, twist.kick_range)
+      print(f"[INFO]: kick range {cfg.kick_range}: targets {band[0]:g}-{band[1]:g} m")
+    if cfg.perfect_ball:
+      twist.fov_half_angle = math.pi
+      twist.fov_vertical_half_angle = None
+      twist.ball_obs_noise = (0.0, 0.0)
+      twist.vision_dropout = 0.0
+      twist.vision_delay_steps = (0, 0)
+    print(
+      f"[INFO]: ball distance {twist.ball_distance_range}, bearing centre"
+      f" {math.degrees(getattr(twist, 'spawn_view_center', 0.0)):.0f} deg +/-"
+      f" {math.degrees(twist.spawn_view_half_angle):.0f}, perfect ball {cfg.perfect_ball}"
+    )
 
   # Check if this is a tracking task by checking for motion command.
   is_tracking_task = "motion" in env_cfg.commands and isinstance(

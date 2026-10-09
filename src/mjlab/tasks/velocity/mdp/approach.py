@@ -18,6 +18,7 @@ import math
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Callable
 
+import mujoco
 import numpy as np
 import torch
 
@@ -74,6 +75,24 @@ _FOV_SEEN_COLOR = (0.2, 0.9, 0.3, 0.8)
 _FOV_LOST_COLOR = (0.95, 0.2, 0.2, 0.8)
 
 
+def ball_radius(env, env_ids: torch.Tensor) -> torch.Tensor:
+  """Per-env radius of the ball's collision sphere, read from the model, so
+  spawns sit the ball on the ground for any size (``ball_size_mass`` event,
+  benchmark balls)."""
+  gid = getattr(env, "_ball_geom_id", None)
+  if gid is None:
+    gid = mujoco.mj_name2id(
+      env.sim.mj_model, mujoco.mjtObj.mjOBJ_GEOM, "ball/ball_collision"
+    )
+    env._ball_geom_id = gid
+  if gid < 0:
+    return torch.full((len(env_ids),), BALL_RADIUS, device=env.device)
+  size = env.sim.model.geom_size
+  if size.ndim == 3:
+    return size[env_ids, gid, 0]
+  return size[gid, 0].expand(len(env_ids))
+
+
 def approach_alpha(
   robot_xy: torch.Tensor, ball_xy: torch.Tensor, target_xy: torch.Tensor
 ) -> torch.Tensor:
@@ -107,6 +126,20 @@ def range_one_hot(
   medium = (distance >= short_max) & (distance < medium_max)
   strong = distance >= medium_max
   return torch.stack((short, medium, strong), dim=-1).to(dtype=distance.dtype)
+
+
+KICK_RANGE_NAMES = ("short", "medium", "long")
+
+
+def range_bin(
+  bins: tuple[tuple[float, float], ...], edges: tuple[float, float], k: int
+) -> tuple[float, float]:
+  """Target-distance band of range class ``k`` (0 short, 1 medium, 2 long),
+  bounded by the overall span of ``bins``."""
+  lo = min(b[0] for b in bins)
+  hi = max(b[1] for b in bins)
+  bounds = (lo, edges[0], edges[1], hi)
+  return (max(lo, bounds[k]), min(hi, bounds[k + 1]))
 
 
 def sample_binned(
@@ -232,6 +265,10 @@ class ApproachYawCommand(CommandTerm):
     self.ball: Entity = env.scene[cfg.ball_name]
     head_ids, _ = self.robot.find_bodies("Head_2")
     self._head_id = int(head_ids[0])
+    feet_ids, _ = self.robot.find_bodies(
+      ("left_foot_link", "right_foot_link"), preserve_order=True
+    )
+    self._ball_origin_feet = list(feet_ids)
 
     n = self.num_envs
     device = self.device
@@ -262,6 +299,12 @@ class ApproachYawCommand(CommandTerm):
     # robot (+1 left, -1 right) where the ball was last remembered.
     self.ball_lost = torch.zeros(n, dtype=torch.bool, device=device)
     self.lost_dir = torch.ones(n, device=device)
+    # L3 scenario gene: episodes with a world-model ball (always fresh).
+    self.world_ball = torch.zeros(n, dtype=torch.bool, device=device)
+    self.trunk_origin = torch.zeros(n, dtype=torch.bool, device=device)
+    # Never seen since the spawn (unknown start): ball (0, 0), age 0 - the
+    # runner's convention before the first detection (user, 2026-10-07).
+    self.never_seen = torch.zeros(n, dtype=torch.bool, device=device)
     # Vision delay / dropout for the actor's ball (history of detections).
     hist = int(cfg.vision_delay_steps[1]) + 1
     self._det_hist_b = torch.zeros(n, hist, 2, device=device)
@@ -274,6 +317,9 @@ class ApproachYawCommand(CommandTerm):
     # Viewer override of speed_limit (all envs), set up by create_gui.
     self._limit_override: viser.GuiCheckboxHandle | None = None
     self._limit_sliders: list[viser.GuiSliderHandle] = []
+    # Viewer pin of the kick range class (index into KICK_RANGE_NAMES).
+    self._range_pin: int | None = cfg.kick_range
+    self._range_replace = False
 
   @property
   def command(self) -> torch.Tensor:
@@ -290,8 +336,16 @@ class ApproachYawCommand(CommandTerm):
     self._apply_limit_override()
 
   def compute(self, dt: float) -> None:
+    if self._range_replace:
+      # Set from the GUI thread; applied here, between physics steps.
+      self._range_replace = False
+      ids = torch.arange(self.num_envs, device=self.device)
+      self._replace_targets(ids, self.last_seen_ball_w[ids])
     super().compute(dt)
     self._apply_limit_override()
+
+  def _replace_targets(self, env_ids: torch.Tensor, ball_xy: torch.Tensor) -> None:
+    self._place_target(env_ids, ball_xy)
 
   def create_gui(
     self,
@@ -312,6 +366,22 @@ class ApproachYawCommand(CommandTerm):
         )
         for label, v in zip(("|vx| max", "|vy| max", "|wz| max"), init, strict=True)
       ]
+    # Kick range: targets are placed only in the chosen distance band, so the
+    # range one-hot, the rewards and the goal all agree.
+    with server.gui.add_folder(f"{name.capitalize()} kick range"):
+      dropdown = server.gui.add_dropdown(
+        "Range",
+        options=("auto", *KICK_RANGE_NAMES),
+        initial_value=(
+          "auto" if self._range_pin is None else KICK_RANGE_NAMES[self._range_pin]
+        ),
+      )
+
+      @dropdown.on_update
+      def _(_ev) -> None:
+        v = dropdown.value
+        self._range_pin = None if v == "auto" else KICK_RANGE_NAMES.index(v)
+        self._range_replace = True
 
   def _update_metrics(self) -> None:
     self.metrics["abs_alpha"][:] = self.abs_alpha
@@ -386,7 +456,7 @@ class ApproachYawCommand(CommandTerm):
       self.last_seen_yaw[:] = torch.where(visible, yaw, self.last_seen_yaw)
       if self.cfg.memory_odometry:
         rel = torch.zeros_like(robot_pos)
-        rel[:, :2] = self.last_seen_ball_w - robot_pos[:, :2]
+        rel[:, :2] = self.last_seen_ball_w - self._ball_origin_w()[:, :2]
         rel[:, 2] = ball_pos[:, 2] - robot_pos[:, 2]
         rel[:, 2] = 0.0
         memory_b = quat_apply_inverse(yaw_quat(self.robot.data.root_link_quat_w), rel)[
@@ -405,6 +475,11 @@ class ApproachYawCommand(CommandTerm):
       self.ball_age_obs[:] = torch.exp(-self.time_since_seen / self.cfg.ball_memory_tau)
       if self.cfg.memory_invalidate:
         self._invalidate_memory(memory_b, visible, ball_pos[:, 2])
+      self.never_seen &= ~visible
+      self.masked_ball_b[:] = torch.where(
+        self.never_seen.unsqueeze(-1), 0.0, self.masked_ball_b
+      )
+      self.ball_age_obs[:] = torch.where(self.never_seen, 0.0, self.ball_age_obs)
     self.kick_dir_b[:] = kick_direction_b(
       self.target_w, self.last_seen_ball_w, self.robot.data.root_link_quat_w
     )
@@ -515,12 +590,35 @@ class ApproachYawCommand(CommandTerm):
     pose = _root_pose(self.robot, env_ids)
     robot_xy = pose[:, 0:2]
     robot_yaw = _yaw_angle(pose[:, 3:7])
-    ball_z = pose[:, 2] - NOMINAL_ROOT_HEIGHT + BALL_RADIUS
+    ball_z = pose[:, 2] - NOMINAL_ROOT_HEIGHT + ball_radius(self._env, env_ids)
 
     # The robot faces the ball; the kick line can point anywhere.
     half = self.cfg.spawn_view_half_angle
-    angle = robot_yaw + torch.empty(n, device=device).uniform_(-half, half)
+    angle = (
+      robot_yaw
+      + self.cfg.spawn_view_center
+      + torch.empty(n, device=device).uniform_(-half, half)
+    )
     radius = torch.empty(n, device=device).uniform_(*self.cfg.ball_distance_range)
+    # L3 scenario genes (2026-10-07): some episodes start with the ball at any
+    # bearing (incl. behind) and / or far away, some with a world-model ball.
+    if self.cfg.spawn_any_prob > 0.0:
+      anyb = torch.rand(n, device=device) < self.cfg.spawn_any_prob
+      angle = torch.where(
+        anyb,
+        robot_yaw + torch.empty(n, device=device).uniform_(-math.pi, math.pi),
+        angle,
+      )
+    if self.cfg.far_spawn_prob > 0.0:
+      far = torch.rand(n, device=device) < self.cfg.far_spawn_prob
+      radius = torch.where(
+        far, torch.empty(n, device=device).uniform_(*self.cfg.far_spawn_range), radius
+      )
+    self.world_ball[env_ids] = torch.rand(n, device=device) < self.cfg.world_ball_prob
+    self.trunk_origin[env_ids] = (
+      torch.rand(n, device=device) < self.cfg.ball_origin_trunk_prob
+    )
+    unknown = torch.rand(n, device=device) < self.cfg.unknown_start_prob
     drill = torch.rand(n, device=device) < self.cfg.side_drill_prob
     if bool(drill.any()):
       # Side drill (v52): ball close in front, target off to the side.
@@ -539,6 +637,13 @@ class ApproachYawCommand(CommandTerm):
       :, :2
     ]
     self.last_seen_yaw[env_ids] = robot_yaw
+    if bool(unknown.any()):
+      # L3 / benchmark (2026-10-07): the robot starts without knowing where
+      # the ball is (runswift's fixture with camera vision; game start).
+      uid = env_ids[unknown]
+      self.time_since_seen[uid] = 1.0e3
+      self.last_seen_ball_b[uid] = 0.0
+    self.never_seen[env_ids] = unknown
     self._place_target(env_ids, ball_xy)
     if bool(drill.any()):
       ids = drill.nonzero(as_tuple=False).squeeze(-1)
@@ -570,10 +675,31 @@ class ApproachYawCommand(CommandTerm):
     """New target in a random direction from ``ball_xy``, at a binned distance."""
     n = len(env_ids)
     angle = torch.rand(n, device=self.device) * (2.0 * math.pi)
-    dist = sample_binned(n, self.cfg.target_distance_bins, self.device)
+    bins = self.cfg.target_distance_bins
+    if self._range_pin is not None:
+      bins = (range_bin(bins, self.cfg.range_edges, self._range_pin),)
+    dist = sample_binned(n, bins, self.device)
     offset = torch.stack((angle.cos(), angle.sin()), dim=-1) * dist.unsqueeze(-1)
     self.target_w[env_ids] = ball_xy + offset
     self.target_dist[env_ids] = dist
+
+  def _ball_origin_w(self) -> torch.Tensor:
+    """Origin of the robot ball frame (world, z of the trunk): the trunk's
+    ground projection, or (2026-10-07, user: runswift vision base_link sits
+    between the feet) the midpoint of the two feet, with Gaussian jitter of
+    ``ball_origin_jitter`` m per axis and step for the remaining uncertainty."""
+    origin = self.robot.data.root_link_pos_w.clone()
+    if self.cfg.ball_origin == "feet":
+      feet = self.robot.data.body_link_pos_w[:, self._ball_origin_feet, :2]
+      # Some episodes use the trunk instead (2026-10-09): runswift's harness
+      # reports the ball from the pelvis, so the policy should not depend on
+      # which of the two frames it gets.
+      origin[:, :2] = torch.where(
+        self.trunk_origin.unsqueeze(-1), origin[:, :2], feet.mean(dim=1)
+      )
+    if self.cfg.ball_origin_jitter > 0.0:
+      origin[:, :2] += self.cfg.ball_origin_jitter * torch.randn_like(origin[:, :2])
+    return origin
 
   def _measure(
     self,
@@ -619,12 +745,13 @@ class ApproachYawCommand(CommandTerm):
     if self.cfg.fov_half_angle >= math.pi:
       # Perfect perception (evaluation only): the ball is always seen.
       visible = torch.ones_like(visible)
+    visible = visible | self.world_ball
 
     # Ball in the robot's level ground frame (runswift vision / base_link):
     # trunk origin projected to the ground, rotated by trunk yaw only. Before
     # v49 the full trunk orientation was used, so a 5–10° lean moved the ball
     # 4–9 cm (the ball is ~0.5 m below the trunk), which the robot never sees.
-    rel = ball_pos - robot_pos
+    rel = ball_pos - self._ball_origin_w()
     rel[:, 2] = 0.0
     true_ball_b = quat_apply_inverse(yaw_quat(robot_quat), rel)[:, :2]
     return (
@@ -673,6 +800,8 @@ class ApproachYawCommandCfg(CommandTermCfg):
   ball_distance_range: tuple[float, float] = BALL_DISTANCE_RANGE
   """Distance of the spawned ball from the robot (m)."""
   spawn_view_half_angle: float = SPAWN_VIEW_HALF_ANGLE
+  spawn_view_center: float = 0.0
+  """Centre of the ball spawn bearing (rad, robot frame); pi = behind."""
   """Max bearing of the spawned ball from the trunk heading (rad)."""
   speed_limit_vx: tuple[float, float] = SPEED_LIMIT_VX
   speed_limit_vy: tuple[float, float] = SPEED_LIMIT_VY
@@ -680,6 +809,9 @@ class ApproachYawCommandCfg(CommandTermCfg):
   target_distance_bins: tuple[tuple[float, float], ...] = (TARGET_DISTANCE_RANGE,)
   """Ball-to-target distance bins (m); a bin is picked uniformly, then a value."""
   range_edges: tuple[float, float] = (RANGE_SHORT_MAX, RANGE_MEDIUM_MAX)
+  kick_range: int | None = None
+  """Pin targets to one range class (0 short, 1 medium, 2 long), placing them
+  only in its band of ``target_distance_bins``; None samples all (play only)."""
   ball_memory: bool = False
   """Out of view, give the last-seen ball (in the current trunk frame) instead
   of zeros, and its age in slot 74. Off for the approach stage."""
@@ -699,6 +831,21 @@ class ApproachYawCommandCfg(CommandTermCfg):
   memory_view_range: float = 3.0
   """Only remembered spots this close count for the in-view rule (m)."""
   memory_odometry: bool = True
+  spawn_any_prob: float = 0.0
+  """L3: share of spawns with the ball at any bearing (incl. behind)."""
+  far_spawn_prob: float = 0.0
+  """L3: share of spawns with the ball far_spawn_range away."""
+  far_spawn_range: tuple[float, float] = (4.0, 10.0)
+  world_ball_prob: float = 0.0
+  unknown_start_prob: float = 0.0
+  """L3: share of spawns where the robot does not know where the ball is."""
+  """L3: share of episodes with a world-model ball (seen at any bearing)."""
+  ball_origin: str = "trunk"
+  """Ball frame origin: "trunk" (ground projection, v49) or "feet" (midpoint)."""
+  ball_origin_jitter: float = 0.0
+  """Per-step Gaussian jitter of that origin (m, per axis)."""
+  ball_origin_trunk_prob: float = 0.0
+  """With ball_origin "feet": share of episodes measured from the trunk."""
   """Carry the out-of-view ball with the robot's true motion (odometry). False
   turns the last sighting by the yaw change only, as the robot runner does."""
   ball_obs_noise: tuple[float, float] = (0.0, 0.0)

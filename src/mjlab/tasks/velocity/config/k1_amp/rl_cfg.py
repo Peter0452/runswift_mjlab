@@ -174,6 +174,11 @@ def booster_k1_kick_stage3_runner_cfg() -> AmpOnPolicyRunnerCfg:
   genes = json.loads(os.environ.get("KICK_GENES", "{}") or "{}")
   if "desired_kl" in genes:
     cfg.algorithm.desired_kl = float(genes["desired_kl"])
+  # CAPS as genes (2026-10-08): the action_rate reward only sees sampled
+  # actions (std 0.6 noise dominates it); CAPS acts on the deterministic mean.
+  for g in ("caps_temporal_coef", "caps_spatial_coef", "caps_near_ball_scale"):
+    if g in genes:
+      setattr(cfg.algorithm, g, float(genes[g]))
   # L5 teacher imitation (B-Human near-ball leg actions), off by default.
   if float(genes.get("imitation_coef", 0.0)) > 0.0:
     cfg.algorithm.imitation_coef = float(genes["imitation_coef"])
