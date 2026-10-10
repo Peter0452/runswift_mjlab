@@ -1,0 +1,655 @@
+{
+  "date": "2026-10-02",
+  "host": "marvin",
+  "container": "runswift-world-model-sim",
+  "image_id": "sha256:cf69bc9d2baafa216d55a9e2f62781329a0dfcccae42ae58bfd3ac1000cdde9c",
+  "sdk_version": "1.5.6",
+  "scene": "mjcf/football_pitch_4_K1.xml",
+  "scene_revision": "3ac43631993a4a8094c36b27c76c6c541b8addcab34236767440f8b74e88af22",
+  "base_commit": "c11cbe397a5bcc5db05005fd38171fd29d6f9095",
+  "remote_directory": "/home/oliver/runswift-simulation/booster-1.10.5/score-benchmark-03",
+  "remote_video_directory": "/home/oliver/runswift-simulation/booster-1.10.5/score-video-03",
+  "manifest": {
+    "schema": "runswift-score-benchmark/1",
+    "scene": "mjcf/football_pitch_4_K1.xml",
+    "revision": "3ac43631993a4a8094c36b27c76c6c541b8addcab34236767440f8b74e88af22",
+    "inputs": "ground truth; scripted referee; no camera perception",
+    "team_field": "Rotate physical XY and yaw by pi for negative-goal cases; same capture times.",
+    "geometry": {
+      "line_x": 7.0,
+      "half_width": 1.25,
+      "height": 1.75,
+      "ball_radius": 0.11,
+      "field_half_width": 4.5,
+      "max_gap_s": 0.1
+    },
+    "cases": [
+      {
+        "name": "centre-positive",
+        "direction": 1,
+        "ball": [
+          4.0,
+          0.0
+        ],
+        "start": [
+          2.2,
+          -0.5
+        ],
+        "yaw": 0.2,
+        "power": 1.5
+      },
+      {
+        "name": "left-positive",
+        "direction": 1,
+        "ball": [
+          4.0,
+          0.6
+        ],
+        "start": [
+          2.4,
+          1.4
+        ],
+        "yaw": -0.3,
+        "power": 1.5
+      },
+      {
+        "name": "right-positive",
+        "direction": 1,
+        "ball": [
+          3.5,
+          -0.6
+        ],
+        "start": [
+          1.9,
+          -1.4
+        ],
+        "yaw": 0.3,
+        "power": 1.5
+      },
+      {
+        "name": "centre-negative",
+        "direction": -1,
+        "ball": [
+          -4.0,
+          -0.0
+        ],
+        "start": [
+          -2.2,
+          0.5
+        ],
+        "yaw": -2.9415926535897934,
+        "power": 1.5
+      },
+      {
+        "name": "left-negative",
+        "direction": -1,
+        "ball": [
+          -4.0,
+          -0.6
+        ],
+        "start": [
+          -2.4,
+          -1.4
+        ],
+        "yaw": 2.8415926535897933,
+        "power": 1.5
+      },
+      {
+        "name": "right-negative",
+        "direction": -1,
+        "ball": [
+          -3.5,
+          0.6
+        ],
+        "start": [
+          -1.9,
+          1.4
+        ],
+        "yaw": -2.8415926535897937,
+        "power": 1.5
+      }
+    ],
+    "timeout_s": 45.0,
+    "passive_observation_s": 8,
+    "input_hz": 20,
+    "control_hz": 20,
+    "unknown_space": "explicit allow_unknown, capped at 0.2 m/s; no invented clear space",
+    "video": "Offline MuJoCo render of recorded physics states; no rendering in the live loop."
+  },
+  "results": [
+    {
+      "case": "centre-positive",
+      "valid_trial": true,
+      "benchmark_success": true,
+      "execution_reason": "shot_departed_and_stopped",
+      "evaluation": {
+        "valid": true,
+        "issues": [],
+        "goal": true,
+        "outcome": "scored",
+        "first_boundary_crossing": {
+          "time": 308.4610459260481,
+          "side": 1,
+          "y": 0.49920094228321377,
+          "z": 0.10996995120060499,
+          "inside_goal": true,
+          "kind": "goal_line",
+          "interpolated": true
+        },
+        "crossings": [
+          {
+            "time": 308.4610459260481,
+            "side": 1,
+            "y": 0.49920094228321377,
+            "z": 0.10996995120060499,
+            "inside_goal": true,
+            "kind": "goal_line",
+            "interpolated": true
+          }
+        ],
+        "settled": true,
+        "samples": 3173,
+        "max_gap_s": 0.010000000000047748,
+        "first_capture_s": 297.93000000069446,
+        "last_capture_s": 316.96800000078537,
+        "final_ball": [
+          7.201860277789092,
+          0.6787920792109954,
+          0.10997794023672021
+        ],
+        "max_displacement_m": 3.4990051674877254,
+        "contact_confirmed": true,
+        "contact_windows": 8,
+        "first_contact_window_end_s": 306.6560000007361,
+        "time_to_contact_window_s": 8.726000000041665,
+        "time_to_boundary_s": 10.531045925353624,
+        "observed_contact_episodes": 1,
+        "foot_contact_count": null,
+        "strike_count": null,
+        "contact_evidence": "Accumulated robot1-ball contact per published physics window; body part and strike count unavailable."
+      },
+      "first_kick_request_wall_s": 4.313941484,
+      "execution_wall_s": 11.026813387,
+      "body_heading_error_at_first_kick_rad": -0.42062288132150555,
+      "max_snapshot_age_ms": 54.0,
+      "max_intent_gap_ms": 52.825698,
+      "max_robot_displacement_m": 2.344021199384269,
+      "controller_activations": 1,
+      "controller_stopped": true,
+      "files_sha256": {
+        "controller.jsonl": "8f102d798730016b257bc764f8e9d8e661607b2fd373757cc8ac791da024ef79",
+        "truth.jsonl": "feb26bcc278e200ab6e19db2ffeb96f5598d2edf9dba30242acfbe257022bedb",
+        "case.json": "92f15edb39663fde53f46f15791d7d713a263cdda10f0213501cc69668c57dc8",
+        "physics.jsonl": "22d56b795ad9edc9d5f443411b7c7640cc9db213df069077ba5f407cd118fe05",
+        "scene.json": "a9cafce13a89147998b604e465fd0a318ddd997a5d824cbab42f3a091bb1aab6"
+      },
+      "summary_sha256": "ca25125c71dbad967ada149e095638c64682ad0c6fc0cecf36913f2ec1787182"
+    },
+    {
+      "case": "left-positive",
+      "valid_trial": true,
+      "benchmark_success": true,
+      "execution_reason": "shot_departed_and_stopped",
+      "evaluation": {
+        "valid": true,
+        "issues": [],
+        "goal": true,
+        "outcome": "scored",
+        "first_boundary_crossing": {
+          "time": 332.2662042624629,
+          "side": 1,
+          "y": 0.19774436056542602,
+          "z": 0.10999147677428897,
+          "inside_goal": true,
+          "kind": "goal_line",
+          "interpolated": true
+        },
+        "crossings": [
+          {
+            "time": 332.2662042624629,
+            "side": 1,
+            "y": 0.19774436056542602,
+            "z": 0.10999147677428897,
+            "inside_goal": true,
+            "kind": "goal_line",
+            "interpolated": true
+          }
+        ],
+        "settled": true,
+        "samples": 3343,
+        "max_gap_s": 0.012000000000057298,
+        "first_capture_s": 320.3420000008015,
+        "last_capture_s": 340.3860000008972,
+        "final_ball": [
+          7.199380749118732,
+          0.016557341323561594,
+          0.10997794023672021
+        ],
+        "max_displacement_m": 3.481885837361055,
+        "contact_confirmed": true,
+        "contact_windows": 8,
+        "first_contact_window_end_s": 330.41000000084955,
+        "time_to_contact_window_s": 10.068000000048073,
+        "time_to_boundary_s": 11.92420426166143,
+        "observed_contact_episodes": 1,
+        "foot_contact_count": null,
+        "strike_count": null,
+        "contact_evidence": "Accumulated robot1-ball contact per published physics window; body part and strike count unavailable."
+      },
+      "first_kick_request_wall_s": 4.563052603,
+      "execution_wall_s": 12.028415471,
+      "body_heading_error_at_first_kick_rad": 0.0729763296249156,
+      "max_snapshot_age_ms": 54.0,
+      "max_intent_gap_ms": 51.619733,
+      "max_robot_displacement_m": 2.30152700623089,
+      "controller_activations": 1,
+      "controller_stopped": true,
+      "files_sha256": {
+        "controller.jsonl": "a3c852112252ff32dc8fe3c35b12da00a56ad924b09a311e5ed7050e72404f62",
+        "truth.jsonl": "c12bd5a8698c35bdbc53189b55a2d27704079f5fc4358ba16e968d3b7bb1f33b",
+        "case.json": "6d2d6bfcf01f58d3c99cbd029ce95a4313ebf469e2b9faccb71a3d40432ecba6",
+        "physics.jsonl": "3fa177a508798f77ffbbf3039c4a8ca0ac99b253c61aaccf741d5d9d6d0a5e6c",
+        "scene.json": "8afd98f39412b0be67fa072ab5ee3c96fcf46d78dde0f024d524e7d92f7133d8"
+      },
+      "summary_sha256": "008294289bc210948a0edaf966a2d1a8f778a35aa77c99f2b8b211513dd67550"
+    },
+    {
+      "case": "right-positive",
+      "valid_trial": true,
+      "benchmark_success": true,
+      "execution_reason": "shot_departed_and_stopped",
+      "evaluation": {
+        "valid": true,
+        "issues": [],
+        "goal": true,
+        "outcome": "scored",
+        "first_boundary_crossing": {
+          "time": 358.8466049449385,
+          "side": 1,
+          "y": 0.9535619064154218,
+          "z": 0.10985863221924207,
+          "inside_goal": true,
+          "kind": "goal_line",
+          "interpolated": true
+        },
+        "crossings": [
+          {
+            "time": 358.8466049449385,
+            "side": 1,
+            "y": 0.9535619064154218,
+            "z": 0.10985863221924207,
+            "inside_goal": true,
+            "kind": "goal_line",
+            "interpolated": true
+          }
+        ],
+        "settled": true,
+        "samples": 3753,
+        "max_gap_s": 0.010000000000047748,
+        "first_capture_s": 344.00600000091447,
+        "last_capture_s": 366.5100000010219,
+        "final_ball": [
+          7.314822051362964,
+          0.966411663766225,
+          0.10987403472180966
+        ],
+        "max_displacement_m": 4.293792651593431,
+        "contact_confirmed": true,
+        "contact_windows": 8,
+        "first_contact_window_end_s": 356.3720000009735,
+        "time_to_contact_window_s": 12.366000000059046,
+        "time_to_boundary_s": 14.84060494402405,
+        "observed_contact_episodes": 1,
+        "foot_contact_count": null,
+        "strike_count": null,
+        "contact_evidence": "Accumulated robot1-ball contact per published physics window; body part and strike count unavailable."
+      },
+      "first_kick_request_wall_s": 6.923126868,
+      "execution_wall_s": 14.492977622,
+      "body_heading_error_at_first_kick_rad": -0.5674765202400339,
+      "max_snapshot_age_ms": 54.0,
+      "max_intent_gap_ms": 52.904274,
+      "max_robot_displacement_m": 2.2774633442754006,
+      "controller_activations": 1,
+      "controller_stopped": true,
+      "files_sha256": {
+        "controller.jsonl": "aae427c79de9c2a237dd936e32eb6a93e47a974b6ea9f704291c417a2b7ac671",
+        "truth.jsonl": "ea14d0e35c157316a18157fb39c38e251f416c542739db88de05dc1086862eba",
+        "case.json": "c1e87bb1501bba9584178a0ffa3ca46fb55f2fddbf32e52a1397cdbc331024a5",
+        "physics.jsonl": "fb70c87db2b163cde5200205eb139ba998ac784fa9a00450e8508aa310f383bf",
+        "scene.json": "8ad1c65e2187ef47d3dfb2516ed9f404b40ac0504a67b7cf7c432d769e886e37"
+      },
+      "summary_sha256": "bf7df3bfd66ec9aceb69a2f5b7b849557132fb798087a05dbd0c375e0ecd8a92"
+    },
+    {
+      "case": "centre-negative",
+      "valid_trial": true,
+      "benchmark_success": true,
+      "execution_reason": "shot_departed_and_stopped",
+      "evaluation": {
+        "valid": true,
+        "issues": [],
+        "goal": true,
+        "outcome": "scored",
+        "first_boundary_crossing": {
+          "time": 380.90605192188656,
+          "side": -1,
+          "y": -0.5736743470109492,
+          "z": 0.10997826941933356,
+          "inside_goal": true,
+          "kind": "goal_line",
+          "interpolated": true
+        },
+        "crossings": [
+          {
+            "time": 380.90605192188656,
+            "side": -1,
+            "y": -0.5736743470109492,
+            "z": 0.10997826941933356,
+            "inside_goal": true,
+            "kind": "goal_line",
+            "interpolated": true
+          }
+        ],
+        "settled": true,
+        "samples": 3253,
+        "max_gap_s": 0.016000000000076398,
+        "first_capture_s": 369.86600000103795,
+        "last_capture_s": 389.40800000113126,
+        "final_ball": [
+          -7.201193247557556,
+          -0.797054464010005,
+          0.10996013461979962
+        ],
+        "max_displacement_m": 3.5150158843911306,
+        "contact_confirmed": true,
+        "contact_windows": 8,
+        "first_contact_window_end_s": 379.10200000108205,
+        "time_to_contact_window_s": 9.2360000000441,
+        "time_to_boundary_s": 11.040051920848612,
+        "observed_contact_episodes": 1,
+        "foot_contact_count": null,
+        "strike_count": null,
+        "contact_evidence": "Accumulated robot1-ball contact per published physics window; body part and strike count unavailable."
+      },
+      "first_kick_request_wall_s": 4.719926435,
+      "execution_wall_s": 11.531564423,
+      "body_heading_error_at_first_kick_rad": -0.12737467520374235,
+      "max_snapshot_age_ms": 56.0,
+      "max_intent_gap_ms": 52.262164,
+      "max_robot_displacement_m": 2.376147782888943,
+      "controller_activations": 1,
+      "controller_stopped": true,
+      "files_sha256": {
+        "controller.jsonl": "13b5459d646eadfa76238d0cb6f6084653127d74ebe3705ed131deca4d171ab1",
+        "truth.jsonl": "07a6ae01039e83fb486e4adf0b5fe1f94088897b4ad7ab1f7ada2e34e43727d0",
+        "case.json": "da4582d3e9593498068ff7cdd02ff87e0a64fff5f5afb9b2b0fb0bf21bc460f1",
+        "physics.jsonl": "0bdccd6fa08206ed6461d31484e6c1877865382e2a0afb12c8eeb8697fe8f84c",
+        "scene.json": "c78c75c68594bf41e1d32e0fd9d231f6f794b5359fb41c26e3f45311cc377e90"
+      },
+      "summary_sha256": "d8245df6f4d830130ef59b6819cd4e694cf53c326b4259e7f78006dfbd60d584"
+    },
+    {
+      "case": "left-negative",
+      "valid_trial": true,
+      "benchmark_success": true,
+      "execution_reason": "shot_departed_and_stopped",
+      "evaluation": {
+        "valid": true,
+        "issues": [],
+        "goal": true,
+        "outcome": "scored",
+        "first_boundary_crossing": {
+          "time": 403.8011716550021,
+          "side": -1,
+          "y": -0.07445026393545583,
+          "z": 0.1097172518791838,
+          "inside_goal": true,
+          "kind": "goal_line",
+          "interpolated": true
+        },
+        "crossings": [
+          {
+            "time": 403.8011716550021,
+            "side": -1,
+            "y": -0.07445026393545583,
+            "z": 0.1097172518791838,
+            "inside_goal": true,
+            "kind": "goal_line",
+            "interpolated": true
+          }
+        ],
+        "settled": true,
+        "samples": 3174,
+        "max_gap_s": 0.008000000000038199,
+        "first_capture_s": 393.2280000011495,
+        "last_capture_s": 412.2620000012404,
+        "final_ball": [
+          -7.115146386993724,
+          0.25280678973031756,
+          0.10985418881441016
+        ],
+        "max_displacement_m": 3.5067294326647596,
+        "contact_confirmed": true,
+        "contact_windows": 8,
+        "first_contact_window_end_s": 402.03600000119155,
+        "time_to_contact_window_s": 8.808000000042057,
+        "time_to_boundary_s": 10.573171653852626,
+        "observed_contact_episodes": 1,
+        "foot_contact_count": null,
+        "strike_count": null,
+        "contact_evidence": "Accumulated robot1-ball contact per published physics window; body part and strike count unavailable."
+      },
+      "first_kick_request_wall_s": 4.466427654,
+      "execution_wall_s": 11.027133438,
+      "body_heading_error_at_first_kick_rad": 0.10642331953068272,
+      "max_snapshot_age_ms": 56.0,
+      "max_intent_gap_ms": 95.899952,
+      "max_robot_displacement_m": 2.2780502985737003,
+      "controller_activations": 1,
+      "controller_stopped": true,
+      "files_sha256": {
+        "controller.jsonl": "36579004a55730a3f960bd26941f5ef2d51beb06c19559915526eb89812db1bd",
+        "truth.jsonl": "87f4d113dbe410c03258ba9fdd8e433301cb9b6bacf82092fb8c1164b7813bff",
+        "case.json": "76701f9780f21367caa23a80b2112690ffc633d7ca53ca7bb8467fc1c0e7498e",
+        "physics.jsonl": "60a4560041ec6cce4e0af2083453cf05a301d6fa956cd30114458e22abaaca03",
+        "scene.json": "c3d1070869bca46ff44aeb168bf835d22b0987e31e3ba19306b6027e0dddefd7"
+      },
+      "summary_sha256": "4cc705561c730056cc35e081a1bba032dda6a94f42bb0e599a58823a146a6c7e"
+    },
+    {
+      "case": "right-negative",
+      "valid_trial": true,
+      "benchmark_success": true,
+      "execution_reason": "shot_departed_and_stopped",
+      "evaluation": {
+        "valid": true,
+        "issues": [],
+        "goal": true,
+        "outcome": "scored",
+        "first_boundary_crossing": {
+          "time": 427.55523198300034,
+          "side": -1,
+          "y": -0.6595266601035888,
+          "z": 0.10978534656324275,
+          "inside_goal": true,
+          "kind": "goal_line",
+          "interpolated": true
+        },
+        "crossings": [
+          {
+            "time": 427.55523198300034,
+            "side": -1,
+            "y": -0.6595266601035888,
+            "z": 0.10978534656324275,
+            "inside_goal": true,
+            "kind": "goal_line",
+            "interpolated": true
+          }
+        ],
+        "settled": true,
+        "samples": 3257,
+        "max_gap_s": 0.008000000000038199,
+        "first_capture_s": 416.06600000125854,
+        "last_capture_s": 435.61000000135186,
+        "final_ball": [
+          -7.201857925213942,
+          -1.1260804558158035,
+          0.10993840187495342
+        ],
+        "max_displacement_m": 4.211820351033529,
+        "contact_confirmed": true,
+        "contact_windows": 8,
+        "first_contact_window_end_s": 425.3340000013028,
+        "time_to_contact_window_s": 9.268000000044253,
+        "time_to_boundary_s": 11.489231981741796,
+        "observed_contact_episodes": 1,
+        "foot_contact_count": null,
+        "strike_count": null,
+        "contact_evidence": "Accumulated robot1-ball contact per published physics window; body part and strike count unavailable."
+      },
+      "first_kick_request_wall_s": 5.115274533,
+      "execution_wall_s": 11.535413961,
+      "body_heading_error_at_first_kick_rad": -0.16073635328609592,
+      "max_snapshot_age_ms": 56.0,
+      "max_intent_gap_ms": 53.031042,
+      "max_robot_displacement_m": 2.307400636112432,
+      "controller_activations": 1,
+      "controller_stopped": true,
+      "files_sha256": {
+        "controller.jsonl": "20f9971538f5889ab65635c83862b07204c71207c2af7be260b38e08ea341370",
+        "truth.jsonl": "1973d2dc233d85f197984818155b152796774625ea3a73d11644675f0d76a1f1",
+        "case.json": "9c76367e4c033d960aa3b945a8bf16331ec4a90e78002c5edc6d5fe9f1a2a783",
+        "physics.jsonl": "269bc599c423e29ada33721d7e5feb44b959d0726b7ec85052a95b1fec9ed1e8",
+        "scene.json": "e502215ede428b78266a1f497b7061fb9153a38e30a404e465d7853c65c80c28"
+      },
+      "summary_sha256": "52ba8c41f23074f4f40508a97ff3bdc233d02242139db7223a35d4e549a30756"
+    }
+  ],
+  "tested_runner_sha256": "21cc1a1aea0c753e7f367b7c7ece1f7422bc7d5a7c032f9370e959832600610b",
+  "tested_evaluator_sha256": "aa40014306d22d8cafe51815704804261a779e3c4ac06be9f5e414d9c7bc78ea",
+  "current_source_sha256": {
+    "benchmark_capture.py": "1ba52d2b86afca0a6f66d74464a0b30c82ae594cd2854ca06bcc85ae55f4265d",
+    "score_benchmark.py": "84047566e1d2979c24db970b3b79f02b78277d1d3ea70b333dd54b65dd96627e",
+    "score_evaluator.py": "c42edeb2d2929f61fa2633d7ed0f58215d0509c671d7aadabbe95ae2d3d0686d",
+    "run_score_benchmark.py": "52879d0605618f05f83943ecadb901d7d916adf6d3c447d40e40a9fcc4c1d720",
+    "render_score_benchmark.py": "c2bea57860d4b27026968bb654db367da756d66b5ebdaed4b1fdbe28462af42c"
+  },
+  "source_note": "After this run, added a bounded read-only server-start wait, summary timing fields and stricter post-run fault/unknown-outcome checks. Motion loop and case settings are unchanged. Final standalone evaluator rechecked original file hashes and reproduced all six goals; original summaries retained.",
+  "video": {
+    "combined": {
+      "file": "benchmark.mp4",
+      "sha256": "8c98d35f8d85bcc8180ee527ea9fc99f6ffbf5fcea2b8e6279470e1bd712f36d",
+      "cases": [
+        "centre-positive.mp4",
+        "left-positive.mp4",
+        "right-positive.mp4",
+        "centre-negative.mp4",
+        "left-negative.mp4",
+        "right-negative.mp4"
+      ],
+      "note": "All cases retained in manifest order; no omitted failures or speed changes."
+    },
+    "clips": [
+      {
+        "file": "centre-positive.mp4",
+        "sha256": "2014607484a0cdd11fcd082e26672be94b3e5983aee0b81570c9fa1e41135514",
+        "frames": 382,
+        "fps": 20,
+        "duration_s": 19.1,
+        "max_frame_hold_s": 0.039999999999224656,
+        "renderer": "MuJoCo 3.4.0",
+        "source_physics_sha256": "22d56b795ad9edc9d5f443411b7c7640cc9db213df069077ba5f407cd118fe05"
+      },
+      {
+        "file": "left-positive.mp4",
+        "sha256": "70f8927c87d573f4fc4fe4d80df4749ee02801e9293e3ad9707108a4ebae2de2",
+        "frames": 402,
+        "fps": 20,
+        "duration_s": 20.1,
+        "max_frame_hold_s": 0.039999999999224656,
+        "renderer": "MuJoCo 3.4.0",
+        "source_physics_sha256": "3fa177a508798f77ffbbf3039c4a8ca0ac99b253c61aaccf741d5d9d6d0a5e6c"
+      },
+      {
+        "file": "right-positive.mp4",
+        "sha256": "c0234e0a0985c790727d3e6a1cc59a2a8af335d99092e915408e45e146552961",
+        "frames": 450,
+        "fps": 20,
+        "duration_s": 22.5,
+        "max_frame_hold_s": 0.039999999999224656,
+        "renderer": "MuJoCo 3.4.0",
+        "source_physics_sha256": "fb70c87db2b163cde5200205eb139ba998ac784fa9a00450e8508aa310f383bf"
+      },
+      {
+        "file": "centre-negative.mp4",
+        "sha256": "e2c5288a23b99bb1d0a8d6e3cafc0f4c6a02fc715bb2a3e9452b810baa5fd7ef",
+        "frames": 391,
+        "fps": 20,
+        "duration_s": 19.55,
+        "max_frame_hold_s": 0.039999999999224656,
+        "renderer": "MuJoCo 3.4.0",
+        "source_physics_sha256": "0bdccd6fa08206ed6461d31484e6c1877865382e2a0afb12c8eeb8697fe8f84c"
+      },
+      {
+        "file": "left-negative.mp4",
+        "sha256": "ad4ae020c47050ebfbd8034a792946c9ae75bb589c70d0fd1190b8878e552959",
+        "frames": 382,
+        "fps": 20,
+        "duration_s": 19.1,
+        "max_frame_hold_s": 0.039999999999224656,
+        "renderer": "MuJoCo 3.4.0",
+        "source_physics_sha256": "60a4560041ec6cce4e0af2083453cf05a301d6fa956cd30114458e22abaaca03"
+      },
+      {
+        "file": "right-negative.mp4",
+        "sha256": "f5924aa862fc19a716c0ab3ca488f9382fa1c04f50439d65f0a59879708c5787",
+        "frames": 391,
+        "fps": 20,
+        "duration_s": 19.55,
+        "max_frame_hold_s": 0.039999999999224656,
+        "renderer": "MuJoCo 3.4.0",
+        "source_physics_sha256": "269bc599c423e29ada33721d7e5feb44b959d0726b7ec85052a95b1fec9ed1e8"
+      }
+    ],
+    "width": 1280,
+    "height": 720,
+    "fps": 20,
+    "frames": 2398,
+    "duration_s": 119.9,
+    "normal_simulation_speed": true,
+    "visual_review": "Reviewed positive and negative approach/shot frames and a post-goal frame; H.264 frame counts verified by ffprobe."
+  },
+  "validation": {
+    "new_tests": 15,
+    "match_shot_pilot_regressions": 124,
+    "python_versions": [
+      "3.11",
+      "3.14"
+    ],
+    "ci": "Not run remotely; local checks only.",
+    "standalone_re_evaluation": "Python standard library only; 6 valid trials and 6 scored.",
+    "simulator_final_state": "exited"
+  },
+  "setup_checks": [
+    {
+      "directory": "score-smoke-01",
+      "outcome": "setup_failed",
+      "error": "InvalidMessage: server was still starting; no robot release",
+      "summary_sha256": "ee1e359a95440aed3a383d995294ae6f7a1c42defe4c9c98a85b990676140dca"
+    },
+    {
+      "directory": "score-smoke-02",
+      "outcome": "scored",
+      "valid": true,
+      "summary_sha256": "0c4bea566af44ecf7cb96eb44ddb08984331dc35d0937e797ba9ad601034417d"
+    }
+  ],
+  "limitations": [
+    "Six fixed short-range cases, one attempt each; not a scoring reliability estimate or power/range calibration.",
+    "Ground-truth inputs and scripted referee only; no camera perception or physical robot validation.",
+    "Robot1-ball contact is measured in accumulated publication windows; foot, exact contact time and strike count remain unknown.",
+    "Goal-line crossing is interpolated between truth samples with a 100 ms maximum gap. This is a geometric benchmark, not a full referee.",
+    "Videos render captured physics states at 20 fps, with at most 40 ms holds in this run; no resimulation or planned-motion animation."
+  ]
+}

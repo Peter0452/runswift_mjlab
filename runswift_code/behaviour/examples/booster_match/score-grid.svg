@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="680" viewBox="0 0 960 680" role="img" aria-labelledby="title desc">
+<title id="title">K1 benchmark: nine balls and five robot starts</title>
+<desc id="desc">Ball positions at X minus 4.5, zero and plus 4.5 metres, Y minus 2.5, zero and plus 2.5 metres. Five seeded robot starts, with arrows for headings. Every pairing is tested towards both goals.</desc>
+<defs><marker id="arrow" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0 0 L7 3.5 L0 7 Z" fill="#5ee3ee"/></marker></defs>
+<rect width="960" height="680" rx="16" fill="#10232d"/>
+<g font-family="system-ui, sans-serif" fill="#edf5f8">
+<text x="42" y="43" font-size="24" font-weight="600">90 cases · 9 ball positions × 5 starts × 2 goals</text>
+<text x="42" y="72" font-size="15" fill="#b3c9d1">Physical field coordinates · seed 20261002 · arrows show initial robot headings</text>
+<rect x="109" y="81.5" width="742" height="477" fill="#1e514b" stroke="#d1e3db" stroke-width="2"/>
+<path d="M480 81.5 V558.5" fill="none" stroke="#d1e3db" stroke-width="2"/>
+<circle cx="480" cy="320" r="53" fill="none" stroke="#d1e3db" stroke-width="2"/>
+<rect x="77" y="251.1" width="32" height="137.8" fill="none" stroke="#d1e3db" stroke-width="2"/>
+<rect x="851" y="251.1" width="32" height="137.8" fill="none" stroke="#d1e3db" stroke-width="2"/>
+<text x="32" y="245" font-size="14">−X goal</text>
+<text x="860" y="245" font-size="14">+X goal</text>
+<circle cx="241.5" cy="452.5" r="8" fill="#ffc36a" stroke="#10232d" stroke-width="2"/>
+<text x="241.5" y="478.5" font-size="14" text-anchor="middle">x1-y1</text>
+<circle cx="241.5" cy="320.0" r="8" fill="#ffc36a" stroke="#10232d" stroke-width="2"/>
+<text x="241.5" y="346.0" font-size="14" text-anchor="middle">x1-y2</text>
+<circle cx="241.5" cy="187.5" r="8" fill="#ffc36a" stroke="#10232d" stroke-width="2"/>
+<text x="241.5" y="213.5" font-size="14" text-anchor="middle">x1-y3</text>
+<circle cx="480.0" cy="452.5" r="8" fill="#ffc36a" stroke="#10232d" stroke-width="2"/>
+<text x="480.0" y="478.5" font-size="14" text-anchor="middle">x2-y1</text>
+<circle cx="480.0" cy="320.0" r="8" fill="#ffc36a" stroke="#10232d" stroke-width="2"/>
+<text x="480.0" y="346.0" font-size="14" text-anchor="middle">x2-y2</text>
+<circle cx="480.0" cy="187.5" r="8" fill="#ffc36a" stroke="#10232d" stroke-width="2"/>
+<text x="480.0" y="213.5" font-size="14" text-anchor="middle">x2-y3</text>
+<circle cx="718.5" cy="452.5" r="8" fill="#ffc36a" stroke="#10232d" stroke-width="2"/>
+<text x="718.5" y="478.5" font-size="14" text-anchor="middle">x3-y1</text>
+<circle cx="718.5" cy="320.0" r="8" fill="#ffc36a" stroke="#10232d" stroke-width="2"/>
+<text x="718.5" y="346.0" font-size="14" text-anchor="middle">x3-y2</text>
+<circle cx="718.5" cy="187.5" r="8" fill="#ffc36a" stroke="#10232d" stroke-width="2"/>
+<text x="718.5" y="213.5" font-size="14" text-anchor="middle">x3-y3</text>
+<circle cx="176.0" cy="335.2" r="7" fill="#5ee3ee"/>
+<path d="M176.0 335.2 L145.2 339.1" stroke="#5ee3ee" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="176.0" y="359.2" text-anchor="middle" font-size="14" fill="#bdf8ff">west-away</text>
+<circle cx="774.0" cy="311.5" r="7" fill="#5ee3ee"/>
+<path d="M774.0 311.5 L804.8 307.7" stroke="#5ee3ee" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="774.0" y="335.5" text-anchor="middle" font-size="14" fill="#bdf8ff">east-away</text>
+<circle cx="405.3" cy="118.6" r="7" fill="#5ee3ee"/>
+<path d="M405.3 118.6 L407.4 87.7" stroke="#5ee3ee" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="405.3" y="142.6" text-anchor="middle" font-size="14" fill="#bdf8ff">north-away</text>
+<circle cx="562.9" cy="517.5" r="7" fill="#5ee3ee"/>
+<path d="M562.9 517.5 L566.6 548.3" stroke="#5ee3ee" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="581.0" y="523.5" font-size="14" fill="#bdf8ff">south-away</text>
+<circle cx="559.8" cy="272.0" r="7" fill="#5ee3ee"/>
+<path d="M559.8 272.0 L540.5 296.3" stroke="#5ee3ee" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="577.8" y="278.0" font-size="14" fill="#bdf8ff">central-oblique</text>
+<circle cx="50" cy="602" r="7" fill="#ffc36a"/><text x="70" y="607" font-size="16">Ball placement</text>
+<circle cx="268" cy="602" r="7" fill="#5ee3ee"/><text x="288" y="607" font-size="16">Robot start and heading</text>
+<text x="42" y="643" font-size="15" fill="#b3c9d1">One robot and one ball per trial. Both goal directions reuse exactly the same physical start.</text>
+</g></svg>
