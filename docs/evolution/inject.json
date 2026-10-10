@@ -1,0 +1,18 @@
+[
+  {
+    "level": "L2",
+    "desc": "B-Human final-stage precision (2026-10-09 review of K1_Ball.yaml): B-Human anneals kick-direction sigma 1 -> 0.05 rad and the speed-per-range sigma scale 1 -> 0.5 for final training; ours stay at 0.35 rad and a 2 m rest-miss scale (gaps: aim 3.7 vs ~5 deg with a perfect ball, short-pass stop 1.3 vs 2.5 m). k.KICK_AIM_SIGMA 0.35 -> 0.2, k.REST_MISS_SCALE 2.0 -> 1.0; from the champion h022_c2_18450; B-Human power cost w.joint_power -2e-3; trunk ball frame OFF (ft_h022 with 0.3 lost -110 vs h022)",
+    "genes": {
+      "k.KICK_AIM_SIGMA": 0.2,
+      "k.REST_MISS_SCALE": 1.0,
+      "w.joint_power": -0.002,
+      "s.ball_origin_trunk_prob": 0.0
+    },
+    "best": {
+      "name": "h022_c2_18450_2seed",
+      "ck": "/home/peter/Desktop/Project/RL/runswift_mjlab/logs/rsl_rl/k1_kick_stage3_amp/2026-10-09_10-22-47_champ_h022_c2_18450/model_18450.pt",
+      "score": 0.0,
+      "regressions": []
+    }
+  }
+]

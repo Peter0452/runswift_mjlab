@@ -1,0 +1,22 @@
+[
+  {
+    "level": "L3",
+    "desc": "cold starts with the ball behind (runswift goal grid, aligned fixture: every miss of h014 at high caps is a fall within 0.8 s of a standing start with the ball ~10 m behind; training only reset from moving motion clips): stand_start 0.35, spawn_any 0.3, far spawn 0.2; CAPS back to defaults; from h012_c1_18000",
+    "genes": {
+      "stand_start_prob": 0.35,
+      "s.spawn_any_prob": 0.3,
+      "s.far_spawn_prob": 0.2,
+      "caps_temporal_coef": 1.0,
+      "caps_near_ball_scale": 0.5
+    },
+    "best": {
+      "name": "h012_c1_18000",
+      "ck": "/home/peter/Desktop/Project/RL/runswift_mjlab/logs/rsl_rl/k1_kick_stage3_amp/2026-10-08_13-36-19_h012_c1/model_18000.pt",
+      "score": 164.3,
+      "regressions": [
+        "close_any/camera/typical:action_rate:high",
+        "close_any/heavy/camera/typical:long_3d:high"
+      ]
+    }
+  }
+]

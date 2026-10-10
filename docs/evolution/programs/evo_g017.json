@@ -1,0 +1,54 @@
+[
+  {
+    "name": "tpl_far_cap_tracking",
+    "expr": {
+      "mul": [
+        {
+          "gt": [
+            {
+              "sig": "ball_dist"
+            },
+            3.0
+          ]
+        },
+        {
+          "linear_match": [
+            {
+              "sig": "vx"
+            },
+            {
+              "sig": "vx_cap"
+            }
+          ]
+        }
+      ]
+    },
+    "weight": 1.1967
+  },
+  {
+    "name": "tpl_upright_fast",
+    "expr": {
+      "mul": [
+        {
+          "gt": [
+            {
+              "sig": "vx"
+            },
+            1.0
+          ]
+        },
+        {
+          "band": [
+            {
+              "sig": "trunk_pitch_deg"
+            },
+            -5.0,
+            1.0,
+            2.0
+          ]
+        }
+      ]
+    },
+    "weight": -1.0
+  }
+]

@@ -1,0 +1,59 @@
+[
+  {
+    "name": "tpl_far_cap_tracking",
+    "expr": {
+      "mul": [
+        {
+          "gt": [
+            {
+              "sig": "ball_dist"
+            },
+            3.0
+          ]
+        },
+        {
+          "linear_match": [
+            {
+              "sig": "vx"
+            },
+            {
+              "sig": "vx_cap"
+            }
+          ]
+        }
+      ]
+    },
+    "weight": 6.0
+  },
+  {
+    "name": "tpl_quick_kick",
+    "expr": {
+      "mul": [
+        {
+          "sig": "kick_event"
+        },
+        {
+          "exp_decay": [
+            {
+              "sig": "kick_near_time"
+            },
+            1.0
+          ]
+        },
+        {
+          "gauss": [
+            {
+              "sig": "kick_aim_err"
+            },
+            0.0,
+            0.3
+          ]
+        },
+        {
+          "sig": "kick_quality"
+        }
+      ]
+    },
+    "weight": 400.0
+  }
+]

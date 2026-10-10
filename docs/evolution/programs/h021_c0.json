@@ -1,0 +1,22 @@
+[
+  {
+    "name": "tpl_aim_tight",
+    "expr": {
+      "mul": [
+        {
+          "sig": "kick_event"
+        },
+        {
+          "gauss": [
+            {
+              "sig": "kick_aim_err"
+            },
+            0.0,
+            0.15
+          ]
+        }
+      ]
+    },
+    "weight": 600.0
+  }
+]

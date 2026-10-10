@@ -1,0 +1,18 @@
+[
+  {
+    "level": "L3",
+    "desc": "world-model ball (2026-10-09): the runswift harness (truth inputs) and v2 'world' perception report a ball 10 m behind as seen; training never did (world_ball_prob 0: only camera view, memory, or the lost virtual ball), and the champion falls 32-40 % in exactly that start. s.world_ball_prob 0.3 with the cold starts (stand 0.35, ball behind 0.3, far 0.2), alive +2/s, touchdown -15; from h012_c1_18000",
+    "genes": {
+      "s.world_ball_prob": 0.3
+    },
+    "best": {
+      "name": "h012_c1_18000",
+      "ck": "/home/peter/Desktop/Project/RL/runswift_mjlab/logs/rsl_rl/k1_kick_stage3_amp/2026-10-08_13-36-19_h012_c1/model_18000.pt",
+      "score": 164.3,
+      "regressions": [
+        "close_any/camera/typical:action_rate:high",
+        "close_any/heavy/camera/typical:long_3d:high"
+      ]
+    }
+  }
+]
