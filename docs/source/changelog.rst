@@ -14,8 +14,13 @@ Added
   kickoff. The opponent runs frozen policies inside the env (the learner's
   latest weights half the time, else a pool of the stage-3 blend, the AMP walk
   9950 dribbling under a scripted command, and snapshots every 200
-  iterations), so the learner keeps the 83-dim actor / 22-dim action layout and
-  warm-starts from ``init_checkpoint`` (default the ``h022_c2_x50`` blend).
+  iterations). Both robots see each other as the vision reports robots: the
+  ground position (``position_projection``, x / y in the robot frame) and a
+  seen flag, zero when out of the head camera's view or beyond 6 m. These 3
+  inputs follow the stage-3 actor's 83 (86 total; the critic gets the truth),
+  and stage-3 checkpoints warm-start from ``init_checkpoint`` (default the
+  ``h022_c2_x50`` blend) with zero weights on them. The deployed runner must
+  feed the detection in slots 83–85.
 - Added Booster K1 get-up task (``Mjlab-Getup-Flat-Booster-K1``), a discovery-based
   fall-recovery port of ``booster_train`` ``Booster-K1-Getup-v1``. Flat plane,
   random fallen spawn (full roll/pitch/yaw), 20-DOF legs+arms actions, upright-gated

@@ -8,12 +8,17 @@ point: a new kickoff places the ball, both goals and the opponent, as the kick
 loop places a new target after a goal. The learner is never teleported and the
 episode only ends on the usual terminations (falls, time out).
 
+Both robots see each other as the robot's vision reports other robots: the
+ground position (``position_projection``, x / y in the robot frame) of a robot
+inside the head camera's view and range, plus a seen flag; zeros when unseen.
+These three inputs follow the stage-3 actor's 83, so stage-3 checkpoints
+warm-start with zero weights on them (the runner pads the first layer).
+
 The opponent is not trained. ``OpponentPolicyAction`` runs frozen policies on
-observations it builds from the sim with the actor's 83-dim layout, so it adds
-no policy actions: the learner's action and observation layouts are those of
-stage 3 and its checkpoints warm-start unchanged. Each episode the opponent is
-either the learner's latest weights (mirror) or a policy from a pool of seed
-checkpoints and snapshots, which the self-play runner keeps up to date.
+observations it builds from the sim in the actor's layout and adds no policy
+actions. Each episode the opponent is either the learner's latest weights
+(mirror) or a policy from a pool of seed checkpoints and snapshots, which the
+self-play runner keeps up to date. 83-input policies get the first 83 inputs.
 """
 
 from __future__ import annotations
@@ -21,7 +26,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, cast
 
 import torch
 import torch.nn.functional as F
@@ -29,8 +34,10 @@ import torch.nn.functional as F
 from mjlab.entity import Entity
 from mjlab.envs.mdp.actions import JointPositionAction, JointPositionActionCfg
 from mjlab.managers.action_manager import ActionTerm, ActionTermCfg
+from mjlab.tasks.velocity.mdp.amp_symmetry import augment_symmetries_kick_loop
 from mjlab.tasks.velocity.mdp.approach import (
   NOMINAL_ROOT_HEIGHT,
+  ApproachYawCommandCfg,
   _root_pose,
   camera_angles,
   in_camera_view,
@@ -51,6 +58,9 @@ from mjlab.tasks.velocity.mdp.kick_loop import (
 from mjlab.utils.lab_api.math import quat_apply_inverse, wrap_to_pi, yaw_quat
 
 if TYPE_CHECKING:
+  from rsl_rl.env import VecEnv
+  from tensordict import TensorDict
+
   from mjlab.envs import ManagerBasedRlEnv
 
 _REPO = Path(__file__).resolve().parents[5]
@@ -63,8 +73,11 @@ SELFPLAY_WALK_CKPT = (
 )
 
 PolicyKind = Literal["kick", "walk"]
-# Actor input sizes: stage-3 kick loop and the AMP walk (velocity command).
-OBS_DIM: dict[str, int] = {"kick": 83, "walk": 75}
+# Robot detection inputs appended to the stage-3 actor: x, y, seen.
+DETECTION_DIM = 3
+# Actor input sizes: the kick loop (stage 3, or with the opponent detection)
+# and the AMP walk (velocity command).
+OBS_DIM: dict[str, tuple[int, ...]] = {"kick": (83, 83 + DETECTION_DIM), "walk": (75,)}
 # EmpiricalNormalization's default eps in rsl_rl (not stored in checkpoints).
 _NORM_EPS = 1.0e-2
 
@@ -93,8 +106,14 @@ class FrozenPolicy:
   std: torch.Tensor
   layers: list[tuple[torch.Tensor, torch.Tensor]]
 
+  @property
+  def in_dim(self) -> int:
+    return self.layers[0][0].shape[1]
+
   def __call__(self, obs: torch.Tensor) -> torch.Tensor:
-    x = (obs - self.mean) / self.std
+    """``obs`` may carry more inputs than the policy takes (an 83-input
+    stage-3 policy ignores the appended detection)."""
+    x = (obs[:, : self.in_dim] - self.mean) / self.std
     for i, (w, b) in enumerate(self.layers):
       x = F.linear(x, w, b)
       if i < len(self.layers) - 1:
@@ -119,7 +138,7 @@ def frozen_policy_from_state_dict(
 
   layers = [(get(f"mlp.{i}.weight"), get(f"mlp.{i}.bias")) for i in idx]
   in_dim = layers[0][0].shape[1]
-  if in_dim != OBS_DIM[kind]:
+  if in_dim not in OBS_DIM[kind]:
     raise ValueError(
       f"{name}: a '{kind}' opponent takes {OBS_DIM[kind]} inputs, got {in_dim}"
     )
@@ -145,6 +164,68 @@ def load_frozen_policy(path: str, kind: str, device: str) -> FrozenPolicy:
   )
 
 
+def pad_input_columns(
+  state_dict: dict[str, torch.Tensor], in_dim: int
+) -> dict[str, torch.Tensor]:
+  """Widen an MLP model's input to ``in_dim``: zero weights and an identity
+  normalizer on the new inputs, so the model's output is unchanged."""
+  w = state_dict["mlp.0.weight"]
+  extra = in_dim - w.shape[1]
+  if extra <= 0:
+    return state_dict
+  out = dict(state_dict)
+  out["mlp.0.weight"] = torch.cat((w, w.new_zeros(w.shape[0], extra)), dim=1)
+  for key, fill in (("_mean", 0.0), ("_var", 1.0), ("_std", 1.0)):
+    k = f"obs_normalizer.{key}"
+    if k in out:
+      v = out[k]
+      out[k] = torch.cat((v, v.new_full((*v.shape[:-1], extra), fill)), dim=-1)
+  return out
+
+
+def detect_robot(
+  viewer: Entity,
+  head_id: int,
+  origin_xy: torch.Tensor,
+  target: Entity,
+  target_feet_ids: list[int],
+  cam: ApproachYawCommandCfg,
+  max_range: float,
+  noise: tuple[float, float],
+  dropout: float,
+) -> tuple[torch.Tensor, torch.Tensor]:
+  """Another robot as the vision reports it: ground position under its feet
+  (``position_projection``) in the viewer's level frame, and a seen flag.
+
+  Seen when its trunk is inside the head camera's view, within ``max_range``,
+  and not dropped. Returns (detection, truth), each ``[N, 3]``: the detection
+  is noisy and zero when unseen; the truth is always (x, y, 1).
+  """
+  quat = viewer.data.root_link_quat_w
+  ground = target.data.body_link_pos_w[:, target_feet_ids, :2].mean(dim=1)
+  rel = torch.zeros_like(target.data.root_link_pos_w)
+  rel[:, :2] = ground - origin_xy
+  true_b = quat_apply_inverse(yaw_quat(quat), rel)[:, :2]
+  head_pos = viewer.data.body_link_pos_w[:, head_id]
+  head_quat = viewer.data.body_link_quat_w[:, head_id]
+  depth, az, el = camera_angles(
+    quat_apply_inverse(head_quat, target.data.root_link_pos_w - head_pos),
+    cam.camera_pitch,
+  )
+  dist = true_b.norm(dim=-1)
+  seen = in_camera_view(depth, az, el, cam.fov_half_angle, cam.fov_vertical_half_angle)
+  seen &= dist <= max_range
+  if dropout > 0.0:
+    seen &= torch.rand_like(dist) >= dropout
+  base, slope = noise
+  sigma = (base + slope * dist).unsqueeze(-1)
+  noisy = true_b + sigma * torch.randn_like(true_b)
+  flag = seen.float().unsqueeze(-1)
+  detection = torch.cat((noisy * flag, flag), dim=-1)
+  truth = torch.cat((true_b, torch.ones_like(flag)), dim=-1)
+  return detection, truth
+
+
 ##
 # Command: goals, kickoffs and point outcomes.
 ##
@@ -161,7 +242,14 @@ class SelfPlayKickCommand(KickLoopCommand):
     self._freeze_target = False
     super().__init__(cfg, env)
     self.opponent: Entity = env.scene[cfg.opponent_name]
+    feet, _ = self.opponent.find_bodies(
+      ("left_foot_link", "right_foot_link"), preserve_order=True
+    )
+    self._opponent_feet_ids = list(feet)
     n, dev = self.num_envs, self.device
+    # The learner's view of the opponent (actor) and the truth (critic).
+    self.opponent_detection = torch.zeros(n, DETECTION_DIM, device=dev)
+    self.opponent_true = torch.zeros(n, DETECTION_DIM, device=dev)
     self.own_goal_w = torch.zeros(n, 2, device=dev)
     self.own_goal_tol = torch.ones(n, device=dev)
     self.contest_scored = torch.zeros(n, dtype=torch.bool, device=dev)
@@ -214,6 +302,17 @@ class SelfPlayKickCommand(KickLoopCommand):
     finally:
       self._freeze_target = False
     self.goal_tol[:] = goal_tol
+    self.opponent_detection[:], self.opponent_true[:] = detect_robot(
+      self.robot,
+      self._head_id,
+      self._ball_origin_w()[:, :2],
+      self.opponent,
+      self._opponent_feet_ids,
+      self.cfg,
+      self.cfg.opponent_max_range,
+      self.cfg.opponent_obs_noise,
+      self.cfg.opponent_dropout,
+    )
     ball_xy = self.ball.data.root_link_pos_w[:, :2]
     scored = (ball_xy - self.target_w).norm(dim=-1) <= self.goal_tol
     conceded = ~scored & ((ball_xy - self.own_goal_w).norm(dim=-1) <= self.own_goal_tol)
@@ -344,6 +443,12 @@ class SelfPlayKickCommandCfg(KickLoopCommandCfg):
   """Ball farther than this from the goal axis is out of play (m)."""
   goal_overrun: float = 1.5
   """Ball this far past either goal (outside its tolerance) is out (m)."""
+  opponent_max_range: float = 6.0
+  """Farthest robot detection (m); match the robot detector."""
+  opponent_obs_noise: tuple[float, float] = (0.05, 0.05)
+  """Detection noise: sigma = base + rel * distance (m, per axis)."""
+  opponent_dropout: float = 0.05
+  """Probability per step that a robot in view is not detected."""
 
   def build(self, env: ManagerBasedRlEnv) -> SelfPlayKickCommand:
     return SelfPlayKickCommand(self, env)
@@ -358,6 +463,37 @@ def _selfplay_command(
 
 
 # Rewards. Point outcomes are set at the end of a step and paid by the next.
+
+
+def opponent_detection(
+  env: ManagerBasedRlEnv, privileged: bool = False
+) -> torch.Tensor:
+  """Opponent as the vision reports it: x, y (robot frame, m) and seen; zeros
+  while unseen. ``privileged`` gives the true position, always seen."""
+  cmd = _selfplay_command(env)
+  return cmd.opponent_true if privileged else cmd.opponent_detection
+
+
+def augment_symmetries_selfplay(
+  env: VecEnv, obs: TensorDict | None, actions: torch.Tensor | None
+) -> tuple[TensorDict | None, torch.Tensor | None]:
+  """Kick-loop mirror plus the trailing detection (x, y, seen): y flips."""
+  if obs is None:
+    return augment_symmetries_kick_loop(env, obs, actions)
+  k = DETECTION_DIM
+  groups = ("actor", "critic")
+  full = {g: cast(torch.Tensor, obs[g]) for g in groups}
+  base = obs.clone()
+  for g in groups:
+    base[g] = full[g][:, :-k]
+  base, actions = augment_symmetries_kick_loop(env, base, actions)
+  assert base is not None
+  sign = torch.tensor([1.0, -1.0, 1.0], device=full["actor"].device)
+  for g in groups:
+    tail = full[g][:, -k:]
+    mirrored = cast(torch.Tensor, base[g])
+    base[g] = torch.cat((mirrored, torch.cat((tail, tail * sign), dim=0)), dim=-1)
+  return base, actions
 
 
 def contest_score(env: ManagerBasedRlEnv) -> torch.Tensor:
@@ -479,8 +615,28 @@ class OpponentPolicyAction(ActionTerm):
       pending[:] = False
     ball_b, age, kick_dir, kick_range = self._perceive()
     joint = self._joint_obs()
+    learner, _ = detect_robot(
+      self._entity,
+      self._head_id,
+      self._origin_xy(),
+      self._cmd.robot,
+      self._cmd._feet_ids,
+      self._cmd.cfg,
+      self._cmd.cfg.opponent_max_range,
+      self._cmd.cfg.opponent_obs_noise,
+      self._cmd.cfg.opponent_dropout,
+    )
     kick_obs = torch.cat(
-      (joint, ball_b, age.unsqueeze(-1), self.speed_limit, kick_dir, kick_range), -1
+      (
+        joint,
+        ball_b,
+        age.unsqueeze(-1),
+        self.speed_limit,
+        kick_dir,
+        kick_range,
+        learner,
+      ),
+      -1,
     )
     walk_obs = torch.cat((joint, self._walk_command()), -1)
     raw = torch.zeros_like(self._joint.raw_action)

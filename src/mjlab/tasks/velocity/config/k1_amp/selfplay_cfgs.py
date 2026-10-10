@@ -6,6 +6,7 @@ import dataclasses
 
 from mjlab.envs import ManagerBasedRlEnvCfg
 from mjlab.envs.mdp.actions import JointPositionActionCfg
+from mjlab.managers.observation_manager import ObservationTermCfg
 from mjlab.managers.reward_manager import RewardTermCfg
 from mjlab.tasks.velocity import mdp
 from mjlab.tasks.velocity.mdp.self_play import (
@@ -26,9 +27,11 @@ CONTEST_CONCEDE_WEIGHT = -1000.0
 def booster_k1_kick_selfplay_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   """Stage 3 with a second K1 that attacks the learner's goal.
 
-  The learner's observations, actions and rewards are those of stage 3, plus
-  a reward per point won or lost. The opponent replaces the scripted contact
-  events (pushes near the ball, an unseen ball moved away).
+  The learner's actions and rewards are those of stage 3, plus a reward per
+  point won or lost. Actor and critic append the opponent as the robot's
+  vision reports it (x, y, seen; the critic gets the truth). The opponent
+  replaces the scripted contact events (pushes near the ball, an unseen ball
+  moved away).
   """
   cfg = booster_k1_kick_stage3_env_cfg(play=play)
 
@@ -71,6 +74,14 @@ def booster_k1_kick_selfplay_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg
     opponent.latest_prob = 1.0
     cfg.events.pop("push_robot", None)
 
+  # Last in both groups, so the stage-3 slots keep their indices.
+  cfg.observations["actor"].terms["opponent"] = ObservationTermCfg(
+    func=mdp.opponent_detection
+  )
+  cfg.observations["critic"].terms["opponent"] = ObservationTermCfg(
+    func=mdp.opponent_detection, params={"privileged": True}
+  )
+
   for name in ("push_near_ball", "ball_relocate_unseen"):
     cfg.events.pop(name, None)
 
@@ -84,7 +95,8 @@ def booster_k1_kick_selfplay_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg
 
 
 def booster_k1_kick_selfplay_runner_cfg() -> SelfPlayAmpRunnerCfg:
-  """Stage-3 runner, warm-started from the stage-3 blend."""
+  """Stage-3 runner, warm-started from the stage-3 blend (the runner pads its
+  first layers for the detection inputs)."""
   base = booster_k1_kick_stage3_runner_cfg()
   cfg = SelfPlayAmpRunnerCfg(
     **{
@@ -92,6 +104,13 @@ def booster_k1_kick_selfplay_runner_cfg() -> SelfPlayAmpRunnerCfg:
       for f in dataclasses.fields(base)
       if f.init and f.name != "class_name"
     }
+  )
+  assert cfg.algorithm.symmetry_cfg is not None
+  cfg.algorithm.symmetry_cfg = dict(
+    cfg.algorithm.symmetry_cfg,
+    data_augmentation_func=(
+      "mjlab.tasks.velocity.mdp.self_play:augment_symmetries_selfplay"
+    ),
   )
   cfg.experiment_name = "k1_kick_selfplay_amp"
   cfg.run_name = "selfplay"

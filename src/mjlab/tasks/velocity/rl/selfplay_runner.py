@@ -8,12 +8,17 @@ and is saved under ``<log_dir>/opponents``.
 from __future__ import annotations
 
 import os
+import tempfile
 from dataclasses import dataclass
 
 import torch
 
 from mjlab.amp.runners import AmpOnPolicyRunnerCfg
-from mjlab.tasks.velocity.mdp.self_play import OpponentPolicyAction, resolve_checkpoint
+from mjlab.tasks.velocity.mdp.self_play import (
+  OpponentPolicyAction,
+  pad_input_columns,
+  resolve_checkpoint,
+)
 from mjlab.tasks.velocity.rl.amp_runner import VelocityAmpOnPolicyRunner
 
 
@@ -43,9 +48,29 @@ class SelfPlayAmpOnPolicyRunner(VelocityAmpOnPolicyRunner):
     map_location: str | None = None,
   ) -> dict:
     self._checkpoint_loaded = True
-    return super().load(
-      path, load_cfg=load_cfg, strict=strict, map_location=map_location
-    )
+    loaded = torch.load(path, map_location=map_location, weights_only=False)
+    widened = False
+    for key, model in (
+      ("actor_state_dict", self.alg.actor),
+      ("critic_state_dict", self.alg.critic),
+    ):
+      in_dim = model.state_dict()["mlp.0.weight"].shape[1]
+      sd = loaded.get(key)
+      if sd is not None and sd["mlp.0.weight"].shape[1] < in_dim:
+        loaded[key] = pad_input_columns(sd, in_dim)
+        widened = True
+    if not widened:
+      return super().load(
+        path, load_cfg=load_cfg, strict=strict, map_location=map_location
+      )
+    # A stage-3 checkpoint: the detection inputs start with zero weights.
+    print(f"[INFO] Widened {path} to this task's inputs (zero new weights).")
+    with tempfile.TemporaryDirectory() as tmp:
+      out = os.path.join(tmp, "widened.pt")
+      torch.save(loaded, out)
+      return super().load(
+        out, load_cfg=load_cfg, strict=strict, map_location=map_location
+      )
 
   def _opponent(self) -> OpponentPolicyAction:
     name = self.cfg.get("opponent_action_name", "opponent")

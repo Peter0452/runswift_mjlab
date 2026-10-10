@@ -1,6 +1,7 @@
 """Tests for 1v1 self-play on the stage-3 kick loop."""
 
 from types import SimpleNamespace
+from typing import Any, cast
 
 import pytest
 import torch
@@ -15,7 +16,11 @@ from mjlab.tasks.velocity.mdp.self_play import (
   OpponentPolicyActionCfg,
   OpponentSeedCfg,
   SelfPlayKickCommand,
+  augment_symmetries_selfplay,
+  frozen_policy_from_state_dict,
   load_frozen_policy,
+  pad_input_columns,
+  place_upright,
   resolve_checkpoint,
 )
 from mjlab.tasks.velocity.rl.selfplay_runner import (
@@ -111,10 +116,65 @@ def _zero_action(env):
 
 
 @pytest.mark.slow
-def test_learner_layout_unchanged(env):
+def test_learner_layout(env):
+  """Stage 3's 83 / 98 inputs, then the opponent detection; 22 actions."""
   assert env.action_manager.total_action_dim == 22
   obs = env.observation_manager.compute()
-  assert obs["actor"].shape[-1] == 83
+  assert obs["actor"].shape[-1] == 86
+  assert obs["critic"].shape[-1] == 101
+
+
+def test_padded_stage3_checkpoint_keeps_its_output():
+  frozen = load_frozen_policy(KICK_CKPT, "kick", "cpu")
+  state = torch.load(resolve_checkpoint(KICK_CKPT), weights_only=False)
+  wide = pad_input_columns(state["actor_state_dict"], 86)
+  assert wide["mlp.0.weight"].shape[1] == 86
+  x = torch.randn(8, 86)
+  padded = frozen_policy_from_state_dict(wide, "kick", "wide", "cpu")
+  torch.testing.assert_close(padded(x), frozen(x[:, :83]))
+  # Changing only the detection inputs changes nothing yet.
+  y = x.clone()
+  y[:, 83:] = torch.randn(8, 3) * 5
+  torch.testing.assert_close(padded(y), padded(x))
+
+
+def test_symmetry_mirrors_detection():
+  actor = torch.randn(4, 86)
+  critic = torch.randn(4, 101)
+  obs = TensorDict({"actor": actor, "critic": critic}, batch_size=[4])
+  out, _ = augment_symmetries_selfplay(cast(Any, None), obs, None)
+  assert out is not None
+  assert out["actor"].shape == (8, 86)
+  torch.testing.assert_close(out["actor"][:4], actor)
+  torch.testing.assert_close(out["actor"][4:, 83], actor[:, 83])
+  torch.testing.assert_close(out["actor"][4:, 84], -actor[:, 84])
+  torch.testing.assert_close(out["critic"][4:, 99], -critic[:, 99])
+
+
+@pytest.mark.slow
+def test_opponent_detected_in_view_only(env):
+  cmd, _ = _parts(env)
+  robot, opp = env.scene["robot"], env.scene["opponent"]
+  ids = torch.arange(env.num_envs, device=env.device)
+  pose = robot.data.root_link_pos_w[:, :2]
+  q = robot.data.root_link_quat_w
+  yaw = torch.atan2(
+    2 * (q[:, 0] * q[:, 3] + q[:, 1] * q[:, 2]), 1 - 2 * (q[:, 2] ** 2 + q[:, 3] ** 2)
+  )
+  heading = torch.stack((yaw.cos(), yaw.sin()), -1)
+  for sign, seen in ((1.0, True), (-1.0, False)):
+    place_upright(opp, ids, pose + sign * 2.5 * heading, yaw, env.scene.env_origins)
+    env.sim.forward()
+    cmd.cfg.opponent_dropout = 0.0
+    cmd._update_command()
+    det = cmd.opponent_detection
+    assert bool((det[:, 2] > 0.5).all()) is seen
+    if seen:
+      # About 2.5 m ahead in the robot frame.
+      assert bool(((det[:, 0] - 2.5).abs() < 0.6).all())
+      assert bool((det[:, 1].abs() < 0.6).all())
+    else:
+      assert bool((det == 0.0).all())
 
 
 @pytest.mark.slow
@@ -123,6 +183,7 @@ def test_point_outcome_pays_and_restarts(env, goal):
   cmd, opp = _parts(env)
   goal_w = cmd.target_w if goal == "target" else cmd.own_goal_w
   old_goal = goal_w[0].clone()
+  old_own = cmd.own_goal_w[0].clone()
   _put_ball(env, 0, old_goal)
   env.step(_zero_action(env))
   won = cmd.contest_scored[0] if goal == "target" else cmd.contest_conceded[0]
@@ -134,8 +195,11 @@ def test_point_outcome_pays_and_restarts(env, goal):
   paid = env.reward_manager._step_reward[0, env.reward_manager.active_terms.index(term)]
   assert paid != 0.0
   assert not bool(cmd.kickoff_pending[0])
+  # A new point: new goals, and the ball in neither.
+  assert (cmd.own_goal_w[0] - old_own).norm() > 1e-3
   ball_xy = env.scene["ball"].data.root_link_pos_w[0, :2]
-  assert (ball_xy - old_goal).norm() > 0.5
+  assert (ball_xy - cmd.target_w[0]).norm() > cmd.goal_tol[0]
+  assert (ball_xy - cmd.own_goal_w[0]).norm() > cmd.own_goal_tol[0]
 
 
 @pytest.mark.slow
