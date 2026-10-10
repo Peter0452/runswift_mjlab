@@ -10,6 +10,8 @@ from .kick_loop import *  # noqa: F403
 from .kick_prior import *  # noqa: F403
 from .observations import *  # noqa: F403
 from .rewards import *  # noqa: F403
+from .self_play import contest_concede as contest_concede
+from .self_play import contest_score as contest_score
 from .symmetry import mirror_joints16 as mirror_joints16
 from .symmetry import nubots_symmetry as nubots_symmetry
 from .terminations import *  # noqa: F403

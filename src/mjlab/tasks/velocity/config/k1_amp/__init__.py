@@ -1,6 +1,7 @@
 from mjlab.tasks.registry import register_mjlab_task
 from mjlab.tasks.velocity.config.k1_amp.amp_wrapper import with_amp_obs_group
 from mjlab.tasks.velocity.rl.amp_runner import VelocityAmpOnPolicyRunner
+from mjlab.tasks.velocity.rl.selfplay_runner import SelfPlayAmpOnPolicyRunner
 
 from .env_cfgs import (
   KICK_STYLE_WEIGHT,
@@ -20,6 +21,10 @@ from .rl_cfg import (
   booster_k1_kick_approach_runner_cfg,
   booster_k1_kick_stage1_runner_cfg,
   booster_k1_kick_stage3_runner_cfg,
+)
+from .selfplay_cfgs import (
+  booster_k1_kick_selfplay_env_cfg,
+  booster_k1_kick_selfplay_runner_cfg,
 )
 
 
@@ -89,6 +94,22 @@ register_mjlab_task(
   ),
   rl_cfg=_stage3_rl,
   runner_cls=VelocityAmpOnPolicyRunner,
+)
+
+# 1v1 self-play: stage 3 against a frozen opponent (mirror + snapshot pool).
+_selfplay_rl = booster_k1_kick_selfplay_runner_cfg()
+register_mjlab_task(
+  task_id="Mjlab-Velocity-Kick-SelfPlay-Amp-DA-Muon-Booster-K1",
+  env_cfg=with_stand_start(
+    _with_kick_style(
+      _with_amp_reset_cfg(booster_k1_kick_selfplay_env_cfg(), _selfplay_rl)
+    )
+  ),
+  play_env_cfg=_with_kick_style(
+    _with_amp_reset_cfg(booster_k1_kick_selfplay_env_cfg(play=True), _selfplay_rl)
+  ),
+  rl_cfg=_selfplay_rl,
+  runner_cls=SelfPlayAmpOnPolicyRunner,
 )
 
 _stage1_rl = booster_k1_kick_stage1_runner_cfg()

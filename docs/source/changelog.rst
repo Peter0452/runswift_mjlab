@@ -8,6 +8,14 @@ Upcoming version (not yet released)
 Added
 ^^^^^
 
+- Added 1v1 self-play on the stage-3 kick loop
+  (``Mjlab-Velocity-Kick-SelfPlay-Amp-DA-Muon-Booster-K1``). A second K1 attacks
+  the learner's own goal; scoring or conceding pays ±20 and starts a new
+  kickoff. The opponent runs frozen policies inside the env (the learner's
+  latest weights half the time, else a pool of the stage-3 blend, the AMP walk
+  9950 dribbling under a scripted command, and snapshots every 200
+  iterations), so the learner keeps the 83-dim actor / 22-dim action layout and
+  warm-starts from ``init_checkpoint`` (default the ``h022_c2_x50`` blend).
 - Added Booster K1 get-up task (``Mjlab-Getup-Flat-Booster-K1``), a discovery-based
   fall-recovery port of ``booster_train`` ``Booster-K1-Getup-v1``. Flat plane,
   random fallen spawn (full roll/pitch/yaw), 20-DOF legs+arms actions, upright-gated

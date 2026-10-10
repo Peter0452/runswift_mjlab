@@ -135,10 +135,17 @@ class AmpOnPolicyRunner(AmpRunner, MjlabOnPolicyRunner):
       path, load_cfg=load_cfg, strict=strict, map_location=map_location
     )
 
+  def _on_learn_start(self) -> None:
+    """Hook for subclasses: before the first rollout of ``learn``."""
+
+  def _on_policy_update(self, it: int) -> None:
+    """Hook for subclasses: after each policy update."""
+
   # override the learn method to include AMP loop, most of the code is same as parent
   def learn(
     self, num_learning_iterations: int, init_at_random_ep_len: bool = False
   ) -> None:
+    self._on_learn_start()
     # Randomize initial episode lengths (for exploration)
     if init_at_random_ep_len:
       self.env.episode_length_buf = torch.randint_like(
@@ -189,6 +196,7 @@ class AmpOnPolicyRunner(AmpRunner, MjlabOnPolicyRunner):
 
       # Update policy
       update_dict = self.alg.update()
+      self._on_policy_update(it)
 
       stop = time.time()
       learn_time = stop - start
