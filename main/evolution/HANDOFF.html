@@ -1,0 +1,789 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>K1 kick evolution: handoff for the next agent &#8212; mjlab Documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+
+  
+  <link href="../_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/sphinx-book-theme.css?v=eba8b062" />
+    <link rel="stylesheet" type="text/css" href="../_static/twemoji.css" />
+    <link rel="stylesheet" type="text/css" href="/home/runner/work/runswift_mjlab/runswift_mjlab/.venv/lib/python3.13/site-packages/sphinxcontrib/icon/node_modules/@fortawesome/fontawesome-free/css/all.min.css?v=53359634" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/custom.css?v=3ea80bc3" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+    <script src="../_static/documentation_options.js?v=9eb32ce0"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="https://unpkg.com/twemoji@latest/dist/twemoji.min.js"></script>
+    <script src="../_static/twemoji.js"></script>
+    <script src="/home/runner/work/runswift_mjlab/runswift_mjlab/.venv/lib/python3.13/site-packages/sphinxcontrib/icon/node_modules/@fortawesome/fontawesome-free/js/all.min.js?v=ec35c6c9"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=f281be69"></script>
+    <script src="../_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'evolution/HANDOFF';</script>
+    <link rel="icon" href="../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+    <meta name="docbuild:last-update" content="Oct 10, 2026"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search..."
+         aria-label="Search..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">mjlab Documentation</p>
+  
+</a></div>
+        <div class="sidebar-primary-item">
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search..."
+         aria-label="Search..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+        <div class="sidebar-primary-item">
+<div class="sidebar-version-switcher">
+  <label class="sidebar-version-label" for="version-select">Version</label>
+  <select id="version-select" class="sidebar-version-select" onchange="location = this.value;">
+    <option value="HANDOFF.html" selected>main</option>
+  </select>
+</div>
+</div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../source/installation.html">Installation Guide</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../source/tutorials.html">Tutorials</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../source/tutorials/cartpole.html">Cartpole: Building Your First Environment</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="../source/contributing.html">Contributing</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Concepts</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../source/architecture_overview.html">Architecture Overview</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../source/entity/index.html">Entity</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../source/entity/entity_data.html">Entity Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../source/entity/per_world_mesh.html">Heterogeneous Worlds</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="../source/actuators.html">Actuators</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../source/sensors/index.html">Sensors</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../source/sensors/raycast_sensor.html">RayCast Sensor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../source/sensors/rgbd_camera.html">RGB-D Camera</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="../source/scene.html">Scene</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../source/terrain.html">Terrain</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">The Manager Layer</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../source/environment_config.html">Environment Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../source/observations.html">Observations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../source/actions.html">Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../source/rewards.html">Rewards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../source/terminations.html">Terminations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../source/commands.html">Commands</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../source/events.html">Events</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../source/randomization.html">Domain Randomization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../source/curriculum.html">Curriculum</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../source/metrics.html">Metrics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../source/recorders.html">Recorders</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Training &amp; Debugging</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../source/training/rsl_rl.html">Training with RSL-RL</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../source/training/motion_imitation.html">Motion Imitation</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="../source/viewers.html">Viewers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../source/training/distributed_training.html">Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../source/training/cloud.html">Cloud Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../source/debugging/nan_guard.html">NaN Guard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../source/debugging/export_scene.html">Export Scene</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../source/api/index.html">API Reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../source/api/envs.html">mjlab.envs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../source/api/scene.html">mjlab.scene</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../source/api/sim.html">mjlab.sim</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../source/api/entity.html">mjlab.entity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../source/api/actuator.html">mjlab.actuator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../source/api/sensor.html">mjlab.sensor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../source/api/managers.html">mjlab.managers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../source/api/terrains.html">mjlab.terrains</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../source/api/rl.html">mjlab.rl</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../source/api/viewer.html">mjlab.viewer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../source/api/tasks.html">mjlab.tasks</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Further Reading</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../source/motivation.html">Why mjlab?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../source/migration_isaac_lab.html">Migrating from Isaac Lab</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../source/faq.html">FAQ &amp; Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../source/research.html">Research</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../source/changelog.html">Changelog</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+
+
+
+<div class="dropdown dropdown-source-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Source repositories">
+    <i class="fab fa-github"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="https://github.com/mujocolab/mjlab" target="_blank"
+   class="btn btn-sm btn-source-repository-button dropdown-item"
+   title="Source repository"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fab fa-github"></i>
+  </span>
+<span class="btn__text-container">Repository</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li><a href="https://github.com/mujocolab/mjlab/edit/main/docs/evolution/HANDOFF.md" target="_blank"
+   class="btn btn-sm btn-source-edit-button dropdown-item"
+   title="Suggest edit"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-pencil-alt"></i>
+  </span>
+<span class="btn__text-container">Suggest edit</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li><a href="https://github.com/mujocolab/mjlab/issues/new?title=Issue%20on%20page%20%2Fevolution/HANDOFF.html&body=Your%20issue%20content%20here." target="_blank"
+   class="btn btn-sm btn-source-issues-button dropdown-item"
+   title="Open an issue"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-lightbulb"></i>
+  </span>
+<span class="btn__text-container">Open issue</span>
+</a>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+
+
+<div class="dropdown dropdown-download-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Download this page">
+    <i class="fas fa-download"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="../_sources/evolution/HANDOFF.md" target="_blank"
+   class="btn btn-sm btn-download-source-button dropdown-item"
+   title="Download source file"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="btn__text-container">.md</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li>
+<button onclick="window.print()"
+  class="btn btn-sm btn-download-pdf-button dropdown-item"
+  title="Print to PDF"
+  data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="btn__text-container">.pdf</span>
+</button>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm pst-navbar-icon search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+<button class="sidebar-toggle secondary-toggle btn btn-sm" title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</button>
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>K1 kick evolution: handoff for the next agent</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#what-the-system-is">What the system is</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#user-objectives-and-standing-decisions-do-not-change-without-asking">User objectives and standing decisions (do not change without asking)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#current-state-2026-10-08-20-55">Current state (2026-10-08 20:55)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#runbook">Runbook</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#gotchas-each-one-has-cost-time">Gotchas (each one has cost time)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pending-awaiting-the-user">Pending, awaiting the user</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#other-documents">Other documents</a></li>
+</ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="k1-kick-evolution-handoff-for-the-next-agent">
+<h1>K1 kick evolution: handoff for the next agent<a class="headerlink" href="#k1-kick-evolution-handoff-for-the-next-agent" title="Link to this heading">#</a></h1>
+<p>Read this first, then the tail of <code class="docutils literal notranslate"><span class="pre">monitor.md</span></code> (interventions, newest last) and
+<code class="docutils literal notranslate"><span class="pre">log.md</span></code> (loop events). Update the “Current state” section whenever you
+intervene, and log every intervention in <code class="docutils literal notranslate"><span class="pre">monitor.md</span></code>. Last update: 2026-10-09 05:14 AEDT.</p>
+<section id="what-the-system-is">
+<h2>What the system is<a class="headerlink" href="#what-the-system-is" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>One end-to-end K1 kick policy (no policy switching), trained with AMP-PPO on
+<code class="docutils literal notranslate"><span class="pre">Mjlab-Velocity-Kick-Stage3-Amp-DA-Muon-Booster-K1</span></code>. Deployed through
+<code class="docutils literal notranslate"><span class="pre">../k1_policy_runner</span></code> (branch <code class="docutils literal notranslate"><span class="pre">kick</span></code>) as ONNX.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">scripts/tools/evolve_hier.py</span></code>: a hierarchical evolution loop (L0 gene
+mutation, L1 reward templates, L2 constraints, L3 scenarios, L4 <code class="docutils literal notranslate"><span class="pre">claude</span> <span class="pre">-p</span></code>
+designer, L5 catalogue atoms in <code class="docutils literal notranslate"><span class="pre">docs/approach_catalogue.yaml</span></code>), built on
+<code class="docutils literal notranslate"><span class="pre">scripts/tools/evolve_kick.py</span></code>. It runs under <code class="docutils literal notranslate"><span class="pre">scripts/tools/hier_supervisor.sh</span></code>,
+which restarts it on crashes (at most 6 times) and stops on
+<code class="docutils literal notranslate"><span class="pre">docs/evolution/STOP_AFTER_FRAME</span></code> or its time limit.</p></li>
+<li><p>A frame trains up to 3 children from a parent: 2 in parallel, then 1 more;
+each runs up to 500 iterations with a screen every 50–100. The best child
+gets the full benchmark. If it is not promoted, 70/30, 50/50 and 30/70
+blends with the champion are screened, and the best blend gets the full
+benchmark. A frame takes about 2 h.</p></li>
+<li><p>The judge is benchmark v2 (<code class="docutils literal notranslate"><span class="pre">scripts/tools/kick_bench2.py</span></code>, GPU, deployed
+action path, fixed low/high speed caps, camera/world/perfect ball, 0–40 ms
+delay). It is scored by <code class="docutils literal notranslate"><span class="pre">scripts/tools/fitness_v2.py</span></code> against the champion:
+primary objectives ×3, safety ×2, the rest ×1. A <strong>regression</strong> is a metric
+worse than its tolerance with separated CIs; any regression blocks
+promotion.</p></li>
+<li><p>Promotion (<code class="docutils literal notranslate"><span class="pre">evolve_kick.confirm_and_install</span></code>): a second-seed v2 bench, then
+the runswift proxy soft gate (falls, accuracy, 6/9 m kick speed; tolerances
+in <code class="docutils literal notranslate"><span class="pre">RSW_TOL</span></code>), then it installs a run dir and exports ONNX to
+<code class="docutils literal notranslate"><span class="pre">../k1_policy_runner/kick_loop_models/k1_kick_loop_&lt;name&gt;.onnx</span></code>.</p></li>
+<li><p>The experience repository (<code class="docutils literal notranslate"><span class="pre">docs/experience/</span></code>, <code class="docutils literal notranslate"><span class="pre">scripts/tools/experience.py</span></code>)
+records context, action, result, impact and lesson for every frame. It feeds
+L4 and the proposers.</p></li>
+</ul>
+</section>
+<section id="user-objectives-and-standing-decisions-do-not-change-without-asking">
+<h2>User objectives and standing decisions (do not change without asking)<a class="headerlink" href="#user-objectives-and-standing-decisions-do-not-change-without-asking" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>Optimise accuracy, time to kick and power without compromising anything
+else; beat B-Human convincingly, then keep improving. Falls stay low and the
+robot stays upright (~0.52 m); run at the speed caps; light and heavy ball.</p></li>
+<li><p>Power by range: 1–4 m and 4–8 m matched to the distance; ≥ 8 m uncapped (at
+least B-Human’s power); air balls are fine.</p></li>
+<li><p>The policy itself chooses its kick style (front, side foot, hop) per
+situation from speed and accuracy; no style is forced by range.</p></li>
+<li><p>Runswift is a proxy soft gate: we may be a little worse on its ideal
+assumptions, but not on falls, accuracy or kick speed. Kick speed is gated
+on the 6/9 m tasks only.</p></li>
+<li><p><strong>Action rate must stay stable and smooth without compromising the rest
+(user 2026-10-08).</strong> It is a safety metric on full_loop, close_any and
+approach (tolerance 0.006).</p></li>
+<li><p><strong>Headline (user 2026-10-08): kick faster, more accurately and more
+powerfully than B-Human for diverse ball sizes</strong>, without losing stability,
+no falls or smooth actions. Quiet steps too (loud on the robot).</p></li>
+<li><p>Ball randomisation (user 2026-10-08): radius 0.07–0.13 m, mass 0.05–0.45 kg
+(<code class="docutils literal notranslate"><span class="pre">mdp.ball_size_mass</span></code>, event key <code class="docutils literal notranslate"><span class="pre">ball_mass</span></code>).</p></li>
+<li><p>Keep training-domain randomisation, latency (0–40 ms) and limits as
+inherited from the AMP walk; B-Human torque clip; ball origin between the
+feet with 2 cm jitter; a never-seen ball is zeros with age 0 (training and
+runner).</p></li>
+<li><p>“If it is not improving, then move on”: frames stop early when no child
+beats the parent screen.</p></li>
+</ul>
+</section>
+<section id="current-state-2026-10-08-20-55">
+<h2>Current state (2026-10-08 20:55)<a class="headerlink" href="#current-state-2026-10-08-20-55" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><strong>Champion:</strong> <code class="docutils literal notranslate"><span class="pre">h010_c2_17850_x70_2seed</span></code>. Checkpoint:
+<code class="docutils literal notranslate"><span class="pre">logs/rsl_rl/k1_kick_stage3_amp/2026-10-08_11-08-42_champ_h010_c2_17850_x70/model_17149.pt</span></code>.
+ONNX: <code class="docutils literal notranslate"><span class="pre">../k1_policy_runner/kick_loop_models/k1_kick_loop_h010_c2_17850_x70.onnx</span></code>.
+<code class="docutils literal notranslate"><span class="pre">docs/evolution/state.json</span></code> holds the champion and archive.</p></li>
+<li><p><strong>Best candidates, not promoted:</strong></p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">h011_c2_17750</span></code> (ONNX exported): long kick 3D 4.4–4.5 m/s against the
+champion’s 3.6 (B-Human 4.3); about 0.8 s faster to kick. It regresses on
+action rate (3 tracks) and style selection at high caps.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">h012_c1_18000</span></code>
+(<code class="docutils literal notranslate"><span class="pre">logs/rsl_rl/k1_kick_stage3_amp/2026-10-08_13-36-19_h012_c1/model_18000.pt</span></code>):
++170 under the current fitness, long 4.1–4.2 m/s, goals 83/81 %. It
+regresses on close_any action rate at high caps and the heavy-ball long
+kick at high caps.</p></li>
+</ul>
+</li>
+<li><p><strong>runswift harness findings (2026-10-09, monitor.md)</strong>: the official fixture
+scores our policy with (1) the runner scene’s 1 cm sole-capsule feet (training
+collides with the foot mesh) and (2) the ball relative to the pelvis (training:
+between the soles; B-Human gets the soles there), and (3) the runner’s default
+caps 0.5/0.3/0.6 while B-Human walks uncapped. <code class="docutils literal notranslate"><span class="pre">scripts/tools/rsw_aligned.sh</span></code>
+runs it with mesh feet + soles origin (+ caps); results in
+<code class="docutils literal notranslate"><span class="pre">docs/benchmarks_v2/runswift_aligned/</span></code>. Aligned, high caps: h017_c0_18500
+beats B-Human on the near grid (107/107 vs 97/99 on-direction, 3.7/4.8 vs
+4.7/5.4 deg, launch 1.00 vs 1.03 s, strongest 3.2 vs 3.0 m/s) and scores
+twice as fast, but loses the goal grid 63-74 vs 88-89/90: every miss is a
+fall within 0.8 s of a standing start with the ball behind. The official
+numbers are unchanged; ask the user before changing the official fixture or
+the loop’s runswift gate.</p></li>
+<li><p><strong>Training changes 2026-10-09</strong>: <code class="docutils literal notranslate"><span class="pre">stand_start</span></code> reset event exists but is
+DISABLED (prob 0, gene ignored): every child with it at 0.35 collapsed
+80-140 iterations in; the same genes without it did not. Reward <code class="docutils literal notranslate"><span class="pre">alive</span></code>
++2/s (gene w.alive); touchdown_speed -50 -&gt; -15. Screen has
+near_grid/large and approach/behind/world/typical (cold start, ball behind,
+world perception; champion falls 32-40 %), also a fitness safety metric.</p></li>
+<li><p><strong>Camera perception result</strong>: with KC_VISION=1 (deployed path) on the
+aligned fixture our policies score 87-90/90 goals with 0-1 falls in ~20 s
+(B-Human 88-89 with truth inputs, 30.5 s). The truth-input falls come from
+a seen ball far behind, which camera training never produces; world-ball
+training (s.world_ball_prob 0.3-0.5) did not fix them in 300-800 it.</p></li>
+<li><p><strong>Env change 2026-10-08 21:10</strong> (monitor.md): ball size + mass DR, foot_flat
+settle 60 ms, touchdown_speed −50. bench v2 has large/small ball and landing
+tracks; the champion and B-Human were being benched on them at 21:10 — check
+that <code class="docutils literal notranslate"><span class="pre">h010_c2_17850_x70_2seed.json</span></code> has <code class="docutils literal notranslate"><span class="pre">near_grid/large/...</span></code>,
+<code class="docutils literal notranslate"><span class="pre">full_loop/landing/...</span></code> keys before trusting new-track scores.</p></li>
+<li><p><strong>Running:</strong> frame h015 (an L1 template, far_cap_tracking, parent
+h011_c2_17750). After it, <code class="docutils literal notranslate"><span class="pre">inject.json</span></code> opens an L2 context from
+<code class="docutils literal notranslate"><span class="pre">h012_c1_18000</span></code> with CAPS temporal 1.3 and near-ball scale 0.8 (smoothness).</p></li>
+<li><p><strong>Supervisor:</strong> started 16:21 with a 7 h limit, so it stops at about 23:20
+and does not restart itself. <code class="docutils literal notranslate"><span class="pre">scripts/tools/hier_relaunch.sh</span> <span class="pre">3820386</span> <span class="pre">43200</span></code>
+(detached) then relaunches it for 12 h unless STOP_AFTER_FRAME is set.</p></li>
+</ul>
+</section>
+<section id="runbook">
+<h2>Runbook<a class="headerlink" href="#runbook" title="Link to this heading">#</a></h2>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>runswift_mjlab
+tail<span class="w"> </span>-20<span class="w"> </span>docs/evolution/log.md<span class="w">            </span><span class="c1"># loop events</span>
+tail<span class="w"> </span>-30<span class="w"> </span>docs/evolution/monitor.md<span class="w">        </span><span class="c1"># interventions</span>
+cat<span class="w"> </span>docs/evolution/hier_report.md<span class="w">         </span><span class="c1"># frame table</span>
+pgrep<span class="w"> </span>-af<span class="w"> </span><span class="s2">&quot;evolve_hier|hier_supervisor|kick_bench2|bin/train&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-v<span class="w"> </span>pgrep
+<span class="c1"># Score a benchmarked candidate against the champion (current fitness):</span>
+uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import json,sys; sys.path.insert(0,&#39;scripts/tools&#39;); import evolve_kick as ek; \</span>
+<span class="s2">  ref=json.load(open(ek.BENCH/&#39;h010_c2_17850_x70_2seed.json&#39;)); \</span>
+<span class="s2">  print(ek.score(json.load(open(ek.BENCH/&#39;NAME.json&#39;)), ref))&quot;</span>
+<span class="c1"># Stop cleanly after the current frame:</span>
+touch<span class="w"> </span>docs/evolution/STOP_AFTER_FRAME
+<span class="c1"># (Re)start: remove the flag, then</span>
+nohup<span class="w"> </span>bash<span class="w"> </span>scripts/tools/hier_supervisor.sh<span class="w"> </span><span class="m">28800</span><span class="w"> </span>&gt;/dev/null<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="p">&amp;</span><span class="w">   </span><span class="c1"># seconds</span>
+<span class="c1"># Steer the next frame: write docs/evolution/inject.json = [ {level, desc,</span>
+<span class="c1"># genes, best?: {name, ck, score, regressions}} ]. It is consumed at the next</span>
+<span class="c1"># frame boundary; &quot;best&quot; sets the parent checkpoint for the context.</span>
+<span class="c1"># Full benchmark by hand (~40 min alone, longer while training runs):</span>
+env<span class="w"> </span>-u<span class="w"> </span>KICK_GENES<span class="w"> </span><span class="nv">BENCH2_SEED</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>scripts/tools/kick_bench2.py<span class="w"> </span>run<span class="w"> </span>NAME<span class="w"> </span>CK<span class="w"> </span>--size<span class="w"> </span>full
+<span class="c1"># ONNX export:</span>
+uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>scripts/tools/export_onnx.py<span class="w"> </span>--checkpoint<span class="w"> </span>CK<span class="w"> </span>--output<span class="w"> </span>../k1_policy_runner/kick_loop_models/k1_kick_loop_NAME.onnx
+</pre></div>
+</div>
+</section>
+<section id="gotchas-each-one-has-cost-time">
+<h2>Gotchas (each one has cost time)<a class="headerlink" href="#gotchas-each-one-has-cost-time" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>A child whose per-episode task reward goes negative learns to end episodes
+at once (h018, 2026-10-09: episode length 1400 -&gt; 35 in ~25 iterations).
+Watch <code class="docutils literal notranslate"><span class="pre">Mean</span> <span class="pre">episode</span> <span class="pre">length</span></code> / <code class="docutils literal notranslate"><span class="pre">Episode_Termination/illegal_contact</span></code> after
+any change that adds cost or makes scenarios harder.</p></li>
+<li><p>The loop’s log.md is not reliably append-only for <code class="docutils literal notranslate"><span class="pre">tail</span> <span class="pre">-F</span></code> / line-count
+watchers; diff its tail instead.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pgrep</span> <span class="pre">-f</span> <span class="pre">&lt;pattern&gt;</span></code> / <code class="docutils literal notranslate"><span class="pre">pkill</span> <span class="pre">-f</span></code> match your own shell when its command line
+contains the pattern; wait on a PID (<code class="docutils literal notranslate"><span class="pre">kill</span> <span class="pre">-0</span> <span class="pre">PID</span></code>) or kill by PID in a
+separate call.</p></li>
+<li><p>Python changes to <code class="docutils literal notranslate"><span class="pre">fitness_v2.py</span></code> / <code class="docutils literal notranslate"><span class="pre">evolve_*.py</span></code> reach the running loop
+only after a restart. Use STOP_AFTER_FRAME, then relaunch; env/reward and
+rl_cfg changes reach the next child training automatically, because each
+child is a new process.</p></li>
+<li><p>Context <code class="docutils literal notranslate"><span class="pre">best</span></code> scores are relative to the champion at the time. After a
+promotion, rescore a carried-over best before injecting it, or set <code class="docutils literal notranslate"><span class="pre">best</span></code>
+explicitly.</p></li>
+<li><p>The ball’s visual mesh does not follow the randomised collision radius; in
+the viewer every ball looks 0.08 m.</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">action_rate_l2</span></code> reward (and <code class="docutils literal notranslate"><span class="pre">c.action_rate_l2</span></code>) acts on sampled actions
+with a fixed std of 0.6; noise dominates it and it does not smooth the
+deployed policy. Smoothness of the deterministic action comes from CAPS
+(<code class="docutils literal notranslate"><span class="pre">caps_temporal_coef</span></code>, <code class="docutils literal notranslate"><span class="pre">caps_spatial_coef</span></code>, <code class="docutils literal notranslate"><span class="pre">caps_near_ball_scale</span></code> genes;
+defaults 1.0 / 0.4 / 0.5 in <code class="docutils literal notranslate"><span class="pre">config/k1_amp/rl_cfg.py</span></code>).</p></li>
+<li><p>Limit training to 2 at a time (3 has run out of GPU memory); hand benchmarks
+alongside training are fine but slower.</p></li>
+<li><p>Checkpoints are saved every 50 iterations; a run ending at 17649 has no
+model_17650.</p></li>
+<li><p>Background shell waits in the agent harness time out (max 2 h); prefer
+detached <code class="docutils literal notranslate"><span class="pre">nohup</span></code> watchers for long waits.</p></li>
+</ul>
+</section>
+<section id="pending-awaiting-the-user">
+<h2>Pending, awaiting the user<a class="headerlink" href="#pending-awaiting-the-user" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">../k1_policy_runner/start_kick.sh</span></code> still points at
+<code class="docutils literal notranslate"><span class="pre">2026-10-03_12-51-41_stage3_v50b.onnx</span></code> with <code class="docutils literal notranslate"><span class="pre">--kick-speed-limits</span> <span class="pre">1.5,1.5,2.0</span></code>
+(training wz ≤ 1.5). Switch it to the champion and 1.5,1.5,1.5 once the user
+agrees. <code class="docutils literal notranslate"><span class="pre">DEFAULT_MODEL_PATH</span></code> and <code class="docutils literal notranslate"><span class="pre">--record-obs</span></code> for kick_loop_v1 are also
+open.</p></li>
+<li><p>Ideas the user raised and is waiting on: a ball tracker (Kalman +
+odometry), then a learned ball predictor; RMA-style test-time adaptation as
+an L5 atom.</p></li>
+<li><p>The user was asked to review two metric changes: the censored time-to-kick
+metric and the near-best 5 % style-selection rule (see monitor.md).</p></li>
+<li><p>Main remaining gaps: long-kick power without rougher actions or worse style
+selection, running at the high caps (approach cap use ~30 %), low-cap time
+to kick, heavy-ball long kick.</p></li>
+</ul>
+</section>
+<section id="other-documents">
+<h2>Other documents<a class="headerlink" href="#other-documents" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">docs/K1_REAL2SIM_2026-10-09.md</span></code>: first real-robot kick-loop recordings vs
+sim (why the robot went on and off, cadence / torque / impact / vision gaps,
+runner fixes). Tools in <code class="docutils literal notranslate"><span class="pre">../k1_policy_runner</span></code>: <code class="docutils literal notranslate"><span class="pre">--kick-record</span></code>,
+<code class="docutils literal notranslate"><span class="pre">kick_record_analyze.py</span></code>, <code class="docutils literal notranslate"><span class="pre">real_sim_compare.py</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">docs/K1_KICK_BENCHMARK_V2.md</span></code>: benchmark tracks and metrics.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">docs/K1_KICK_REWARD_EVOLUTION_DESIGN.md</span></code>: loop design and build status.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">docs/K1_KICK_LESSONS.md</span></code>, <code class="docutils literal notranslate"><span class="pre">docs/K1_KICK_STYLES.md</span></code>: lessons and kick styles.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">docs/experience/README.md</span></code>: the experience repository and objectives.</p></li>
+</ul>
+</section>
+</section>
+
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#what-the-system-is">What the system is</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#user-objectives-and-standing-decisions-do-not-change-without-asking">User objectives and standing decisions (do not change without asking)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#current-state-2026-10-08-20-55">Current state (2026-10-08 20:55)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#runbook">Runbook</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#gotchas-each-one-has-cost-time">Gotchas (each one has cost time)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pending-awaiting-the-user">Pending, awaiting the user</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#other-documents">Other documents</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By The mjlab Developers
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2025, The mjlab Developers.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    <p class="last-updated">
+  Last updated on Oct 10, 2026.
+  <br/>
+</p>
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>

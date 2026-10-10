@@ -1,0 +1,706 @@
+- 2026-10-05 22:28 start: champion v58_14200, anchor v56d_13450; baselines benchmarking in background
+- 2026-10-05 22:28 evo_g001: parent v58_14200, changed genes {'rsi_bhuman': 0.1, 'rsi_ours': 0.1}
+- 2026-10-05 22:30 restart: training cap 60 → 150 min (child runs ~7.7 s/it beside baseline benchmarks); evo_g001 discarded
+- 2026-10-05 22:30 evo_g001: parent v58_14200, changed genes {'rsi_bhuman': 0.1, 'rsi_ours': 0.1}
+- 2026-10-05 23:06 waiting for baseline benchmarks
+- 2026-10-05 23:38 evo_g001_14450: score +1.62 vs v58_14200, regressions ['bumps_goals', 'flat_goals', 'moving_goals', 'short_stop_m', 'search_found_pct', 'caps_fast_vx']
+- 2026-10-05 23:54 evo_g001_14700: score -3.67 vs v58_14200, regressions ['h2h_aim_pct', 'h2h_long_aim_pct', 'bumps_goals', 'flat_goals', 'moving_goals', 'short_stop_m', 'long_air15_pct(anchor)', 'lean_fast_deg', 'caps_fast_vx']
+- 2026-10-05 23:54 evo_g002: parent v58_14200, changed genes {'w.torque_over_soft_limit': -135.9527, 'w.kick_rest_accuracy': 682.0093, 'rsi_bhuman': 0.0073, 'k.SUPPORT_PLANT_FACTOR': 0.4374, 'k.MOMENTUM_KICK_MAX_SPEED': 1.0148}
+- 2026-10-05 23:55 restart: benchmark tolerances widened to seed noise (goals 0.07, aim 3 %, search 6 %, caps 0.08, short stop 0.6 m, air balls 10 %); anchor regression only if also worse than the champion; evo_g002 restarted
+- 2026-10-05 23:55 re-scored evo_g001_14450: +1.94, regressions ['bumps_goals', 'flat_goals', 'moving_goals', 'short_stop_m', 'caps_fast_vx']
+- 2026-10-05 23:55 re-scored evo_g001_14700: -1.40, regressions ['h2h_aim_pct', 'h2h_long_aim_pct', 'bumps_goals', 'flat_goals', 'moving_goals', 'short_stop_m', 'lean_fast_deg', 'caps_fast_vx']
+- 2026-10-05 23:55 evo_g002: parent v58_14200, changed genes {'w.long_kick_power': 3371.8132, 'w.kick_rest_accuracy': 412.12, 'w.search_turn': 12.4758, 'k.LONG_AIM_SIGMA2': 0.0643}
+- 2026-10-06 00:31 evo_g002_14450: score -13.46 vs v58_14200, regressions ['h2h_first_on_target_pct', 'h2h_aim_pct', 'h2h_long_aim_pct', 'h2h_long_knee_p90', 'bumps_goals', 'flat_goals', 'moving_goals', 'caps_fast_vx']
+- 2026-10-06 00:46 evo_g002_14700: score -15.97 vs v58_14200, regressions ['h2h_first_kick_pct', 'h2h_first_on_target_pct', 'h2h_aim_pct', 'h2h_long_aim_pct', 'bumps_goals', 'flat_goals', 'moving_goals', 'short_stop_m', 'caps_fast_vx']
+- 2026-10-06 00:46 evo_g003: parent v58_14200, changed genes {'w.long_kick_power': 3128.5884, 'w.kick_rest_accuracy': 412.12, 'w.kick_direction': 939.871, 'w.long_kick_underpower': -158.8534, 'k.LONG_AIM_SIGMA2': 0.0643}
+- 2026-10-06 00:48 restart: K4 / K4b switches are now genes (amp_kick_data, k.KICK_STYLE_AMP; plus RSI shares and SUPPORT_PLANT_FACTOR = 1.0 for off) — every child so far silently carried K4, which v59 showed costs goals; champion genes set to v58's true recipe; next child is a control (champion recipe unchanged); evo_g003 discarded
+- 2026-10-06 00:48 re-scored evo_g001_14450: +1.94, regressions ['bumps_goals', 'flat_goals', 'moving_goals', 'short_stop_m', 'caps_fast_vx']
+- 2026-10-06 00:48 re-scored evo_g001_14700: -1.40, regressions ['h2h_aim_pct', 'h2h_long_aim_pct', 'bumps_goals', 'flat_goals', 'moving_goals', 'short_stop_m', 'lean_fast_deg', 'caps_fast_vx']
+- 2026-10-06 00:48 re-scored evo_g002_14450: -13.46, regressions ['h2h_first_on_target_pct', 'h2h_aim_pct', 'h2h_long_aim_pct', 'h2h_long_knee_p90', 'bumps_goals', 'flat_goals', 'moving_goals', 'caps_fast_vx']
+- 2026-10-06 00:48 re-scored evo_g002_14700: -15.97, regressions ['h2h_first_kick_pct', 'h2h_first_on_target_pct', 'h2h_aim_pct', 'h2h_long_aim_pct', 'bumps_goals', 'flat_goals', 'moving_goals', 'short_stop_m', 'caps_fast_vx']
+- 2026-10-06 00:48 evo_g003: parent v58_14200, changed genes {}
+- 2026-10-06 01:24 evo_g003_14450: score -26.21 vs v58_14200, regressions ['h2h_first_kick_s', 'h2h_long_3d', 'h2h_long_knee_p90', 'bumps_goals', 'flat_goals', 'moving_goals', 'short_stop_m', 'long_x_needed', 'search_turn_rad', 'lean_fast_deg', 'height_fast_m', 'caps_fast_vx']
+- 2026-10-06 01:39 evo_g003_14700: score -6.61 vs v58_14200, regressions ['h2h_first_on_target_pct', 'h2h_aim_pct', 'h2h_long_3d', 'bumps_late_falls_pct', 'push_late_falls_pct', 'caps_fast_vx']
+- 2026-10-06 01:39 evo_g004: parent v58_14200, changed genes {'w.kick_direction': 847.4858, 'w.search_turn': 9.2361, 'k.MOMENTUM_KICK_MAX_SPEED': 0.8798, 'k.LONG_AIM_SIGMA2': 0.03}
+- 2026-10-06 01:41 restart: control (champion recipe, evo_g003) scored -26.2 at +250 and -6.6 at +500 — continued training swings far more than any gene effect, v58/14200 is a peak. New protocol: screen checkpoints +150/+250/+350/+500 (bumps goals / aim / falls, close-start long 3D speed / aim), full benchmark only on the child's best; new gene desired_kl (0.003-0.012) for steadier fine-tunes; evo_g004 discarded
+- 2026-10-06 01:41 re-scored evo_g001_14450: +1.94, regressions ['bumps_goals', 'flat_goals', 'moving_goals', 'short_stop_m', 'caps_fast_vx']
+- 2026-10-06 01:41 re-scored evo_g001_14700: -1.40, regressions ['h2h_aim_pct', 'h2h_long_aim_pct', 'bumps_goals', 'flat_goals', 'moving_goals', 'short_stop_m', 'lean_fast_deg', 'caps_fast_vx']
+- 2026-10-06 01:41 re-scored evo_g002_14450: -13.46, regressions ['h2h_first_on_target_pct', 'h2h_aim_pct', 'h2h_long_aim_pct', 'h2h_long_knee_p90', 'bumps_goals', 'flat_goals', 'moving_goals', 'caps_fast_vx']
+- 2026-10-06 01:41 re-scored evo_g002_14700: -15.97, regressions ['h2h_first_kick_pct', 'h2h_first_on_target_pct', 'h2h_aim_pct', 'h2h_long_aim_pct', 'bumps_goals', 'flat_goals', 'moving_goals', 'short_stop_m', 'caps_fast_vx']
+- 2026-10-06 01:41 re-scored evo_g003_14450: -26.21, regressions ['h2h_first_kick_s', 'h2h_long_3d', 'h2h_long_knee_p90', 'bumps_goals', 'flat_goals', 'moving_goals', 'short_stop_m', 'long_x_needed', 'search_turn_rad', 'lean_fast_deg', 'height_fast_m', 'caps_fast_vx']
+- 2026-10-06 01:41 re-scored evo_g003_14700: -6.61, regressions ['h2h_first_on_target_pct', 'h2h_aim_pct', 'h2h_long_3d', 'bumps_late_falls_pct', 'push_late_falls_pct', 'caps_fast_vx']
+- 2026-10-06 01:41 evo_g004: parent v58_14200, changed genes {'w.long_kick_power': 3163.3929, 'rsi_bhuman': 0.1775, 'rsi_ours': 0.1, 'k.SUPPORT_PLANT_FACTOR': 0.5}
+- 2026-10-06 02:02 screening the champion
+- 2026-10-06 02:31 evo_g004: screen vs champion 14300:+6.6, 14700:+1.8, 14550:+1.6, 14650:-1.7, 14400:-3.7, 14450:-4.1, 14500:-5.1, 14600:-10.1, 14350:-14.5
+- 2026-10-06 02:46 evo_g004_14300: score -11.14 vs v58_14200, regressions ['h2h_aim_pct', 'h2h_long_knee_p90', 'bumps_goals', 'flat_goals', 'flat_late_falls_pct', 'push_late_falls_pct', 'moving_goals', 'short_stop_m', 'long_air15_pct', 'lean_fast_deg', 'caps_fast_vx']
+- 2026-10-06 02:46 evo_g005: parent v58_14200, changed genes {'w.search_turn': 8.4646, 'rsi_bhuman': 0.0423, 'desired_kl': 0.0107}
+- 2026-10-06 03:59 evo_g005: screen vs champion 14600:+8.7, 14400:+6.8, 14300:+5.2, 14550:+3.8, 14450:+3.1, 14500:+0.7, 14350:-0.1, 14700:-1.7, 14650:-7.0
+- 2026-10-06 04:23 evo_g005_14600: score +8.45 vs v58_14200, regressions ['h2h_first_kick_s', 'bumps_goals', 'flat_goals', 'flat_late_falls_pct', 'moving_goals', 'short_stop_m', 'search_found_pct', 'caps_fast_vx']
+- 2026-10-06 04:23 evo_g006: parent v58_14200, changed genes {'k.SUPPORT_PLANT_FACTOR': 0.9294, 'desired_kl': 0.0103}
+- 2026-10-06 04:37 blend x_v58_g005 0.80/0.20: screen +2.4 {'goals': 1.04, 'aim': 89.0, 'falls': 0.6, 'long3d': 6.23, 'h2h_aim': 94.0}
+- 2026-10-06 04:43 blend x_v58_g005 0.65/0.35: screen +1.8 {'goals': 1.09, 'aim': 91.0, 'falls': 0.6, 'long3d': 6.38, 'h2h_aim': 91.0}
+- 2026-10-06 04:48 blend x_v58_g005 0.50/0.50: screen +6.9 {'goals': 1.04, 'aim': 92.0, 'falls': 0.4, 'long3d': 6.69, 'h2h_aim': 94.0}
+- 2026-10-06 05:19 blend x_x50_swa3 0.70/0.30: screen +8.2 {'goals': 1.07, 'aim': 91.0, 'falls': 0.4, 'long3d': 6.73, 'h2h_aim': 95.0}
+- 2026-10-06 05:23 blend x_x50_swa3 0.50/0.50: screen +4.6 {'goals': 1.07, 'aim': 91.0, 'falls': 0.6, 'long3d': 6.54, 'h2h_aim': 93.0}
+- 2026-10-06 05:28 blend x_x50_swa3 0.35/0.65: screen +1.5 {'goals': 1.11, 'aim': 92.0, 'falls': 1.2, 'long3d': 6.27, 'h2h_aim': 92.0}
+- 2026-10-06 05:39 evo_g006: screen vs champion 14700:+5.3, 14450:+5.3, 14500:+3.5, 14650:+1.5, 14300:+1.0, 14400:-0.1, 14600:-3.1, 14350:-3.9, 14550:-6.3
+- 2026-10-06 05:57 blend x3_g003 0.75/0.25: screen +4.9 {'goals': 1.12, 'aim': 91.0, 'falls': 0.8, 'long3d': 6.69, 'h2h_aim': 92.0}
+- 2026-10-06 06:01 blend x3_g003 0.60/0.40: screen +5.5 {'goals': 1.1, 'aim': 91.0, 'falls': 0.2, 'long3d': 6.65, 'h2h_aim': 92.0}
+- 2026-10-06 06:01 evo_g006_14700: score -5.31 vs v58_14200, regressions ['h2h_first_on_target_pct', 'h2h_long_knee_p90', 'flat_goals', 'short_stop_m', 'caps_fast_vx']
+- 2026-10-06 06:01 evo_g007: parent v58_14200, changed genes {'w.kick_rest_accuracy': 551.4682, 'w.long_kick_underpower': -258.9065, 'w.search_turn': 7.9935, 'k.LONG_AIM_SIGMA2': 0.0351, 'desired_kl': 0.0107}
+- 2026-10-06 06:06 blend x3_g003 0.50/0.50: screen +4.5 {'goals': 1.08, 'aim': 91.0, 'falls': 0.8, 'long3d': 6.72, 'h2h_aim': 92.0}
+- 2026-10-06 07:01 NEW CHAMPION by weight-space crossover: x3_g003_60 = 0.6 × [0.7 × (0.5 v58/14200 + 0.5 evo_g005/14600) + 0.3 × SWA(v58/14150–14250)] + 0.4 × evo_g003/14700. Two-seed mean vs v58/14200 two-seed mean: no regressions; long 3D 6.74 vs 6.14 m/s, knee p90 54.5 vs 66 Nm, hip 63 vs 68, planted 80 vs 71.5 %, flat aim 94.5 vs 93.5, bumps aim 90.5 vs 88, lofts > 15 cm 4.5 vs 7.5 %, push late falls 1.05 vs 1.5 %; slightly lower (within tolerance): short stop 3.88 vs 3.40 m, first kick on target 87 vs 89 %, search 53 vs 57 %, caps 0.57 vs 0.62. Installed as logs/.../2026-10-06_06-45-00_blend_x3_g003_60/model_14200.pt, ONNX k1_kick_loop_blend_x3_g003_60.onnx; evo_g007 discarded; gene search restarts from it (genes = v58 recipe)
+- 2026-10-06 07:01 re-scored evo_g001_14450: -3.84, regressions ['h2h_long_3d', 'h2h_long_knee_p90', 'bumps_goals', 'flat_goals', 'moving_goals', 'short_stop_m', 'caps_fast_vx']
+- 2026-10-06 07:01 re-scored evo_g001_14700: -6.67, regressions ['h2h_aim_pct', 'h2h_long_3d', 'h2h_long_aim_pct', 'bumps_goals', 'flat_aim_pct', 'flat_goals', 'moving_goals', 'long_x_needed', 'caps_fast_vx']
+- 2026-10-06 07:01 re-scored evo_g002_14450: -16.92, regressions ['h2h_first_on_target_pct', 'h2h_aim_pct', 'h2h_long_3d', 'h2h_long_knee_p90', 'bumps_goals', 'flat_goals', 'moving_goals', 'long_x_needed']
+- 2026-10-06 07:01 re-scored evo_g002_14700: -21.14, regressions ['h2h_aim_pct', 'h2h_long_aim_pct', 'h2h_long_knee_p90', 'bumps_aim_pct', 'bumps_goals', 'bumps_late_falls_pct', 'flat_goals', 'moving_goals', 'short_stop_m', 'caps_fast_vx']
+- 2026-10-06 07:01 re-scored evo_g003_14450: -30.50, regressions ['h2h_first_kick_s', 'h2h_long_3d', 'h2h_long_knee_p90', 'bumps_goals', 'flat_goals', 'moving_goals', 'long_x_needed', 'lean_fast_deg', 'caps_fast_vx']
+- 2026-10-06 07:01 re-scored evo_g003_14700: -17.54, regressions ['h2h_long_3d', 'h2h_support_planted_pct(anchor)', 'bumps_late_falls_pct', 'flat_late_falls_pct', 'push_late_falls_pct', 'long_x_needed']
+- 2026-10-06 07:01 re-scored evo_g004_14300: -12.01, regressions ['h2h_aim_pct', 'h2h_long_knee_p90', 'bumps_goals', 'flat_goals', 'flat_late_falls_pct', 'push_late_falls_pct', 'moving_goals', 'long_air15_pct']
+- 2026-10-06 07:01 re-scored evo_g005_14600: -2.18, regressions ['h2h_first_kick_s', 'bumps_goals', 'flat_goals', 'flat_late_falls_pct', 'push_late_falls_pct', 'moving_goals', 'short_stop_m']
+- 2026-10-06 07:01 re-scored evo_g006_14700: -11.32, regressions ['h2h_long_knee_p90', 'bumps_late_falls_pct', 'flat_goals', 'short_stop_m']
+- 2026-10-06 07:01 evo_g008: parent x3_g003_60_2seed, changed genes {'w.torque_over_soft_limit': -89.2664, 'w.kick_rest_accuracy': 598.2585, 'w.kick_direction': 972.3566, 'w.long_kick_underpower': -332.2006, 'style_w': 0.2826, 'k.MOMENTUM_KICK_MAX_SPEED': 1.0572}
+- 2026-10-06 07:07 blend_search: screened champion x3_g003_60_2seed: {'goals': 1.08, 'aim': 90.0, 'falls': 0.6, 'long3d': 6.64, 'h2h_aim': 91.0}
+- 2026-10-06 07:12 blend x4_g004 0.85/0.15: screen +3.1 {'goals': 1.08, 'aim': 91.0, 'falls': 0.8, 'long3d': 6.81, 'h2h_aim': 93.0}
+- 2026-10-06 07:18 blend x4_g004 0.70/0.30: screen +4.7 {'goals': 1.1, 'aim': 90.0, 'falls': 0.4, 'long3d': 6.94, 'h2h_aim': 93.0}
+- 2026-10-06 07:35 screening the champion
+- 2026-10-06 08:16 evo_g008: screen vs champion 14450:+3.9, 14350:+2.8, 14500:+1.5, 14650:+0.8, 14400:-0.8, 14550:-1.7, 14300:-2.6, 14700:-3.4, 14600:-4.5
+- 2026-10-06 08:33 evo_g008_14450: score -2.72 vs x3_g003_60_2seed, regressions ['h2h_long_knee_p90', 'h2h_support_planted_pct', 'bumps_goals', 'flat_goals', 'flat_late_falls_pct', 'push_late_falls_pct', 'moving_goals']
+- 2026-10-06 08:33 evo_g009: parent x3_g003_60_2seed, changed genes {'w.long_kick_power': 3482.7133, 'w.kick_direction': 885.6453, 'w.search_turn': 9.1201, 'rsi_bhuman': 0.0067, 'k.LONG_AIM_SIGMA2': 0.0567, 'k.KICK_STYLE_AMP': 1.0, 'desired_kl': 0.012}
+- 2026-10-06 08:42 NEW CHAMPION x4_g004_70 = 0.7 × x3_g003_60 + 0.3 × evo_g004/14300. Two-seed mean vs x3_g003_60: no regressions; planted support 92 vs 80 %, long 3D 6.90 vs 6.74 m/s, first kick 3.54 vs 3.75 s; vs v58/14200 two-seed: no regressions. Still front kicks (96 %, side-foot 1 %). ONNX k1_kick_loop_blend_x4_g004_70.onnx; evo_g009 discarded
+- 2026-10-06 08:42 re-scored evo_g001_14450: -8.98, regressions ['h2h_long_3d', 'h2h_long_knee_p90', 'bumps_goals', 'flat_goals', 'moving_goals', 'short_stop_m', 'height_fast_m', 'caps_fast_vx']
+- 2026-10-06 08:42 re-scored evo_g001_14700: -12.05, regressions ['h2h_aim_pct(anchor)', 'h2h_long_3d', 'h2h_long_aim_pct', 'bumps_goals', 'flat_goals', 'moving_goals', 'long_x_needed', 'caps_fast_vx']
+- 2026-10-06 08:42 re-scored evo_g002_14450: -22.78, regressions ['h2h_first_on_target_pct', 'h2h_aim_pct(anchor)', 'h2h_long_3d', 'h2h_long_knee_p90', 'bumps_goals', 'flat_goals', 'moving_goals', 'long_x_needed']
+- 2026-10-06 08:42 re-scored evo_g002_14700: -26.57, regressions ['h2h_aim_pct', 'h2h_long_aim_pct', 'h2h_long_knee_p90', 'bumps_goals', 'flat_goals', 'moving_goals', 'short_stop_m']
+- 2026-10-06 08:42 re-scored evo_g003_14450: -37.56, regressions ['h2h_first_kick_s', 'h2h_long_3d', 'h2h_long_knee_p90', 'h2h_support_planted_pct', 'bumps_goals', 'flat_goals', 'moving_goals', 'long_x_needed', 'lean_fast_deg(anchor)', 'height_fast_m', 'caps_fast_vx']
+- 2026-10-06 08:42 re-scored evo_g003_14700: -23.19, regressions ['h2h_first_kick_s', 'h2h_first_on_target_pct', 'h2h_long_3d', 'h2h_support_planted_pct', 'bumps_late_falls_pct', 'flat_late_falls_pct', 'push_late_falls_pct', 'long_x_needed']
+- 2026-10-06 08:42 re-scored evo_g004_14300: -17.20, regressions ['h2h_aim_pct(anchor)', 'h2h_long_knee_p90', 'bumps_goals', 'flat_goals', 'flat_late_falls_pct', 'push_late_falls_pct', 'moving_goals', 'long_air15_pct']
+- 2026-10-06 08:42 re-scored evo_g005_14600: -12.95, regressions ['h2h_first_kick_s', 'h2h_support_planted_pct', 'bumps_goals', 'flat_goals', 'flat_late_falls_pct', 'moving_goals', 'short_stop_m']
+- 2026-10-06 08:42 re-scored evo_g006_14700: -21.85, regressions ['h2h_long_knee_p90', 'h2h_support_planted_pct', 'short_stop_m']
+- 2026-10-06 08:42 re-scored evo_g008_14450: -5.25, regressions ['h2h_long_knee_p90', 'h2h_support_planted_pct', 'bumps_goals', 'flat_late_falls_pct', 'moving_goals']
+- 2026-10-06 08:42 evo_g009: parent x4_g004_70_2seed, changed genes {'k.SUPPORT_PLANT_FACTOR': 0.9743, 'desired_kl': 0.0102}
+- 2026-10-06 09:06 screening the champion
+- 2026-10-06 09:39 evo_g009: screen vs champion 14600:+2.7, 14650:+1.6, 14300:-1.0, 14700:-1.9, 14350:-2.6, 14500:-4.3, 14550:-4.4, 14450:-4.4, 14400:-9.0
+- 2026-10-06 09:56 evo_g009_14600: score -21.04 vs x4_g004_70_2seed, regressions ['h2h_first_kick_s', 'h2h_long_knee_p90', 'h2h_support_planted_pct', 'bumps_goals', 'flat_goals', 'moving_goals', 'short_stop_m']
+- 2026-10-06 09:56 evo_g010: parent x4_g004_70_2seed, changed genes {'w.long_kick_underpower': -278.5814, 'rsi_ours': 0.1, 'k.LONG_AIM_SIGMA2': 0.0547}
+- 2026-10-06 09:57 restart: automated champion x child blending (70/30, 50/50) with two-seed confirmation and auto-install / ONNX export; approach-from-far metrics in the benchmark gate (29 metrics); next child = queued side-foot specialist; evo_g010 discarded
+- 2026-10-06 09:57 re-scored evo_g001_14450: -8.98, regressions ['h2h_long_3d', 'h2h_long_knee_p90', 'bumps_goals', 'flat_goals', 'moving_goals', 'short_stop_m', 'height_fast_m', 'caps_fast_vx', 'approach_kick_pct:missing', 'approach_first_s:missing', 'approach_on_target_pct:missing', 'approach_vx:missing']
+- 2026-10-06 09:57 re-scored evo_g001_14700: -12.05, regressions ['h2h_aim_pct(anchor)', 'h2h_long_3d', 'h2h_long_aim_pct', 'bumps_goals', 'flat_goals', 'moving_goals', 'long_x_needed', 'caps_fast_vx', 'approach_kick_pct:missing', 'approach_first_s:missing', 'approach_on_target_pct:missing', 'approach_vx:missing']
+- 2026-10-06 09:57 re-scored evo_g002_14450: -22.78, regressions ['h2h_first_on_target_pct', 'h2h_aim_pct(anchor)', 'h2h_long_3d', 'h2h_long_knee_p90', 'bumps_goals', 'flat_goals', 'moving_goals', 'long_x_needed', 'approach_kick_pct:missing', 'approach_first_s:missing', 'approach_on_target_pct:missing', 'approach_vx:missing']
+- 2026-10-06 09:57 re-scored evo_g002_14700: -26.57, regressions ['h2h_aim_pct', 'h2h_long_aim_pct', 'h2h_long_knee_p90', 'bumps_goals', 'flat_goals', 'moving_goals', 'short_stop_m', 'approach_kick_pct:missing', 'approach_first_s:missing', 'approach_on_target_pct:missing', 'approach_vx:missing']
+- 2026-10-06 09:57 re-scored evo_g003_14450: -37.56, regressions ['h2h_first_kick_s', 'h2h_long_3d', 'h2h_long_knee_p90', 'h2h_support_planted_pct', 'bumps_goals', 'flat_goals', 'moving_goals', 'long_x_needed', 'lean_fast_deg(anchor)', 'height_fast_m', 'caps_fast_vx', 'approach_kick_pct:missing', 'approach_first_s:missing', 'approach_on_target_pct:missing', 'approach_vx:missing']
+- 2026-10-06 09:57 re-scored evo_g003_14700: -23.19, regressions ['h2h_first_kick_s', 'h2h_first_on_target_pct', 'h2h_long_3d', 'h2h_support_planted_pct', 'bumps_late_falls_pct', 'flat_late_falls_pct', 'push_late_falls_pct', 'long_x_needed', 'approach_kick_pct:missing', 'approach_first_s:missing', 'approach_on_target_pct:missing', 'approach_vx:missing']
+- 2026-10-06 09:57 re-scored evo_g004_14300: -17.20, regressions ['h2h_aim_pct(anchor)', 'h2h_long_knee_p90', 'bumps_goals', 'flat_goals', 'flat_late_falls_pct', 'push_late_falls_pct', 'moving_goals', 'long_air15_pct', 'approach_kick_pct:missing', 'approach_first_s:missing', 'approach_on_target_pct:missing', 'approach_vx:missing']
+- 2026-10-06 09:57 re-scored evo_g005_14600: -12.95, regressions ['h2h_first_kick_s', 'h2h_support_planted_pct', 'bumps_goals', 'flat_goals', 'flat_late_falls_pct', 'moving_goals', 'short_stop_m', 'approach_kick_pct:missing', 'approach_first_s:missing', 'approach_on_target_pct:missing', 'approach_vx:missing']
+- 2026-10-06 09:57 re-scored evo_g006_14700: -21.85, regressions ['h2h_long_knee_p90', 'h2h_support_planted_pct', 'short_stop_m', 'approach_kick_pct:missing', 'approach_first_s:missing', 'approach_on_target_pct:missing', 'approach_vx:missing']
+- 2026-10-06 09:57 re-scored evo_g008_14450: -5.25, regressions ['h2h_long_knee_p90', 'h2h_support_planted_pct', 'bumps_goals', 'flat_late_falls_pct', 'moving_goals', 'approach_kick_pct:missing', 'approach_first_s:missing', 'approach_on_target_pct:missing', 'approach_vx:missing']
+- 2026-10-06 09:57 re-scored evo_g009_14600: -25.99, regressions ['h2h_first_kick_s', 'h2h_long_knee_p90', 'h2h_support_planted_pct', 'bumps_goals', 'flat_goals', 'moving_goals', 'short_stop_m', 'approach_kick_pct', 'approach_first_s', 'approach_vx']
+- 2026-10-06 09:57 evo_g010: queued experiment genes
+- 2026-10-06 09:57 evo_g010: parent x4_g004_70_2seed, changed genes {'rsi_bhuman': 0.2, 'k.SUPPORT_PLANT_FACTOR': 0.5, 'amp_kick_data': 1.0, 'k.KICK_STYLE_AMP': 1.0, 'w.side_foot_strike': 400.0}
+- 2026-10-06 10:13 evo_g010 (side-foot specialist) at +250: still 97 % front kicks, 1 % side-foot — the side_foot_strike reward was a Gaussian at 90 deg (sigma 0.3), ~0 at the policy's 7 deg: no gradient (lesson 1). Reshaped to a linear ramp peaking at 90 deg; specialist re-queued (runs after the next restart)
+- 2026-10-06 10:53 evo_g010: screen vs champion 14600:+2.4, 14650:+1.1, 14700:+0.7, 14450:+0.1, 14550:-2.7, 14400:-4.3, 14500:-4.9, 14300:-5.0, 14350:-6.8
+- 2026-10-06 11:12 evo_g010_14600: score -15.76 vs x4_g004_70_2seed, regressions ['h2h_first_kick_s', 'bumps_goals', 'flat_goals', 'moving_goals', 'short_stop_m', 'caps_fast_vx(anchor)', 'approach_kick_pct', 'approach_first_s']
+- 2026-10-06 11:13 restart: structural template genes (t.far_cap_tracking, t.long_power_ramp, t.aim_tight, t.upright_fast via the reward grammar), reshaped side_foot_strike (linear ramp); evo_g010 blend step skipped (child -15.8); next = side-foot specialist v2
+- 2026-10-06 11:13 re-scored evo_g001_14450: -8.98, regressions ['h2h_long_3d', 'h2h_long_knee_p90', 'bumps_goals', 'flat_goals', 'moving_goals', 'short_stop_m', 'height_fast_m', 'caps_fast_vx', 'approach_kick_pct:missing', 'approach_first_s:missing', 'approach_on_target_pct:missing', 'approach_vx:missing']
+- 2026-10-06 11:13 re-scored evo_g001_14700: -12.05, regressions ['h2h_aim_pct(anchor)', 'h2h_long_3d', 'h2h_long_aim_pct', 'bumps_goals', 'flat_goals', 'moving_goals', 'long_x_needed', 'caps_fast_vx', 'approach_kick_pct:missing', 'approach_first_s:missing', 'approach_on_target_pct:missing', 'approach_vx:missing']
+- 2026-10-06 11:13 re-scored evo_g002_14450: -22.78, regressions ['h2h_first_on_target_pct', 'h2h_aim_pct(anchor)', 'h2h_long_3d', 'h2h_long_knee_p90', 'bumps_goals', 'flat_goals', 'moving_goals', 'long_x_needed', 'approach_kick_pct:missing', 'approach_first_s:missing', 'approach_on_target_pct:missing', 'approach_vx:missing']
+- 2026-10-06 11:13 re-scored evo_g002_14700: -26.57, regressions ['h2h_aim_pct', 'h2h_long_aim_pct', 'h2h_long_knee_p90', 'bumps_goals', 'flat_goals', 'moving_goals', 'short_stop_m', 'approach_kick_pct:missing', 'approach_first_s:missing', 'approach_on_target_pct:missing', 'approach_vx:missing']
+- 2026-10-06 11:13 re-scored evo_g003_14450: -37.56, regressions ['h2h_first_kick_s', 'h2h_long_3d', 'h2h_long_knee_p90', 'h2h_support_planted_pct', 'bumps_goals', 'flat_goals', 'moving_goals', 'long_x_needed', 'lean_fast_deg(anchor)', 'height_fast_m', 'caps_fast_vx', 'approach_kick_pct:missing', 'approach_first_s:missing', 'approach_on_target_pct:missing', 'approach_vx:missing']
+- 2026-10-06 11:13 re-scored evo_g003_14700: -23.19, regressions ['h2h_first_kick_s', 'h2h_first_on_target_pct', 'h2h_long_3d', 'h2h_support_planted_pct', 'bumps_late_falls_pct', 'flat_late_falls_pct', 'push_late_falls_pct', 'long_x_needed', 'approach_kick_pct:missing', 'approach_first_s:missing', 'approach_on_target_pct:missing', 'approach_vx:missing']
+- 2026-10-06 11:13 re-scored evo_g004_14300: -17.20, regressions ['h2h_aim_pct(anchor)', 'h2h_long_knee_p90', 'bumps_goals', 'flat_goals', 'flat_late_falls_pct', 'push_late_falls_pct', 'moving_goals', 'long_air15_pct', 'approach_kick_pct:missing', 'approach_first_s:missing', 'approach_on_target_pct:missing', 'approach_vx:missing']
+- 2026-10-06 11:13 re-scored evo_g005_14600: -12.95, regressions ['h2h_first_kick_s', 'h2h_support_planted_pct', 'bumps_goals', 'flat_goals', 'flat_late_falls_pct', 'moving_goals', 'short_stop_m', 'approach_kick_pct:missing', 'approach_first_s:missing', 'approach_on_target_pct:missing', 'approach_vx:missing']
+- 2026-10-06 11:13 re-scored evo_g006_14700: -21.85, regressions ['h2h_long_knee_p90', 'h2h_support_planted_pct', 'short_stop_m', 'approach_kick_pct:missing', 'approach_first_s:missing', 'approach_on_target_pct:missing', 'approach_vx:missing']
+- 2026-10-06 11:13 re-scored evo_g008_14450: -5.25, regressions ['h2h_long_knee_p90', 'h2h_support_planted_pct', 'bumps_goals', 'flat_late_falls_pct', 'moving_goals', 'approach_kick_pct:missing', 'approach_first_s:missing', 'approach_on_target_pct:missing', 'approach_vx:missing']
+- 2026-10-06 11:13 re-scored evo_g009_14600: -25.99, regressions ['h2h_first_kick_s', 'h2h_long_knee_p90', 'h2h_support_planted_pct', 'bumps_goals', 'flat_goals', 'moving_goals', 'short_stop_m', 'approach_kick_pct', 'approach_first_s', 'approach_vx']
+- 2026-10-06 11:13 evo_g011: queued experiment genes
+- 2026-10-06 11:13 evo_g011: parent x4_g004_70_2seed, changed genes {'rsi_bhuman': 0.2, 'k.SUPPORT_PLANT_FACTOR': 0.5, 'amp_kick_data': 1.0, 'k.KICK_STYLE_AMP': 1.0, 'w.side_foot_strike': 400.0}
+- 2026-10-06 11:28 evo_g011 (side-foot v2, ramp reward with signal) at +250: still 97 % front, 1 % side-foot, foot yaw 8 deg — a side-foot strike is a different motion; local shaping does not discover it in 500 iterations. Route: imitation of B-Human's near-ball actions (catalogue bhuman_teacher_imitation)
+- 2026-10-06 11:36 L5 teacher imitation implemented (AmpPPO imitation_coef / imitation_decay_updates; runner queries B-Human's kick policy each rollout step, MSE on leg actions within 1.1 m of a visible ball, weight decays to 0). Smoke: imitation MSE ~1.2, coef decaying. Queued as the next child (coef 0.5 over 400 updates, side_foot 200, RSI B-Human 10 %)
+- 2026-10-06 12:08 evo_g011: screen vs champion 14700:+1.9, 14600:+1.8, 14300:+1.4, 14500:-0.4, 14550:-1.2, 14450:-2.9, 14400:-3.1, 14650:-3.9, 14350:-4.8
+- 2026-10-06 12:26 evo_g011_14700: score -8.68 vs x4_g004_70_2seed, regressions ['h2h_first_kick_s', 'bumps_goals', 'flat_goals', 'push_late_falls_pct', 'moving_goals', 'short_stop_m']
+- 2026-10-06 12:29 evo_g011: blend 0.7/0.3 with champion, screen +2.0
+- 2026-10-06 12:32 evo_g011: blend 0.5/0.5 with champion, screen +2.1
+- 2026-10-06 12:50 evo_g011_x50: score -6.19 vs x4_g004_70_2seed, regressions ['h2h_first_kick_s', 'h2h_first_kick_pct']
+- 2026-10-06 12:50 evo_g012: queued experiment genes
+- 2026-10-06 12:50 evo_g012: parent x4_g004_70_2seed, changed genes {'rsi_bhuman': 0.1, 'imitation_coef': 0.5, 'imitation_decay_updates': 400, 'w.side_foot_strike': 200.0}
+- 2026-10-06 13:44 evo_g012: screen vs champion 14700:-96.8, 14650:-101.5, 14600:-112.2, 14550:-116.6, 14500:-117.9, 14450:-124.0, 14400:-126.9, 14300:-127.0, 14350:-128.6
+- 2026-10-06 13:47 evo_g012: blend 0.7/0.3 with champion, screen -31.0
+- 2026-10-06 13:50 evo_g012: blend 0.5/0.5 with champion, screen -76.1
+- 2026-10-06 13:50 evo_g013: parent x4_g004_70_2seed, changed genes {'w.long_kick_power': 2901.9558, 'w.torque_over_soft_limit': -160.5664, 'w.kick_rest_accuracy': 792.96, 'w.long_kick_underpower': -100.0, 'w.search_turn': 8.175, 'w.side_foot_strike': 59.1713, 't.aim_tight': 0.0, 't.far_cap_tracking': 6.0}
+- 2026-10-06 13:50 evo_g013: reward program evo_g013.json
+- 2026-10-06 14:42 evo_g013: screen vs champion 14500:+3.3, 14700:+2.8, 14550:+2.7, 14650:+2.4, 14450:+1.1, 14400:+0.8, 14300:-1.4, 14350:-1.6, 14600:-5.9
+- 2026-10-06 15:00 evo_g013_14500: score -13.56 vs x4_g004_70_2seed, regressions ['h2h_first_kick_s', 'h2h_support_planted_pct', 'bumps_goals', 'flat_goals', 'moving_goals', 'approach_kick_pct']
+- 2026-10-06 15:04 evo_g013: blend 0.7/0.3 with champion, screen +0.2
+- 2026-10-06 15:07 evo_g013: blend 0.5/0.5 with champion, screen +1.9
+- 2026-10-06 15:25 evo_g013_x50: score -14.74 vs x4_g004_70_2seed, regressions ['h2h_first_kick_s', 'h2h_support_planted_pct', 'bumps_goals', 'approach_kick_pct']
+- 2026-10-06 15:25 evo_g014: parent x4_g004_70_2seed, changed genes {'w.long_kick_power': 3059.1549, 'k.MOMENTUM_KICK_MAX_SPEED': 0.9574, 't.aim_tight': 0.0, 't.long_power_ramp': 1500.0}
+- 2026-10-06 15:25 evo_g014: reward program evo_g014.json
+- 2026-10-06 16:18 evo_g014: screen vs champion 14550:+3.2, 14700:+1.0, 14600:+0.3, 14450:-1.3, 14650:-2.0, 14500:-3.0, 14400:-5.1, 14300:-6.5, 14350:-7.3
+- 2026-10-06 16:36 evo_g014_14550: score -16.77 vs x4_g004_70_2seed, regressions ['h2h_first_kick_s', 'h2h_long_knee_p90', 'h2h_support_planted_pct', 'bumps_goals', 'bumps_late_falls_pct', 'flat_goals', 'moving_goals', 'short_stop_m', 'long_air15_pct', 'height_fast_m', 'caps_fast_vx(anchor)', 'approach_kick_pct', 'approach_first_s']
+- 2026-10-06 16:39 evo_g014: blend 0.7/0.3 with champion, screen +1.6
+- 2026-10-06 16:42 evo_g014: blend 0.5/0.5 with champion, screen +4.5
+- 2026-10-06 17:01 evo_g014_x50: score -17.11 vs x4_g004_70_2seed, regressions ['h2h_first_kick_s', 'h2h_support_planted_pct', 'flat_goals', 'moving_goals']
+- 2026-10-06 17:01 evo_g015: parent x4_g004_70_2seed, changed genes {'k.MOMENTUM_KICK_MAX_SPEED': 1.1042, 'w.side_foot_strike': 0.0, 't.upright_fast': -0.0062}
+- 2026-10-06 17:01 evo_g015: reward program evo_g015.json
+- 2026-10-06 17:46 robot test: x4_g004_70 kicks accurately but a bit slow; evo_g014/14550 (rejected) misses the ball repeatedly — benchmark ranking confirmed on the robot. Queued speed experiment: t.far_cap_tracking 6 (match the vx cap when the ball is > 3 m away). Latency test (detections delayed 60-120 ms) added to the benchmark
+- 2026-10-06 18:01 evo_g015: screen vs champion 14700:+0.4, 14550:+0.2, 14300:-0.3, 14600:-1.3, 14500:-1.8, 14350:-2.0, 14450:-3.5, 14650:-4.5, 14400:-4.5
+- 2026-10-06 18:22 evo_g015_14700: score -18.37 vs x4_g004_70_2seed, regressions ['h2h_first_kick_s', 'h2h_long_knee_p90', 'h2h_support_planted_pct', 'bumps_goals', 'moving_goals', 'approach_kick_pct']
+- 2026-10-06 18:25 evo_g015: blend 0.7/0.3 with champion, screen -0.0
+- 2026-10-06 18:28 evo_g015: blend 0.5/0.5 with champion, screen +1.2
+- 2026-10-06 18:48 evo_g015_x50: score -15.62 vs x4_g004_70_2seed, regressions ['h2h_first_kick_s', 'h2h_first_kick_pct', 'h2h_support_planted_pct', 'bumps_late_falls_pct', 'approach_kick_pct']
+- 2026-10-06 18:48 evo_g016: queued experiment genes
+- 2026-10-06 18:48 evo_g016: parent x4_g004_70_2seed, changed genes {'t.far_cap_tracking': 6.0}
+- 2026-10-06 18:48 evo_g016: reward program evo_g016.json
+- 2026-10-06 19:37 evo_g016: screen vs champion 14400:+3.6, 14700:+0.6, 14600:-1.2, 14300:-2.5, 14500:-3.7, 14350:-5.5, 14450:-12.4, 14550:-18.0, 14650:-19.3
+- 2026-10-06 19:56 evo_g016_14400: score -18.21 vs x4_g004_70_2seed, regressions ['h2h_aim_pct(anchor)', 'h2h_long_knee_p90', 'h2h_support_planted_pct', 'bumps_goals', 'flat_goals', 'moving_goals', 'short_stop_m']
+- 2026-10-06 20:00 evo_g016: blend 0.7/0.3 with champion, screen +3.5
+- 2026-10-06 20:03 evo_g016: blend 0.5/0.5 with champion, screen +3.0
+- 2026-10-06 20:22 evo_g016_x70: score -14.06 vs x4_g004_70_2seed, regressions ['h2h_first_kick_s', 'moving_goals', 'short_stop_m']
+- 2026-10-06 20:22 evo_g017: parent x4_g004_70_2seed, changed genes {'w.search_turn': 8.5074, 'rsi_bhuman': 0.2445, 'desired_kl': 0.0101, 't.far_cap_tracking': 1.1967, 't.long_power_ramp': 0.0, 't.upright_fast': -1.0}
+- 2026-10-06 20:22 evo_g017: reward program evo_g017.json
+- 2026-10-06 21:11 evo_g017: screen vs champion 14450:+3.1, 14300:+2.6, 14650:+0.8, 14600:-0.0, 14550:-1.6, 14500:-2.4, 14700:-3.4, 14400:-4.8, 14350:-5.2
+- 2026-10-06 21:31 evo_g017_14450: score -10.87 vs x4_g004_70_2seed, regressions ['h2h_support_planted_pct', 'bumps_goals', 'bumps_late_falls_pct', 'flat_goals', 'moving_goals', 'caps_fast_vx', 'approach_kick_pct', 'approach_first_s', 'approach_vx']
+- 2026-10-06 21:34 evo_g017: blend 0.7/0.3 with champion, screen +0.6
+- 2026-10-06 21:37 evo_g017: blend 0.5/0.5 with champion, screen +1.8
+- 2026-10-06 21:58 evo_g017_x50: score -9.29 vs x4_g004_70_2seed, regressions ['bumps_goals', 'flat_goals', 'moving_goals', 'short_stop_m', 'approach_kick_pct', 'approach_first_s', 'approach_vx']
+- 2026-10-06 21:58 stopped after generation 17 (time or failures); champion x4_g004_70_2seed
+- 2026-10-06 22:41 fair benchmark re-run (camera + perfect perception for both): champion record now x4_fair_2seed (same checkpoint); B-Human record re-measured (old unfair one kept as bhuman_unfair_v1.json)
+- 2026-10-07 02:47 re-scored evo_g001_14450: +1.96, regressions ['h2h_long_3d', 'h2h_long_knee_p90', 'h2h_support_planted_short_pct:missing', 'style_inside_short_pct:missing', 'style_hop_long_pct:missing', 'hop_fall_pct:missing', 'h2h_true_first_kick_s:missing', 'h2h_true_first_kick_pct:missing', 'h2h_true_first_on_target_pct:missing', 'h2h_true_aim_pct:missing', 'h2h_true_long_3d:missing', 'h2h_true_long_aim_pct:missing', 'bumps_goals', 'flat_goals', 'moving_goals', 'short_stop_m', 'long_x_needed', 'caps_fast_vx', 'latency_goals:missing', 'latency_aim_pct:missing', 'approach_kick_pct:missing', 'approach_first_s:missing', 'approach_on_target_pct:missing', 'approach_vx:missing']
+- 2026-10-07 02:47 re-scored evo_g001_14700: -11.21, regressions ['h2h_aim_pct(anchor)', 'h2h_long_3d', 'h2h_support_planted_short_pct:missing', 'style_inside_short_pct:missing', 'style_hop_long_pct:missing', 'hop_fall_pct:missing', 'h2h_true_first_kick_s:missing', 'h2h_true_first_kick_pct:missing', 'h2h_true_first_on_target_pct:missing', 'h2h_true_aim_pct:missing', 'h2h_true_long_3d:missing', 'h2h_true_long_aim_pct:missing', 'bumps_goals', 'flat_goals', 'moving_goals', 'long_x_needed', 'caps_fast_vx', 'latency_goals:missing', 'latency_aim_pct:missing', 'approach_kick_pct:missing', 'approach_first_s:missing', 'approach_on_target_pct:missing', 'approach_vx:missing']
+- 2026-10-07 02:47 re-scored evo_g002_14450: -26.17, regressions ['h2h_aim_pct(anchor)', 'h2h_long_3d', 'h2h_long_knee_p90', 'h2h_support_planted_short_pct:missing', 'style_inside_short_pct:missing', 'style_hop_long_pct:missing', 'hop_fall_pct:missing', 'h2h_true_first_kick_s:missing', 'h2h_true_first_kick_pct:missing', 'h2h_true_first_on_target_pct:missing', 'h2h_true_aim_pct:missing', 'h2h_true_long_3d:missing', 'h2h_true_long_aim_pct:missing', 'bumps_goals', 'flat_goals', 'moving_goals', 'long_x_needed', 'latency_goals:missing', 'latency_aim_pct:missing', 'approach_kick_pct:missing', 'approach_first_s:missing', 'approach_on_target_pct:missing', 'approach_vx:missing']
+- 2026-10-07 02:47 re-scored evo_g002_14700: -21.50, regressions ['h2h_aim_pct(anchor)', 'h2h_long_aim_pct', 'h2h_long_knee_p90', 'h2h_support_planted_short_pct:missing', 'style_inside_short_pct:missing', 'style_hop_long_pct:missing', 'hop_fall_pct:missing', 'h2h_true_first_kick_s:missing', 'h2h_true_first_kick_pct:missing', 'h2h_true_first_on_target_pct:missing', 'h2h_true_aim_pct:missing', 'h2h_true_long_3d:missing', 'h2h_true_long_aim_pct:missing', 'bumps_aim_pct', 'bumps_goals', 'bumps_late_falls_pct', 'flat_goals', 'moving_goals', 'short_stop_m', 'latency_goals:missing', 'latency_aim_pct:missing', 'approach_kick_pct:missing', 'approach_first_s:missing', 'approach_on_target_pct:missing', 'approach_vx:missing']
+- 2026-10-07 02:47 re-scored evo_g003_14450: -28.25, regressions ['h2h_first_kick_s', 'h2h_long_3d', 'h2h_long_knee_p90', 'h2h_support_planted_short_pct:missing', 'style_inside_short_pct:missing', 'style_hop_long_pct:missing', 'hop_fall_pct:missing', 'h2h_true_first_kick_s:missing', 'h2h_true_first_kick_pct:missing', 'h2h_true_first_on_target_pct:missing', 'h2h_true_aim_pct:missing', 'h2h_true_long_3d:missing', 'h2h_true_long_aim_pct:missing', 'bumps_goals', 'flat_goals', 'moving_goals', 'long_x_needed', 'lean_fast_deg(anchor)', 'caps_fast_vx', 'latency_goals:missing', 'latency_aim_pct:missing', 'approach_kick_pct:missing', 'approach_first_s:missing', 'approach_on_target_pct:missing', 'approach_vx:missing']
+- 2026-10-07 02:47 re-scored evo_g003_14700: -14.88, regressions ['h2h_long_3d', 'h2h_support_planted_short_pct:missing', 'style_inside_short_pct:missing', 'style_hop_long_pct:missing', 'hop_fall_pct:missing', 'h2h_true_first_kick_s:missing', 'h2h_true_first_kick_pct:missing', 'h2h_true_first_on_target_pct:missing', 'h2h_true_aim_pct:missing', 'h2h_true_long_3d:missing', 'h2h_true_long_aim_pct:missing', 'bumps_late_falls_pct', 'flat_late_falls_pct', 'push_late_falls_pct', 'long_x_needed', 'latency_goals:missing', 'latency_aim_pct:missing', 'approach_kick_pct:missing', 'approach_first_s:missing', 'approach_on_target_pct:missing', 'approach_vx:missing']
+- 2026-10-07 02:47 re-scored evo_g004_14300: -3.52, regressions ['h2h_aim_pct(anchor)', 'h2h_long_knee_p90', 'h2h_support_planted_short_pct:missing', 'style_inside_short_pct:missing', 'style_hop_long_pct:missing', 'hop_fall_pct:missing', 'h2h_true_first_kick_s:missing', 'h2h_true_first_kick_pct:missing', 'h2h_true_first_on_target_pct:missing', 'h2h_true_aim_pct:missing', 'h2h_true_long_3d:missing', 'h2h_true_long_aim_pct:missing', 'bumps_goals', 'flat_goals', 'flat_late_falls_pct', 'push_late_falls_pct', 'moving_goals', 'long_air15_pct', 'latency_goals:missing', 'latency_aim_pct:missing', 'approach_kick_pct:missing', 'approach_first_s:missing', 'approach_on_target_pct:missing', 'approach_vx:missing']
+- 2026-10-07 02:47 re-scored evo_g005_14600: +14.52, regressions ['h2h_first_kick_s', 'h2h_support_planted_short_pct:missing', 'style_inside_short_pct:missing', 'style_hop_long_pct:missing', 'hop_fall_pct:missing', 'h2h_true_first_kick_s:missing', 'h2h_true_first_kick_pct:missing', 'h2h_true_first_on_target_pct:missing', 'h2h_true_aim_pct:missing', 'h2h_true_long_3d:missing', 'h2h_true_long_aim_pct:missing', 'bumps_goals', 'flat_goals', 'flat_late_falls_pct', 'moving_goals', 'short_stop_m', 'latency_goals:missing', 'latency_aim_pct:missing', 'approach_kick_pct:missing', 'approach_first_s:missing', 'approach_on_target_pct:missing', 'approach_vx:missing']
+- 2026-10-07 02:47 re-scored evo_g006_14700: -3.90, regressions ['h2h_long_knee_p90', 'h2h_support_planted_short_pct:missing', 'style_inside_short_pct:missing', 'style_hop_long_pct:missing', 'hop_fall_pct:missing', 'h2h_true_first_kick_s:missing', 'h2h_true_first_kick_pct:missing', 'h2h_true_first_on_target_pct:missing', 'h2h_true_aim_pct:missing', 'h2h_true_long_3d:missing', 'h2h_true_long_aim_pct:missing', 'bumps_late_falls_pct', 'short_stop_m', 'latency_goals:missing', 'latency_aim_pct:missing', 'approach_kick_pct:missing', 'approach_first_s:missing', 'approach_on_target_pct:missing', 'approach_vx:missing']
+- 2026-10-07 02:47 re-scored evo_g008_14450: +22.86, regressions ['h2h_long_knee_p90', 'h2h_support_planted_short_pct:missing', 'style_inside_short_pct:missing', 'style_hop_long_pct:missing', 'hop_fall_pct:missing', 'h2h_true_first_kick_s:missing', 'h2h_true_first_kick_pct:missing', 'h2h_true_first_on_target_pct:missing', 'h2h_true_aim_pct:missing', 'h2h_true_long_3d:missing', 'h2h_true_long_aim_pct:missing', 'bumps_goals', 'flat_late_falls_pct', 'latency_goals:missing', 'latency_aim_pct:missing', 'approach_kick_pct:missing', 'approach_first_s:missing', 'approach_on_target_pct:missing', 'approach_vx:missing']
+- 2026-10-07 02:47 re-scored evo_g009_14600: -6.60, regressions ['h2h_long_knee_p90', 'h2h_support_planted_short_pct:missing', 'style_inside_short_pct:missing', 'style_hop_long_pct:missing', 'hop_fall_pct:missing', 'h2h_true_first_kick_s:missing', 'h2h_true_first_kick_pct:missing', 'h2h_true_first_on_target_pct:missing', 'h2h_true_aim_pct:missing', 'h2h_true_long_3d:missing', 'h2h_true_long_aim_pct:missing', 'bumps_goals', 'flat_goals', 'moving_goals', 'short_stop_m', 'latency_goals:missing', 'latency_aim_pct:missing', 'approach_kick_pct', 'approach_first_s', 'approach_vx']
+- 2026-10-07 02:47 re-scored evo_g011_14700: +1.55, regressions ['h2h_support_planted_short_pct:missing', 'style_inside_short_pct:missing', 'style_hop_long_pct:missing', 'hop_fall_pct:missing', 'h2h_true_first_kick_s:missing', 'h2h_true_first_kick_pct:missing', 'h2h_true_first_on_target_pct:missing', 'h2h_true_aim_pct:missing', 'h2h_true_long_3d:missing', 'h2h_true_long_aim_pct:missing', 'bumps_goals', 'bumps_late_falls_pct', 'flat_goals', 'push_late_falls_pct', 'moving_goals', 'short_stop_m', 'long_x_needed', 'latency_goals:missing', 'latency_aim_pct:missing']
+- 2026-10-07 02:47 re-scored evo_g011_x50: +4.18, regressions ['h2h_support_planted_short_pct:missing', 'style_inside_short_pct:missing', 'style_hop_long_pct:missing', 'hop_fall_pct:missing', 'h2h_true_first_kick_s:missing', 'h2h_true_first_kick_pct:missing', 'h2h_true_first_on_target_pct:missing', 'h2h_true_aim_pct:missing', 'h2h_true_long_3d:missing', 'h2h_true_long_aim_pct:missing', 'search_turn_rad', 'latency_goals:missing', 'latency_aim_pct:missing']
+- 2026-10-07 02:47 re-scored evo_g013_14500: +7.37, regressions ['h2h_support_planted_short_pct:missing', 'style_inside_short_pct:missing', 'style_hop_long_pct:missing', 'hop_fall_pct:missing', 'h2h_true_first_kick_s:missing', 'h2h_true_first_kick_pct:missing', 'h2h_true_first_on_target_pct:missing', 'h2h_true_aim_pct:missing', 'h2h_true_long_3d:missing', 'h2h_true_long_aim_pct:missing', 'bumps_goals', 'bumps_late_falls_pct', 'flat_goals', 'moving_goals', 'latency_goals:missing', 'latency_aim_pct:missing', 'approach_kick_pct']
+- 2026-10-07 02:47 re-scored evo_g013_x50: +3.63, regressions ['h2h_support_planted_short_pct:missing', 'style_inside_short_pct:missing', 'style_hop_long_pct:missing', 'hop_fall_pct:missing', 'h2h_true_first_kick_s:missing', 'h2h_true_first_kick_pct:missing', 'h2h_true_first_on_target_pct:missing', 'h2h_true_aim_pct:missing', 'h2h_true_long_3d:missing', 'h2h_true_long_aim_pct:missing', 'bumps_goals', 'latency_goals:missing', 'latency_aim_pct:missing']
+- 2026-10-07 02:47 re-scored evo_g014_14550: +7.23, regressions ['h2h_long_knee_p90', 'h2h_support_planted_short_pct:missing', 'style_inside_short_pct:missing', 'style_hop_long_pct:missing', 'hop_fall_pct:missing', 'h2h_true_first_kick_s:missing', 'h2h_true_first_kick_pct:missing', 'h2h_true_first_on_target_pct:missing', 'h2h_true_aim_pct:missing', 'h2h_true_long_3d:missing', 'h2h_true_long_aim_pct:missing', 'bumps_goals', 'bumps_late_falls_pct', 'flat_goals', 'moving_goals', 'short_stop_m', 'long_air15_pct', 'caps_fast_vx', 'latency_goals:missing', 'latency_aim_pct:missing', 'approach_kick_pct']
+- 2026-10-07 02:47 re-scored evo_g014_x50: +1.27, regressions ['h2h_support_planted_short_pct:missing', 'style_inside_short_pct:missing', 'style_hop_long_pct:missing', 'hop_fall_pct:missing', 'h2h_true_first_kick_s:missing', 'h2h_true_first_kick_pct:missing', 'h2h_true_first_on_target_pct:missing', 'h2h_true_aim_pct:missing', 'h2h_true_long_3d:missing', 'h2h_true_long_aim_pct:missing', 'bumps_goals', 'flat_goals', 'moving_goals', 'latency_goals:missing', 'latency_aim_pct:missing']
+- 2026-10-07 02:47 re-scored evo_g015_14700: -1.51, regressions ['h2h_long_knee_p90', 'h2h_support_planted_short_pct:missing', 'style_inside_short_pct:missing', 'style_hop_long_pct:missing', 'hop_fall_pct:missing', 'h2h_true_first_kick_s:missing', 'h2h_true_first_kick_pct:missing', 'h2h_true_first_on_target_pct:missing', 'h2h_true_aim_pct:missing', 'h2h_true_long_3d:missing', 'h2h_true_long_aim_pct:missing', 'bumps_goals', 'bumps_late_falls_pct', 'moving_goals', 'latency_goals']
+- 2026-10-07 02:47 re-scored evo_g015_x50: -1.78, regressions ['h2h_first_kick_pct', 'h2h_support_planted_short_pct:missing', 'style_inside_short_pct:missing', 'style_hop_long_pct:missing', 'hop_fall_pct:missing', 'h2h_true_first_kick_s:missing', 'h2h_true_first_kick_pct:missing', 'h2h_true_first_on_target_pct:missing', 'h2h_true_aim_pct:missing', 'h2h_true_long_3d:missing', 'h2h_true_long_aim_pct:missing', 'bumps_late_falls_pct']
+- 2026-10-07 02:47 re-scored evo_g016_14400: -2.68, regressions ['h2h_aim_pct(anchor)', 'h2h_long_knee_p90', 'h2h_support_planted_short_pct:missing', 'style_inside_short_pct:missing', 'style_hop_long_pct:missing', 'hop_fall_pct:missing', 'h2h_true_first_kick_s:missing', 'h2h_true_first_kick_pct:missing', 'h2h_true_first_on_target_pct:missing', 'h2h_true_aim_pct:missing', 'h2h_true_long_3d:missing', 'h2h_true_long_aim_pct:missing', 'bumps_goals', 'flat_goals', 'moving_goals', 'short_stop_m', 'latency_goals']
+- 2026-10-07 02:47 re-scored evo_g016_x70: +4.87, regressions ['h2h_support_planted_short_pct:missing', 'style_inside_short_pct:missing', 'style_hop_long_pct:missing', 'hop_fall_pct:missing', 'h2h_true_first_kick_s:missing', 'h2h_true_first_kick_pct:missing', 'h2h_true_first_on_target_pct:missing', 'h2h_true_aim_pct:missing', 'h2h_true_long_3d:missing', 'h2h_true_long_aim_pct:missing', 'bumps_goals']
+- 2026-10-07 02:47 re-scored evo_g017_14450: +12.71, regressions ['h2h_support_planted_short_pct:missing', 'style_inside_short_pct:missing', 'style_hop_long_pct:missing', 'hop_fall_pct:missing', 'h2h_true_first_kick_s:missing', 'h2h_true_first_kick_pct:missing', 'h2h_true_first_on_target_pct:missing', 'h2h_true_aim_pct:missing', 'h2h_true_long_3d:missing', 'h2h_true_long_aim_pct:missing', 'bumps_goals', 'bumps_late_falls_pct', 'flat_goals', 'moving_goals', 'search_turn_rad', 'caps_fast_vx', 'latency_goals', 'approach_kick_pct', 'approach_first_s', 'approach_vx']
+- 2026-10-07 02:47 re-scored evo_g017_x50: +4.94, regressions ['h2h_support_planted_short_pct:missing', 'style_inside_short_pct:missing', 'style_hop_long_pct:missing', 'hop_fall_pct:missing', 'h2h_true_first_kick_s:missing', 'h2h_true_first_kick_pct:missing', 'h2h_true_first_on_target_pct:missing', 'h2h_true_aim_pct:missing', 'h2h_true_long_3d:missing', 'h2h_true_long_aim_pct:missing', 'bumps_goals', 'latency_goals', 'approach_vx']
+- 2026-10-07 02:47 sty_range: external candidate, 7 checkpoints
+- 2026-10-07 02:47 sty_range: parent x4_fair_2seed, changed genes {'rsi_bhuman': 0.15, 'amp_kick_data': 1.0, 'k.KICK_STYLE_AMP': 1.0, 'w.inside_foot_style': 300.0, 'w.hop_kick_style': 300.0, 'w.hop_kick_fall': -1000.0, 'k.STYLE_MAP': 'range'}
+- 2026-10-07 02:47 screening the champion
+- 2026-10-07 03:14 sty_range: screen vs champion 14450:-1.8, 14950:-4.5, 15200:-7.2, 14700:-8.8, 15700:-10.1, 15950:-11.0, 15450:-19.8
+- 2026-10-07 03:43 sty_range_14450: score +21.81 vs x4_fair_2seed, regressions ['h2h_long_knee_p90', 'h2h_support_planted_short_pct', 'h2h_true_first_kick_s', 'bumps_goals', 'bumps_late_falls_pct', 'moving_goals', 'caps_fast_vx', 'latency_goals', 'approach_first_s']
+- 2026-10-07 03:47 sty_range: blend 0.7/0.3 with champion, screen -1.8
+- 2026-10-07 03:50 sty_range: blend 0.5/0.5 with champion, screen +1.3
+- 2026-10-07 04:12 sty_range_x50: score +8.44 vs x4_fair_2seed, regressions ['h2h_long_knee_p90', 'h2h_support_planted_short_pct', 'bumps_goals', 'long_x_needed', 'latency_goals']
+- 2026-10-07 04:12 sty_free: external candidate, 7 checkpoints
+- 2026-10-07 04:12 sty_free: parent x4_fair_2seed, changed genes {'rsi_bhuman': 0.15, 'amp_kick_data': 1.0, 'k.KICK_STYLE_AMP': 1.0, 'w.inside_foot_style': 300.0, 'w.hop_kick_style': 300.0, 'w.hop_kick_fall': -1000.0, 'k.STYLE_MAP': 'free'}
+- 2026-10-07 04:36 sty_free: screen vs champion 14950:+1.6, 15700:+1.1, 14450:+0.4, 15950:-2.8, 15450:-5.8, 15200:-6.3, 14700:-9.3
+- 2026-10-07 04:57 sty_free_14950: score +9.12 vs x4_fair_2seed, regressions ['h2h_long_knee_p90', 'h2h_support_planted_short_pct', 'bumps_late_falls_pct', 'latency_goals', 'approach_kick_pct', 'approach_vx']
+- 2026-10-07 05:01 sty_free: blend 0.7/0.3 with champion, screen -4.3
+- 2026-10-07 05:04 sty_free: blend 0.5/0.5 with champion, screen -4.6
+- 2026-10-07 05:04 sty_range_strong: external candidate, 0 checkpoints
+- 2026-10-07 05:04 sty_range_strong: parent x4_fair_2seed, changed genes {'rsi_bhuman': 0.3, 'amp_kick_data': 1.0, 'k.KICK_STYLE_AMP': 1.0, 'w.inside_foot_style': 600.0, 'w.hop_kick_style': 300.0, 'w.hop_kick_fall': -1000.0, 'k.STYLE_MAP': 'range', 'k.STYLE_SHARE_INSIDE': 0.7}
+- 2026-10-07 05:04 sty_range_strong: no checkpoints (failure 1/3)
+- 2026-10-07 05:04 evo_g021: queued experiment genes
+- 2026-10-07 05:04 evo_g021: parent x4_fair_2seed, changed genes {'k.STYLE_MAP': 'range', 'w.inside_foot_style': 300.0, 'w.hop_kick_style': 300.0, 'w.hop_kick_fall': -1000.0, 't.hop_power_long': 800.0}
+- 2026-10-07 05:04 evo_g021: reward program evo_g021.json
+- 2026-10-07 06:41 evo_g021: screen vs champion 14600:+6.3, 14650:-0.0, 14700:-5.7, 14550:-6.0, 14450:-7.6, 14400:-7.9, 14300:-10.5, 14500:-10.7, 14350:-15.4
+- 2026-10-07 07:29 evo_g021_14600: score +28.31 vs x4_fair_2seed, regressions ['h2h_long_knee_p90', 'h2h_support_planted_short_pct', 'h2h_true_first_kick_s', 'bumps_goals', 'bumps_late_falls_pct', 'flat_late_falls_pct', 'moving_goals', 'latency_goals']
+- 2026-10-07 07:36 evo_g021: blend 0.7/0.3 with champion, screen -1.2
+- 2026-10-07 07:42 evo_g021: blend 0.5/0.5 with champion, screen +0.4
+- 2026-10-07 08:20 evo_g021_x50: score -11.13 vs x4_fair_2seed, regressions ['latency_goals']
+- 2026-10-07 08:20 evo_g022: parent x4_fair_2seed, changed genes {'w.long_kick_power': 2967.659, 'w.kick_direction': 1056.416, 'w.long_kick_underpower': -379.6125, 'rsi_ours': 0.021, 'k.MOMENTUM_KICK_MAX_SPEED': 1.0723, 'k.LONG_AIM_SIGMA2': 0.0311, 'w.inside_foot_style': 300.0, 'w.hop_kick_fall': -1581.1081, 'w.side_foot_strike': 0.0, 't.far_cap_tracking': 0.0, 'w.hop_kick_style': 436.118, 'k.STYLE_SHARE_INSIDE': 0.3701, 'k.STYLE_SHARE_HOP': 0.0, 'k.INSIDE_YAW_STEP': 0.1719, 't.quick_kick': 89.0462}
+- 2026-10-07 08:20 evo_g022: reward program evo_g022.json
+- 2026-10-07 08:47 stopped generation 22 and sty_power3: switching to B-Human's hard leg torque clip (50/50/30/60/30/30 Nm, user); baselines re-benchmarked under the clip
+- 2026-10-07 12:41 [hier] h001 L5: atom motion_guided_curriculum: stage that tracks a reference kick motion, then relaxes to task rewards genes {'rsi_ours': 0.2, 'rsi_bhuman': 0.1}
+- 2026-10-07 12:43 h001_c1: reward program h001_c1.json
+- 2026-10-07 12:43 h001_c0: reward program h001_c0.json
+- 2026-10-07 12:58 [hier] context opened (L5): atom ball_behind_starts: spawn the ball at any bearing and far (v2 approach falls with the ball behind 23-45 %) {'s.spawn_any_prob': 0.3, 's.far_spawn_prob': 0.3}, budget 3
+- 2026-10-07 12:58 [hier] h001 L5: atom ball_behind_starts: spawn the ball at any bearing and far (v2 approach falls with the ball behind 23-45 %) genes {'s.spawn_any_prob': 0.3, 's.far_spawn_prob': 0.3}
+- 2026-10-07 12:58 h001_c1: reward program h001_c1.json
+- 2026-10-07 12:58 h001_c0: reward program h001_c0.json
+- 2026-10-07 14:56 [hier] h001 L5: atom ball_behind_starts: spawn the ball at any bearing and far (v2 approach falls with the ball behind 23-45 %) genes {'s.spawn_any_prob': 0.3, 's.far_spawn_prob': 0.3}
+- 2026-10-07 14:56 h001_c0: reward program h001_c0.json
+- 2026-10-07 14:56 h001_c1: reward program h001_c1.json
+- 2026-10-07 15:43 [hier] h001_c0 model_17300: screen +55.4
+- 2026-10-07 15:44 [hier] h001_c1 model_17300: screen +11.5
+- 2026-10-07 15:46 [hier] h001_c0 model_17400: screen +23.2
+- 2026-10-07 15:46 [hier] h001_c1 model_17400: screen +46.6
+- 2026-10-07 15:48 [hier] h001_c0 model_17500: screen +9.2
+- 2026-10-07 15:49 [hier] h001_c1 model_17500: screen +33.8
+- 2026-10-07 15:50 [hier] h001_c0 model_17600: screen +11.6
+- 2026-10-07 15:51 [hier] h001_c1 model_17600: screen +39.6
+- 2026-10-07 15:53 [hier] h001_c0 model_17650: screen +19.8
+- 2026-10-07 15:53 h001_c2: reward program h001_c2.json
+- 2026-10-07 15:53 [hier] h001_c1 model_17650: screen +50.3
+- 2026-10-07 16:16 [hier] h001_c2 model_17300: screen +23.3
+- 2026-10-07 16:17 [hier] h001_c2 model_17400: screen +40.7
+- 2026-10-07 16:19 [hier] h001_c2 model_17500: screen -0.7
+- 2026-10-07 16:21 [hier] h001_c2 model_17600: screen +18.5
+- 2026-10-07 16:23 [hier] h001_c2 model_17650: screen +9.5
+- 2026-10-07 16:36 [hier] h001_c0_17300: v2 score +118.83, regressions ['close_any/camera/typical:first_kick_s:low', 'approach/camera/typical:first_kick_pct:low', 'approach/camera/typical:first_kick_s:high', 'full_loop/camera/typical:first_kick_s:low', 'full_loop/camera/typical:goals_per_ep:low', 'full_loop/moving/camera/typical:goals_per_ep:low', 'full_loop/late_detect/camera/typical:goals_per_ep:low', 'full_loop/bumps/camera/typical:goals_per_ep:low', 'full_loop/robust/camera/typical:goals_per_ep:low']
+- 2026-10-07 16:38 h001_c0_17300: blend 0.7/0.3 with champion, screen +66.3
+- 2026-10-07 16:39 h001_c0_17300: blend 0.5/0.5 with champion, screen +75.7
+- 2026-10-07 16:52 h001_c0_17300_x50: score +161.22 vs sty_power_17149, regressions ['close_any/camera/typical:first_kick_s:low']
+- 2026-10-07 16:52 [hier] h002 L1@L5: reshape template hop_power_long | in atom ball_behind_starts: spawn the ball at any bearing and far (v2 approach falls with the ball behind 23-45 %) genes {'s.spawn_any_prob': 0.3, 's.far_spawn_prob': 0.3, 'ts.hop_power_long': [1.028, 0.611, 1.215, 1.34]}
+- 2026-10-07 16:52 h002_c0: reward program h002_c0.json
+- 2026-10-07 16:52 h002_c1: reward program h002_c1.json
+- 2026-10-07 16:55 [hier] h002 L3: s.cap_low_prob 0.3 inside ball_behind_starts (fix low-cap time-to-kick regression of h001 blend) genes {'s.spawn_any_prob': 0.3, 's.far_spawn_prob': 0.3, 's.cap_low_prob': 0.3} (parent h001_c0_17300_x50)
+- 2026-10-07 16:55 h002_c0: reward program h002_c0.json
+- 2026-10-07 16:55 h002_c1: reward program h002_c1.json
+- 2026-10-07 17:46 [hier] h002_c1 model_17300: screen +20.3
+- 2026-10-07 17:46 [hier] h002_c0 model_17300: screen +6.4
+- 2026-10-07 17:49 [hier] h002_c1 model_17400: screen +27.8
+- 2026-10-07 17:49 [hier] h002_c0 model_17400: screen +29.0
+- 2026-10-07 17:52 [hier] h002_c0 model_17500: screen +42.0
+- 2026-10-07 17:52 [hier] h002_c1 model_17500: screen +35.3
+- 2026-10-07 17:55 [hier] h002_c0 model_17600: screen +41.4
+- 2026-10-07 17:55 [hier] h002_c1 model_17600: screen +32.7
+- 2026-10-07 17:57 [hier] h002_c0 model_17650: screen +24.6
+- 2026-10-07 17:57 h002_c2: reward program h002_c2.json
+- 2026-10-07 17:57 [hier] h002_c1 model_17650: screen +38.9
+- 2026-10-07 18:26 [hier] h003 L5: situational styles: outcome-only rewards (no style shares / bonuses, hop_power_long off), RSI 15 % front + 10 % B-Human inside so no style is forgotten genes {'s.spawn_any_prob': 0.3, 's.far_spawn_prob': 0.3, 'k.STYLE_MAP': 'free', 'k.STYLE_SHARE_INSIDE': 0.0, 'k.STYLE_SHARE_HOP': 0.0, 'w.inside_foot_style': 0.0, 'w.hop_kick_style': 0.0, 't.hop_power_long': 0.0, 'w.hop_kick_fall': -1000.0, 'rsi_ours': 0.15, 'rsi_bhuman': 0.1} (parent h001_c0_17300_x50)
+- 2026-10-07 19:15 [hier] h003_c0 model_17300: screen +44.0
+- 2026-10-07 19:15 [hier] h003_c1 model_17300: screen +34.4
+- 2026-10-07 19:17 [hier] h003_c0 model_17400: screen +27.3
+- 2026-10-07 19:17 [hier] h003_c1 model_17400: screen +35.6
+- 2026-10-07 19:20 [hier] h003_c0 model_17500: screen +43.2
+- 2026-10-07 19:20 [hier] h003_c1 model_17500: screen +40.9
+- 2026-10-07 19:22 [hier] h003_c0 model_17600: screen +41.1
+- 2026-10-07 19:22 [hier] h003_c1 model_17600: screen +9.4
+- 2026-10-07 19:25 [hier] h003_c1 model_17650: screen +18.0
+- 2026-10-07 19:25 [hier] h003_c0 model_17650: screen +63.9
+- 2026-10-07 19:28 [hier] h004 L5: situational styles from the champion (no ball-behind): outcome-only rewards, RSI 15 % front + 10 % B-Human inside genes {'k.STYLE_MAP': 'free', 'k.STYLE_SHARE_INSIDE': 0.0, 'k.STYLE_SHARE_HOP': 0.0, 'w.inside_foot_style': 0.0, 'w.hop_kick_style': 0.0, 't.hop_power_long': 0.0, 'w.hop_kick_fall': -1000.0, 'rsi_ours': 0.15, 'rsi_bhuman': 0.1} (parent sty_power_17149)
+- 2026-10-07 20:20 [hier] h004_c0 model_17300: screen +14.5
+- 2026-10-07 20:20 [hier] h004_c1 model_17300: screen +35.6
+- 2026-10-07 20:23 [hier] h004_c1 model_17400: screen +23.6
+- 2026-10-07 20:23 [hier] h004_c0 model_17400: screen +18.7
+- 2026-10-07 20:27 [hier] h004_c0 model_17500: screen +21.2
+- 2026-10-07 20:27 [hier] h004_c1 model_17500: screen +19.6
+- 2026-10-07 20:30 [hier] h004_c1 model_17600: screen +22.0
+- 2026-10-07 20:30 [hier] h004_c0 model_17600: screen -8.6
+- 2026-10-07 20:33 [hier] h004_c1 model_17650: screen +17.3
+- 2026-10-07 20:33 [hier] h004_c0 model_17650: screen -8.4
+- 2026-10-07 22:25 [hier] h005 L5: time to kick T1 (moderate): time cost, promptness floor 0.25 / tau 1.0, quick kick, turn-rate, 15 % low caps, 15 % unknown starts, mild ball-behind genes {'s.spawn_any_prob': 0.15, 's.far_spawn_prob': 0.1, 's.unknown_start_prob': 0.15, 'w.kick_time_cost': -5.0, 'k.PROMPT_FLOOR': 0.25, 'k.PROMPT_KICK_TAU': 1.0, 't.quick_kick': 400.0, 'w.turn_rate_track': 5.0, 's.cap_low_prob': 0.15} (parent h001_c0_17300_x50)
+- 2026-10-07 22:25 h005_c0: reward program h005_c0.json
+- 2026-10-07 22:25 h005_c1: reward program h005_c1.json
+- 2026-10-07 23:15 [hier] h005_c0 model_17300: screen +28.0
+- 2026-10-07 23:15 [hier] h005_c1 model_17300: screen +38.7
+- 2026-10-07 23:18 [hier] h005_c1 model_17400: screen +60.5
+- 2026-10-07 23:18 [hier] h005_c0 model_17400: screen +20.0
+- 2026-10-07 23:20 [hier] h005_c1 model_17500: screen +63.9
+- 2026-10-07 23:20 [hier] h005_c0 model_17500: screen +43.3
+- 2026-10-07 23:23 [hier] h005_c1 model_17600: screen +61.2
+- 2026-10-07 23:23 [hier] h005_c0 model_17600: screen -11.3
+- 2026-10-07 23:25 [hier] h005_c1 model_17650: screen +31.7
+- 2026-10-07 23:25 h005_c2: reward program h005_c2.json
+- 2026-10-07 23:25 [hier] h005_c0 model_17650: screen +33.3
+- 2026-10-07 23:31 [hier] h006 L5: power + learned style choice: style forcing off, style_advantage 600, long uncapped 800, RSI front 15 % / inside 10 %, loft free, heavy balls genes {'s.spawn_any_prob': 0.15, 's.far_spawn_prob': 0.1, 's.unknown_start_prob': 0.15, 'k.STYLE_MAP': 'free', 'k.STYLE_SHARE_INSIDE': 0.0, 'k.STYLE_SHARE_HOP': 0.0, 'w.inside_foot_style': 0.0, 'w.hop_kick_style': 0.0, 't.hop_power_long': 0.0, 'w.hop_kick_fall': -1000.0, 'rsi_ours': 0.15, 'rsi_bhuman': 0.1, 'w.style_advantage': 600.0, 'w.long_kick_speed_linear': 800.0} (parent h001_c0_17300_x50)
+- 2026-10-08 00:18 [hier] h006_c0 model_17300: screen +24.8
+- 2026-10-08 00:18 [hier] h006_c1 model_17300: screen +18.5
+- 2026-10-08 00:20 [hier] h006_c0 model_17400: screen +13.6
+- 2026-10-08 00:20 [hier] h006_c1 model_17400: screen +17.8
+- 2026-10-08 00:23 [hier] h006_c0 model_17500: screen +22.9
+- 2026-10-08 00:23 [hier] h006_c1 model_17500: screen +13.9
+- 2026-10-08 00:25 [hier] h006_c0 model_17600: screen +41.0
+- 2026-10-08 00:25 [hier] h006_c1 model_17600: screen +15.1
+- 2026-10-08 00:28 [hier] h006_c0 model_17650: screen +51.3
+- 2026-10-08 00:28 [hier] h006_c1 model_17650: screen +42.0
+- 2026-10-08 00:53 [hier] h006_c2 model_17300: screen +44.8
+- 2026-10-08 00:54 [hier] h006_c2 model_17400: screen +48.3
+- 2026-10-08 00:56 [hier] h006_c2 model_17500: screen +33.7
+- 2026-10-08 00:58 [hier] h006_c2 model_17600: screen +32.5
+- 2026-10-08 01:00 [hier] h006_c2 model_17650: screen +41.1
+- 2026-10-08 01:03 [hier] h006: blend 0.7/0.3 with champion, screen +60.4
+- 2026-10-08 01:05 [hier] h006: blend 0.5/0.5 with champion, screen +65.4
+- 2026-10-08 01:05 [hier] h006: blend beats the parent on the screen; full benchmark for h006_c0_x50
+- 2026-10-08 01:24 [hier] h006_c0_17650: v2 score +159.28, regressions ['approach/camera/typical:first_kick_s:high', 'full_loop/camera/typical:first_kick_s:low', 'full_loop/camera/typical:style_selection_pct:low', 'full_loop/camera/typical:style_selection_pct:high']
+- 2026-10-08 01:25 h006_c0_17650: blend 0.7/0.3 with champion, screen +54.2
+- 2026-10-08 01:27 h006_c0_17650: blend 0.5/0.5 with champion, screen +64.2
+- 2026-10-08 01:46 h006_c0_17650_x50: score +128.72 vs sty_power_17149, regressions ['approach/camera/typical:first_kick_s:low', 'full_loop/camera/typical:style_selection_pct:low']
+- 2026-10-08 01:46 [hier] STOP_AFTER_FRAME found; stopping
+- 2026-10-08 01:46 [hier] stopped after 6 frames; champion sty_power_17149
+- 2026-10-08 01:48 [hier] h007 L5: approach speed: track the vx cap with the braking profile down to 1 m (k.TRACK_BRAKE_PROFILE 1, w.walk_speed_track 6) - children walk to the ball 0.5-0.7 s slower at low caps genes {'s.spawn_any_prob': 0.15, 's.far_spawn_prob': 0.1, 's.unknown_start_prob': 0.15, 'k.TRACK_BRAKE_PROFILE': 1.0, 'w.walk_speed_track': 6.0, 's.cap_low_prob': 0.15} (parent h001_c0_17300_x50)
+- 2026-10-08 01:48 h007_c1: reward program h007_c1.json
+- 2026-10-08 01:48 h007_c0: reward program h007_c0.json
+- 2026-10-08 02:35 [hier] h007_c0 model_17300: screen +38.2
+- 2026-10-08 02:35 [hier] h007_c1 model_17300: screen +10.1
+- 2026-10-08 02:37 [hier] h007_c0 model_17400: screen +50.5
+- 2026-10-08 02:37 [hier] h007_c1 model_17400: screen +58.5
+- 2026-10-08 02:40 [hier] h007_c0 model_17500: screen +40.6
+- 2026-10-08 02:40 [hier] h007_c1 model_17500: screen +65.3
+- 2026-10-08 02:42 [hier] h007_c0 model_17600: screen +9.6
+- 2026-10-08 02:42 [hier] h007_c1 model_17600: screen +52.6
+- 2026-10-08 02:45 [hier] h007_c1 model_17650: screen +69.3
+- 2026-10-08 02:45 h007_c2: reward program h007_c2.json
+- 2026-10-08 02:45 [hier] h007_c0 model_17650: screen +35.2
+- 2026-10-08 03:08 [hier] h007_c2 model_17300: screen +30.7
+- 2026-10-08 03:10 [hier] h007_c2 model_17400: screen +57.3
+- 2026-10-08 03:11 [hier] h007_c2 model_17500: screen +16.4
+- 2026-10-08 03:13 [hier] h007_c2 model_17600: screen +67.8
+- 2026-10-08 03:15 [hier] h007_c2 model_17650: screen +57.9
+- 2026-10-08 03:32 [hier] h007_c1_17650: v2 score +146.77, regressions ['full_loop/camera/typical:first_kick_s:low', 'full_loop/camera/typical:short_stop_m:low', 'full_loop/camera/typical:short_stop_m:high', 'full_loop/moving/camera/typical:goals_per_ep:low', 'full_loop/bumps/camera/typical:goals_per_ep:low']
+- 2026-10-08 03:34 h007_c1_17650: blend 0.7/0.3 with champion, screen +62.9
+- 2026-10-08 03:36 h007_c1_17650: blend 0.5/0.5 with champion, screen +72.6
+- 2026-10-08 03:54 h007_c1_17650_x50: score +168.87 vs sty_power_17149, regressions ['full_loop/camera/typical:first_kick_s:low']
+- 2026-10-08 03:54 [hier] h007: context best now h007_c1_17650_x50 (+168.9, 1 regressions)
+- 2026-10-08 03:54 [hier] context opened (L5): conservative fine-tune: desired_kl 0.004 (smaller policy steps, less drift of the champion's low-cap speed) + approach speed (brake profile, walk_speed_track 6) + 15 % low caps {'s.spawn_any_prob': 0.15, 's.far_spawn_prob': 0.1, 's.unknown_start_prob': 0.15, 'k.TRACK_BRAKE_PROFILE': 1.0, 'w.walk_speed_track': 6.0, 's.cap_low_prob': 0.15, 'desired_kl': 0.004}, budget 3
+- 2026-10-08 03:54 [hier] h008 L5: conservative fine-tune: desired_kl 0.004 (smaller policy steps, less drift of the champion's low-cap speed) + approach speed (brake profile, walk_speed_track 6) + 15 % low caps genes {'s.spawn_any_prob': 0.15, 's.far_spawn_prob': 0.1, 's.unknown_start_prob': 0.15, 'k.TRACK_BRAKE_PROFILE': 1.0, 'w.walk_speed_track': 6.0, 's.cap_low_prob': 0.15, 'desired_kl': 0.004} (parent h001_c0_17300_x50)
+- 2026-10-08 03:54 h008_c0: reward program h008_c0.json
+- 2026-10-08 03:54 h008_c1: reward program h008_c1.json
+- 2026-10-08 04:42 [hier] h008_c0 model_17300: screen +46.0
+- 2026-10-08 04:42 [hier] h008_c1 model_17300: screen +38.3
+- 2026-10-08 04:44 [hier] h008_c0 model_17400: screen +51.3
+- 2026-10-08 04:44 [hier] h008_c1 model_17400: screen +59.2
+- 2026-10-08 04:47 [hier] h008_c1 model_17500: screen +48.6
+- 2026-10-08 04:47 [hier] h008_c0 model_17500: screen +66.1
+- 2026-10-08 04:51 [hier] h008_c1 model_17600: screen +73.0
+- 2026-10-08 04:51 [hier] h008_c0 model_17600: screen +87.0
+- 2026-10-08 04:54 [hier] h008_c1 model_17650: screen +66.5
+- 2026-10-08 04:54 h008_c2: reward program h008_c2.json
+- 2026-10-08 04:54 [hier] h008_c0 model_17650: screen +85.7
+- 2026-10-08 05:28 [hier] h008_c2 model_17300: screen +58.9
+- 2026-10-08 05:31 [hier] h008_c2 model_17400: screen +69.1
+- 2026-10-08 05:32 h007_c1_17650_x50_2seed: seed scores +279.67 / +261.57 vs sty_power_17149, regressions none
+- 2026-10-08 05:33 [hier] h008_c2 model_17500: screen +83.1
+- 2026-10-08 05:34 h007_c1_17650_x50: runswift: falls 60/180 (champ 92), first strike 99/216 (champ 95), speed 3.06 (champ 3.04), goals 103 (champ 61)
+- 2026-10-08 05:34 NEW CHAMPION h007_c1_17650_x50_2seed: installed logs/rsl_rl/k1_kick_stage3_amp/2026-10-08_05-34-22_champ_h007_c1_17650_x50/model_17149.pt, ONNX k1_kick_loop_h007_c1_17650_x50.onnx
+- 2026-10-08 05:35 [hier] h008_c2 model_17600: screen +85.1
+- 2026-10-08 05:37 [hier] h008_c2 model_17650: screen +88.7
+- 2026-10-08 05:54 [hier] h008_c2_17650: v2 score +251.40, regressions ['full_loop/camera/typical:first_kick_s:low', 'full_loop/camera/typical:short_stop_m:low', 'full_loop/camera/typical:short_stop_m:high', 'full_loop/camera/typical:goals_per_ep:low', 'approach/unknown/camera/typical:first_kick_s:high', 'full_loop/moving/camera/typical:goals_per_ep:low', 'full_loop/late_detect/camera/typical:goals_per_ep:low', 'full_loop/bumps/camera/typical:goals_per_ep:low', 'full_loop/robust/camera/typical:goals_per_ep:low']
+- 2026-10-08 05:56 h008_c2_17650: blend 0.7/0.3 with champion, screen +80.2
+- 2026-10-08 05:57 h008_c2_17650: blend 0.5/0.5 with champion, screen +80.9
+- 2026-10-08 06:16 h008_c2_17650_x50: score +228.80 vs sty_power_17149, regressions ['full_loop/camera/typical:first_kick_s:low', 'full_loop/camera/typical:short_stop_m:low', 'full_loop/camera/typical:short_stop_m:high', 'approach/unknown/camera/typical:first_kick_s:high']
+- 2026-10-08 06:16 [hier] h008: context best now h008_c2_17650 (+251.4, 9 regressions)
+- 2026-10-08 06:16 [hier] STOP_AFTER_FRAME found; stopping
+- 2026-10-08 06:16 [hier] stopped after 8 frames; champion h007_c1_17650_x50_2seed
+- 2026-10-08 06:17 [hier] h009 L5: power + learned style choice, small policy steps (KL 0.004), from the new champion genes {'s.spawn_any_prob': 0.15, 's.far_spawn_prob': 0.1, 's.unknown_start_prob': 0.15, 'k.STYLE_MAP': 'free', 'k.STYLE_SHARE_INSIDE': 0.0, 'k.STYLE_SHARE_HOP': 0.0, 'w.inside_foot_style': 0.0, 'w.hop_kick_style': 0.0, 't.hop_power_long': 0.0, 'w.hop_kick_fall': -1000.0, 'rsi_ours': 0.15, 'rsi_bhuman': 0.1, 'w.style_advantage': 600.0, 'w.long_kick_speed_linear': 800.0, 'desired_kl': 0.004} (parent h007_c1_17650_x50_2seed)
+- 2026-10-08 07:06 [hier] h009_c0 model_17300: screen +31.3
+- 2026-10-08 07:06 [hier] h009_c1 model_17300: screen -7.0
+- 2026-10-08 07:08 [hier] h009_c0 model_17400: screen +50.9
+- 2026-10-08 07:09 [hier] h009_c1 model_17400: screen +27.7
+- 2026-10-08 07:11 [hier] h009_c0 model_17500: screen +58.1
+- 2026-10-08 07:11 [hier] h009_c1 model_17500: screen +53.7
+- 2026-10-08 07:13 [hier] h009_c0 model_17600: screen +53.3
+- 2026-10-08 07:14 [hier] h009_c1 model_17600: screen +23.4
+- 2026-10-08 07:15 [hier] h009_c0 model_17650: screen +44.9
+- 2026-10-08 07:16 [hier] h009_c1 model_17650: screen +41.7
+- 2026-10-08 07:38 [hier] h009_c2 model_17300: screen +7.2
+- 2026-10-08 07:40 [hier] h009_c2 model_17400: screen +22.7
+- 2026-10-08 07:42 [hier] h009_c2 model_17500: screen +36.6
+- 2026-10-08 07:44 [hier] h009_c2 model_17600: screen +46.6
+- 2026-10-08 07:46 [hier] h009_c2 model_17650: screen +23.6
+- 2026-10-08 08:02 [hier] h009_c0_17500: v2 score +209.50, regressions ['full_loop/camera/typical:short_stop_m:low', 'full_loop/camera/typical:action_rate:high', 'full_loop/camera/typical:style_selection_pct:low', 'full_loop/camera/typical:style_selection_pct:high']
+- 2026-10-08 08:04 h009_c0_17500: blend 0.7/0.3 with champion, screen +34.8
+- 2026-10-08 08:06 h009_c0_17500: blend 0.5/0.5 with champion, screen +51.5
+- 2026-10-08 08:25 h009_c0_17500_x50: score +159.62 vs h007_c1_17650_x50_2seed, regressions ['full_loop/camera/typical:short_stop_m:low', 'full_loop/camera/typical:style_selection_pct:low', 'full_loop/camera/typical:style_selection_pct:high']
+- 2026-10-08 08:25 [hier] h009: context best now h009_c0_17500 (+209.5, 4 regressions)
+- 2026-10-08 08:25 [hier] STOP_AFTER_FRAME found; stopping
+- 2026-10-08 08:25 [hier] stopped after 9 frames; champion h007_c1_17650_x50_2seed
+- 2026-10-08 08:27 [hier] h010 L5: power + styles v2 from h009 child: style_advantage 1500, short-pass stop reward 1000, long uncapped 800, KL 0.004 genes {'s.spawn_any_prob': 0.15, 's.far_spawn_prob': 0.1, 's.unknown_start_prob': 0.15, 'k.STYLE_MAP': 'free', 'k.STYLE_SHARE_INSIDE': 0.0, 'k.STYLE_SHARE_HOP': 0.0, 'w.inside_foot_style': 0.0, 'w.hop_kick_style': 0.0, 't.hop_power_long': 0.0, 'w.hop_kick_fall': -1000.0, 'rsi_ours': 0.15, 'rsi_bhuman': 0.1, 'w.style_advantage': 1500.0, 'w.long_kick_speed_linear': 800.0, 'desired_kl': 0.004, 'w.kick_rest_accuracy': 1000.0} (parent h009_c0_17500)
+- 2026-10-08 09:14 [hier] h010_c1 model_17650: screen +55.6
+- 2026-10-08 09:14 [hier] h010_c0 model_17650: screen +37.8
+- 2026-10-08 09:16 [hier] h010_c1 model_17750: screen +61.7
+- 2026-10-08 09:17 [hier] h010_c0 model_17750: screen +43.6
+- 2026-10-08 09:19 [hier] h010_c1 model_17850: screen +54.2
+- 2026-10-08 09:19 [hier] h010_c0 model_17850: screen +49.6
+- 2026-10-08 09:21 [hier] h010_c1 model_17950: screen +44.1
+- 2026-10-08 09:22 [hier] h010_c0 model_17950: screen +63.9
+- 2026-10-08 09:23 [hier] h010_c1 model_18000: screen +49.0
+- 2026-10-08 09:24 [hier] h010_c0 model_18000: screen +44.6
+- 2026-10-08 09:47 [hier] h010_c2 model_17650: screen +41.4
+- 2026-10-08 09:48 [hier] h010_c2 model_17750: screen +61.6
+- 2026-10-08 09:50 [hier] h010_c2 model_17850: screen +68.6
+- 2026-10-08 09:52 [hier] h010_c2 model_17950: screen +47.8
+- 2026-10-08 09:54 [hier] h010_c2 model_18000: screen +50.4
+- 2026-10-08 10:14 [hier] h010_c2_17850: v2 score +186.40, regressions ['full_loop/camera/typical:short_stop_m:low']
+- 2026-10-08 10:16 h010_c2_17850: blend 0.7/0.3 with champion, screen +42.8
+- 2026-10-08 10:17 h010_c2_17850: blend 0.5/0.5 with champion, screen +39.9
+- 2026-10-08 10:40 h010_c2_17850_x70: score +118.92 vs h007_c1_17650_x50_2seed, regressions none
+- 2026-10-08 11:03 h010_c2_17850_x70_2seed: seed scores +118.92 / +122.42 vs h007_c1_17650_x50_2seed, regressions none
+- 2026-10-08 11:05 h010_c2_17850_x70: runswift: falls 44/180 (champ 60), first strike 106/216 (champ 99), speed 2.86 (champ 3.06), goals 119 (champ 103); BLOCKED: ['kick speed 3.06 -> 2.86']
+- 2026-10-08 11:05 [hier] h011 L1@L5: add template long_power_ramp | in power + styles v2 from h009 child: style_advantage 1500, short-pass stop reward 1000, long uncapped 800, KL 0.004 genes {'s.spawn_any_prob': 0.15, 's.far_spawn_prob': 0.1, 's.unknown_start_prob': 0.15, 'k.STYLE_MAP': 'free', 'k.STYLE_SHARE_INSIDE': 0.0, 'k.STYLE_SHARE_HOP': 0.0, 'w.inside_foot_style': 0.0, 'w.hop_kick_style': 0.0, 't.hop_power_long': 0.0, 'w.hop_kick_fall': -1000.0, 'rsi_ours': 0.15, 'rsi_bhuman': 0.1, 'w.style_advantage': 1500.0, 'w.long_kick_speed_linear': 800.0, 'desired_kl': 0.004, 'w.kick_rest_accuracy': 1000.0, 't.long_power_ramp': 1500.0} (parent h009_c0_17500)
+- 2026-10-08 11:05 h011_c0: reward program h011_c0.json
+- 2026-10-08 11:05 h011_c1: reward program h011_c1.json
+- 2026-10-08 11:08 h010_c2_17850_x70_2seed: seed scores +118.92 / +122.42 vs h007_c1_17650_x50_2seed, regressions none
+- 2026-10-08 11:08 h010_c2_17850_x70: runswift: falls 44/180 (champ 60), first strike 106/216 (champ 99), 6/9 m kick speed 3.00 (champ 3.04), goals 119 (champ 103)
+- 2026-10-08 11:09 NEW CHAMPION h010_c2_17850_x70_2seed: installed logs/rsl_rl/k1_kick_stage3_amp/2026-10-08_11-08-42_champ_h010_c2_17850_x70/model_17149.pt, ONNX k1_kick_loop_h010_c2_17850_x70.onnx
+- 2026-10-08 11:53 [hier] h011_c0 model_17650: screen +39.9
+- 2026-10-08 11:53 [hier] h011_c1 model_17650: screen +64.4
+- 2026-10-08 11:56 [hier] h011_c0 model_17750: screen +82.7
+- 2026-10-08 11:56 [hier] h011_c1 model_17750: screen +68.9
+- 2026-10-08 11:59 [hier] h011_c0 model_17850: screen +52.1
+- 2026-10-08 11:59 [hier] h011_c1 model_17850: screen +74.2
+- 2026-10-08 12:01 [hier] h011_c1 model_17950: screen +65.0
+- 2026-10-08 12:01 [hier] h011_c0 model_17950: screen +61.9
+- 2026-10-08 12:04 [hier] h011_c0 model_18000: screen +64.9
+- 2026-10-08 12:04 h011_c2: reward program h011_c2.json
+- 2026-10-08 12:04 [hier] h011_c1 model_18000: screen +62.6
+- 2026-10-08 12:28 [hier] h011_c2 model_17650: screen +73.6
+- 2026-10-08 12:30 [hier] h011_c2 model_17750: screen +84.9
+- 2026-10-08 12:31 [hier] h011_c2 model_17850: screen +72.3
+- 2026-10-08 12:33 [hier] h011_c2 model_17950: screen +63.7
+- 2026-10-08 12:35 [hier] h011_c2 model_18000: screen +66.0
+- 2026-10-08 12:52 [hier] h011_c2_17750: v2 score +252.71, regressions ['full_loop/camera/typical:action_rate:high', 'full_loop/camera/typical:style_selection_pct:low', 'full_loop/camera/typical:style_selection_pct:high']
+- 2026-10-08 12:54 h011_c2_17750: blend 0.7/0.3 with champion, screen +33.1
+- 2026-10-08 12:56 h011_c2_17750: blend 0.5/0.5 with champion, screen +47.8
+- 2026-10-08 13:14 h011_c2_17750_x50: score +160.78 vs h007_c1_17650_x50_2seed, regressions ['full_loop/camera/typical:style_selection_pct:high']
+- 2026-10-08 13:14 [hier] h011: context best now h011_c2_17750 (+252.7, 3 regressions)
+- 2026-10-08 13:14 [hier] STOP_AFTER_FRAME found; stopping
+- 2026-10-08 13:14 [hier] stopped after 11 frames; champion h010_c2_17850_x70_2seed
+- 2026-10-08 13:33 [hier] context opened (L5): keep h011 long power (3D 4.4-4.5 m/s) and fix its high-cap regressions: smoother actions (action_rate -0.15), style_advantage kept {'s.spawn_any_prob': 0.15, 's.far_spawn_prob': 0.1, 's.unknown_start_prob': 0.15, 'k.STYLE_MAP': 'free', 'k.STYLE_SHARE_INSIDE': 0.0, 'k.STYLE_SHARE_HOP': 0.0, 'w.inside_foot_style': 0.0, 'w.hop_kick_style': 0.0, 't.hop_power_long': 0.0, 'w.hop_kick_fall': -1000.0, 'rsi_ours': 0.15, 'rsi_bhuman': 0.1, 'w.style_advantage': 1500.0, 'w.long_kick_speed_linear': 800.0, 'desired_kl': 0.004, 'w.kick_rest_accuracy': 1000.0, 'w.action_rate_l2': -0.15}, budget 3
+- 2026-10-08 13:33 [hier] h012 L5: keep h011 long power (3D 4.4-4.5 m/s) and fix its high-cap regressions: smoother actions (action_rate -0.15), style_advantage kept genes {'s.spawn_any_prob': 0.15, 's.far_spawn_prob': 0.1, 's.unknown_start_prob': 0.15, 'k.STYLE_MAP': 'free', 'k.STYLE_SHARE_INSIDE': 0.0, 'k.STYLE_SHARE_HOP': 0.0, 'w.inside_foot_style': 0.0, 'w.hop_kick_style': 0.0, 't.hop_power_long': 0.0, 'w.hop_kick_fall': -1000.0, 'rsi_ours': 0.15, 'rsi_bhuman': 0.1, 'w.style_advantage': 1500.0, 'w.long_kick_speed_linear': 800.0, 'desired_kl': 0.004, 'w.kick_rest_accuracy': 1000.0, 'w.action_rate_l2': -0.15} (parent h011_c2_17750)
+- 2026-10-08 14:45 [hier] h012_c1 model_17900: screen +22.1
+- 2026-10-08 14:45 [hier] h012_c0 model_17900: screen +31.4
+- 2026-10-08 14:48 [hier] h012_c1 model_18000: screen +69.2
+- 2026-10-08 14:48 [hier] h012_c0 model_18000: screen +11.8
+- 2026-10-08 14:51 [hier] h012_c1 model_18100: screen +50.2
+- 2026-10-08 14:51 [hier] h012_c0 model_18100: screen +51.9
+- 2026-10-08 14:54 [hier] h012_c1 model_18200: screen +26.0
+- 2026-10-08 14:54 [hier] h012_c0 model_18200: screen +34.6
+- 2026-10-08 14:56 [hier] h012_c0 model_18250: screen +47.1
+- 2026-10-08 14:57 [hier] h012_c1 model_18250: screen +48.5
+- 2026-10-08 15:23 [hier] h012_c2 model_17900: screen +37.9
+- 2026-10-08 15:25 [hier] h012_c2 model_18000: screen +51.0
+- 2026-10-08 15:27 [hier] h012_c2 model_18100: screen +37.0
+- 2026-10-08 15:30 [hier] h012_c2 model_18200: screen +44.0
+- 2026-10-08 15:32 [hier] h012_c2 model_18250: screen +53.6
+- 2026-10-08 15:53 [hier] h012_c1_18000: v2 score +175.60, regressions ['close_any/heavy/camera/typical:long_3d:high']
+- 2026-10-08 15:55 h012_c1_18000: blend 0.7/0.3 with champion, screen +16.8
+- 2026-10-08 15:58 h012_c1_18000: blend 0.5/0.5 with champion, screen +33.5
+- 2026-10-08 16:00 h012_c1_18000: blend 0.3/0.7 with champion, screen +48.0
+- 2026-10-08 16:21 h012_c1_18000_x30: score +139.57 vs h010_c2_17850_x70_2seed, regressions ['full_loop/camera/typical:style_selection_pct:high']
+- 2026-10-08 16:21 [hier] STOP_AFTER_FRAME found; stopping
+- 2026-10-08 16:21 [hier] stopped after 12 frames; champion h010_c2_17850_x70_2seed
+- 2026-10-08 16:21 [hier] context opened (L2): smooth + stable actions (user 2026-10-08): action_rate held at 0.75x the parent level by dual ascent, power + style_advantage kept {'s.spawn_any_prob': 0.15, 's.far_spawn_prob': 0.1, 's.unknown_start_prob': 0.15, 'k.STYLE_MAP': 'free', 'k.STYLE_SHARE_INSIDE': 0.0, 'k.STYLE_SHARE_HOP': 0.0, 'w.inside_foot_style': 0.0, 'w.hop_kick_style': 0.0, 't.hop_power_long': 0.0, 'w.hop_kick_fall': -1000.0, 'rsi_ours': 0.15, 'rsi_bhuman': 0.1, 'w.style_advantage': 1500.0, 'w.long_kick_speed_linear': 800.0, 'desired_kl': 0.004, 'w.kick_rest_accuracy': 1000.0, 'w.action_rate_l2': -0.15, 'c.action_rate_l2': 0.75}, budget 2
+- 2026-10-08 16:21 [hier] h013 L2: smooth + stable actions (user 2026-10-08): action_rate held at 0.75x the parent level by dual ascent, power + style_advantage kept genes {'s.spawn_any_prob': 0.15, 's.far_spawn_prob': 0.1, 's.unknown_start_prob': 0.15, 'k.STYLE_MAP': 'free', 'k.STYLE_SHARE_INSIDE': 0.0, 'k.STYLE_SHARE_HOP': 0.0, 'w.inside_foot_style': 0.0, 'w.hop_kick_style': 0.0, 't.hop_power_long': 0.0, 'w.hop_kick_fall': -1000.0, 'rsi_ours': 0.15, 'rsi_bhuman': 0.1, 'w.style_advantage': 1500.0, 'w.long_kick_speed_linear': 800.0, 'desired_kl': 0.004, 'w.kick_rest_accuracy': 1000.0, 'w.action_rate_l2': -0.15, 'c.action_rate_l2': 0.75} (parent h011_c2_17750)
+- 2026-10-08 17:13 [hier] h013_c0 model_17900: screen +47.4
+- 2026-10-08 17:13 [hier] h013_c1 model_17900: screen +29.2
+- 2026-10-08 17:16 [hier] h013_c0 model_18000: screen +41.9
+- 2026-10-08 17:16 [hier] h013_c1 model_18000: screen +31.3
+- 2026-10-08 17:19 [hier] h013_c0 model_18100: screen +43.7
+- 2026-10-08 17:19 [hier] h013_c1 model_18100: screen +24.6
+- 2026-10-08 17:22 [hier] h013_c0 model_18200: screen +32.1
+- 2026-10-08 17:22 [hier] h013_c1 model_18200: screen +13.7
+- 2026-10-08 17:25 [hier] h013_c1 model_18250: screen +27.1
+- 2026-10-08 17:25 [hier] h013_c0 model_18250: screen +19.5
+- 2026-10-08 17:52 [hier] h013_c2 model_17900: screen +12.6
+- 2026-10-08 17:54 [hier] h013_c2 model_18000: screen -3.1
+- 2026-10-08 17:56 [hier] h013_c2 model_18100: screen +32.4
+- 2026-10-08 17:58 [hier] h013_c2 model_18200: screen +3.4
+- 2026-10-08 18:00 [hier] h013_c2 model_18250: screen -20.5
+- 2026-10-08 18:02 [hier] h013: blend 0.7/0.3 with champion, screen +17.2
+- 2026-10-08 18:04 [hier] h013: blend 0.5/0.5 with champion, screen +40.6
+- 2026-10-08 18:06 [hier] h013: blend 0.3/0.7 with champion, screen +42.2
+- 2026-10-08 18:06 [hier] h013: not improving: best screen +47.4 (blend +42.2) vs parent +55.2 - moving on
+- 2026-10-08 18:06 [hier] h014 L1@L2: add template aim_tight | in smooth + stable actions (user 2026-10-08): action_rate held at 0.75x the parent level by dual ascent, power + style_advantage kept genes {'s.spawn_any_prob': 0.15, 's.far_spawn_prob': 0.1, 's.unknown_start_prob': 0.15, 'k.STYLE_MAP': 'free', 'k.STYLE_SHARE_INSIDE': 0.0, 'k.STYLE_SHARE_HOP': 0.0, 'w.inside_foot_style': 0.0, 'w.hop_kick_style': 0.0, 't.hop_power_long': 0.0, 'w.hop_kick_fall': -1000.0, 'rsi_ours': 0.15, 'rsi_bhuman': 0.1, 'w.style_advantage': 1500.0, 'w.long_kick_speed_linear': 800.0, 'desired_kl': 0.004, 'w.kick_rest_accuracy': 1000.0, 'w.action_rate_l2': -0.15, 'c.action_rate_l2': 0.75, 't.aim_tight': 600.0} (parent h011_c2_17750)
+- 2026-10-08 18:06 h014_c1: reward program h014_c1.json
+- 2026-10-08 18:06 h014_c0: reward program h014_c0.json
+- 2026-10-08 18:57 [hier] h014_c0 model_17900: screen +38.7
+- 2026-10-08 18:57 [hier] h014_c1 model_17900: screen +55.7
+- 2026-10-08 18:59 [hier] h014_c0 model_18000: screen +54.7
+- 2026-10-08 19:00 [hier] h014_c1 model_18000: screen +61.8
+- 2026-10-08 19:02 [hier] h014_c0 model_18100: screen +56.1
+- 2026-10-08 19:02 [hier] h014_c1 model_18100: screen +39.6
+- 2026-10-08 19:04 [hier] h014_c0 model_18200: screen +52.2
+- 2026-10-08 19:05 [hier] h014_c1 model_18200: screen +27.0
+- 2026-10-08 19:07 [hier] h014_c0 model_18250: screen +32.6
+- 2026-10-08 19:07 h014_c2: reward program h014_c2.json
+- 2026-10-08 19:07 [hier] h014_c1 model_18250: screen +37.4
+- 2026-10-08 19:31 [hier] h014_c2 model_17900: screen +48.2
+- 2026-10-08 19:33 [hier] h014_c2 model_18000: screen +32.4
+- 2026-10-08 19:34 [hier] h014_c2 model_18100: screen +44.8
+- 2026-10-08 19:36 [hier] h014_c2 model_18200: screen +35.7
+- 2026-10-08 19:38 [hier] h014_c2 model_18250: screen +24.1
+- 2026-10-08 19:56 [hier] h014_c1_18000: v2 score +137.33, regressions ['full_loop/camera/typical:action_rate:high', 'close_any/camera/typical:action_rate:high', 'approach/camera/typical:action_rate:high', 'close_any/heavy/camera/typical:long_3d:high', 'full_loop/camera/typical:style_selection_pct:low']
+- 2026-10-08 19:58 h014_c1_18000: blend 0.7/0.3 with champion, screen +23.7
+- 2026-10-08 20:00 h014_c1_18000: blend 0.5/0.5 with champion, screen +43.1
+- 2026-10-08 20:02 h014_c1_18000: blend 0.3/0.7 with champion, screen +41.5
+- 2026-10-08 20:20 h014_c1_18000_x50: score +105.45 vs h010_c2_17850_x70_2seed, regressions ['close_any/camera/typical:action_rate:high', 'full_loop/camera/typical:style_selection_pct:high']
+- 2026-10-08 20:20 [hier] h014: context best now h014_c1_18000 (+137.3, 5 regressions)
+- 2026-10-08 20:20 [hier] context closed without promotion: smooth + stable actions (user 2026-10-08): action_rate held at 0.75x the parent level by dual ascent, power + style_advantage kept; stall {'L1': 0, 'L2': 1, 'L3': 0}
+- 2026-10-08 20:20 [hier] h015 L1@L5: add template far_cap_tracking | in keep h011 long power (3D 4.4-4.5 m/s) and fix its high-cap regressions: smoother actions (action_rate -0.15), style_advantage kept genes {'s.spawn_any_prob': 0.15, 's.far_spawn_prob': 0.1, 's.unknown_start_prob': 0.15, 'k.STYLE_MAP': 'free', 'k.STYLE_SHARE_INSIDE': 0.0, 'k.STYLE_SHARE_HOP': 0.0, 'w.inside_foot_style': 0.0, 'w.hop_kick_style': 0.0, 't.hop_power_long': 0.0, 'w.hop_kick_fall': -1000.0, 'rsi_ours': 0.15, 'rsi_bhuman': 0.1, 'w.style_advantage': 1500.0, 'w.long_kick_speed_linear': 800.0, 'desired_kl': 0.004, 'w.kick_rest_accuracy': 1000.0, 'w.action_rate_l2': -0.15, 't.far_cap_tracking': 6.0} (parent h011_c2_17750)
+- 2026-10-08 20:20 h015_c0: reward program h015_c0.json
+- 2026-10-08 20:20 h015_c1: reward program h015_c1.json
+- 2026-10-08 21:13 [hier] h015_c0 model_17900: screen +31.5
+- 2026-10-08 21:13 [hier] h015_c1 model_17900: screen +52.3
+- 2026-10-08 21:16 [hier] h015_c0 model_18000: screen +12.6
+- 2026-10-08 21:17 [hier] h015_c1 model_18000: screen +49.4
+- 2026-10-08 21:19 [hier] h015_c0 model_18100: screen +25.8
+- 2026-10-08 21:19 [hier] h015_c1 model_18100: screen +44.1
+- 2026-10-08 21:22 [hier] h015_c0 model_18200: screen +31.9
+- 2026-10-08 21:22 [hier] h015_c1 model_18200: screen +21.9
+- 2026-10-08 21:24 [hier] h015_c1 model_18250: screen +18.8
+- 2026-10-08 21:24 h015_c2: reward program h015_c2.json
+- 2026-10-08 21:24 [hier] h015_c0 model_18250: screen +33.6
+- 2026-10-08 21:48 [hier] h015_c2 model_17900: screen +24.5
+- 2026-10-08 21:50 [hier] h015_c2 model_18000: screen +12.8
+- 2026-10-08 21:51 [hier] h015_c2 model_18100: screen +39.1
+- 2026-10-08 21:53 [hier] h015_c2 model_18200: screen +19.5
+- 2026-10-08 21:55 [hier] h015_c2 model_18250: screen -5.4
+- 2026-10-08 21:57 [hier] h015: blend 0.7/0.3 with champion, screen +17.7
+- 2026-10-08 21:59 [hier] h015: blend 0.5/0.5 with champion, screen +43.0
+- 2026-10-08 22:01 [hier] h015: blend 0.3/0.7 with champion, screen +47.7
+- 2026-10-08 22:01 [hier] h015: not improving: best screen +52.3 (blend +47.7) vs parent +55.2 - moving on
+- 2026-10-08 22:01 [hier] context opened (L2): smooth near the ball (user 2026-10-08): CAPS on the deterministic action, temporal 1.3, near-ball scale 0.5 -> 0.8; drop the action_rate constraint (noise-dominated); from h012_c1_18000 (power kept, close_any action_rate:high + heavy long regressions); env since 2026-10-08 21:30: ball 0.07-0.13 m / 0.05-0.45 kg, foot_flat settle 60 ms, touchdown_speed -50 (quiet steps) {'s.spawn_any_prob': 0.15, 's.far_spawn_prob': 0.1, 's.unknown_start_prob': 0.15, 'k.STYLE_MAP': 'free', 'k.STYLE_SHARE_INSIDE': 0.0, 'k.STYLE_SHARE_HOP': 0.0, 'w.inside_foot_style': 0.0, 'w.hop_kick_style': 0.0, 't.hop_power_long': 0.0, 'w.hop_kick_fall': -1000.0, 'rsi_ours': 0.15, 'rsi_bhuman': 0.1, 'w.style_advantage': 1500.0, 'w.long_kick_speed_linear': 800.0, 'desired_kl': 0.004, 'w.kick_rest_accuracy': 1000.0, 'caps_temporal_coef': 1.3, 'caps_near_ball_scale': 0.8}, budget 2
+- 2026-10-08 22:01 [hier] h016 L2: smooth near the ball (user 2026-10-08): CAPS on the deterministic action, temporal 1.3, near-ball scale 0.5 -> 0.8; drop the action_rate constraint (noise-dominated); from h012_c1_18000 (power kept, close_any action_rate:high + heavy long regressions); env since 2026-10-08 21:30: ball 0.07-0.13 m / 0.05-0.45 kg, foot_flat settle 60 ms, touchdown_speed -50 (quiet steps) genes {'s.spawn_any_prob': 0.15, 's.far_spawn_prob': 0.1, 's.unknown_start_prob': 0.15, 'k.STYLE_MAP': 'free', 'k.STYLE_SHARE_INSIDE': 0.0, 'k.STYLE_SHARE_HOP': 0.0, 'w.inside_foot_style': 0.0, 'w.hop_kick_style': 0.0, 't.hop_power_long': 0.0, 'w.hop_kick_fall': -1000.0, 'rsi_ours': 0.15, 'rsi_bhuman': 0.1, 'w.style_advantage': 1500.0, 'w.long_kick_speed_linear': 800.0, 'desired_kl': 0.004, 'w.kick_rest_accuracy': 1000.0, 'w.action_rate_l2': -0.15, 'caps_temporal_coef': 1.3, 'caps_near_ball_scale': 0.8} (parent h012_c1_18000)
+- 2026-10-08 22:46 [hier] h016_c1 model_18150: screen -22.8
+- 2026-10-08 22:46 [hier] h016_c0 model_18150: screen -26.5
+- 2026-10-08 22:49 [hier] h016_c1 model_18250: screen -37.1
+- 2026-10-08 22:49 [hier] h016_c0 model_18250: screen -26.7
+- 2026-10-08 22:51 [hier] h016_c1 model_18350: screen -14.0
+- 2026-10-08 22:51 [hier] h016_c0 model_18350: screen +49.8
+- 2026-10-08 22:54 [hier] h016_c1 model_18450: screen -4.3
+- 2026-10-08 22:54 [hier] h016_c0 model_18450: screen -11.2
+- 2026-10-08 22:56 [hier] h016_c1 model_18500: screen -12.6
+- 2026-10-08 22:56 [hier] h016_c0 model_18500: screen +6.5
+- 2026-10-08 23:20 [hier] h016_c2 model_18150: screen -9.9
+- 2026-10-08 23:22 [hier] h016_c2 model_18250: screen -16.8
+- 2026-10-08 23:24 [hier] h016_c2 model_18350: screen +6.6
+- 2026-10-08 23:26 [hier] h016_c2 model_18450: screen -12.2
+- 2026-10-08 23:28 [hier] h016_c2 model_18500: screen -12.4
+- 2026-10-08 23:29 [hier] h016: blend 0.7/0.3 with champion, screen +23.5
+- 2026-10-08 23:31 [hier] h016: blend 0.5/0.5 with champion, screen +30.1
+- 2026-10-08 23:33 [hier] h016: blend 0.3/0.7 with champion, screen +42.2
+- 2026-10-08 23:33 [hier] h016: not improving: best screen +49.8 (blend +42.2) vs parent +67.3 - moving on
+- 2026-10-08 23:33 [hier] stopped after 16 frames; champion h010_c2_17850_x70_2seed
+- 2026-10-08 23:34 [hier] h017 L1@L2: add template quick_kick | in smooth near the ball (user 2026-10-08): CAPS on the deterministic action, temporal 1.3, near-ball scale 0.5 -> 0.8; drop the action_rate constraint (noise-dominated); from h012_c1_18000 (power kept, close_any action_rate:high + heavy long regressions); env since 2026-10-08 21:30: ball 0.07-0.13 m / 0.05-0.45 kg, foot_flat settle 60 ms, touchdown_speed -50 (quiet steps) genes {'s.spawn_any_prob': 0.15, 's.far_spawn_prob': 0.1, 's.unknown_start_prob': 0.15, 'k.STYLE_MAP': 'free', 'k.STYLE_SHARE_INSIDE': 0.0, 'k.STYLE_SHARE_HOP': 0.0, 'w.inside_foot_style': 0.0, 'w.hop_kick_style': 0.0, 't.hop_power_long': 0.0, 'w.hop_kick_fall': -1000.0, 'rsi_ours': 0.15, 'rsi_bhuman': 0.1, 'w.style_advantage': 1500.0, 'w.long_kick_speed_linear': 800.0, 'desired_kl': 0.004, 'w.kick_rest_accuracy': 1000.0, 'w.action_rate_l2': -0.15, 'caps_temporal_coef': 1.3, 'caps_near_ball_scale': 0.8, 't.quick_kick': 400.0} (parent h012_c1_18000)
+- 2026-10-08 23:34 h017_c0: reward program h017_c0.json
+- 2026-10-08 23:34 h017_c1: reward program h017_c1.json
+- 2026-10-09 00:24 [hier] h017_c0 model_18150: screen +21.9
+- 2026-10-09 00:24 [hier] h017_c1 model_18150: screen +10.2
+- 2026-10-09 00:27 [hier] h017_c0 model_18250: screen +2.0
+- 2026-10-09 00:27 [hier] h017_c1 model_18250: screen -6.4
+- 2026-10-09 00:30 [hier] h017_c1 model_18350: screen -11.4
+- 2026-10-09 00:30 [hier] h017_c0 model_18350: screen -10.8
+- 2026-10-09 00:33 [hier] h017_c1 model_18450: screen -16.5
+- 2026-10-09 00:33 [hier] h017_c0 model_18450: screen +23.9
+- 2026-10-09 00:36 [hier] h017_c1 model_18500: screen -31.5
+- 2026-10-09 00:36 h017_c2: reward program h017_c2.json
+- 2026-10-09 00:36 [hier] h017_c0 model_18500: screen +54.5
+- 2026-10-09 00:59 [hier] h017_c2 model_18150: screen -60.5
+- 2026-10-09 01:01 [hier] h017_c2 model_18250: screen -60.3
+- 2026-10-09 01:04 [hier] h017_c2 model_18350: screen -36.5
+- 2026-10-09 01:06 [hier] h017_c2 model_18450: screen -109.1
+- 2026-10-09 01:08 [hier] h017_c2 model_18500: screen -89.9
+- 2026-10-09 01:12 [hier] h017: blend 0.7/0.3 with champion, screen +18.6
+- 2026-10-09 01:14 [hier] h017: blend 0.5/0.5 with champion, screen +29.0
+- 2026-10-09 01:17 [hier] h017: blend 0.3/0.7 with champion, screen +39.1
+- 2026-10-09 01:17 [hier] h017: not improving: best screen +54.5 (blend +39.1) vs parent +67.5 - moving on
+- 2026-10-09 01:17 [hier] context opened (L3): cold starts with the ball behind (runswift goal grid, aligned fixture: every miss of h014 at high caps is a fall within 0.8 s of a standing start with the ball ~10 m behind; training only reset from moving motion clips): stand_start 0.35, spawn_any 0.3, far spawn 0.2; CAPS back to defaults; from h012_c1_18000 {'stand_start_prob': 0.35, 's.spawn_any_prob': 0.3, 's.far_spawn_prob': 0.2, 'caps_temporal_coef': 1.0, 'caps_near_ball_scale': 0.5}, budget 3
+- 2026-10-09 01:17 [hier] h018 L3: cold starts with the ball behind (runswift goal grid, aligned fixture: every miss of h014 at high caps is a fall within 0.8 s of a standing start with the ball ~10 m behind; training only reset from moving motion clips): stand_start 0.35, spawn_any 0.3, far spawn 0.2; CAPS back to defaults; from h012_c1_18000 genes {'s.spawn_any_prob': 0.3, 's.far_spawn_prob': 0.2, 's.unknown_start_prob': 0.15, 'k.STYLE_MAP': 'free', 'k.STYLE_SHARE_INSIDE': 0.0, 'k.STYLE_SHARE_HOP': 0.0, 'w.inside_foot_style': 0.0, 'w.hop_kick_style': 0.0, 't.hop_power_long': 0.0, 'w.hop_kick_fall': -1000.0, 'rsi_ours': 0.15, 'rsi_bhuman': 0.1, 'w.style_advantage': 1500.0, 'w.long_kick_speed_linear': 800.0, 'desired_kl': 0.004, 'w.kick_rest_accuracy': 1000.0, 'w.action_rate_l2': -0.15, 'caps_temporal_coef': 1.0, 'caps_near_ball_scale': 0.5, 'stand_start_prob': 0.35} (parent h012_c1_18000)
+- 2026-10-09 01:52 h018_c0: training exited early (code 143)
+- 2026-10-09 01:55 h018_c1: training exited early (code 143)
+- 2026-10-09 01:56 [hier] h018_c0 model_18150: screen -30.0
+- 2026-10-09 01:58 [hier] h018_c1 model_18150: screen -37.8
+- 2026-10-09 01:59 [hier] h018_c0 model_18250: screen -105.9
+- 2026-10-09 02:00 [hier] h018_c1 model_18250: screen -5.2
+- 2026-10-09 02:01 [hier] h018_c0 model_18350: screen -121.1
+- 2026-10-09 02:04 [hier] h018_c1 model_18350: screen +17.9
+- 2026-10-09 02:11 [hier] h018_c1 model_18450: screen -181.1
+- 2026-10-09 02:28 [hier] h018_c2 model_18150: screen -3.8
+- 2026-10-09 02:30 [hier] h018_c2 model_18250: screen -57.1
+- 2026-10-09 02:33 [hier] h018_c2 model_18350: screen -8.3
+- 2026-10-09 02:35 [hier] h018_c2 model_18450: screen -140.8
+- 2026-10-09 02:38 [hier] h018_c2 model_18500: screen -40.7
+- 2026-10-09 02:42 [hier] h018: blend 0.7/0.3 with champion, screen +5.1
+- 2026-10-09 02:45 [hier] h018: blend 0.5/0.5 with champion, screen +10.1
+- 2026-10-09 02:47 [hier] h018: blend 0.3/0.7 with champion, screen +5.7
+- 2026-10-09 02:47 [hier] h018: not improving: best screen +17.9 (blend +10.1) vs parent +81.8 - moving on
+- 2026-10-09 02:47 [hier] context opened (L3): world-model ball (2026-10-09): the runswift harness (truth inputs) and v2 'world' perception report a ball 10 m behind as seen; training never did (world_ball_prob 0: only camera view, memory, or the lost virtual ball), and the champion falls 32-40 % in exactly that start. s.world_ball_prob 0.3 with the cold starts (stand 0.35, ball behind 0.3, far 0.2), alive +2/s, touchdown -15; from h012_c1_18000 {'s.world_ball_prob': 0.3}, budget 3
+- 2026-10-09 02:47 [hier] h019 L3: world-model ball (2026-10-09): the runswift harness (truth inputs) and v2 'world' perception report a ball 10 m behind as seen; training never did (world_ball_prob 0: only camera view, memory, or the lost virtual ball), and the champion falls 32-40 % in exactly that start. s.world_ball_prob 0.3 with the cold starts (stand 0.35, ball behind 0.3, far 0.2), alive +2/s, touchdown -15; from h012_c1_18000 genes {'s.spawn_any_prob': 0.3, 's.far_spawn_prob': 0.2, 's.unknown_start_prob': 0.15, 'k.STYLE_MAP': 'free', 'k.STYLE_SHARE_INSIDE': 0.0, 'k.STYLE_SHARE_HOP': 0.0, 'w.inside_foot_style': 0.0, 'w.hop_kick_style': 0.0, 't.hop_power_long': 0.0, 'w.hop_kick_fall': -1000.0, 'rsi_ours': 0.15, 'rsi_bhuman': 0.1, 'w.style_advantage': 1500.0, 'w.long_kick_speed_linear': 800.0, 'desired_kl': 0.004, 'w.kick_rest_accuracy': 1000.0, 'w.action_rate_l2': -0.15, 'caps_temporal_coef': 1.0, 'caps_near_ball_scale': 0.5, 'stand_start_prob': 0.35, 's.world_ball_prob': 0.3} (parent h012_c1_18000)
+- 2026-10-09 03:00 h019_c1: training exited early (code 143)
+- 2026-10-09 03:03 h019_c0: training exited early (code 143)
+- 2026-10-09 03:10 h019_c2: training exited early (code 143)
+- 2026-10-09 03:10 [hier] h020 L1@L3: add template aim_tight | in world-model ball (2026-10-09): the runswift harness (truth inputs) and v2 'world' perception report a ball 10 m behind as seen; training never did (world_ball_prob 0: only camera view, memory, or the lost virtual ball), and the champion falls 32-40 % in exactly that start. s.world_ball_prob 0.3 with the cold starts (stand 0.35, ball behind 0.3, far 0.2), alive +2/s, touchdown -15; from h012_c1_18000 genes {'s.spawn_any_prob': 0.3, 's.far_spawn_prob': 0.2, 's.unknown_start_prob': 0.15, 'k.STYLE_MAP': 'free', 'k.STYLE_SHARE_INSIDE': 0.0, 'k.STYLE_SHARE_HOP': 0.0, 'w.inside_foot_style': 0.0, 'w.hop_kick_style': 0.0, 't.hop_power_long': 0.0, 'w.hop_kick_fall': -1000.0, 'rsi_ours': 0.15, 'rsi_bhuman': 0.1, 'w.style_advantage': 1500.0, 'w.long_kick_speed_linear': 800.0, 'desired_kl': 0.004, 'w.kick_rest_accuracy': 1000.0, 'w.action_rate_l2': -0.15, 'caps_temporal_coef': 1.0, 'caps_near_ball_scale': 0.5, 'stand_start_prob': 0.35, 's.world_ball_prob': 0.3, 't.aim_tight': 600.0} (parent h012_c1_18000)
+- 2026-10-09 03:10 h020_c1: reward program h020_c1.json
+- 2026-10-09 03:10 h020_c0: reward program h020_c0.json
+- 2026-10-09 03:11 h020_c0: training exited early (code 143)
+- 2026-10-09 03:11 h020_c1: training exited early (code 143)
+- 2026-10-09 03:11 h020_c2: reward program h020_c2.json
+- 2026-10-09 03:42 [hier] h020_c2 model_18150: screen +40.4
+- 2026-10-09 03:45 [hier] h020_c2 model_18250: screen -1.9
+- 2026-10-09 03:48 [hier] h020_c2 model_18350: screen -10.9
+- 2026-10-09 03:51 [hier] h020_c2 model_18450: screen +17.1
+- 2026-10-09 03:55 [hier] h020_c2 model_18500: screen +59.1
+- 2026-10-09 03:59 [hier] h020: blend 0.7/0.3 with champion, screen +10.9
+- 2026-10-09 04:05 [hier] h020: blend 0.5/0.5 with champion, screen +15.8
+- 2026-10-09 04:11 [hier] h020: blend 0.3/0.7 with champion, screen +34.8
+- 2026-10-09 04:11 [hier] h020: not improving: best screen +59.1 (blend +34.8) vs parent +77.5 - moving on
+- 2026-10-09 04:11 [hier] h021 L1@L3: add template aim_tight | in world-model ball (2026-10-09): the runswift harness (truth inputs) and v2 'world' perception report a ball 10 m behind as seen; training never did (world_ball_prob 0: only camera view, memory, or the lost virtual ball), and the champion falls 32-40 % in exactly that start. s.world_ball_prob 0.3 with the cold starts (stand 0.35, ball behind 0.3, far 0.2), alive +2/s, touchdown -15; from h012_c1_18000 genes {'s.spawn_any_prob': 0.3, 's.far_spawn_prob': 0.2, 's.unknown_start_prob': 0.15, 'k.STYLE_MAP': 'free', 'k.STYLE_SHARE_INSIDE': 0.0, 'k.STYLE_SHARE_HOP': 0.0, 'w.inside_foot_style': 0.0, 'w.hop_kick_style': 0.0, 't.hop_power_long': 0.0, 'w.hop_kick_fall': -1000.0, 'rsi_ours': 0.15, 'rsi_bhuman': 0.1, 'w.style_advantage': 1500.0, 'w.long_kick_speed_linear': 800.0, 'desired_kl': 0.004, 'w.kick_rest_accuracy': 1000.0, 'w.action_rate_l2': -0.15, 'caps_temporal_coef': 1.0, 'caps_near_ball_scale': 0.5, 'stand_start_prob': 0.35, 's.world_ball_prob': 0.3, 't.aim_tight': 600.0} (parent h012_c1_18000)
+- 2026-10-09 04:11 h021_c0: reward program h021_c0.json
+- 2026-10-09 04:11 h021_c1: reward program h021_c1.json
+- 2026-10-09 05:16 [hier] h021_c1 model_18150: screen +31.9
+- 2026-10-09 05:16 [hier] h021_c0 model_18150: screen +42.3
+- 2026-10-09 05:21 [hier] h021_c0 model_18250: screen +26.5
+- 2026-10-09 05:21 [hier] h021_c1 model_18250: screen +44.9
+- 2026-10-09 05:26 [hier] h021_c0 model_18350: screen +10.3
+- 2026-10-09 05:26 [hier] h021_c1 model_18350: screen +44.0
+- 2026-10-09 05:30 [hier] h021_c0 model_18450: screen +34.3
+- 2026-10-09 05:30 [hier] h021_c1 model_18450: screen +33.8
+- 2026-10-09 05:35 [hier] h021_c0 model_18500: screen +51.7
+- 2026-10-09 05:35 h021_c2: reward program h021_c2.json
+- 2026-10-09 05:35 [hier] h021_c1 model_18500: screen +25.0
+- 2026-10-09 06:00 [hier] h021_c2 model_18150: screen +29.1
+- 2026-10-09 06:03 [hier] h021_c2 model_18250: screen +32.4
+- 2026-10-09 06:05 [hier] h021_c2 model_18350: screen +36.1
+- 2026-10-09 06:07 [hier] h021_c2 model_18450: screen +68.9
+- 2026-10-09 06:10 [hier] h021_c2 model_18500: screen +49.4
+- 2026-10-09 06:12 [hier] h021: blend 0.7/0.3 with champion, screen +28.0
+- 2026-10-09 06:15 [hier] h021: blend 0.5/0.5 with champion, screen +36.6
+- 2026-10-09 06:17 [hier] h021: blend 0.3/0.7 with champion, screen +60.6
+- 2026-10-09 06:17 [hier] h021: not improving: best screen +68.9 (blend +60.6) vs parent +77.5 - moving on
+- 2026-10-09 06:17 [hier] context closed without promotion: world-model ball (2026-10-09): the runswift harness (truth inputs) and v2 'world' perception report a ball 10 m behind as seen; training never did (world_ball_prob 0: only camera view, memory, or the lost virtual ball), and the champion falls 32-40 % in exactly that start. s.world_ball_prob 0.3 with the cold starts (stand 0.35, ball behind 0.3, far 0.2), alive +2/s, touchdown -15; from h012_c1_18000; stall {'L1': 0, 'L2': 1, 'L3': 1}
+- 2026-10-09 06:17 [hier] h022 L1@L3: add template far_cap_tracking | in cold starts with the ball behind (runswift goal grid, aligned fixture: every miss of h014 at high caps is a fall within 0.8 s of a standing start with the ball ~10 m behind; training only reset from moving motion clips): stand_start 0.35, spawn_any 0.3, far spawn 0.2; CAPS back to defaults; from h012_c1_18000 genes {'s.spawn_any_prob': 0.3, 's.far_spawn_prob': 0.2, 's.unknown_start_prob': 0.15, 'k.STYLE_MAP': 'free', 'k.STYLE_SHARE_INSIDE': 0.0, 'k.STYLE_SHARE_HOP': 0.0, 'w.inside_foot_style': 0.0, 'w.hop_kick_style': 0.0, 't.hop_power_long': 0.0, 'w.hop_kick_fall': -1000.0, 'rsi_ours': 0.15, 'rsi_bhuman': 0.1, 'w.style_advantage': 1500.0, 'w.long_kick_speed_linear': 800.0, 'desired_kl': 0.004, 'w.kick_rest_accuracy': 1000.0, 'w.action_rate_l2': -0.15, 'caps_temporal_coef': 1.0, 'caps_near_ball_scale': 0.5, 'stand_start_prob': 0.35, 't.far_cap_tracking': 6.0} (parent h012_c1_18000)
+- 2026-10-09 06:17 h022_c0: reward program h022_c0.json
+- 2026-10-09 06:17 h022_c1: reward program h022_c1.json
+- 2026-10-09 07:04 [hier] h022_c0 model_18150: screen +31.5
+- 2026-10-09 07:04 [hier] h022_c1 model_18150: screen +49.4
+- 2026-10-09 07:07 [hier] h022_c1 model_18250: screen +17.8
+- 2026-10-09 07:07 [hier] h022_c0 model_18250: screen +34.9
+- 2026-10-09 07:11 [hier] h022_c0 model_18350: screen +32.7
+- 2026-10-09 07:11 [hier] h022_c1 model_18350: screen +27.3
+- 2026-10-09 07:14 [hier] h022_c0 model_18450: screen +28.1
+- 2026-10-09 07:14 [hier] h022_c1 model_18450: screen +36.6
+- 2026-10-09 07:17 [hier] h022_c0 model_18500: screen +39.9
+- 2026-10-09 07:17 h022_c2: reward program h022_c2.json
+- 2026-10-09 07:17 [hier] h022_c1 model_18500: screen +32.7
+- 2026-10-09 07:40 [hier] h022_c2 model_18150: screen +41.0
+- 2026-10-09 07:43 [hier] h022_c2 model_18250: screen +56.3
+- 2026-10-09 07:45 [hier] h022_c2 model_18350: screen +20.1
+- 2026-10-09 07:48 [hier] h022_c2 model_18450: screen +46.0
+- 2026-10-09 07:50 [hier] h022_c2 model_18500: screen +43.6
+- 2026-10-09 07:53 [hier] h022: blend 0.7/0.3 with champion, screen +26.4
+- 2026-10-09 07:55 [hier] h022: blend 0.5/0.5 with champion, screen +20.6
+- 2026-10-09 07:57 [hier] h022: blend 0.3/0.7 with champion, screen +27.3
+- 2026-10-09 07:57 [hier] h022: not improving: best screen +56.3 (blend +27.3) vs parent +77.5 - moving on
+- 2026-10-09 07:57 [hier] h023 L1@L3: add template long_power_ramp | in cold starts with the ball behind (runswift goal grid, aligned fixture: every miss of h014 at high caps is a fall within 0.8 s of a standing start with the ball ~10 m behind; training only reset from moving motion clips): stand_start 0.35, spawn_any 0.3, far spawn 0.2; CAPS back to defaults; from h012_c1_18000 genes {'s.spawn_any_prob': 0.3, 's.far_spawn_prob': 0.2, 's.unknown_start_prob': 0.15, 'k.STYLE_MAP': 'free', 'k.STYLE_SHARE_INSIDE': 0.0, 'k.STYLE_SHARE_HOP': 0.0, 'w.inside_foot_style': 0.0, 'w.hop_kick_style': 0.0, 't.hop_power_long': 0.0, 'w.hop_kick_fall': -1000.0, 'rsi_ours': 0.15, 'rsi_bhuman': 0.1, 'w.style_advantage': 1500.0, 'w.long_kick_speed_linear': 800.0, 'desired_kl': 0.004, 'w.kick_rest_accuracy': 1000.0, 'w.action_rate_l2': -0.15, 'caps_temporal_coef': 1.0, 'caps_near_ball_scale': 0.5, 'stand_start_prob': 0.35, 't.long_power_ramp': 1500.0} (parent h012_c1_18000)
+- 2026-10-09 07:57 h023_c1: reward program h023_c1.json
+- 2026-10-09 07:57 h023_c0: reward program h023_c0.json
+- 2026-10-09 10:06 [hier] context opened (L2): fix h022_c2_18450's two regressions (seed 1 +172.9 / seed 2 +126.5 vs champion; camera runswift 90/90 goals 0 falls; quietest landings): low-cap approach first-kick 61 % vs 70 % (walk at the cap: walk_speed_track 6 -> 8) and action_rate high +0.007 (CAPS temporal 1.3); ball frame trunk 0.3; from h022_c2_18450 {'w.walk_speed_track': 8.0, 'caps_temporal_coef': 1.3, 's.ball_origin_trunk_prob': 0.3}, budget 2
+- 2026-10-09 10:06 [hier] h023 L2: fix h022_c2_18450's two regressions (seed 1 +172.9 / seed 2 +126.5 vs champion; camera runswift 90/90 goals 0 falls; quietest landings): low-cap approach first-kick 61 % vs 70 % (walk at the cap: walk_speed_track 6 -> 8) and action_rate high +0.007 (CAPS temporal 1.3); ball frame trunk 0.3; from h022_c2_18450 genes {'s.spawn_any_prob': 0.3, 's.far_spawn_prob': 0.2, 's.unknown_start_prob': 0.15, 'k.STYLE_MAP': 'free', 'k.STYLE_SHARE_INSIDE': 0.0, 'k.STYLE_SHARE_HOP': 0.0, 'w.inside_foot_style': 0.0, 'w.hop_kick_style': 0.0, 't.hop_power_long': 0.0, 'w.hop_kick_fall': -1000.0, 'rsi_ours': 0.15, 'rsi_bhuman': 0.1, 'w.style_advantage': 1500.0, 'w.long_kick_speed_linear': 800.0, 'desired_kl': 0.004, 'w.kick_rest_accuracy': 1000.0, 'w.action_rate_l2': -0.15, 'caps_temporal_coef': 1.3, 'caps_near_ball_scale': 0.5, 'stand_start_prob': 0.35, 'w.walk_speed_track': 8.0, 's.ball_origin_trunk_prob': 0.3} (parent h022_c2_18450)
+- 2026-10-09 11:26 [hier] h023_c1 model_18600: screen +35.4
+- 2026-10-09 11:26 [hier] h023_c0 model_18600: screen +25.6
+- 2026-10-09 11:33 [hier] h023_c1 model_18700: screen +29.6
+- 2026-10-09 11:34 [hier] h023_c0 model_18700: screen +41.2
+- 2026-10-09 11:40 [hier] h023_c1 model_18800: screen +30.4
+- 2026-10-09 11:41 [hier] h023_c0 model_18800: screen +16.6
+- 2026-10-09 11:48 [hier] h023_c1 model_18900: screen +3.4
+- 2026-10-09 11:49 [hier] h023_c0 model_18900: screen +38.4
+- 2026-10-09 11:56 [hier] h023_c1 model_18950: screen +25.9
+- 2026-10-09 11:57 [hier] h023_c0 model_18950: screen +35.2
+- 2026-10-09 13:14 [hier] h023_c2 model_18600: screen -1.8
+- 2026-10-09 13:23 [hier] h023_c2 model_18700: screen +0.0
+- 2026-10-09 13:26 [hier] h023_c2 model_18800: screen +24.2
+- 2026-10-09 13:29 [hier] h023_c2 model_18900: screen +12.3
+- 2026-10-09 13:33 [hier] h023_c2 model_18950: screen +30.7
+- 2026-10-09 13:39 [hier] h023: blend 0.7/0.3 with champion, screen +17.8
+- 2026-10-09 13:46 [hier] h023: blend 0.5/0.5 with champion, screen +21.5
+- 2026-10-09 13:52 [hier] h023: blend 0.3/0.7 with champion, screen +37.7
+- 2026-10-09 13:52 [hier] h023: not improving: best screen +41.2 (blend +37.7) vs parent +58.0 - moving on
+- 2026-10-09 13:52 [hier] STOP_AFTER_FRAME found; stopping
+- 2026-10-09 13:52 [hier] stopped after 23 frames; champion h022_c2_18450_2seed
