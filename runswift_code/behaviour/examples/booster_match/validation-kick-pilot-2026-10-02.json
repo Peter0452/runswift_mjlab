@@ -1,0 +1,533 @@
+{
+  "date": "2026-10-02",
+  "host": "marvin",
+  "container": "runswift-world-model-sim",
+  "image_id": "sha256:cf69bc9d2baafa216d55a9e2f62781329a0dfcccae42ae58bfd3ac1000cdde9c",
+  "sdk_version": "1.5.6",
+  "scene": "mjcf/football_pitch_4_K1.xml",
+  "scene_revision": "3ac43631993a4a8094c36b27c76c6c541b8addcab34236767440f8b74e88af22",
+  "base_commit": "7bb1af9f2b1cb00e3a8bbf8e9fa84c07d876959c",
+  "inputs": "simulator ground truth; scripted playing permission",
+  "primary_series": "kick-pilot-range-05",
+  "measured_script_sha256": {
+    "kick_pilot.py": "2b93ce8e2d04bfe1419a11e4f828ae995d8f0f3f81b6ab245cf5f7c7fff3ae5e",
+    "run_kick_pilot.py": "93d96f505287caf07972f509a5ce3c5e03d6a0ca1a0a7590aecb7ca9ff84631b"
+  },
+  "analysis_note": "Reanalysed original traces with stricter fresh, closely spaced settling evidence. Post-run changes add analysis fields, failure handling and documentation; activation/departure settings are unchanged.",
+  "settings": {
+    "ball_xyz_m": [
+      -4,
+      0,
+      0.11
+    ],
+    "robot_xy_yaw": [
+      -4.65,
+      0,
+      0
+    ],
+    "target_xy_m": [
+      7,
+      0
+    ],
+    "helper_xy_m": [
+      -6,
+      6
+    ],
+    "input_hz": 10,
+    "world_timer_hz": 50,
+    "requested_pilot_hz": 20,
+    "snapshot_state_limit_ms": 150,
+    "command_limit_ms": 250,
+    "observation_limit_ms": 350,
+    "kick_timeout_s": 12,
+    "departure_displacement_m": 0.25,
+    "post_departure_s": 0.35,
+    "post_stop_observation_s": 8
+  },
+  "limitations": [
+    "No direct contact impulses or strike-count signal; observed displacement is only an approximate shot measurement.",
+    "No natural SDK completion observed. Completion probes can chase and strike again while remaining in phase 1.",
+    "Timing-related stops remain in the results. Power/range/accuracy calibration and reliable operation are not established.",
+    "No camera inputs, goal adjudication, mirrored-goal runs, video recording or physical robot test."
+  ],
+  "series": [
+    {
+      "directory": "/home/oliver/runswift-simulation/booster-1.10.5/kick-pilot-probe-02",
+      "mode": "completion",
+      "input_hz": 20,
+      "trials": [
+        {
+          "trial": "power-1-repeat-1",
+          "power": 1.0,
+          "trace_sha256": "11d0c030f2952a60478aff5f48fe39b22ca8f3e955ad48803ee8d5437276e2f8",
+          "stop_reason": "world_or_skill:stale_snapshot",
+          "controller_stopped": true,
+          "error": null,
+          "range_usable": false,
+          "max_displacement_m": 0.0,
+          "sdk_completed": false,
+          "phase_sequence": [
+            0
+          ]
+        }
+      ],
+      "outcomes": {
+        "world_or_skill:stale_snapshot": 1
+      }
+    },
+    {
+      "directory": "/home/oliver/runswift-simulation/booster-1.10.5/kick-pilot-series-03",
+      "mode": "completion",
+      "input_hz": 20,
+      "trials": [
+        {
+          "trial": "power-1-repeat-1",
+          "power": 1.0,
+          "trace_sha256": "569abf6acb2d2069756420947fb7f5ad543e44f38a567e533127818df78dec4b",
+          "stop_reason": "actuator_fault:match_intent_expired",
+          "controller_stopped": true,
+          "error": null,
+          "range_usable": false,
+          "max_displacement_m": 3.0385120170315996,
+          "sdk_completed": false,
+          "phase_sequence": [
+            0,
+            1,
+            0
+          ]
+        },
+        {
+          "trial": "power-1.5-repeat-1",
+          "power": 1.5,
+          "trace_sha256": "5e68d4fe9bb5c1c19f551e3ff1b9cf6c30cd88cc3a74c6854f567d8a67066181",
+          "stop_reason": "world_or_skill:stale_snapshot",
+          "controller_stopped": true,
+          "error": null,
+          "range_usable": false,
+          "max_displacement_m": 9.034844251481848,
+          "sdk_completed": false,
+          "phase_sequence": [
+            0,
+            1,
+            0
+          ]
+        },
+        {
+          "trial": "power-2-repeat-1",
+          "power": 2.0,
+          "trace_sha256": "5a143271e364112357e84e3842af02b6f4d06faa8f09c4bda73386d830a34763",
+          "stop_reason": "world_or_skill:stale_snapshot",
+          "controller_stopped": true,
+          "error": null,
+          "range_usable": false,
+          "max_displacement_m": 0.0,
+          "sdk_completed": false,
+          "phase_sequence": [
+            0,
+            1,
+            0
+          ]
+        },
+        {
+          "trial": "power-1-repeat-2",
+          "power": 1.0,
+          "trace_sha256": "235fdf6b2d373c4033daee471e95e4364ba30db1061ac27b23d142b0a1e27875",
+          "stop_reason": "world_or_skill:stale_snapshot",
+          "controller_stopped": true,
+          "error": null,
+          "range_usable": false,
+          "max_displacement_m": 0.0,
+          "sdk_completed": false,
+          "phase_sequence": [
+            0
+          ]
+        },
+        {
+          "trial": "power-1.5-repeat-2",
+          "power": 1.5,
+          "trace_sha256": "ab7904a15d023fd31b65d319668c1d865de5e68534095b3a63e6ca7135b8be4c",
+          "stop_reason": "world_or_skill:stale_snapshot",
+          "controller_stopped": true,
+          "error": null,
+          "range_usable": false,
+          "max_displacement_m": 0.0,
+          "sdk_completed": false,
+          "phase_sequence": [
+            0
+          ]
+        }
+      ],
+      "outcomes": {
+        "actuator_fault:match_intent_expired": 1,
+        "world_or_skill:stale_snapshot": 4
+      },
+      "interruption": "Stopped after repeated-strike behaviour was identified. Five trial summaries retained; the sixth empty setup trace is not a measured trial."
+    },
+    {
+      "directory": "/home/oliver/runswift-simulation/booster-1.10.5/kick-pilot-range-04",
+      "mode": "range",
+      "input_hz": 20,
+      "trials": [
+        {
+          "trial": "power-1-repeat-1",
+          "power": 1.0,
+          "trace_sha256": "0da4056b043dbde9522bee0144412f4bd8c9e5df7edb24f087f67c181aeb0ef7",
+          "stop_reason": "world_or_skill:stale_snapshot",
+          "controller_stopped": true,
+          "error": null,
+          "range_usable": false,
+          "max_displacement_m": 0.013931811306902577,
+          "sdk_completed": false,
+          "phase_sequence": [
+            0,
+            1,
+            0
+          ]
+        },
+        {
+          "trial": "power-1.5-repeat-1",
+          "power": 1.5,
+          "trace_sha256": "b651ec40c34ac4aea1520f14af60846d0cf5abfcc62922c95f83211257264e8f",
+          "stop_reason": "world_or_skill:stale_snapshot",
+          "controller_stopped": true,
+          "error": null,
+          "range_usable": false,
+          "max_displacement_m": 0.0,
+          "sdk_completed": false,
+          "phase_sequence": [
+            0,
+            1,
+            0
+          ]
+        },
+        {
+          "trial": "power-2-repeat-1",
+          "power": 2.0,
+          "trace_sha256": "3a96bd3e19f5d89e97c4780fe3e11014b6aa8ed1e30919fcaa3423f0a498a528",
+          "stop_reason": "world_or_skill:stale_snapshot",
+          "controller_stopped": true,
+          "error": null,
+          "range_usable": false,
+          "max_displacement_m": 0.0,
+          "sdk_completed": false,
+          "phase_sequence": [
+            0
+          ]
+        },
+        {
+          "trial": "power-1-repeat-2",
+          "power": 1.0,
+          "trace_sha256": "917e1696902856db8fea4d4e078966aeb5c05cfabe7dfa1f88a79fd684ebf27e",
+          "stop_reason": "ball_departed",
+          "controller_stopped": true,
+          "error": null,
+          "range_usable": true,
+          "max_displacement_m": 1.372420609867214,
+          "sdk_completed": false,
+          "phase_sequence": [
+            0,
+            1,
+            0
+          ]
+        },
+        {
+          "trial": "power-1.5-repeat-2",
+          "power": 1.5,
+          "trace_sha256": "28bbdff4e412255def7e18fbd4bd94dd095e130346a4e5f9f03af8092dab5e49",
+          "stop_reason": "actuator_fault:match_intent_expired",
+          "controller_stopped": true,
+          "error": null,
+          "range_usable": false,
+          "max_displacement_m": 0.0,
+          "sdk_completed": false,
+          "phase_sequence": [
+            0
+          ]
+        },
+        {
+          "trial": "power-2-repeat-2",
+          "power": 2.0,
+          "trace_sha256": "154323c21fd9d3105ef4a0a56cf0954e6265ec5df1e88178b06c0a92a99db2c3",
+          "stop_reason": "world_or_skill:stale_snapshot",
+          "controller_stopped": true,
+          "error": null,
+          "range_usable": false,
+          "max_displacement_m": 0.0,
+          "sdk_completed": false,
+          "phase_sequence": [
+            0
+          ]
+        }
+      ],
+      "outcomes": {
+        "world_or_skill:stale_snapshot": 4,
+        "ball_departed": 1,
+        "actuator_fault:match_intent_expired": 1
+      }
+    },
+    {
+      "directory": "/home/oliver/runswift-simulation/booster-1.10.5/kick-pilot-range-05",
+      "mode": "range",
+      "input_hz": 10,
+      "trials": [
+        {
+          "trial": "power-1-repeat-1",
+          "power": 1.0,
+          "trace_sha256": "866b37cf64b21a59b6181cf943c9094750fc90ae08a8f6ccd9a55f3d2113204e",
+          "stop_reason": "ball_departed",
+          "controller_stopped": true,
+          "error": null,
+          "range_usable": true,
+          "ball_samples": 210,
+          "ball_moved": true,
+          "first_motion_wall_ns": 1457702449859012,
+          "first_motion_after_request_s": 3.299114715,
+          "stop_requested_wall_ns": 1457703036072543,
+          "max_displacement_m": 1.1710240827415848,
+          "max_forward_m": 1.1710089795535676,
+          "max_lateral_m": 0.03505868468002692,
+          "max_ball_height_m": 0.11037229415747567,
+          "final_ball": [
+            -2.8289910204464324,
+            -0.005947450351392768,
+            0.11000801594467534
+          ],
+          "range_settled": true,
+          "field_boundary_reached": false,
+          "sdk_completed": false,
+          "phase_transitions": [
+            {
+              "phase": 0,
+              "receipt_ns": 1457698079846629
+            },
+            {
+              "phase": 1,
+              "receipt_ns": 1457701138314005
+            },
+            {
+              "phase": 0,
+              "receipt_ns": 1457703207163783
+            }
+          ],
+          "contact_confirmed": false,
+          "controller_exit_after_stop_ms": 197.162843
+        },
+        {
+          "trial": "power-1.5-repeat-1",
+          "power": 1.5,
+          "trace_sha256": "c5651a0691bf84a0f99b5485c70c3e7fc61f2c55b502c3bc0e4a60a93cb1a17d",
+          "stop_reason": "ball_departed",
+          "controller_stopped": true,
+          "error": null,
+          "range_usable": true,
+          "ball_samples": 211,
+          "ball_moved": true,
+          "first_motion_wall_ns": 1457719922680289,
+          "first_motion_after_request_s": 4.377235019,
+          "stop_requested_wall_ns": 1457720442453083,
+          "max_displacement_m": 4.67253504755303,
+          "max_forward_m": 4.500163113859708,
+          "max_lateral_m": 1.257424239971495,
+          "max_ball_height_m": 0.11238026176752175,
+          "final_ball": [
+            0.500163113859708,
+            1.257424239971495,
+            0.1099384018749534
+          ],
+          "range_settled": true,
+          "field_boundary_reached": false,
+          "sdk_completed": false,
+          "phase_transitions": [
+            {
+              "phase": 0,
+              "receipt_ns": 1457714533790483
+            },
+            {
+              "phase": 1,
+              "receipt_ns": 1457717532563746
+            },
+            {
+              "phase": 0,
+              "receipt_ns": 1457720560682979
+            }
+          ],
+          "contact_confirmed": false,
+          "controller_exit_after_stop_ms": 183.851512
+        },
+        {
+          "trial": "power-2-repeat-1",
+          "power": 2.0,
+          "trace_sha256": "44b6beb99c9a1205b25e1f3ea17ac7542842f6e1dbd6c2d978ec41d3c49ff9b9",
+          "stop_reason": "ball_departed",
+          "controller_stopped": true,
+          "error": null,
+          "range_usable": true,
+          "ball_samples": 233,
+          "ball_moved": true,
+          "first_motion_wall_ns": 1457737236695434,
+          "first_motion_after_request_s": 4.326149445,
+          "stop_requested_wall_ns": 1457737695713421,
+          "max_displacement_m": 6.304074879969487,
+          "max_forward_m": 5.81663676592709,
+          "max_lateral_m": 2.4306576940259492,
+          "max_ball_height_m": 0.11203907592847574,
+          "final_ball": [
+            1.8166367659270892,
+            2.4306576940259492,
+            0.10985479205198007
+          ],
+          "range_settled": true,
+          "field_boundary_reached": false,
+          "sdk_completed": false,
+          "phase_transitions": [
+            {
+              "phase": 0,
+              "receipt_ns": 1457731878029910
+            },
+            {
+              "phase": 1,
+              "receipt_ns": 1457734888134796
+            },
+            {
+              "phase": 0,
+              "receipt_ns": 1457737944010712
+            }
+          ],
+          "contact_confirmed": false,
+          "controller_exit_after_stop_ms": 312.753748
+        },
+        {
+          "trial": "power-1-repeat-2",
+          "power": 1.0,
+          "trace_sha256": "1e7d87d7baa3f06cd215a1c103077c818dbbc9ebb73601cbbea58f5ba08c09f8",
+          "stop_reason": "ball_departed",
+          "controller_stopped": true,
+          "error": null,
+          "range_usable": true,
+          "ball_samples": 212,
+          "ball_moved": true,
+          "first_motion_wall_ns": 1457753787522351,
+          "first_motion_after_request_s": 3.135744546,
+          "stop_requested_wall_ns": 1457754480416198,
+          "max_displacement_m": 1.483863556187942,
+          "max_forward_m": 1.4343044863930503,
+          "max_lateral_m": 0.38029159035599747,
+          "max_ball_height_m": 0.11262453916637506,
+          "final_ball": [
+            -2.5656955136069497,
+            -0.38029159035599747,
+            0.1098683220039614
+          ],
+          "range_settled": true,
+          "field_boundary_reached": false,
+          "sdk_completed": false,
+          "phase_transitions": [
+            {
+              "phase": 0,
+              "receipt_ns": 1457749563347790
+            },
+            {
+              "phase": 1,
+              "receipt_ns": 1457752573029163
+            },
+            {
+              "phase": 0,
+              "receipt_ns": 1457754573153321
+            }
+          ],
+          "contact_confirmed": false,
+          "controller_exit_after_stop_ms": 171.164307
+        },
+        {
+          "trial": "power-1.5-repeat-2",
+          "power": 1.5,
+          "trace_sha256": "e14cddd0bac081e735fde9eeb7311e782900ae4e00c3d73848f3891859ec51b2",
+          "stop_reason": "world_or_skill:stale_snapshot",
+          "controller_stopped": true,
+          "error": null,
+          "range_usable": false,
+          "ball_samples": 197,
+          "ball_moved": false,
+          "first_motion_wall_ns": null,
+          "first_motion_after_request_s": null,
+          "stop_requested_wall_ns": 1457770054882639,
+          "max_displacement_m": 0.0,
+          "max_forward_m": 0.0,
+          "max_lateral_m": 0.0,
+          "max_ball_height_m": 0.11000801594467537,
+          "final_ball": [
+            -4.0,
+            0.0,
+            0.10985827518638433
+          ],
+          "range_settled": false,
+          "field_boundary_reached": false,
+          "sdk_completed": false,
+          "phase_transitions": [
+            {
+              "phase": 0,
+              "receipt_ns": 1457766381632939
+            },
+            {
+              "phase": 1,
+              "receipt_ns": 1457769385139790
+            },
+            {
+              "phase": 0,
+              "receipt_ns": 1457770387333653
+            }
+          ],
+          "contact_confirmed": false,
+          "controller_exit_after_stop_ms": 413.993508
+        },
+        {
+          "trial": "power-2-repeat-2",
+          "power": 2.0,
+          "trace_sha256": "54c08753d88e5b5f003dfba5365cadbec09a8d69b63c9de3d7605a2685820f0c",
+          "stop_reason": "world_or_skill:stale_snapshot",
+          "controller_stopped": true,
+          "error": null,
+          "range_usable": false,
+          "ball_samples": 205,
+          "ball_moved": true,
+          "first_motion_wall_ns": 1457787384338756,
+          "first_motion_after_request_s": 4.2990615,
+          "stop_requested_wall_ns": 1457787094308135,
+          "max_displacement_m": 2.7972566507443055,
+          "max_forward_m": 2.121010770495345,
+          "max_lateral_m": 1.8237209439977358,
+          "max_ball_height_m": 0.11002022443216745,
+          "final_ball": [
+            -1.8789892295046549,
+            -1.8237209439977358,
+            0.10994635062175352
+          ],
+          "range_settled": true,
+          "field_boundary_reached": false,
+          "sdk_completed": false,
+          "phase_transitions": [
+            {
+              "phase": 0,
+              "receipt_ns": 1457781954290529
+            },
+            {
+              "phase": 1,
+              "receipt_ns": 1457784957941834
+            },
+            {
+              "phase": 0,
+              "receipt_ns": 1457787470744044
+            }
+          ],
+          "contact_confirmed": false,
+          "controller_exit_after_stop_ms": 474.417786
+        }
+      ],
+      "outcomes": {
+        "ball_departed": 4,
+        "world_or_skill:stale_snapshot": 2
+      }
+    }
+  ],
+  "container_stopped_after_pilot": true
+}

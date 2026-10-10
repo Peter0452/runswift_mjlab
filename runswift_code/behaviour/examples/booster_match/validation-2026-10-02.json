@@ -1,0 +1,115 @@
+{
+  "date": "2026-10-02",
+  "host": "marvin",
+  "container": "runswift-world-model-sim",
+  "image_id": "sha256:cf69bc9d2baafa216d55a9e2f62781329a0dfcccae42ae58bfd3ac1000cdde9c",
+  "sdk_version": "1.5.6",
+  "scene": "mjcf/football_pitch_4_K1.xml",
+  "scene_revision": "3ac43631993a4a8094c36b27c76c6c541b8addcab34236767440f8b74e88af22",
+  "trace_directory": "/home/oliver/runswift-simulation/booster-1.10.5/match-k1-validation-10",
+  "trace_sha256": {
+    "sequence.jsonl": "b7ae558386617d8264b1e3d367baeb3ba02e34e99c37b6a09837ffbe08ba5525",
+    "cancel_kick.jsonl": "111640718722ad3d20703413563ab814651af06dd80899dcaaacde2fc57c73a1",
+    "command_expiry.jsonl": "2c37ae2d081d41863acff2081b588d5c8df7a85590640a38dfeaed57554b7561",
+    "observation_expiry.jsonl": "0ebb0b0772b4a0775a891806278bf57c8a9543dd6cdbb3d20ac479aeadc700ce",
+    "referee_stop.jsonl": "62613ec3a37439a5d272035382dd48479e43a0e0b82fc7fc0200cab54928864b"
+  },
+  "limitations": [
+    "Ground-truth inputs and scripted referee; no live camera or physical robot.",
+    "SDK controller exit timing includes the delay of its asynchronous status stream.",
+    "Sequence caused ball displacement; the runner cancelled on the ball leaving its window, so no SDK completed outcome was reported.",
+    "Earlier trials surfaced stale snapshots, a short command deadline and head RPC refusals; these stopped motion. Final results do not establish repeated-run reliability."
+  ],
+  "results": [
+    {
+      "scenario": "sequence",
+      "profile": "booster-studio-1.10.5:K1-ground-truth",
+      "referee": "scripted",
+      "inputs": "ground_truth",
+      "travel_m": 1.5406585996338917,
+      "head_yaw_range_rad": 0.8053033081814647,
+      "ball_displacement_m": 1.7019329320334027,
+      "sdk_kick_entered": true,
+      "sdk_controller_exit_ms": 157.722526,
+      "settling_drift_m": 0.02195691195971339,
+      "outcomes": [
+        "failed",
+        "idle",
+        "running"
+      ],
+      "passed": true
+    },
+    {
+      "scenario": "cancel_kick",
+      "profile": "booster-studio-1.10.5:K1-ground-truth",
+      "referee": "scripted",
+      "inputs": "ground_truth",
+      "travel_m": 0.1974318367334276,
+      "head_yaw_range_rad": 0.01187836704775691,
+      "ball_displacement_m": 0.0,
+      "sdk_kick_entered": true,
+      "sdk_controller_exit_ms": 539.033446,
+      "settling_drift_m": 0.008174913626805703,
+      "outcomes": [
+        "failed",
+        "idle",
+        "running"
+      ],
+      "passed": true
+    },
+    {
+      "scenario": "command_expiry",
+      "profile": "booster-studio-1.10.5:K1-ground-truth",
+      "referee": "scripted",
+      "inputs": "ground_truth",
+      "travel_m": 0.2897437696901899,
+      "head_yaw_range_rad": 0.015551372664049268,
+      "ball_displacement_m": 0.0,
+      "sdk_kick_entered": true,
+      "sdk_controller_exit_ms": 348.867115,
+      "settling_drift_m": 0.06210610735991615,
+      "outcomes": [
+        "failed",
+        "idle",
+        "running"
+      ],
+      "passed": true
+    },
+    {
+      "scenario": "observation_expiry",
+      "profile": "booster-studio-1.10.5:K1-ground-truth",
+      "referee": "scripted",
+      "inputs": "ground_truth",
+      "travel_m": 0.3779860795825008,
+      "head_yaw_range_rad": 0.01732424832880497,
+      "ball_displacement_m": 0.0,
+      "sdk_kick_entered": true,
+      "sdk_controller_exit_ms": 128.950751,
+      "settling_drift_m": 0.1261326849465329,
+      "outcomes": [
+        "failed",
+        "idle",
+        "running"
+      ],
+      "passed": true
+    },
+    {
+      "scenario": "referee_stop",
+      "profile": "booster-studio-1.10.5:K1-ground-truth",
+      "referee": "scripted",
+      "inputs": "ground_truth",
+      "travel_m": 0.2852470105658526,
+      "head_yaw_range_rad": 0.014589737169444561,
+      "ball_displacement_m": 0.0,
+      "sdk_kick_entered": true,
+      "sdk_controller_exit_ms": 375.586253,
+      "settling_drift_m": 0.06312926229111045,
+      "outcomes": [
+        "failed",
+        "idle",
+        "running"
+      ],
+      "passed": true
+    }
+  ]
+}
