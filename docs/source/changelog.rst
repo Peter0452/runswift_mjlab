@@ -8,6 +8,13 @@ Upcoming version (not yet released)
 Added
 ^^^^^
 
+- Added a two-level striker (``Mjlab-Velocity-Striker-Controller-Booster-K1``):
+  a controller picks kick or walk, a direction and a range / speed every 0.2 s
+  and the frozen stage-3 kick and AMP walk 9950 skills run underneath. It is
+  trained by self-play against controller copies of itself (phase 1); the flat
+  self-play task, now aiming at lanes across the goal mouth and able to face
+  controller strikers (``controller_checkpoint``), fine-tunes the kick skill in
+  the game (phase 2). Runners can wrap the env themselves (``make_vecenv``).
 - Added 1v1 self-play on the stage-3 kick loop, striker against striker
   (``Mjlab-Velocity-Kick-SelfPlay-Amp-DA-Muon-Booster-K1``). Each episode has a
   field from 9 x 6 to 14 x 9 m with 2.4 m goals (bar 1.6 / 1.8 m); a goal

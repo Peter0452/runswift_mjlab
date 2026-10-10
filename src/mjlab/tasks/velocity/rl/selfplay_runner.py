@@ -90,18 +90,33 @@ class SelfPlayAmpOnPolicyRunner(VelocityAmpOnPolicyRunner):
     self._opponent().set_latest(self._actor_state())
 
   def _on_policy_update(self, it: int) -> None:
-    opponent = self._opponent()
-    state = self._actor_state()
-    opponent.set_latest(state)
-    interval = int(self.cfg.get("snapshot_interval", 0))
-    if interval <= 0 or (it + 1) % interval != 0:
-      return
-    name = f"iter_{it + 1}"
-    opponent.add_snapshot(state, name)
-    if self.logger.writer is not None and self.logger.log_dir is not None:
-      out = os.path.join(self.logger.log_dir, "opponents")
-      os.makedirs(out, exist_ok=True)
-      torch.save(
-        {"actor_state_dict": {k: v.cpu() for k, v in state.items()}},
-        os.path.join(out, f"{name}.pt"),
-      )
+    sync_opponent(
+      self._opponent(),
+      self._actor_state(),
+      it,
+      int(self.cfg.get("snapshot_interval", 0)),
+      self.logger.log_dir if self.logger.writer is not None else None,
+    )
+
+
+def sync_opponent(
+  opponent: OpponentPolicyAction,
+  state: dict[str, torch.Tensor],
+  it: int,
+  interval: int,
+  log_dir: str | None,
+) -> None:
+  """Mirror the learner into the opponent after update ``it``; every
+  ``interval`` iterations add a snapshot to the pool (and save it)."""
+  opponent.set_latest(state)
+  if interval <= 0 or (it + 1) % interval != 0:
+    return
+  name = f"iter_{it + 1}"
+  opponent.add_snapshot(state, name)
+  if log_dir is not None:
+    out = os.path.join(log_dir, "opponents")
+    os.makedirs(out, exist_ok=True)
+    torch.save(
+      {"actor_state_dict": {k: v.cpu() for k, v in state.items()}},
+      os.path.join(out, f"{name}.pt"),
+    )

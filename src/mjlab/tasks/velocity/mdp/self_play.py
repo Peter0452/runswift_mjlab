@@ -2,9 +2,10 @@
 
 A second K1 (``opponent``) shares the field and the ball. Each episode has a
 field of random size (9 x 6 up to 14 x 9 m) and heading around the spawned ball,
-with 2.4 m goal mouths: the learner attacks ``target_w`` (the centre of one
-goal, which the policy gets as its kick direction / range, as the behaviour
-would hand it) and defends ``own_goal_w``; the opponent the reverse. The whole
+with 2.4 m goal mouths: the learner attacks ``target_w`` (an aim point on one
+goal line, which the policy gets as its kick direction / range, as the
+behaviour would hand it) and defends the other goal (``own_goal_w``, the
+opponent's aim point); the opponent the reverse. The whole
 ball over a goal line between the posts and under the bar is a goal; over any
 other line it is out. Either ends the point and a new kickoff puts the ball
 ahead of the learner, inside the field, and the opponent at the learner's spot
@@ -38,6 +39,7 @@ import torch.nn.functional as F
 from mjlab.entity import Entity
 from mjlab.envs.mdp.actions import JointPositionAction, JointPositionActionCfg
 from mjlab.managers.action_manager import ActionTerm, ActionTermCfg
+from mjlab.tasks.velocity.mdp import striker_skills as skills
 from mjlab.tasks.velocity.mdp.amp_symmetry import augment_symmetries_kick_loop
 from mjlab.tasks.velocity.mdp.approach import (
   NOMINAL_ROOT_HEIGHT,
@@ -76,12 +78,22 @@ SELFPLAY_WALK_CKPT = (
   "2026-09-21_20-34-24_stageA/model_9950.pt"
 )
 
-PolicyKind = Literal["kick", "walk"]
+PolicyKind = Literal["kick", "walk", "controller"]
 # Robot detection inputs appended to the stage-3 actor: x, y, seen.
 DETECTION_DIM = 3
-# Actor input sizes: the kick loop (stage 3, or with the opponent detection)
-# and the AMP walk (velocity command).
-OBS_DIM: dict[str, tuple[int, ...]] = {"kick": (83, 83 + DETECTION_DIM), "walk": (75,)}
+ACTOR_DIM = 83 + DETECTION_DIM
+# Input sizes: the kick loop (stage 3, or with the opponent detection), the
+# AMP walk (velocity command) and the two-level striker's controller.
+OBS_DIM: dict[str, tuple[int, ...]] = {
+  "kick": (83, ACTOR_DIM),
+  "walk": (75,),
+  "controller": (ACTOR_DIM + skills.SKILL_STATE_DIM,),
+}
+OUT_DIM: dict[str, int] = {
+  "kick": 22,
+  "walk": 22,
+  "controller": skills.CONTROLLER_ACTION_DIM,
+}
 # EmpiricalNormalization's default eps in rsl_rl (not stored in checkpoints).
 _NORM_EPS = 1.0e-2
 
@@ -153,6 +165,23 @@ def frozen_policy_from_state_dict(
     mean = torch.zeros(1, in_dim, device=device)
     std = torch.ones(1, in_dim, device=device)
   return FrozenPolicy(kind=kind, name=name, mean=mean, std=std, layers=layers)
+
+
+def zero_policy(kind: str, name: str, device: str) -> FrozenPolicy:
+  """A policy that outputs zeros (a placeholder until the runner syncs)."""
+  in_dim, out_dim = OBS_DIM[kind][-1], OUT_DIM[kind]
+  return FrozenPolicy(
+    kind=kind,
+    name=name,
+    mean=torch.zeros(1, in_dim, device=device),
+    std=torch.ones(1, in_dim, device=device),
+    layers=[
+      (
+        torch.zeros(out_dim, in_dim, device=device),
+        torch.zeros(out_dim, device=device),
+      )
+    ],
+  )
 
 
 def load_frozen_policy(path: str, kind: str, device: str) -> FrozenPolicy:
@@ -310,10 +339,17 @@ class SelfPlayKickCommand(KickLoopCommand):
     )
 
   def _set_goals(self, env_ids: torch.Tensor, ball_xy: torch.Tensor) -> None:
+    """Aim points on both goal lines: the centre, or (``aim_offset``) a lane
+    across the mouth, as runswift's ``select_target`` hands the striker."""
+    n, dev = len(env_ids), self.device
     half = 0.5 * self.field_length[env_ids].unsqueeze(-1)
     u = self.field_axis[env_ids]
-    self.target_w[env_ids] = self.field_center[env_ids] + u * half
-    self.own_goal_w[env_ids] = self.field_center[env_ids] - u * half
+    perp = torch.stack((-u[:, 1], u[:, 0]), dim=-1)
+    span = self.cfg.aim_offset * self.cfg.goal_width
+    lane = (torch.rand(n, 2, device=dev) * 2.0 - 1.0) * span
+    center = self.field_center[env_ids]
+    self.target_w[env_ids] = center + u * half + perp * lane[:, :1]
+    self.own_goal_w[env_ids] = center - u * half + perp * lane[:, 1:]
     self.target_dist[env_ids] = (self.target_w[env_ids] - ball_xy).norm(dim=-1)
     self.goal_tol[env_ids] = goal_tolerance(self.target_dist[env_ids])
 
@@ -592,6 +628,9 @@ class SelfPlayKickCommandCfg(KickLoopCommandCfg):
   """Crossbar height on small / medium fields (m)."""
   medium_field_min_length: float = 11.5
   """Fields at least this long use the medium goal (m)."""
+  aim_offset: float = 0.0
+  """Aim points spread across each goal mouth by up to this share of its
+  width (0: centre). Lanes keep a kick skill responsive to the aim."""
   spawn_margin: float = 0.5
   """Kickoff balls stay this far inside the lines (m)."""
   own_side_start_prob: float = 0.5
@@ -735,15 +774,23 @@ class OpponentPolicyAction(ActionTerm):
     imu = f"{cfg.entity_name}/imu_ang_vel"
     self._imu = imu if imu in env.scene.sensors else None
 
-    # Policy slots. Slot 0 starts as the init checkpoint until the runner
-    # syncs the learner's weights.
-    latest = load_frozen_policy(cfg.latest_init_checkpoint, "kick", dev)
+    # Policy slots. Slot 0 starts as the init checkpoint (or zeros) until the
+    # runner syncs the learner's weights.
+    if cfg.latest_init_checkpoint:
+      latest = load_frozen_policy(cfg.latest_init_checkpoint, cfg.latest_kind, dev)
+    else:
+      latest = zero_policy(cfg.latest_kind, "latest", dev)
     latest.name = "latest"
     self.slots: list[FrozenPolicy] = [latest]
     self.slot_weights: list[float] = [0.0]
-    for seed in cfg.seeds:
+    seeds = list(cfg.seeds)
+    if cfg.controller_checkpoint:
+      seeds.append(OpponentSeedCfg(cfg.controller_checkpoint, "controller"))
+    for seed in seeds:
       self.slots.append(load_frozen_policy(seed.checkpoint, seed.kind, dev))
       self.slot_weights.append(float(seed.weight))
+    self._kick_skill: FrozenPolicy | None = None
+    self._walk_skill: FrozenPolicy | None = None
     self._num_fixed = len(self.slots)
     self.slot = torch.zeros(n, dtype=torch.long, device=dev)
     # Learner's points won / played per slot (recent window).
@@ -758,6 +805,12 @@ class OpponentPolicyAction(ActionTerm):
     self.head_target = torch.tensor(HEAD_DEFAULT, device=dev).repeat(n, 1)
     self.speed_limit = torch.zeros(n, 3, device=dev)
     self.fallen_time = torch.zeros(n, device=dev)
+    # Two-level strikers: the held decision and its timing.
+    self.ctrl_kick = torch.zeros(n, dtype=torch.bool, device=dev)
+    self.ctrl_theta = torch.zeros(n, device=dev)
+    self.ctrl_level = torch.zeros(n, device=dev)
+    self.ctrl_wait = torch.zeros(n, dtype=torch.long, device=dev)
+    self.ctrl_since = torch.zeros(n, dtype=torch.long, device=dev)
     self._raw = torch.zeros(n, 0, device=dev)
     self._resample_speed_limit(torch.arange(n, device=dev))
 
@@ -823,11 +876,15 @@ class OpponentPolicyAction(ActionTerm):
     for s in torch.unique(self.slot).tolist():
       ids = (self.slot == s).nonzero(as_tuple=False).squeeze(-1)
       policy = self.slots[s]
-      obs = kick_obs if policy.kind == "kick" else walk_obs
-      raw[ids] = policy(obs[ids])
+      if policy.kind == "controller":
+        raw[ids] = self._run_controller(policy, ids, kick_obs[ids])
+      else:
+        obs = kick_obs if policy.kind == "kick" else walk_obs
+        raw[ids] = policy(obs[ids])
     self._joint.process_actions(raw)
     # The kick policy's head outputs are ignored, as for the learner: the head
-    # tracks the ball estimate. The walk policy keeps its own head.
+    # tracks the ball estimate (also under a controller). A walk-only opponent
+    # keeps its own head.
     lost_s = torch.where(
       self.time_unseen > self.cfg.lost_timeout_s,
       self.time_unseen.clamp(min=0.51),
@@ -835,9 +892,9 @@ class OpponentPolicyAction(ActionTerm):
     )
     goal = head_goal(ball_b, lost_s, self._cmd.cfg.camera_pitch)
     self.head_target[:] = head_step(self.head_target, goal)
-    kick = torch.tensor([p.kind == "kick" for p in self.slots], device=self.device)[
-      self.slot
-    ]
+    kick = torch.tensor(
+      [p.kind in ("kick", "controller") for p in self.slots], device=self.device
+    )[self.slot]
     processed = self._joint._processed_actions.clone()
     head = processed[:, self._head_cols]
     processed[:, self._head_cols] = torch.where(
@@ -848,15 +905,52 @@ class OpponentPolicyAction(ActionTerm):
   def apply_actions(self) -> None:
     self._joint.apply_actions()
 
+  def skills(self) -> tuple[FrozenPolicy, FrozenPolicy]:
+    """The frozen kick and walk skills of two-level strikers (loaded once)."""
+    if self._kick_skill is None or self._walk_skill is None:
+      dev = self.device
+      self._kick_skill = load_frozen_policy(self.cfg.kick_skill_checkpoint, "kick", dev)
+      self._walk_skill = load_frozen_policy(self.cfg.walk_skill_checkpoint, "walk", dev)
+    return self._kick_skill, self._walk_skill
+
+  def _run_controller(
+    self, policy: FrozenPolicy, ids: torch.Tensor, actor_obs: torch.Tensor
+  ) -> torch.Tensor:
+    """A two-level opponent: decide every few steps, run the chosen skill."""
+    due = self.ctrl_wait[ids] <= 0
+    if bool(due.any()):
+      d = ids[due]
+      inputs = skills.controller_inputs(
+        actor_obs[due], self.ctrl_kick[d], self.ctrl_since[d]
+      )
+      kick, theta, level = skills.decode(policy(inputs))
+      switched = kick != self.ctrl_kick[d]
+      self.ctrl_since[d] = torch.where(switched, 0, self.ctrl_since[d])
+      self.ctrl_kick[d], self.ctrl_theta[d], self.ctrl_level[d] = kick, theta, level
+      self.ctrl_wait[d] = self.cfg.decision_steps
+    self.ctrl_wait[ids] -= 1
+    self.ctrl_since[ids] += 1
+    kick_skill, walk_skill = self.skills()
+    return skills.run_skills(
+      actor_obs,
+      self.ctrl_kick[ids],
+      self.ctrl_theta[ids],
+      self.ctrl_level[ids],
+      kick_skill,
+      walk_skill,
+    )
+
   # Pool management, called by the self-play runner.
 
   def set_latest(self, actor_state_dict: dict[str, torch.Tensor]) -> None:
     self.slots[0] = frozen_policy_from_state_dict(
-      actor_state_dict, "kick", "latest", self.device
+      actor_state_dict, self.cfg.latest_kind, "latest", self.device
     )
 
   def add_snapshot(self, actor_state_dict: dict[str, torch.Tensor], name: str) -> None:
-    policy = frozen_policy_from_state_dict(actor_state_dict, "kick", name, self.device)
+    policy = frozen_policy_from_state_dict(
+      actor_state_dict, self.cfg.latest_kind, name, self.device
+    )
     if len(self.slots) - self._num_fixed >= self.cfg.max_snapshots:
       # Drop the oldest snapshot; envs using it move to the mirror.
       drop = self._num_fixed
@@ -920,6 +1014,9 @@ class OpponentPolicyAction(ActionTerm):
     self.time_unseen[env_ids] = 0.0
     self.head_target[env_ids] = torch.tensor(HEAD_DEFAULT, device=self.device)
     self.fallen_time[env_ids] = 0.0
+    self.ctrl_kick[env_ids] = False
+    self.ctrl_wait[env_ids] = 0
+    self.ctrl_since[env_ids] = 0
     self._joint.reset(env_ids)
 
   def _referee(self) -> None:
@@ -1058,14 +1155,25 @@ class OpponentPolicyActionCfg(ActionTermCfg):
   """The learner's joint action (scale, offset, clip, order) on the opponent."""
   command_name: str = "twist"
   ball_name: str = "ball"
-  latest_init_checkpoint: str = SELFPLAY_KICK_CKPT
-  """Mirror slot before the runner's first sync (and in play)."""
+  latest_kind: PolicyKind = "kick"
+  """What the learner is: "kick" (flat striker) or "controller" (two-level)."""
+  latest_init_checkpoint: str | None = SELFPLAY_KICK_CKPT
+  """Mirror slot before the runner's first sync (and in play); None: zeros."""
   seeds: tuple[OpponentSeedCfg, ...] = field(
     default_factory=lambda: (
       OpponentSeedCfg(SELFPLAY_KICK_CKPT, "kick"),
       OpponentSeedCfg(SELFPLAY_WALK_CKPT, "walk"),
     )
   )
+  controller_checkpoint: str | None = None
+  """A trained two-level striker's controller, added to the pool (it runs
+  the skills below)."""
+  kick_skill_checkpoint: str = SELFPLAY_KICK_CKPT
+  """Kick skill of two-level strikers (learner and opponent)."""
+  walk_skill_checkpoint: str = SELFPLAY_WALK_CKPT
+  """Walk skill of two-level strikers (learner and opponent)."""
+  decision_steps: int = skills.DECISION_STEPS
+  """Env steps per controller decision."""
   latest_prob: float = 0.5
   """Share of episodes against the learner's latest weights (mirror)."""
   max_snapshots: int = 8

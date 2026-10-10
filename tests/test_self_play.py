@@ -195,10 +195,11 @@ def test_field_contains_learner_ball_and_goals(env):
     assert bool((along.abs() <= 0.5 * cmd.field_length).all())
     assert bool((across.abs() <= 0.5 * cmd.field_width).all())
   assert bool(((cmd.field_length >= 9.0) & (cmd.field_length <= 14.0)).all())
-  # The target the policy aims at is the centre of the attacked goal.
+  # The target the policy aims at is a lane on the attacked goal's line.
   along, across = cmd.field_coords(cmd.target_w)
   torch.testing.assert_close(along, 0.5 * cmd.field_length)
-  torch.testing.assert_close(across, torch.zeros_like(across), atol=1e-5, rtol=0)
+  lane = cmd.cfg.aim_offset * cmd.cfg.goal_width
+  assert bool((across.abs() <= lane + 1e-5).all())
 
 
 @pytest.mark.slow

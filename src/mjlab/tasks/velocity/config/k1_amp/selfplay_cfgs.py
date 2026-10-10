@@ -8,6 +8,7 @@ from mjlab.envs import ManagerBasedRlEnvCfg
 from mjlab.envs.mdp.actions import JointPositionActionCfg
 from mjlab.managers.observation_manager import ObservationTermCfg
 from mjlab.managers.reward_manager import RewardTermCfg
+from mjlab.rl import RslRlModelCfg, RslRlPpoAlgorithmCfg
 from mjlab.tasks.velocity import mdp
 from mjlab.tasks.velocity.mdp.self_play import (
   SELFPLAY_KICK_CKPT,
@@ -15,6 +16,7 @@ from mjlab.tasks.velocity.mdp.self_play import (
   SelfPlayKickCommandCfg,
 )
 from mjlab.tasks.velocity.rl.selfplay_runner import SelfPlayAmpRunnerCfg
+from mjlab.tasks.velocity.rl.striker_runner import StrikerControllerRunnerCfg
 
 from .env_cfgs import booster_k1_kick_stage3_env_cfg
 from .rl_cfg import booster_k1_kick_stage3_runner_cfg
@@ -53,7 +55,10 @@ def booster_k1_kick_selfplay_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg
   assert cfg.commands is not None
   old = cfg.commands["twist"]
   cfg.commands["twist"] = SelfPlayKickCommandCfg(
-    **{f.name: getattr(old, f.name) for f in dataclasses.fields(old) if f.init}
+    **{f.name: getattr(old, f.name) for f in dataclasses.fields(old) if f.init},
+    # Aim lanes across the mouth, as select_target hands them: the striker
+    # (and, as a skill, a controller) can then aim anywhere.
+    aim_offset=0.4,
   )
 
   joint = cfg.actions["joint_pos"]
@@ -127,3 +132,71 @@ def booster_k1_kick_selfplay_runner_cfg() -> SelfPlayAmpRunnerCfg:
   cfg.run_name = "selfplay"
   cfg.init_checkpoint = SELFPLAY_KICK_CKPT
   return cfg
+
+
+# Two-level striker (phase 1 of the alternating recipe): only outcome and
+# ball terms reach the controller; the skills own posture and smoothness.
+CONTROLLER_REWARDS = (
+  "contest_score",
+  "contest_concede",
+  "dribble_progress",
+  "kick_vel",
+  "kick_direction",
+  "kick_vel_accurate",
+  "fall",
+  "kick_fall",
+  "alive",
+)
+
+
+def booster_k1_striker_controller_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
+  """The self-play field with a two-level learner (see ``striker_skills``).
+
+  The policy is the controller; the frozen kick / walk skills are the
+  opponent action's ``kick_skill_checkpoint`` / ``walk_skill_checkpoint``,
+  shared by both strikers. The opponent's mirror is a controller too.
+  """
+  cfg = booster_k1_kick_selfplay_env_cfg(play=play)
+  twist = cfg.commands["twist"]
+  assert isinstance(twist, SelfPlayKickCommandCfg)
+  # The controller chooses its own aim; it is told where the goal centre is.
+  twist.aim_offset = 0.0
+  opponent = cfg.actions["opponent"]
+  assert isinstance(opponent, OpponentPolicyActionCfg)
+  opponent.latest_kind = "controller"
+  opponent.latest_init_checkpoint = None
+  for name, term in cfg.rewards.items():
+    if name not in CONTROLLER_REWARDS and term is not None:
+      term.weight = 0.0
+  return cfg
+
+
+def booster_k1_striker_controller_runner_cfg() -> StrikerControllerRunnerCfg:
+  """PPO on the controller at 5 Hz (gamma 0.99 is a ~20 s horizon)."""
+  return StrikerControllerRunnerCfg(
+    actor=RslRlModelCfg(
+      hidden_dims=(256, 128),
+      activation="elu",
+      obs_normalization=True,
+      distribution_cfg={
+        "class_name": "rsl_rl.modules.distribution:GaussianDistribution",
+        "init_std": 0.5,
+      },
+    ),
+    critic=RslRlModelCfg(
+      hidden_dims=(256, 128), activation="elu", obs_normalization=True
+    ),
+    algorithm=RslRlPpoAlgorithmCfg(
+      learning_rate=3.0e-4,
+      gamma=0.99,
+      lam=0.95,
+      entropy_coef=0.005,
+      num_learning_epochs=5,
+      num_mini_batches=4,
+    ),
+    num_steps_per_env=24,
+    max_iterations=5000,
+    save_interval=50,
+    experiment_name="k1_striker_controller",
+    run_name="controller",
+  )
