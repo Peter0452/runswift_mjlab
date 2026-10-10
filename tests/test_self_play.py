@@ -17,6 +17,7 @@ from mjlab.tasks.velocity.mdp.self_play import (
   OpponentSeedCfg,
   SelfPlayKickCommand,
   augment_symmetries_selfplay,
+  dribble_progress,
   frozen_policy_from_state_dict,
   load_frozen_policy,
   pad_input_columns,
@@ -177,29 +178,92 @@ def test_opponent_detected_in_view_only(env):
       assert bool((det == 0.0).all())
 
 
+def _field_point(cmd, env_id: int, along: float, across: float) -> torch.Tensor:
+  ids = torch.tensor([env_id], device=cmd.device)
+  a = torch.tensor([along], device=cmd.device)
+  b = torch.tensor([across], device=cmd.device)
+  return cmd._to_world(a, b, ids)[0]
+
+
+@pytest.mark.slow
+def test_field_contains_learner_ball_and_goals(env):
+  cmd, _ = _parts(env)
+  ball = env.scene["ball"].data.root_link_pos_w[:, :2]
+  robot = env.scene["robot"].data.root_link_pos_w[:, :2]
+  for xy in (ball, robot):
+    along, across = cmd.field_coords(xy)
+    assert bool((along.abs() <= 0.5 * cmd.field_length).all())
+    assert bool((across.abs() <= 0.5 * cmd.field_width).all())
+  assert bool(((cmd.field_length >= 9.0) & (cmd.field_length <= 14.0)).all())
+  # The target the policy aims at is the centre of the attacked goal.
+  along, across = cmd.field_coords(cmd.target_w)
+  torch.testing.assert_close(along, 0.5 * cmd.field_length)
+  torch.testing.assert_close(across, torch.zeros_like(across), atol=1e-5, rtol=0)
+
+
 @pytest.mark.slow
 @pytest.mark.parametrize("goal", ["target", "own"])
-def test_point_outcome_pays_and_restarts(env, goal):
+def test_goal_pays_and_restarts(env, goal):
   cmd, opp = _parts(env)
-  goal_w = cmd.target_w if goal == "target" else cmd.own_goal_w
-  old_goal = goal_w[0].clone()
-  old_own = cmd.own_goal_w[0].clone()
-  _put_ball(env, 0, old_goal)
+  sign = 1.0 if goal == "target" else -1.0
+  length = float(cmd.field_length[0])
+  old_center = cmd.field_center[0].clone()
+  # Over the goal line, inside the mouth.
+  _put_ball(env, 0, _field_point(cmd, 0, sign * (0.5 * length + 0.3), 0.3))
   env.step(_zero_action(env))
   won = cmd.contest_scored[0] if goal == "target" else cmd.contest_conceded[0]
   assert bool(won)
-  # The kickoff moved the ball off the goal and flagged the opponent.
   assert bool(cmd.kickoff_pending[0])
-  _, reward, *_ = env.step(_zero_action(env))
+  env.step(_zero_action(env))
   term = "contest_score" if goal == "target" else "contest_concede"
   paid = env.reward_manager._step_reward[0, env.reward_manager.active_terms.index(term)]
   assert paid != 0.0
   assert not bool(cmd.kickoff_pending[0])
-  # A new point: new goals, and the ball in neither.
-  assert (cmd.own_goal_w[0] - old_own).norm() > 1e-3
-  ball_xy = env.scene["ball"].data.root_link_pos_w[0, :2]
-  assert (ball_xy - cmd.target_w[0]).norm() > cmd.goal_tol[0]
-  assert (ball_xy - cmd.own_goal_w[0]).norm() > cmd.own_goal_tol[0]
+  # Same field, ball back inside it.
+  torch.testing.assert_close(cmd.field_center[0], old_center)
+  along, across = cmd.field_coords(env.scene["ball"].data.root_link_pos_w[:, :2])
+  assert float(along[0].abs()) < 0.5 * length
+  assert float(across[0].abs()) < 0.5 * float(cmd.field_width[0])
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize("where", ["wide_of_post", "touchline"])
+def test_ball_over_other_lines_is_out(env, where):
+  cmd, _ = _parts(env)
+  hl, hw = 0.5 * float(cmd.field_length[0]), 0.5 * float(cmd.field_width[0])
+  point = (hl + 0.3, 0.5 * cmd.cfg.goal_width + 0.3)
+  if where == "touchline":
+    point = (0.0, hw + 0.3)
+  _put_ball(env, 0, _field_point(cmd, 0, *point))
+  env.step(_zero_action(env))
+  assert bool(cmd.ball_out[0])
+  assert not bool(cmd.contest_scored[0] | cmd.contest_conceded[0])
+
+
+@pytest.mark.slow
+def test_dribble_pays_only_in_possession(env):
+  cmd, _ = _parts(env)
+  ball = env.scene["ball"]
+  feet = env.scene["robot"].data.body_link_pos_w[:, cmd._feet_ids, :2].mean(dim=1)
+  to_goal = cmd.target_w - feet
+  u = to_goal / to_goal.norm(dim=-1, keepdim=True)
+  for offset, paid in ((0.25, True), (2.0, False)):
+    ids = torch.arange(env.num_envs, device=env.device)
+    state = ball.data.default_root_state[ids].clone()
+    state[:, :2] = feet + offset * u
+    state[:, 2] = ball.data.root_link_pos_w[:, 2]
+    state[:, 3:7] = torch.tensor([1.0, 0.0, 0.0, 0.0], device=env.device)
+    state[:, 7:] = 0.0
+    state[:, 7:9] = 1.0 * u
+    ball.write_root_state_to_sim(state, env_ids=ids)
+    env.sim.forward()
+    value = dribble_progress(env)
+    opp = env.scene["opponent"].data.body_link_pos_w[:, cmd._opponent_feet_ids, :2]
+    closer = (state[:, :2] - feet).norm(dim=-1) < (state[:, :2] - opp.mean(dim=1)).norm(
+      dim=-1
+    )
+    expect = paid & closer
+    assert bool(((value > 0.5) == expect).all())
 
 
 @pytest.mark.slow

@@ -19,16 +19,20 @@ from mjlab.tasks.velocity.rl.selfplay_runner import SelfPlayAmpRunnerCfg
 from .env_cfgs import booster_k1_kick_stage3_env_cfg
 from .rl_cfg import booster_k1_kick_stage3_runner_cfg
 
-# Per point, paid once (value × weight × dt): ±20, the size of a fall.
-CONTEST_SCORE_WEIGHT = 1000.0
-CONTEST_CONCEDE_WEIGHT = -1000.0
+# Per goal, paid once (value × weight × dt): ±30, the stage-3 goal payoff
+# (kick_goal, off here: it paid a ball passing near a point target).
+CONTEST_SCORE_WEIGHT = 1500.0
+CONTEST_CONCEDE_WEIGHT = -1500.0
+# Ball carried towards goal in possession: 1 m/s pays 4/s, near walk_speed.
+DRIBBLE_WEIGHT = 4.0
 
 
 def booster_k1_kick_selfplay_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
-  """Stage 3 with a second K1 that attacks the learner's goal.
+  """Stage 3 as striker against striker on a real field.
 
-  The learner's actions and rewards are those of stage 3, plus a reward per
-  point won or lost. Actor and critic append the opponent as the robot's
+  The learner's actions are those of stage 3. Rewards add goals scored and
+  conceded and ball carried towards goal in possession, and drop the stage-3
+  second-touch penalty and point-target goal. Actor and critic append the opponent as the robot's
   vision reports it (x, y, seen; the critic gets the truth). The opponent
   replaces the scripted contact events (pushes near the ball, an unseen ball
   moved away).
@@ -85,6 +89,13 @@ def booster_k1_kick_selfplay_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg
   for name in ("push_near_ball", "ball_relocate_unseen"):
     cfg.events.pop(name, None)
 
+  # Outmanoeuvring needs repeated touches: stage 3 charged each second touch
+  # (-200) and paid only kicks.
+  cfg.rewards["kick_double_touch"].weight = 0.0
+  cfg.rewards["kick_goal"].weight = 0.0
+  cfg.rewards["dribble_progress"] = RewardTermCfg(
+    func=mdp.dribble_progress, weight=DRIBBLE_WEIGHT
+  )
   cfg.rewards["contest_score"] = RewardTermCfg(
     func=mdp.contest_score, weight=CONTEST_SCORE_WEIGHT
   )

@@ -12,6 +12,7 @@ from .observations import *  # noqa: F403
 from .rewards import *  # noqa: F403
 from .self_play import contest_concede as contest_concede
 from .self_play import contest_score as contest_score
+from .self_play import dribble_progress as dribble_progress
 from .self_play import opponent_detection as opponent_detection
 from .symmetry import mirror_joints16 as mirror_joints16
 from .symmetry import nubots_symmetry as nubots_symmetry

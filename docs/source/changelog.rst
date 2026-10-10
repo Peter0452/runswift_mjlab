@@ -8,10 +8,13 @@ Upcoming version (not yet released)
 Added
 ^^^^^
 
-- Added 1v1 self-play on the stage-3 kick loop
-  (``Mjlab-Velocity-Kick-SelfPlay-Amp-DA-Muon-Booster-K1``). A second K1 attacks
-  the learner's own goal; scoring or conceding pays ±20 and starts a new
-  kickoff. The opponent runs frozen policies inside the env (the learner's
+- Added 1v1 self-play on the stage-3 kick loop, striker against striker
+  (``Mjlab-Velocity-Kick-SelfPlay-Amp-DA-Muon-Booster-K1``). Each episode has a
+  field from 9 x 6 to 14 x 9 m with 2.4 m goals (bar 1.6 / 1.8 m); a goal
+  (whole ball over the line between the posts) pays ±30, any other line is
+  out, and either starts a kickoff with the opponent mirrored through the ball.
+  The stage-3 second-touch penalty is off and ball carried towards goal in
+  possession is paid, so the striker can dribble past the opponent. The opponent runs frozen policies inside the env (the learner's
   latest weights half the time, else a pool of the stage-3 blend, the AMP walk
   9950 dribbling under a scripted command, and snapshots every 200
   iterations). Both robots see each other as the vision reports robots: the

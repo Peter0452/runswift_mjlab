@@ -1,12 +1,15 @@
-"""1v1 self-play on the stage-3 kick loop.
+"""1v1 self-play on the stage-3 kick loop: striker against striker.
 
-A second K1 (``opponent``) shares the field and the ball. Each point has two
-goals on one axis: the learner attacks ``target_w`` (the kick-loop target) and
-defends ``own_goal_w``; the opponent attacks ``own_goal_w`` and defends
-``target_w``. A ball inside either goal's tolerance, or out of play, ends the
-point: a new kickoff places the ball, both goals and the opponent, as the kick
-loop places a new target after a goal. The learner is never teleported and the
-episode only ends on the usual terminations (falls, time out).
+A second K1 (``opponent``) shares the field and the ball. Each episode has a
+field of random size (9 x 6 up to 14 x 9 m) and heading around the spawned ball,
+with 2.4 m goal mouths: the learner attacks ``target_w`` (the centre of one
+goal, which the policy gets as its kick direction / range, as the behaviour
+would hand it) and defends ``own_goal_w``; the opponent the reverse. The whole
+ball over a goal line between the posts and under the bar is a goal; over any
+other line it is out. Either ends the point and a new kickoff puts the ball
+ahead of the learner, inside the field, and the opponent at the learner's spot
+mirrored through the ball (both meet the ball from their own side).
+The learner is never teleported; episodes end on falls or time out.
 
 Both robots see each other as the robot's vision reports other robots: the
 ground position (``position_projection``, x / y in the robot frame) of a robot
@@ -28,6 +31,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal, cast
 
+import numpy as np
 import torch
 import torch.nn.functional as F
 
@@ -39,16 +43,15 @@ from mjlab.tasks.velocity.mdp.approach import (
   NOMINAL_ROOT_HEIGHT,
   ApproachYawCommandCfg,
   _root_pose,
+  ball_radius,
   camera_angles,
   in_camera_view,
   kick_direction_b,
   range_one_hot,
-  sample_binned,
 )
 from mjlab.tasks.velocity.mdp.kick_loop import (
   HEAD_DEFAULT,
   SPEED_CAP_FINAL,
-  TARGET_BINS,
   KickLoopCommand,
   KickLoopCommandCfg,
   goal_tolerance,
@@ -62,6 +65,7 @@ if TYPE_CHECKING:
   from tensordict import TensorDict
 
   from mjlab.envs import ManagerBasedRlEnv
+  from mjlab.viewer.debug_visualizer import DebugVisualizer
 
 _REPO = Path(__file__).resolve().parents[5]
 
@@ -232,8 +236,8 @@ def detect_robot(
 
 
 class SelfPlayKickCommand(KickLoopCommand):
-  """Kick-loop command with an opponent, two fixed goals per point and
-  kickoffs after each point."""
+  """Kick-loop command on a real field: two goal mouths, touchlines and
+  kickoffs after each point, with an opponent."""
 
   cfg: SelfPlayKickCommandCfg  # pyright: ignore[reportIncompatibleVariableOverride]
 
@@ -250,8 +254,15 @@ class SelfPlayKickCommand(KickLoopCommand):
     # The learner's view of the opponent (actor) and the truth (critic).
     self.opponent_detection = torch.zeros(n, DETECTION_DIM, device=dev)
     self.opponent_true = torch.zeros(n, DETECTION_DIM, device=dev)
+    # Field per episode: centre, unit axis towards the goal the learner
+    # attacks (``target_w``), length, width and crossbar height.
+    self.field_center = torch.zeros(n, 2, device=dev)
+    self.field_axis = torch.zeros(n, 2, device=dev)
+    self.field_axis[:, 0] = 1.0
+    self.field_length = torch.full((n,), cfg.field_length_range[1], device=dev)
+    self.field_width = torch.full((n,), cfg.field_width_range[1], device=dev)
+    self.goal_height = torch.full((n,), cfg.goal_heights[1], device=dev)
     self.own_goal_w = torch.zeros(n, 2, device=dev)
-    self.own_goal_tol = torch.ones(n, device=dev)
     self.contest_scored = torch.zeros(n, dtype=torch.bool, device=dev)
     self.contest_conceded = torch.zeros(n, dtype=torch.bool, device=dev)
     self.ball_out = torch.zeros(n, dtype=torch.bool, device=dev)
@@ -271,15 +282,40 @@ class SelfPlayKickCommand(KickLoopCommand):
     self.metrics["ball_out"][:] = self._outs
 
   def _place_target(self, env_ids: torch.Tensor, ball_xy: torch.Tensor) -> None:
-    # Goals stay put during a point; the kick loop would move the target
-    # after a goal or a ball resting far away.
+    # The target is the centre of the goal the learner attacks; the kick loop
+    # would move it after a goal or a ball resting far away.
     if self._freeze_target:
       return
     super()._place_target(env_ids, ball_xy)
 
-  def _replace_targets(self, env_ids: torch.Tensor, ball_xy: torch.Tensor) -> None:
-    super()._replace_targets(env_ids, ball_xy)
-    self._place_own_goal(env_ids, ball_xy)
+  def field_coords(
+    self, xy: torch.Tensor, env_ids: torch.Tensor | None = None
+  ) -> tuple[torch.Tensor, torch.Tensor]:
+    """(along, across) of world points in the field frame: along points to
+    the goal the learner attacks, across to its left."""
+    ids = slice(None) if env_ids is None else env_ids
+    rel = xy - self.field_center[ids]
+    u = self.field_axis[ids]
+    along = (rel * u).sum(dim=-1)
+    across = u[:, 0] * rel[:, 1] - u[:, 1] * rel[:, 0]
+    return along, across
+
+  def _to_world(
+    self, along: torch.Tensor, across: torch.Tensor, env_ids: torch.Tensor
+  ) -> torch.Tensor:
+    u = self.field_axis[env_ids]
+    perp = torch.stack((-u[:, 1], u[:, 0]), dim=-1)
+    return (
+      self.field_center[env_ids] + u * along.unsqueeze(-1) + perp * across.unsqueeze(-1)
+    )
+
+  def _set_goals(self, env_ids: torch.Tensor, ball_xy: torch.Tensor) -> None:
+    half = 0.5 * self.field_length[env_ids].unsqueeze(-1)
+    u = self.field_axis[env_ids]
+    self.target_w[env_ids] = self.field_center[env_ids] + u * half
+    self.own_goal_w[env_ids] = self.field_center[env_ids] - u * half
+    self.target_dist[env_ids] = (self.target_w[env_ids] - ball_xy).norm(dim=-1)
+    self.goal_tol[env_ids] = goal_tolerance(self.target_dist[env_ids])
 
   def _resample_command(self, env_ids: torch.Tensor) -> None:
     super()._resample_command(env_ids)
@@ -289,12 +325,57 @@ class SelfPlayKickCommand(KickLoopCommand):
       buf[env_ids] = 0.0
     # The ball may come from a mid-kick reference state; read it from qpos.
     ball_xy = _root_pose(self.ball, env_ids)[:, :2]
-    self._place_own_goal(env_ids, ball_xy)
+    self._place_field(env_ids, ball_xy)
+    self._set_goals(env_ids, ball_xy)
     self.place_opponent(env_ids, ball_xy)
 
+  def _place_field(self, env_ids: torch.Tensor, ball_xy: torch.Tensor) -> None:
+    """A field of random size and heading around the spawned ball, with the
+    ball and the learner inside it."""
+    n, dev, cfg = len(env_ids), self.device, self.cfg
+    if n == 0:
+      return
+    lo, hi = cfg.field_length_range
+    length = torch.empty(n, device=dev).uniform_(lo, hi)
+    frac = (length - lo) / max(hi - lo, 1.0e-6)
+    w_lo, w_hi = cfg.field_width_range
+    width = w_lo + frac * (w_hi - w_lo)
+    small, medium = cfg.goal_heights
+    self.goal_height[env_ids] = torch.where(
+      length < cfg.medium_field_min_length,
+      torch.full_like(length, small),
+      torch.full_like(length, medium),
+    )
+    k, m = 8, cfg.spawn_margin
+    yaw = torch.rand(n, k, device=dev) * (2.0 * math.pi)
+    # Kickoff-like starts: the learner on its own side, attacking roughly
+    # along its line to the ball.
+    to_ball = ball_xy - _root_pose(self.robot, env_ids)[:, :2]
+    heading = torch.atan2(to_ball[:, 1], to_ball[:, 0]).unsqueeze(1)
+    own_side = torch.rand(n, 1, device=dev) < cfg.own_side_start_prob
+    near = heading + (torch.rand(n, k, device=dev) - 0.5) * (2.0 * math.pi / 3.0)
+    yaw = torch.where(own_side, near, yaw)
+    bx = (torch.rand(n, k, device=dev) - 0.5) * (length - 2 * m).unsqueeze(1)
+    by = (torch.rand(n, k, device=dev) - 0.5) * (width - 2 * m).unsqueeze(1)
+    c, s = yaw.cos(), yaw.sin()
+    center = ball_xy.unsqueeze(1) - torch.stack(
+      (c * bx - s * by, s * bx + c * by), dim=-1
+    )
+    rel = _root_pose(self.robot, env_ids)[:, :2].unsqueeze(1) - center
+    rx = c * rel[..., 0] + s * rel[..., 1]
+    ry = -s * rel[..., 0] + c * rel[..., 1]
+    # Margin of the learner inside the field; keep the best candidate.
+    inside = torch.minimum(
+      0.5 * length.unsqueeze(1) - rx.abs(), 0.5 * width.unsqueeze(1) - ry.abs()
+    )
+    pick = inside.argmax(dim=1)
+    rows = torch.arange(n, device=dev)
+    self.field_center[env_ids] = center[rows, pick]
+    self.field_axis[env_ids] = torch.stack((c[rows, pick], s[rows, pick]), dim=-1)
+    self.field_length[env_ids] = length
+    self.field_width[env_ids] = width
+
   def _update_command(self) -> None:
-    # The kick loop re-derives the goal tolerance when it would move the
-    # target; both goals keep theirs until the point ends.
     goal_tol = self.goal_tol.clone()
     self._freeze_target = True
     try:
@@ -313,10 +394,20 @@ class SelfPlayKickCommand(KickLoopCommand):
       self.cfg.opponent_obs_noise,
       self.cfg.opponent_dropout,
     )
-    ball_xy = self.ball.data.root_link_pos_w[:, :2]
-    scored = (ball_xy - self.target_w).norm(dim=-1) <= self.goal_tol
-    conceded = ~scored & ((ball_xy - self.own_goal_w).norm(dim=-1) <= self.own_goal_tol)
-    out = ~(scored | conceded) & self._out_of_play(ball_xy)
+    ball = self.ball.data.root_link_pos_w
+    ids = torch.arange(self.num_envs, device=self.device)
+    r = ball_radius(self._env, ids)
+    along, across = self.field_coords(ball[:, :2])
+    height = ball[:, 2] - self._env.scene.env_origins[:, 2]
+    # A goal: the whole ball over the goal line, between the posts, under the
+    # bar. Over any other line: out.
+    half_l = 0.5 * self.field_length
+    mouth = (across.abs() < 0.5 * self.cfg.goal_width) & (height < self.goal_height)
+    scored = (along > half_l + r) & mouth
+    conceded = (along < -half_l - r) & mouth
+    out = ~(scored | conceded) & (
+      (along.abs() > half_l + r) | (across.abs() > 0.5 * self.field_width + r)
+    )
     self.contest_scored[:] = scored
     self.contest_conceded[:] = conceded
     self.ball_out[:] = out
@@ -327,23 +418,33 @@ class SelfPlayKickCommand(KickLoopCommand):
     if bool(restart.any()):
       self._kickoff(restart.nonzero(as_tuple=False).squeeze(-1))
 
-  def _out_of_play(self, ball_xy: torch.Tensor) -> torch.Tensor:
-    """Ball wide of the goal axis, or past either goal (missed it)."""
-    axis = self.target_w - self.own_goal_w
-    length = axis.norm(dim=-1).clamp(min=1.0e-6)
-    u = axis / length.unsqueeze(-1)
-    rel = ball_xy - self.own_goal_w
-    along = (rel * u).sum(dim=-1)
-    across = (rel[:, 0] * u[:, 1] - rel[:, 1] * u[:, 0]).abs()
-    overrun = self.cfg.goal_overrun
-    past = (along < -overrun) | (along > length + overrun)
-    return past | (across > self.cfg.field_half_width)
-
   def _kickoff(self, env_ids: torch.Tensor) -> None:
-    """New point: ball ahead of the learner (as at spawn), new goals and the
-    opponent back on its defending side."""
-    self._spawn_ball_and_target(env_ids)
-    self.goal_tol[env_ids] = goal_tolerance(self.target_dist[env_ids])
+    """New point on the same field: ball ahead of the learner as at spawn,
+    kept inside the field, and the opponent at the mirrored spot."""
+    self._freeze_target = True
+    try:
+      self._spawn_ball_and_target(env_ids)
+    finally:
+      self._freeze_target = False
+    ball_xy = _root_pose(self.ball, env_ids)[:, :2]
+    along, across = self.field_coords(ball_xy, env_ids)
+    m = self.cfg.spawn_margin
+    half_l = 0.5 * self.field_length[env_ids] - m
+    half_w = 0.5 * self.field_width[env_ids] - m
+    inside = self._to_world(
+      torch.maximum(torch.minimum(along, half_l), -half_l),
+      torch.maximum(torch.minimum(across, half_w), -half_w),
+      env_ids,
+    )
+    learner = _root_pose(self.robot, env_ids)[:, :2]
+    # Not under the learner's feet: then the centre spot.
+    crowded = (inside - learner).norm(dim=-1) < 0.5
+    inside = torch.where(crowded.unsqueeze(-1), self.field_center[env_ids], inside)
+    moved = (inside - ball_xy).norm(dim=-1) > 1.0e-4
+    if bool(moved.any()):
+      self._move_ball(env_ids[moved], inside[moved])
+      ball_xy = inside
+    self._set_goals(env_ids, ball_xy)
     for buf in (
       self.kicked_since_target,
       self.lined_up_latched,
@@ -351,42 +452,55 @@ class SelfPlayKickCommand(KickLoopCommand):
       self.near_pending,
     ):
       buf[env_ids] = False
-    ball_xy = _root_pose(self.ball, env_ids)[:, :2]
-    self._place_own_goal(env_ids, ball_xy)
     self.place_opponent(env_ids, ball_xy)
 
-  def _place_own_goal(self, env_ids: torch.Tensor, ball_xy: torch.Tensor) -> None:
-    """Learner's own goal on the far side of the ball from its target."""
-    to_target = self.target_w[env_ids] - ball_xy
-    u = to_target / to_target.norm(dim=-1, keepdim=True).clamp(min=1.0e-6)
-    dist = sample_binned(len(env_ids), self.cfg.own_goal_distance_bins, self.device)
-    self.own_goal_w[env_ids] = ball_xy - u * dist.unsqueeze(-1)
-    self.own_goal_tol[env_ids] = goal_tolerance(dist)
+  def _move_ball(self, env_ids: torch.Tensor, xy: torch.Tensor) -> None:
+    """Put a resting ball at ``xy`` where the learner just saw it."""
+    pose = _root_pose(self.ball, env_ids)
+    state = self.ball.data.default_root_state[env_ids].clone()
+    state[:, 0:2] = xy
+    state[:, 2] = pose[:, 2]
+    state[:, 3:7] = torch.tensor([1.0, 0.0, 0.0, 0.0], device=self.device)
+    state[:, 7:] = 0.0
+    self.ball.write_root_state_to_sim(state, env_ids)
+    robot = _root_pose(self.robot, env_ids)
+    rel = torch.zeros(len(env_ids), 3, device=self.device)
+    rel[:, :2] = xy - robot[:, :2]
+    self.last_seen_ball_w[env_ids] = xy
+    self.last_seen_ball_b[env_ids] = quat_apply_inverse(yaw_quat(robot[:, 3:7]), rel)[
+      :, :2
+    ]
+    self.time_since_seen[env_ids] = 0.0
+    self.ball_lost[env_ids] = False
 
   def place_opponent(self, env_ids: torch.Tensor, ball_xy: torch.Tensor) -> None:
-    """Opponent between the ball and the goal it defends (the learner's
-    target), facing the ball, clear of the learner."""
+    """Opponent at the learner's spot mirrored through the ball, so both meet
+    the ball from the same side of their own attack, facing it; jittered, on
+    the field and clear of the learner."""
     n = len(env_ids)
     if n == 0:
       return
     dev = self.device
-    to_target = self.target_w[env_ids] - ball_xy
-    base = torch.atan2(to_target[:, 1], to_target[:, 0])
     learner_xy = _root_pose(self.robot, env_ids)[:, :2]
-    # A few candidate spots; keep the first clear of the learner, else the
-    # farthest from it.
-    k = 4
+    mirror = ball_xy - learner_xy
+    dist = mirror.norm(dim=-1).clamp(min=0.6)
+    base = torch.atan2(mirror[:, 1], mirror[:, 0])
+    # A few jittered candidates; keep the first on the field and clear of the
+    # learner, else the farthest from the learner.
+    k = 6
     half = self.cfg.opponent_spawn_half_angle
     ang = base.unsqueeze(1) + torch.empty(n, k, device=dev).uniform_(-half, half)
-    rad = torch.empty(n, k, device=dev).uniform_(*self.cfg.opponent_distance_range)
-    # In front of the goal it defends, not behind it.
-    reach = (0.8 * to_target.norm(dim=-1)).clamp(min=0.6)
-    rad = torch.minimum(rad, reach.unsqueeze(1))
+    jitter = torch.empty(n, k, device=dev).uniform_(0.8, 1.2)
+    rad = (dist.unsqueeze(1) * jitter).clamp(*self.cfg.opponent_distance_range)
     cand = ball_xy.unsqueeze(1) + torch.stack(
       (ang.cos(), ang.sin()), -1
     ) * rad.unsqueeze(-1)
     clear = (cand - learner_xy.unsqueeze(1)).norm(dim=-1)
-    ok = clear >= self.cfg.opponent_clearance
+    along, across = self.field_coords(cand.reshape(-1, 2), env_ids.repeat_interleave(k))
+    on_field = (along.abs() < 0.5 * self.field_length[env_ids].repeat_interleave(k)) & (
+      across.abs() < 0.5 * self.field_width[env_ids].repeat_interleave(k)
+    )
+    ok = (clear >= self.cfg.opponent_clearance) & on_field.reshape(n, k)
     score = torch.where(ok, 1.0e3 - torch.arange(k, device=dev).float(), clear)
     pick = score.argmax(dim=1)
     rows = torch.arange(n, device=dev)
@@ -398,6 +512,44 @@ class SelfPlayKickCommand(KickLoopCommand):
     )
     place_upright(self.opponent, env_ids, xy, yaw, self._env.scene.env_origins)
     self.kickoff_pending[env_ids] = True
+
+  def _debug_vis_impl(self, visualizer: DebugVisualizer) -> None:
+    """Touchlines, goal lines and goals, on top of the kick-loop drawing."""
+    super()._debug_vis_impl(visualizer)
+    env_ids = list(visualizer.get_env_indices(self.num_envs))
+    if not env_ids:
+      return
+    ids = torch.tensor(env_ids, device=self.device)
+    ground = self._env.scene.env_origins[ids, 2].cpu().numpy() + 0.01
+    hl = 0.5 * self.field_length[ids]
+    hw = 0.5 * self.field_width[ids]
+    hg = torch.full_like(hl, 0.5 * self.cfg.goal_width)
+    corners = [
+      self._to_world(a, b, ids).cpu().numpy()
+      for a, b in ((hl, hw), (hl, -hw), (-hl, -hw), (-hl, hw))
+    ]
+    posts = [
+      self._to_world(a, b, ids).cpu().numpy()
+      for a, b in ((hl, hg), (hl, -hg), (-hl, -hg), (-hl, hg))
+    ]
+    height = self.goal_height[ids].cpu().numpy()
+    white, goal_color = (0.95, 0.95, 0.95, 0.9), (1.0, 0.85, 0.1, 0.95)
+    for k in range(len(env_ids)):
+      z = ground[k]
+      for i in range(4):
+        a, b = corners[i][k], corners[(i + 1) % 4][k]
+        visualizer.add_cylinder(
+          np.array([a[0], a[1], z]), np.array([b[0], b[1], z]), 0.02, white
+        )
+      for a, b in ((posts[0][k], posts[1][k]), (posts[2][k], posts[3][k])):
+        top = z + height[k]
+        for p in (a, b):
+          visualizer.add_cylinder(
+            np.array([p[0], p[1], z]), np.array([p[0], p[1], top]), 0.05, goal_color
+          )
+        visualizer.add_cylinder(
+          np.array([a[0], a[1], top]), np.array([b[0], b[1], top]), 0.05, goal_color
+        )
 
 
 def place_upright(
@@ -430,19 +582,28 @@ class SelfPlayKickCommandCfg(KickLoopCommandCfg):
   """Kick-loop command for 1v1 self-play."""
 
   opponent_name: str = "opponent"
-  own_goal_distance_bins: tuple[tuple[float, float], ...] = TARGET_BINS
-  """Ball-to-own-goal distance bins (m) at each kickoff."""
-  opponent_distance_range: tuple[float, float] = (1.0, 4.0)
-  """Opponent's distance from the ball at kickoff (m), as the learner's."""
-  opponent_spawn_half_angle: float = 0.6
-  """Spread of the opponent's spot around the ball-to-target line (rad)."""
+  field_length_range: tuple[float, float] = (9.0, 14.0)
+  """Touchline length per episode (m), small to large field."""
+  field_width_range: tuple[float, float] = (6.0, 9.0)
+  """Goal-line width (m), scaled with the length (9 x 6 up to 14 x 9)."""
+  goal_width: float = 2.4
+  """Between the posts (m)."""
+  goal_heights: tuple[float, float] = (1.6, 1.8)
+  """Crossbar height on small / medium fields (m)."""
+  medium_field_min_length: float = 11.5
+  """Fields at least this long use the medium goal (m)."""
+  spawn_margin: float = 0.5
+  """Kickoff balls stay this far inside the lines (m)."""
+  own_side_start_prob: float = 0.5
+  """Share of episodes whose field puts the learner on its own side of the
+  ball (attacking within 60 degrees of its line to the ball)."""
+  opponent_distance_range: tuple[float, float] = (0.8, 5.0)
+  """Limits of the opponent's distance from the ball at kickoff (m)."""
+  opponent_spawn_half_angle: float = 0.4
+  """Jitter of the opponent's mirrored spot around the ball (rad)."""
   opponent_yaw_noise: float = 0.3
   opponent_clearance: float = 1.0
   """Minimum learner-opponent distance at kickoff (m), when achievable."""
-  field_half_width: float = 4.0
-  """Ball farther than this from the goal axis is out of play (m)."""
-  goal_overrun: float = 1.5
-  """Ball this far past either goal (outside its tolerance) is out (m)."""
   opponent_max_range: float = 6.0
   """Farthest robot detection (m); match the robot detector."""
   opponent_obs_noise: tuple[float, float] = (0.05, 0.05)
@@ -496,13 +657,32 @@ def augment_symmetries_selfplay(
   return base, actions
 
 
+def dribble_progress(
+  env: ManagerBasedRlEnv, possession_distance: float = 0.6, max_speed: float = 1.5
+) -> torch.Tensor:
+  """Ball speed towards the attacked goal (m/s, capped) while the learner has
+  it: within ``possession_distance`` of its feet and closer than the opponent.
+  Carrying the ball past the opponent pays, not only striking it."""
+  cmd = _selfplay_command(env)
+  ball = cmd.ball.data.root_link_pos_w[:, :2]
+  vel = cmd.ball.data.root_link_lin_vel_w[:, :2]
+  to_goal = cmd.target_w - ball
+  u = to_goal / to_goal.norm(dim=-1, keepdim=True).clamp(min=1.0e-6)
+  toward = (vel * u).sum(dim=-1).clamp(0.0, max_speed)
+  mine = cmd.robot.data.body_link_pos_w[:, cmd._feet_ids, :2].mean(dim=1)
+  theirs = cmd.opponent.data.body_link_pos_w[:, cmd._opponent_feet_ids, :2].mean(dim=1)
+  d_mine = (ball - mine).norm(dim=-1)
+  possess = (d_mine < possession_distance) & (d_mine < (ball - theirs).norm(dim=-1))
+  return toward * possess.float()
+
+
 def contest_score(env: ManagerBasedRlEnv) -> torch.Tensor:
-  """Per point won: the ball entered the goal the learner attacks."""
+  """Per goal scored: the whole ball over the line between the posts."""
   return _selfplay_command(env).contest_scored.float()
 
 
 def contest_concede(env: ManagerBasedRlEnv) -> torch.Tensor:
-  """Per point lost: the ball entered the goal the learner defends."""
+  """Per goal conceded into the goal the learner defends."""
   return _selfplay_command(env).contest_conceded.float()
 
 
@@ -743,8 +923,8 @@ class OpponentPolicyAction(ActionTerm):
     self._joint.reset(env_ids)
 
   def _referee(self) -> None:
-    """Stand a fallen opponent back up on its defending side, as at a
-    kickoff (the ball stays where it is)."""
+    """Stand a fallen opponent back up, placed as at a kickoff (the ball
+    stays where it is)."""
     grav_z = self._entity.data.projected_gravity_b[:, 2]
     fallen = grav_z > -math.cos(self.cfg.fallen_tilt)
     self.fallen_time[:] = torch.where(fallen, self.fallen_time + self._env.step_dt, 0.0)
