@@ -1,0 +1,924 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="./" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Our K1 kick loop vs B-Human’s K1 kick (2026-10-09) &#8212; mjlab Documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+
+  
+  <link href="_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/sphinx-book-theme.css?v=eba8b062" />
+    <link rel="stylesheet" type="text/css" href="_static/twemoji.css" />
+    <link rel="stylesheet" type="text/css" href="/home/runner/work/runswift_mjlab/runswift_mjlab/.venv/lib/python3.13/site-packages/sphinxcontrib/icon/node_modules/@fortawesome/fontawesome-free/css/all.min.css?v=53359634" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="_static/css/custom.css?v=3ea80bc3" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+    <script src="_static/documentation_options.js?v=9eb32ce0"></script>
+    <script src="_static/doctools.js?v=9bcbadda"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="https://unpkg.com/twemoji@latest/dist/twemoji.min.js"></script>
+    <script src="_static/twemoji.js"></script>
+    <script src="/home/runner/work/runswift_mjlab/runswift_mjlab/.venv/lib/python3.13/site-packages/sphinxcontrib/icon/node_modules/@fortawesome/fontawesome-free/js/all.min.js?v=ec35c6c9"></script>
+    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="_static/copybutton.js?v=f281be69"></script>
+    <script src="_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
+    <script src="_static/design-tabs.js?v=f930bc37"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'K1_KICK_VS_BHUMAN_2026-10-09';</script>
+    <link rel="icon" href="_static/favicon.ico"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+    <meta name="docbuild:last-update" content="Oct 10, 2026"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search..."
+         aria-label="Search..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">mjlab Documentation</p>
+  
+</a></div>
+        <div class="sidebar-primary-item">
+<form class="bd-search d-flex align-items-center"
+      action="search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search..."
+         aria-label="Search..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+        <div class="sidebar-primary-item">
+<div class="sidebar-version-switcher">
+  <label class="sidebar-version-label" for="version-select">Version</label>
+  <select id="version-select" class="sidebar-version-select" onchange="location = this.value;">
+    <option value="K1_KICK_VS_BHUMAN_2026-10-09.html" selected>main</option>
+  </select>
+</div>
+</div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="source/installation.html">Installation Guide</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="source/tutorials.html">Tutorials</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="source/tutorials/cartpole.html">Cartpole: Building Your First Environment</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="source/contributing.html">Contributing</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Concepts</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="source/architecture_overview.html">Architecture Overview</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="source/entity/index.html">Entity</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="source/entity/entity_data.html">Entity Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/entity/per_world_mesh.html">Heterogeneous Worlds</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="source/actuators.html">Actuators</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="source/sensors/index.html">Sensors</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="source/sensors/raycast_sensor.html">RayCast Sensor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/sensors/rgbd_camera.html">RGB-D Camera</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="source/scene.html">Scene</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/terrain.html">Terrain</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">The Manager Layer</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="source/environment_config.html">Environment Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/observations.html">Observations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/actions.html">Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/rewards.html">Rewards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/terminations.html">Terminations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/commands.html">Commands</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/events.html">Events</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/randomization.html">Domain Randomization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/curriculum.html">Curriculum</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/metrics.html">Metrics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/recorders.html">Recorders</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Training &amp; Debugging</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="source/training/rsl_rl.html">Training with RSL-RL</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="source/training/motion_imitation.html">Motion Imitation</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="source/viewers.html">Viewers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/training/distributed_training.html">Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/training/cloud.html">Cloud Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/debugging/nan_guard.html">NaN Guard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/debugging/export_scene.html">Export Scene</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="source/api/index.html">API Reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="source/api/envs.html">mjlab.envs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/api/scene.html">mjlab.scene</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/api/sim.html">mjlab.sim</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/api/entity.html">mjlab.entity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/api/actuator.html">mjlab.actuator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/api/sensor.html">mjlab.sensor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/api/managers.html">mjlab.managers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/api/terrains.html">mjlab.terrains</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/api/rl.html">mjlab.rl</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/api/viewer.html">mjlab.viewer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/api/tasks.html">mjlab.tasks</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Further Reading</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="source/motivation.html">Why mjlab?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/migration_isaac_lab.html">Migrating from Isaac Lab</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/faq.html">FAQ &amp; Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/research.html">Research</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/changelog.html">Changelog</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+
+
+
+<div class="dropdown dropdown-source-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Source repositories">
+    <i class="fab fa-github"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="https://github.com/mujocolab/mjlab" target="_blank"
+   class="btn btn-sm btn-source-repository-button dropdown-item"
+   title="Source repository"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fab fa-github"></i>
+  </span>
+<span class="btn__text-container">Repository</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li><a href="https://github.com/mujocolab/mjlab/edit/main/docs/K1_KICK_VS_BHUMAN_2026-10-09.md" target="_blank"
+   class="btn btn-sm btn-source-edit-button dropdown-item"
+   title="Suggest edit"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-pencil-alt"></i>
+  </span>
+<span class="btn__text-container">Suggest edit</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li><a href="https://github.com/mujocolab/mjlab/issues/new?title=Issue%20on%20page%20%2FK1_KICK_VS_BHUMAN_2026-10-09.html&body=Your%20issue%20content%20here." target="_blank"
+   class="btn btn-sm btn-source-issues-button dropdown-item"
+   title="Open an issue"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-lightbulb"></i>
+  </span>
+<span class="btn__text-container">Open issue</span>
+</a>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+
+
+<div class="dropdown dropdown-download-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Download this page">
+    <i class="fas fa-download"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="_sources/K1_KICK_VS_BHUMAN_2026-10-09.md" target="_blank"
+   class="btn btn-sm btn-download-source-button dropdown-item"
+   title="Download source file"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="btn__text-container">.md</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li>
+<button onclick="window.print()"
+  class="btn btn-sm btn-download-pdf-button dropdown-item"
+  title="Print to PDF"
+  data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="btn__text-container">.pdf</span>
+</button>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm pst-navbar-icon search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+<button class="sidebar-toggle secondary-toggle btn btn-sm" title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</button>
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>Our K1 kick loop vs B-Human’s K1 kick (2026-10-09)</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#architecture">1. Architecture</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#simulation-and-robot-model">2. Simulation and robot model</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#observations">3. Observations</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#rewards">4. Rewards</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#terminations-and-episodes">5. Terminations and episodes</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#randomisation">6. Randomisation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#perception-model-in-training">7. Perception model in training</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#training-algorithm-and-schedule">8. Training algorithm and schedule</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#where-each-is-better-today-measured">9. Where each is better today (measured)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#what-b-human-has-that-we-do-not-candidates-cheapest-first">10. What B-Human has that we do not (candidates, cheapest first)</a></li>
+</ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="our-k1-kick-loop-vs-b-human-s-k1-kick-2026-10-09">
+<h1>Our K1 kick loop vs B-Human’s K1 kick (2026-10-09)<a class="headerlink" href="#our-k1-kick-loop-vs-b-human-s-k1-kick-2026-10-09" title="Link to this heading">#</a></h1>
+<p>Side by side, from the code: ours is the stage-3 task
+<code class="docutils literal notranslate"><span class="pre">Mjlab-Velocity-Kick-Stage3-Amp-DA-Muon-Booster-K1</span></code> with the champion
+h022_c2_18450’s genes; B-Human’s is <code class="docutils literal notranslate"><span class="pre">MachineLearning/IsaacGymRL</span></code>
+(<code class="docutils literal notranslate"><span class="pre">envs/K1_Ball.yaml</span></code>, <code class="docutils literal notranslate"><span class="pre">envs/t1_ball.py</span></code>). The older
+<code class="docutils literal notranslate"><span class="pre">K1_KICK_BHUMAN_COMPARISON.md</span></code> predates most of our current setup.</p>
+<section id="architecture">
+<h2>1. Architecture<a class="headerlink" href="#architecture" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p></p></th>
+<th class="head"><p>Ours</p></th>
+<th class="head"><p>B-Human</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Policies</p></td>
+<td><p><strong>One</strong> policy: search, approach, kick, recover</p></td>
+<td><p><strong>Separate</strong> kick policy; a walk policy (or scripted waypoints in the runswift harness) brings the robot to within about 1.1 m</p></td>
+</tr>
+<tr class="row-odd"><td><p>Kick episode start</p></td>
+<td><p>Ball 1–4 m away (20 % far 4–10 m, 30 % any bearing, 15 % unknown position), or mid-kick from recorded clips (25 %)</p></td>
+<td><p>Ball 0.4–1.5 m in front (far start 0.6–1.5 m); 3 kicks per 30 s episode, ball reset after each</p></td>
+</tr>
+<tr class="row-even"><td><p>What drives the arms / head</p></td>
+<td><p>Policy outputs all 22 joints; the runner overrides the head (ball tracking)</p></td>
+<td><p>13 outputs: 12 leg joints + <strong>gait frequency</strong>; arms are scripted from the sole positions; head scripted</p></td>
+</tr>
+<tr class="row-odd"><td><p>Gait timing</p></td>
+<td><p>Free (no clock); AMP style from walk clips</p></td>
+<td><p><strong>Gait clock</strong> (cos / sin of a phase) in the input, frequency chosen by the policy</p></td>
+</tr>
+<tr class="row-even"><td><p>Network</p></td>
+<td><p>512-256-128 ELU, actor and critic</p></td>
+<td><p>256-256-128 ELU</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="simulation-and-robot-model">
+<h2>2. Simulation and robot model<a class="headerlink" href="#simulation-and-robot-model" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p></p></th>
+<th class="head"><p>Ours</p></th>
+<th class="head"><p>B-Human</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Simulator</p></td>
+<td><p>MuJoCo (mujoco_warp), dt 5 ms, decimation 4 → 50 Hz</p></td>
+<td><p>Isaac Gym PhysX TGS, dt 2 ms, decimation 10 → 50 Hz</p></td>
+</tr>
+<tr class="row-odd"><td><p>Robot model</p></td>
+<td><p>Whirlwind K1, foot <strong>mesh</strong> collider</p></td>
+<td><p>Booster URDF with <strong>box feet</strong>, left / right bias variants</p></td>
+</tr>
+<tr class="row-even"><td><p>PD gains</p></td>
+<td><p>kp 80 / kd 4 on all leg joints (×0.8–1.2 randomized)</p></td>
+<td><p>kp 80 hip / knee, 50 ankle pitch, 60 ankle roll; kd 4 / 2 / 2 (±5 %, ankle ±10–20 %)</p></td>
+</tr>
+<tr class="row-odd"><td><p>Torque limits</p></td>
+<td><p>Effort limits 68 / 76 / 38 / 112 / 38 / 38 Nm, <strong>soft</strong> penalty above B-Human’s clip</p></td>
+<td><p><strong>Hard clip</strong> 50 / 50 / 30 / 60 / 30 / 30 Nm</p></td>
+</tr>
+<tr class="row-even"><td><p>Armature</p></td>
+<td><p>Per motor type (0.028–0.096)</p></td>
+<td><p>Same values</p></td>
+</tr>
+<tr class="row-odd"><td><p>Actuation delay</p></td>
+<td><p>0–40 ms per step (lag 0–8 physics steps, hold prob 0.3)</p></td>
+<td><p>None modelled</p></td>
+</tr>
+<tr class="row-even"><td><p>Joint friction</p></td>
+<td><p>none</p></td>
+<td><p>DR 0–2</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="observations">
+<h2>3. Observations<a class="headerlink" href="#observations" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p></p></th>
+<th class="head"><p>Ours (83)</p></th>
+<th class="head"><p>B-Human (59)</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Body</p></td>
+<td><p>gyro 3, projected gravity 3</p></td>
+<td><p>gravity 3, gyro 3</p></td>
+</tr>
+<tr class="row-odd"><td><p>Joints</p></td>
+<td><p>position 22, velocity 22, last action 22</p></td>
+<td><p>position, velocity (scaled 0.1), last action 13</p></td>
+</tr>
+<tr class="row-even"><td><p>Ball</p></td>
+<td><p>xy from the soles midpoint (camera model: FOV, memory, lost rule) + memory age</p></td>
+<td><p>xy (noise grows with distance, odometry noise), <strong>last ball position 2</strong>, <strong>ball velocity 2</strong> (scale noise 0–2×)</p></td>
+</tr>
+<tr class="row-odd"><td><p>Task</p></td>
+<td><p>speed caps 3, kick direction 2, range one-hot 3</p></td>
+<td><p>direction angle + sin / cos, <strong>expected launch speed</strong> (continuous range), strong-kick flag, inaccurate flag, allow-deviation flag</p></td>
+</tr>
+<tr class="row-even"><td><p>Gait</p></td>
+<td><p>none</p></td>
+<td><p>clock cos / sin</p></td>
+</tr>
+<tr class="row-odd"><td><p>Critic extras</p></td>
+<td><p>true ball, etc.</p></td>
+<td><p>base mass, linear velocity, height, push forces / torques, kick-pose counters</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="rewards">
+<h2>4. Rewards<a class="headerlink" href="#rewards" title="Link to this heading">#</a></h2>
+<p><strong>Ours: 54 active terms</strong>, plus the AMP style reward (weight 0.3) and the
+far-cap tracking template. Main ones:</p>
+<ul class="simple">
+<li><p>Kick outcome: <code class="docutils literal notranslate"><span class="pre">long_kick_power</span></code> 4000, <code class="docutils literal notranslate"><span class="pre">kick_goal</span></code> 1500, <code class="docutils literal notranslate"><span class="pre">style_advantage</span></code>
+1500, <code class="docutils literal notranslate"><span class="pre">kick_rest_accuracy</span></code> 1000, <code class="docutils literal notranslate"><span class="pre">kick_direction</span></code> 900, <code class="docutils literal notranslate"><span class="pre">kick_vel</span></code> 900,
+<code class="docutils literal notranslate"><span class="pre">long_kick_speed_linear</span></code> 800, <code class="docutils literal notranslate"><span class="pre">kick_vel_accurate</span></code> 300, <code class="docutils literal notranslate"><span class="pre">kick_lined_up</span></code>
+200, <code class="docutils literal notranslate"><span class="pre">kick_dir_alignment</span></code> 50; <code class="docutils literal notranslate"><span class="pre">long_kick_underpower</span></code> −300,
+<code class="docutils literal notranslate"><span class="pre">kick_double_touch</span></code> −200, <code class="docutils literal notranslate"><span class="pre">kick_fall</span></code> −2500.</p></li>
+<li><p>Approach / search: <code class="docutils literal notranslate"><span class="pre">approach_close</span></code> 100, <code class="docutils literal notranslate"><span class="pre">approach_align</span></code> 80,
+<code class="docutils literal notranslate"><span class="pre">search_turn</span></code> 10, <code class="docutils literal notranslate"><span class="pre">walk_speed</span></code> 5, <code class="docutils literal notranslate"><span class="pre">walk_speed_track</span></code> 6,
+<code class="docutils literal notranslate"><span class="pre">walk_speed_limit</span></code> −20, <code class="docutils literal notranslate"><span class="pre">approach_bad_contact</span></code> −20, ball avoidance −5.</p></li>
+<li><p>Safety / posture: <code class="docutils literal notranslate"><span class="pre">fall</span></code> −1000, <code class="docutils literal notranslate"><span class="pre">alive</span></code> +2, <code class="docutils literal notranslate"><span class="pre">trunk_tilt</span></code> −20,
+<code class="docutils literal notranslate"><span class="pre">walk_stance_width</span></code> −250, <code class="docutils literal notranslate"><span class="pre">knee_valgus</span></code> −200, <code class="docutils literal notranslate"><span class="pre">foot_flat</span></code> −200 (60 ms
+settle), <code class="docutils literal notranslate"><span class="pre">touchdown_speed</span></code> −15, <code class="docutils literal notranslate"><span class="pre">torque_over_soft_limit</span></code> −100,
+<code class="docutils literal notranslate"><span class="pre">dof_pos_limits</span></code> −10, <code class="docutils literal notranslate"><span class="pre">action_rate</span></code> −0.15, plus small terms.</p></li>
+<li><p>Aim shape: kick direction σ = 0.35 rad (Gaussian on the angle); long
+kicks σ² = 0.05 rad².</p></li>
+<li><p>Speed per range: 3 bins (short &lt; 4 m, medium 4–8, long ≥ 8); rolling
+model <code class="docutils literal notranslate"><span class="pre">sqrt(2</span> <span class="pre">·</span> <span class="pre">0.95</span> <span class="pre">·</span> <span class="pre">d)</span></code>; rest-position reward exp(−miss / 2 m).</p></li>
+</ul>
+<p><strong>B-Human: about 29 terms</strong>, no AMP:</p>
+<ul class="simple">
+<li><p>Kick: <code class="docutils literal notranslate"><span class="pre">ball_kick_direction</span></code> 10 (Gaussian, σ 1 → <strong>0.05</strong> rad² for final
+training, a 3× penalty for wrong directions late, scaled by kick pose and
+sole yaw), <code class="docutils literal notranslate"><span class="pre">ball_kick_velocity</span></code> 4 (Gaussian on expected − actual launch
+speed, σ scale 1 → <strong>0.5</strong>), <code class="docutils literal notranslate"><span class="pre">ball_kick_velocity_strong</span></code> 5 (linear in
+speed × direction), <code class="docutils literal notranslate"><span class="pre">ball_walk_speed</span></code> 2 (walk toward the ball, vision cone,
+rotation logic), <code class="docutils literal notranslate"><span class="pre">ball_walk_target_overshoot</span></code> −100 → 0, <code class="docutils literal notranslate"><span class="pre">ball_sole_yaw</span></code>
+(side-foot target 90°, σ 1 → 0.1).</p></li>
+<li><p>Regularisation: terminate −100, base height −40, orientation −5,
+torques −2e-4, <strong>torque tiredness −1e-2, power −2e-3</strong>, lin vel z −2,
+ang vel xy −0.2, dof vel / acc, root acc, <strong>action rate −1</strong>, limits,
+collision −1, feet slip / yaw / roll / distance / pressure / height,
+<strong>feet swing 3</strong> and <strong>gait phase −0.1</strong> (clock-based gait).</p></li>
+<li><p>Rolling model <code class="docutils literal notranslate"><span class="pre">sqrt(2</span> <span class="pre">·</span> <span class="pre">0.3</span> <span class="pre">·</span> <span class="pre">d)</span></code> (B-Human’s ball physics, friction 0.3);
+continuous range 0.5–20 m.</p></li>
+</ul>
+</section>
+<section id="terminations-and-episodes">
+<h2>5. Terminations and episodes<a class="headerlink" href="#terminations-and-episodes" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p></p></th>
+<th class="head"><p>Ours</p></th>
+<th class="head"><p>B-Human</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>End</p></td>
+<td><p>time out (30 s), fell over, illegal contact, NaN</p></td>
+<td><p>time out (30 s), base height &lt; 0.30 (target height randomised 0.4–0.6)</p></td>
+</tr>
+<tr class="row-odd"><td><p>Contacts</p></td>
+<td><p>illegal contact terminates</p></td>
+<td><p>penalised on trunk, hips, shanks, ankles</p></td>
+</tr>
+<tr class="row-even"><td><p>Kicks per episode</p></td>
+<td><p>continuous loop (new target after each kick)</p></td>
+<td><p>3 kicks, then reset</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="randomisation">
+<h2>6. Randomisation<a class="headerlink" href="#randomisation" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p></p></th>
+<th class="head"><p>Ours</p></th>
+<th class="head"><p>B-Human</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Terrain</p></td>
+<td><p>60 % flat, 40 % 0–2 cm bumps</p></td>
+<td><p>60 % plane, 20 % random <strong>7.5 cm</strong>, 20 % discrete 2 cm (trimesh)</p></td>
+</tr>
+<tr class="row-odd"><td><p>Ground friction</p></td>
+<td><p>foot 0.7–1.4</p></td>
+<td><p><strong>0.3–1.5</strong> (ground), terrain friction additive 0.3–1.0</p></td>
+</tr>
+<tr class="row-even"><td><p>Contact</p></td>
+<td><p>solref / solimp ranges (stiffness 0.006–0.03)</p></td>
+<td><p><strong>compliance 0.5–1.5, restitution 0.1–0.9</strong></p></td>
+</tr>
+<tr class="row-odd"><td><p>Mass / CoM</p></td>
+<td><p>trunk / limb inertia ±5 %, CoM ±5 / 2.5 cm</p></td>
+<td><p>base mass <strong>±20 %</strong>, base CoM <strong>±10 cm</strong>, others ±2 % / ±5 mm</p></td>
+</tr>
+<tr class="row-even"><td><p>PD</p></td>
+<td><p>kp, kd ×0.8–1.2</p></td>
+<td><p>±5 % (ankle ±10–20 %), dof friction 0–2</p></td>
+</tr>
+<tr class="row-odd"><td><p>Encoders</p></td>
+<td><p>bias ±0.015 rad</p></td>
+<td><p>offsets pitch 0.02, roll 0.01, other 0.005</p></td>
+</tr>
+<tr class="row-even"><td><p>Pushes</p></td>
+<td><p>velocity pushes (±0.35 m/s, rotations); near-ball bumps 10 %</p></td>
+<td><p>force 0–5 N + torque 0–2 Nm for 2 s every 5 s; velocity kicks 0–0.3 m/s every 3 s</p></td>
+</tr>
+<tr class="row-odd"><td><p>Latency</p></td>
+<td><p><strong>0–40 ms</strong></p></td>
+<td><p>none</p></td>
+</tr>
+<tr class="row-even"><td><p>Ball</p></td>
+<td><p>radius 0.07–0.13 m, mass 0.05–0.45 kg, friction, bounce</p></td>
+<td><p>radius 0.095 ± 0.01, mass 0.29 ± 0.01</p></td>
+</tr>
+<tr class="row-odd"><td><p>Initial state</p></td>
+<td><p>from walk motion clips (moving)</p></td>
+<td><p>default pose + noise, ball velocity 0–7.5 m/s at init</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="perception-model-in-training">
+<h2>7. Perception model in training<a class="headerlink" href="#perception-model-in-training" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p></p></th>
+<th class="head"><p>Ours</p></th>
+<th class="head"><p>B-Human</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Camera</p></td>
+<td><p>FOV ±35° × vertical limit, head tracking, dropout 2 %, delay 0–2 steps, noise 3–5 cm, memory with lost-ball rule</p></td>
+<td><p>No FOV; ball always observed with distance-scaled noise (up to 2 m in x at 10 m), odometry noise</p></td>
+</tr>
+<tr class="row-odd"><td><p>Ball velocity</p></td>
+<td><p>not observed</p></td>
+<td><p>observed (noisy, scaled 0–2×)</p></td>
+</tr>
+<tr class="row-even"><td><p>Kick-moment robustness</p></td>
+<td><p>—</p></td>
+<td><p><strong>ball frozen in the input after the kick</strong> (20 %)</p></td>
+</tr>
+<tr class="row-odd"><td><p>Moving ball</p></td>
+<td><p>off (v51 tried)</p></td>
+<td><p>random resets, velocity adds, incoming balls up to 7.5 m/s</p></td>
+</tr>
+<tr class="row-even"><td><p>Unknown ball</p></td>
+<td><p>15 % unknown starts, unseen relocations</p></td>
+<td><p>—</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="training-algorithm-and-schedule">
+<h2>8. Training algorithm and schedule<a class="headerlink" href="#training-algorithm-and-schedule" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p></p></th>
+<th class="head"><p>Ours</p></th>
+<th class="head"><p>B-Human</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Algorithm</p></td>
+<td><p>PPO + AMP discriminator (style weight 0.3), Muon optimiser, symmetry augmentation</p></td>
+<td><p>PPO with a <strong>symmetry loss</strong> (coef 1e-2), adaptive learning rate</p></td>
+</tr>
+<tr class="row-odd"><td><p>Learning rate</p></td>
+<td><p>1e-3</p></td>
+<td><p>adaptive 1e-4–1e-2 (later 1e-5)</p></td>
+</tr>
+<tr class="row-even"><td><p>Entropy</p></td>
+<td><p>0.005</p></td>
+<td><p>−0.01 with a target entropy range (−11…−10, later −16.5…−16)</p></td>
+</tr>
+<tr class="row-odd"><td><p>KL</p></td>
+<td><p>0.004</p></td>
+<td><p>0.01 → 0.003</p></td>
+</tr>
+<tr class="row-even"><td><p>γ / λ</p></td>
+<td><p>0.995 / 0.95</p></td>
+<td><p>0.98 / 0.95</p></td>
+</tr>
+<tr class="row-odd"><td><p>Epochs / batches</p></td>
+<td><p>5 epochs, 4 mini-batches, 24 steps</p></td>
+<td><p>20 mini-epochs, 24 steps</p></td>
+</tr>
+<tr class="row-even"><td><p>Schedule</p></td>
+<td><p>evolutionary loop (genes, reward templates, contexts), speed-cap ramp, soft-landing curriculum</p></td>
+<td><p><strong>manual staging</strong>: reward sigmas wide → tight, penalties and robustness probabilities raised late, entropy and lr lowered</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="where-each-is-better-today-measured">
+<h2>9. Where each is better today (measured)<a class="headerlink" href="#where-each-is-better-today-measured" title="Link to this heading">#</a></h2>
+<p>runswift official goal grid (our FOV gate + soft start, caps 1.5 / 1.5 / 1.0): <strong>h012_x50 170 / 180 goals</strong> vs B-Human 165; the champion h022 141.
+Near grid (single kick from standstill, stick-foot fixture): B-Human 215 / 216 on direction vs ours 119–176.
+Our v2 (camera noise): every recent checkpoint beats B-Human on accuracy, falls and time to kick; B-Human is better with a perfect ball position on aim (3.7° vs 4.7°+) and long-kick power (5.7 vs ≤ 5.0 m/s).</p>
+</section>
+<section id="what-b-human-has-that-we-do-not-candidates-cheapest-first">
+<h2>10. What B-Human has that we do not (candidates, cheapest first)<a class="headerlink" href="#what-b-human-has-that-we-do-not-candidates-cheapest-first" title="Link to this heading">#</a></h2>
+<ol class="arabic simple">
+<li><p><strong>Final-stage tight sigmas</strong> for kick direction (to 0.05 rad²) and launch speed (×0.5). Ours stay at 0.35 rad and a 2 m rest scale. Gene-tunable now (<code class="docutils literal notranslate"><span class="pre">k.KICK_AIM_SIGMA</span></code>, <code class="docutils literal notranslate"><span class="pre">k.LONG_AIM_SIGMA2</span></code>, <code class="docutils literal notranslate"><span class="pre">k.REST_MISS_SCALE</span></code>); one try today (bh_prec2, aimlong) was mixed, so staging matters (anneal, don’t jump).</p></li>
+<li><p><strong>Energy costs</strong> (power, torque tiredness) and a <strong>stronger action-rate penalty</strong> (−1 vs our −0.15): smoother, quieter and cooler motors. <code class="docutils literal notranslate"><span class="pre">w.joint_power</span></code> exists; tiredness needs real torque limits in the model.</p></li>
+<li><p><strong>Hard torque clip</strong> at B-Human’s values instead of a soft penalty: the real 291 knee hit −74 Nm in a fall.</p></li>
+<li><p><strong>Ground randomisation</strong>: friction down to 0.3, restitution and compliance, rougher terrain (7.5 cm). Relevant to the real slip-and-fall on 291.</p></li>
+<li><p><strong>Wider mass and CoM randomisation</strong> (±20 % / ±10 cm): matches the real knee-load difference.</p></li>
+<li><p><strong>Kick-moment robustness</strong>: freeze the ball input after the kick; incoming and moving balls. Without a velocity input the moving ball is limited (v51).</p></li>
+<li><p><strong>Symmetry loss</strong> in PPO (we augment; they also penalise asymmetric outputs).</p></li>
+<li><p><strong>Kick-pose and sole-yaw shaping</strong> (side-foot target), if the free style choice keeps missing the side-foot kick.</p></li>
+<li><p>Not adoptable under the 83-input rule: ball velocity input, gait clock and frequency action, continuous range input.</p></li>
+</ol>
+<p>And what we have that they do not: one end-to-end policy (search, approach and
+kick), a camera and memory model, actuation latency, ball size and mass
+randomisation, AMP style, landing-quality terms, and a benchmark-gated
+evolution loop.</p>
+</section>
+</section>
+
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#architecture">1. Architecture</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#simulation-and-robot-model">2. Simulation and robot model</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#observations">3. Observations</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#rewards">4. Rewards</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#terminations-and-episodes">5. Terminations and episodes</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#randomisation">6. Randomisation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#perception-model-in-training">7. Perception model in training</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#training-algorithm-and-schedule">8. Training algorithm and schedule</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#where-each-is-better-today-measured">9. Where each is better today (measured)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#what-b-human-has-that-we-do-not-candidates-cheapest-first">10. What B-Human has that we do not (candidates, cheapest first)</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By The mjlab Developers
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2025, The mjlab Developers.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    <p class="last-updated">
+  Last updated on Oct 10, 2026.
+  <br/>
+</p>
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>

@@ -1,0 +1,998 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="./" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>kick_loop_v1 — policy inputs and outputs &#8212; mjlab Documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+
+  
+  <link href="_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/sphinx-book-theme.css?v=eba8b062" />
+    <link rel="stylesheet" type="text/css" href="_static/twemoji.css" />
+    <link rel="stylesheet" type="text/css" href="/home/runner/work/runswift_mjlab/runswift_mjlab/.venv/lib/python3.13/site-packages/sphinxcontrib/icon/node_modules/@fortawesome/fontawesome-free/css/all.min.css?v=53359634" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="_static/css/custom.css?v=3ea80bc3" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+    <script src="_static/documentation_options.js?v=9eb32ce0"></script>
+    <script src="_static/doctools.js?v=9bcbadda"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="https://unpkg.com/twemoji@latest/dist/twemoji.min.js"></script>
+    <script src="_static/twemoji.js"></script>
+    <script src="/home/runner/work/runswift_mjlab/runswift_mjlab/.venv/lib/python3.13/site-packages/sphinxcontrib/icon/node_modules/@fortawesome/fontawesome-free/js/all.min.js?v=ec35c6c9"></script>
+    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="_static/copybutton.js?v=f281be69"></script>
+    <script src="_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
+    <script src="_static/design-tabs.js?v=f930bc37"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'K1_KICK_LOOP_POLICY_IO';</script>
+    <link rel="icon" href="_static/favicon.ico"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+    <meta name="docbuild:last-update" content="Oct 10, 2026"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search..."
+         aria-label="Search..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">mjlab Documentation</p>
+  
+</a></div>
+        <div class="sidebar-primary-item">
+<form class="bd-search d-flex align-items-center"
+      action="search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search..."
+         aria-label="Search..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+        <div class="sidebar-primary-item">
+<div class="sidebar-version-switcher">
+  <label class="sidebar-version-label" for="version-select">Version</label>
+  <select id="version-select" class="sidebar-version-select" onchange="location = this.value;">
+    <option value="K1_KICK_LOOP_POLICY_IO.html" selected>main</option>
+  </select>
+</div>
+</div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="source/installation.html">Installation Guide</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="source/tutorials.html">Tutorials</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="source/tutorials/cartpole.html">Cartpole: Building Your First Environment</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="source/contributing.html">Contributing</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Concepts</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="source/architecture_overview.html">Architecture Overview</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="source/entity/index.html">Entity</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="source/entity/entity_data.html">Entity Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/entity/per_world_mesh.html">Heterogeneous Worlds</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="source/actuators.html">Actuators</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="source/sensors/index.html">Sensors</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="source/sensors/raycast_sensor.html">RayCast Sensor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/sensors/rgbd_camera.html">RGB-D Camera</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="source/scene.html">Scene</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/terrain.html">Terrain</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">The Manager Layer</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="source/environment_config.html">Environment Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/observations.html">Observations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/actions.html">Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/rewards.html">Rewards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/terminations.html">Terminations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/commands.html">Commands</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/events.html">Events</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/randomization.html">Domain Randomization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/curriculum.html">Curriculum</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/metrics.html">Metrics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/recorders.html">Recorders</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Training &amp; Debugging</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="source/training/rsl_rl.html">Training with RSL-RL</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="source/training/motion_imitation.html">Motion Imitation</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="source/viewers.html">Viewers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/training/distributed_training.html">Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/training/cloud.html">Cloud Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/debugging/nan_guard.html">NaN Guard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/debugging/export_scene.html">Export Scene</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="source/api/index.html">API Reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="source/api/envs.html">mjlab.envs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/api/scene.html">mjlab.scene</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/api/sim.html">mjlab.sim</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/api/entity.html">mjlab.entity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/api/actuator.html">mjlab.actuator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/api/sensor.html">mjlab.sensor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/api/managers.html">mjlab.managers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/api/terrains.html">mjlab.terrains</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/api/rl.html">mjlab.rl</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/api/viewer.html">mjlab.viewer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/api/tasks.html">mjlab.tasks</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Further Reading</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="source/motivation.html">Why mjlab?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/migration_isaac_lab.html">Migrating from Isaac Lab</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/faq.html">FAQ &amp; Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/research.html">Research</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/changelog.html">Changelog</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+
+
+
+<div class="dropdown dropdown-source-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Source repositories">
+    <i class="fab fa-github"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="https://github.com/mujocolab/mjlab" target="_blank"
+   class="btn btn-sm btn-source-repository-button dropdown-item"
+   title="Source repository"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fab fa-github"></i>
+  </span>
+<span class="btn__text-container">Repository</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li><a href="https://github.com/mujocolab/mjlab/edit/main/docs/K1_KICK_LOOP_POLICY_IO.md" target="_blank"
+   class="btn btn-sm btn-source-edit-button dropdown-item"
+   title="Suggest edit"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-pencil-alt"></i>
+  </span>
+<span class="btn__text-container">Suggest edit</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li><a href="https://github.com/mujocolab/mjlab/issues/new?title=Issue%20on%20page%20%2FK1_KICK_LOOP_POLICY_IO.html&body=Your%20issue%20content%20here." target="_blank"
+   class="btn btn-sm btn-source-issues-button dropdown-item"
+   title="Open an issue"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-lightbulb"></i>
+  </span>
+<span class="btn__text-container">Open issue</span>
+</a>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+
+
+<div class="dropdown dropdown-download-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Download this page">
+    <i class="fas fa-download"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="_sources/K1_KICK_LOOP_POLICY_IO.md" target="_blank"
+   class="btn btn-sm btn-download-source-button dropdown-item"
+   title="Download source file"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="btn__text-container">.md</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li>
+<button onclick="window.print()"
+  class="btn btn-sm btn-download-pdf-button dropdown-item"
+  title="Print to PDF"
+  data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="btn__text-container">.pdf</span>
+</button>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm pst-navbar-icon search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+<button class="sidebar-toggle secondary-toggle btn btn-sm" title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</button>
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>kick_loop_v1 — policy inputs and outputs</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#observation-vector-83">1. Observation vector (83)</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#ball-slots-7274">1.1 Ball (slots 72–74)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#kick-direction-slots-7879">1.2 Kick direction (slots 78–79)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#observation-noise-in-training-not-added-by-the-runner">1.3 Observation noise in training (not added by the runner)</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#outputs-22-and-joint-targets">2. Outputs (22) and joint targets</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#head-actions-01-are-overridden">2.1 Head (actions 0–1 are overridden)</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#training-randomization-actor-relevant">3. Training randomization (actor-relevant)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#joint-order-jointindex-all-22-joint-blocks">4. Joint order (JointIndex, all 22-joint blocks)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#verification">5. Verification</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#typical-robot-command">6. Typical robot command</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#model-history-relevant-to-deployment">7. Model history relevant to deployment</a></li>
+</ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="kick-loop-v1-policy-inputs-and-outputs">
+<h1>kick_loop_v1 — policy inputs and outputs<a class="headerlink" href="#kick-loop-v1-policy-inputs-and-outputs" title="Link to this heading">#</a></h1>
+<p>Reference for the K1 kick-loop policy (<code class="docutils literal notranslate"><span class="pre">Mjlab-Velocity-Kick-Stage3-Amp-DA-Muon-Booster-K1</span></code>,
+runswift_mjlab) as trained and as run on the robot by <code class="docutils literal notranslate"><span class="pre">KickLoopPolicy</span></code>
+(<code class="docutils literal notranslate"><span class="pre">policy_runner/policy/kick_loop_policy.py</span></code>). Values were read from the
+training config on 2026-10-03 (stage3 v53 config, robot candidate
+<code class="docutils literal notranslate"><span class="pre">k1_kick_loop_v53_model_10700.onnx</span></code>); the ONNX metadata of each exported model
+carries the default pose, action scale and PD gains it was trained with.</p>
+<p>The policy runs at <strong>50 Hz</strong> (training: 200 Hz physics, decimation 4). Each
+step it reads <strong>83 numbers</strong> and writes <strong>22 actions</strong>.</p>
+<section id="observation-vector-83">
+<h2>1. Observation vector (83)<a class="headerlink" href="#observation-vector-83" title="Link to this heading">#</a></h2>
+<p>Order is fixed; slot numbers are what the ONNX model sees. Joint order for all
+22-joint blocks is the robot’s JointIndex order (section 4).</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Slots</p></th>
+<th class="head"><p>Name</p></th>
+<th class="head"><p>Units / range</p></th>
+<th class="head"><p>Training source</p></th>
+<th class="head"><p>Robot source (runner)</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>0–2</p></td>
+<td><p>Trunk angular velocity (x, y, z)</p></td>
+<td><p>rad/s</p></td>
+<td><p>IMU site at the trunk origin (= trunk body frame)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">/imu/data</span></code> <code class="docutils literal notranslate"><span class="pre">angular_velocity</span></code>, or <code class="docutils literal notranslate"><span class="pre">/low_state</span></code> <code class="docutils literal notranslate"><span class="pre">imu_state.gyro</span></code> with <code class="docutils literal notranslate"><span class="pre">--imu-from-low-state</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>3–5</p></td>
+<td><p>Gravity in the trunk frame</p></td>
+<td><p>unit vector; upright = (0, 0, −1)</p></td>
+<td><p>Simulated trunk orientation</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">compute_projected_gravity(roll,</span> <span class="pre">pitch)</span></code> from the IMU</p></td>
+</tr>
+<tr class="row-even"><td><p>6–27</p></td>
+<td><p>Joint positions − default pose</p></td>
+<td><p>rad</p></td>
+<td><p>Sim joint positions + per-joint encoder bias</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">/joint_states</span></code> (by name), or <code class="docutils literal notranslate"><span class="pre">/low_state</span></code> <code class="docutils literal notranslate"><span class="pre">motor_state_serial</span></code> (by index) with <code class="docutils literal notranslate"><span class="pre">--joints-from-low-state</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>28–49</p></td>
+<td><p>Joint velocities</p></td>
+<td><p>rad/s</p></td>
+<td><p>Sim</p></td>
+<td><p>Same source as positions</p></td>
+</tr>
+<tr class="row-even"><td><p>50–71</p></td>
+<td><p>Previous action (raw network output)</p></td>
+<td><p>unitless</p></td>
+<td><p>Last action</p></td>
+<td><p>Last action (<code class="docutils literal notranslate"><span class="pre">_last_action</span></code>)</p></td>
+</tr>
+<tr class="row-odd"><td><p>72–73</p></td>
+<td><p>Ball x, y in the level ground frame (base_link)</p></td>
+<td><p>m; x forward, y left</p></td>
+<td><p>See 1.1</p></td>
+<td><p>See 1.1</p></td>
+</tr>
+<tr class="row-even"><td><p>74</p></td>
+<td><p>Ball memory age</p></td>
+<td><p>exp(−t_since_seen / 2 s), in (0, 1]</p></td>
+<td><p>1 while seen</p></td>
+<td><p>1 while seen; 0 before the first sighting</p></td>
+</tr>
+<tr class="row-odd"><td><p>75–77</p></td>
+<td><p>Speed limits: max |vx|, |vy|, |wz|</p></td>
+<td><p>m/s, m/s, rad/s</p></td>
+<td><p>Random per episode: vx 0.3–2.0 (backward capped at 1.75), vy 0.2–1.5, wz 0.4–1.5 (v34+; v33 and earlier: 0.3–1.2, 0.2–1.0, 0.4–1.25)</p></td>
+<td><p>Fixed: <code class="docutils literal notranslate"><span class="pre">--kick-speed-limits</span> <span class="pre">vx,vy,wz</span></code> (default 0.5,0.3,0.6)</p></td>
+</tr>
+<tr class="row-even"><td><p>78–79</p></td>
+<td><p>Kick direction (cos φ, sin φ)</p></td>
+<td><p>unit vector in the robot’s heading (yaw) frame</p></td>
+<td><p>Direction from the last-seen ball to the target</p></td>
+<td><p>See 1.2</p></td>
+</tr>
+<tr class="row-odd"><td><p>80–82</p></td>
+<td><p>Kick range one-hot (short, medium, long)</p></td>
+<td><p>{0, 1}</p></td>
+<td><p>Target distance &lt; 4 m / 4–8 m / ≥ 8 m from the last-seen ball</p></td>
+<td><p>Fixed: <code class="docutils literal notranslate"><span class="pre">--kick-range</span> <span class="pre">short|medium|long</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<section id="ball-slots-7274">
+<h3>1.1 Ball (slots 72–74)<a class="headerlink" href="#ball-slots-7274" title="Link to this heading">#</a></h3>
+<p>Training:</p>
+<ul class="simple">
+<li><p><strong>Frame (v49+)</strong>: the ball relative to the trunk origin projected onto the
+ground, rotated by trunk <strong>yaw only</strong> — the same level, yaw-only frame as
+runswift vision’s <code class="docutils literal notranslate"><span class="pre">base_link</span></code>. Models before v49 used the full trunk
+orientation (a 5–10° lean moved the reading 4–9 cm); do not deploy them.</p></li>
+<li><p><strong>Seen</strong>: the ball centre is inside the head camera’s view, measured from
+the <code class="docutils literal notranslate"><span class="pre">Head_2</span></code> frame: horizontal half-angle 0.606 rad, vertical half-angle
+0.367 rad (CAM_ANGLE_X/Y = 1.211 × 0.733 rad), camera pitch 0. While seen the
+slot is the true ball xy plus Gaussian noise, σ = 0.03 m + 0.05 × distance
+(per axis, fresh each step).</p></li>
+<li><p><strong>Detection noise (v48+, actor only)</strong>: 2 % of in-view steps drop the
+detection, and the detection is delayed by 0–2 policy steps (0–40 ms, held
+per episode). Rewards use the true visibility.</p></li>
+<li><p><strong>Not seen</strong>: the last sighting in the level frame, turned by the yaw change
+since (no translation: the robot has no odometry), <code class="docutils literal notranslate"><span class="pre">memory_odometry=False</span></code>.</p></li>
+<li><p><strong>Age</strong>: exp(−t / 2 s); 1 while seen.</p></li>
+<li><p>At reset the ball spawns 1–4 m away within ±0.4 rad of the heading.</p></li>
+</ul>
+<p>Robot (runner):</p>
+<ul class="simple">
+<li><p>Ball from <code class="docutils literal notranslate"><span class="pre">/booster_vision/detection</span></code> (<code class="docutils literal notranslate"><span class="pre">vision_interface/Detections</span></code>), the
+first object labelled ball: <code class="docutils literal notranslate"><span class="pre">position_projection</span></code> (robot-base frame, metres),
+falling back to <code class="docutils literal notranslate"><span class="pre">position</span></code>. runswift vision computes it by projecting the
+bottom-centre of the bounding box onto the ground using <code class="docutils literal notranslate"><span class="pre">/head_pose</span></code>.</p></li>
+<li><p>A detection counts as current for <code class="docutils literal notranslate"><span class="pre">--ball-hold-s</span></code> (default 0.2 s). After
+that, the last detection is turned by the IMU yaw change since it was seen
+(as in training).</p></li>
+<li><p>Age from detection arrival times (<code class="docutils literal notranslate"><span class="pre">time.monotonic()</span></code>), not image stamps.</p></li>
+<li><p>Optional <code class="docutils literal notranslate"><span class="pre">--reject-clipped-ball</span></code>: a ball box whose short side is &lt; 0.8 × its
+long side (cut by the image edge) is treated as not seen. Off by default.</p></li>
+</ul>
+</section>
+<section id="kick-direction-slots-7879">
+<h3>1.2 Kick direction (slots 78–79)<a class="headerlink" href="#kick-direction-slots-7879" title="Link to this heading">#</a></h3>
+<p>Training: the direction from the last-seen ball to the target, rotated into
+the robot’s yaw frame. A new target is placed 1–10 m from the ball after each
+goal (bins 1–4, 4–8, 8–10 m, equally likely).</p>
+<p>Robot, <code class="docutils literal notranslate"><span class="pre">--kick-dir-mode</span></code>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">field</span></code> (default): <code class="docutils literal notranslate"><span class="pre">--kick-heading-deg</span></code> relative to the robot’s heading when
+the policy starts (or is re-enabled), tracked with IMU yaw:
+φ = heading − (yaw − yaw₀). 0 = the start heading, + = left. Depends on IMU
+yaw not drifting.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">through_ball</span></code>: the robot-to-ball direction every step (kick along the
+approach line; no IMU heading).</p></li>
+</ul>
+</section>
+<section id="observation-noise-in-training-not-added-by-the-runner">
+<h3>1.3 Observation noise in training (not added by the runner)<a class="headerlink" href="#observation-noise-in-training-not-added-by-the-runner" title="Link to this heading">#</a></h3>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Term</p></th>
+<th class="head"><p>Uniform noise</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Angular velocity</p></td>
+<td><p>±0.2 rad/s</p></td>
+</tr>
+<tr class="row-odd"><td><p>Gravity</p></td>
+<td><p>±0.05</p></td>
+</tr>
+<tr class="row-even"><td><p>Joint positions</p></td>
+<td><p>±0.01 rad (plus a fixed per-joint encoder bias ±0.015 rad per episode)</p></td>
+</tr>
+<tr class="row-odd"><td><p>Joint velocities</p></td>
+<td><p>±1.5 rad/s</p></td>
+</tr>
+<tr class="row-even"><td><p>Ball</p></td>
+<td><p>Gaussian, 0.03 m + 0.05 × distance; 2 % dropout; 0–2 step delay</p></td>
+</tr>
+<tr class="row-odd"><td><p>Other slots</p></td>
+<td><p>none</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>No scaling or clipping is applied to any observation term, in training or in
+the runner. There is no observation history; the only sensor delay in training
+is the 0–2 step ball-detection delay.</p>
+</section>
+</section>
+<section id="outputs-22-and-joint-targets">
+<h2>2. Outputs (22) and joint targets<a class="headerlink" href="#outputs-22-and-joint-targets" title="Link to this heading">#</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">target_i</span> <span class="pre">=</span> <span class="pre">default_i</span> <span class="pre">+</span> <span class="pre">scale_i</span> <span class="pre">×</span> <span class="pre">action_i</span></code>, sent as a position target with
+the trained PD gains. Training does not clip actions or targets; the runner
+clamps targets to the joint ranges (<code class="docutils literal notranslate"><span class="pre">Q_ABS_LIMITS</span></code>, same ranges as the MJCF).</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Joint group</p></th>
+<th class="head"><p>Default pose (rad)</p></th>
+<th class="head"><p>Action scale</p></th>
+<th class="head"><p>kp</p></th>
+<th class="head"><p>kd</p></th>
+<th class="head"><p>Effort limit in training (Nm)</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Head yaw, pitch</p></td>
+<td><p>0, 0</p></td>
+<td><p>0.375</p></td>
+<td><p>4</p></td>
+<td><p>0.25</p></td>
+<td><p>6</p></td>
+</tr>
+<tr class="row-odd"><td><p>Shoulder pitch L/R</p></td>
+<td><p>0, 0</p></td>
+<td><p>0.35</p></td>
+<td><p>10</p></td>
+<td><p>1</p></td>
+<td><p>14</p></td>
+</tr>
+<tr class="row-even"><td><p>Shoulder roll L/R</p></td>
+<td><p>−1.4, +1.4</p></td>
+<td><p>0.35</p></td>
+<td><p>10</p></td>
+<td><p>1</p></td>
+<td><p>14</p></td>
+</tr>
+<tr class="row-odd"><td><p>Elbow pitch L/R</p></td>
+<td><p>0, 0</p></td>
+<td><p>0.35</p></td>
+<td><p>10</p></td>
+<td><p>1</p></td>
+<td><p>14</p></td>
+</tr>
+<tr class="row-even"><td><p>Elbow yaw L/R</p></td>
+<td><p>−0.4, +0.4</p></td>
+<td><p>0.35</p></td>
+<td><p>10</p></td>
+<td><p>1</p></td>
+<td><p>14</p></td>
+</tr>
+<tr class="row-odd"><td><p>Hip pitch</p></td>
+<td><p>−0.4</p></td>
+<td><p>0.2125</p></td>
+<td><p>80</p></td>
+<td><p>4</p></td>
+<td><p>68</p></td>
+</tr>
+<tr class="row-even"><td><p>Hip roll</p></td>
+<td><p>0</p></td>
+<td><p>0.2375</p></td>
+<td><p>80</p></td>
+<td><p>4</p></td>
+<td><p>76</p></td>
+</tr>
+<tr class="row-odd"><td><p>Hip yaw</p></td>
+<td><p>0</p></td>
+<td><p>0.1197</p></td>
+<td><p>80</p></td>
+<td><p>4</p></td>
+<td><p>38.3</p></td>
+</tr>
+<tr class="row-even"><td><p>Knee pitch</p></td>
+<td><p>0.8</p></td>
+<td><p>0.35</p></td>
+<td><p>80</p></td>
+<td><p>4</p></td>
+<td><p>112</p></td>
+</tr>
+<tr class="row-odd"><td><p>Ankle pitch</p></td>
+<td><p>−0.4</p></td>
+<td><p>0.1915</p></td>
+<td><p>50</p></td>
+<td><p>2</p></td>
+<td><p>38.3</p></td>
+</tr>
+<tr class="row-even"><td><p>Ankle roll</p></td>
+<td><p>0</p></td>
+<td><p>0.1915</p></td>
+<td><p>50</p></td>
+<td><p>2</p></td>
+<td><p>38.3</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>The runner reads default pose, action scale and gains from the ONNX metadata.
+Models exported before 2026-10-02 had the scales rounded to 3 decimals
+(0.213, 0.237, 0.120, 0.191); re-export to get the exact values.</p>
+<section id="head-actions-01-are-overridden">
+<h3>2.1 Head (actions 0–1 are overridden)<a class="headerlink" href="#head-actions-01-are-overridden" title="Link to this heading">#</a></h3>
+<p>The network still outputs head actions, but both training and the runner
+replace them with a scripted tracker (same code, checked numerically):</p>
+<ul class="simple">
+<li><p><strong>Track</strong>: aim at the ball estimate in slots 72–73 from the head pivot
+(0.0056, 0, 0.2149) m in the trunk frame, ball centre 0.47 m below the trunk
+origin; yaw = atan2(dy, dx) clamped to ±0.85; pitch = elevation + 0.18 rad
+(look below the ball) − camera pitch, clamped to [−0.25, 0.82]
+(+ = looking down).</p></li>
+<li><p><strong>Lost close</strong>: ball unseen for 0.2 s and the estimate within 1.5 m → pitch
+0.82 (look down); after 0.5 s also sweep yaw.</p></li>
+<li><p><strong>Lost far</strong>: unseen for 0.5 s → sweep yaw ±0.8 rad (3 s period) and pitch
+0.55 ± 0.2 (1.5 s period). The runner also sweeps before the first sighting.</p></li>
+<li><p><strong>Smoothing</strong>: low-pass 0.3 per step, at most 0.06 rad per step.</p></li>
+<li><p>Training only: in 20 % of episodes the head sweeps regardless of the ball,
+so the policy copes with a head it does not control.</p></li>
+</ul>
+<p>Runner <code class="docutils literal notranslate"><span class="pre">--kick-head</span></code>: <code class="docutils literal notranslate"><span class="pre">track</span></code> (default), <code class="docutils literal notranslate"><span class="pre">fixed</span></code> with
+<code class="docutils literal notranslate"><span class="pre">--kick-head-angles</span> <span class="pre">yaw,pitch</span></code>, or <code class="docutils literal notranslate"><span class="pre">policy</span></code> (network output, for models
+before v21). <code class="docutils literal notranslate"><span class="pre">set_head_target()</span></code> switches to fixed angles at run time.</p>
+</section>
+</section>
+<section id="training-randomization-actor-relevant">
+<h2>3. Training randomization (actor-relevant)<a class="headerlink" href="#training-randomization-actor-relevant" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>What</p></th>
+<th class="head"><p>Range</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Command (policy→motor) delay</p></td>
+<td><p>2–8 physics steps (10–40 ms), held per episode</p></td>
+</tr>
+<tr class="row-odd"><td><p>PD gains</p></td>
+<td><p>kp, kd × 0.8–1.2</p></td>
+</tr>
+<tr class="row-even"><td><p>Encoder bias</p></td>
+<td><p>±0.015 rad per joint</p></td>
+</tr>
+<tr class="row-odd"><td><p>Foot friction</p></td>
+<td><p>0.7–1.4 (v48c+; was 0.75–1.25)</p></td>
+</tr>
+<tr class="row-even"><td><p>Trunk / limb inertia, CoM</p></td>
+<td><p>±5 %, CoM ±5 cm (trunk) / ±2.5 cm (limbs)</p></td>
+</tr>
+<tr class="row-odd"><td><p>Pushes</p></td>
+<td><p>every 1.5–4 s: velocity ±0.35 m/s (x, y; v50d+, was ±0.28), ±0.2 m/s (z), ±0.52 rad/s (roll, pitch), ±0.78 rad/s (yaw)</p></td>
+</tr>
+<tr class="row-even"><td><p>Bumps near the ball (v50d+)</p></td>
+<td><p>within 1 m of the ball, 10 % chance every 0.5–1 s: ±0.25 m/s (x, y), ±0.3 rad/s (roll, pitch)</p></td>
+</tr>
+<tr class="row-odd"><td><p>Ball (v34+; config: mass alpha −0.347…0.458, sliding ×0.6–1.4, rolling ×0.5–2.5, solref 0.03–0.08 / 0.08–0.4)</p></td>
+<td><p>mass ×0.5–2.5 of 0.10 kg (0.05–0.25 kg), sliding friction ×0.6–1.4, rolling resistance ×0.5–2.5, contact softness / bounce (solref timeconst 0.03–0.08, dampratio 0.08–0.4); radius fixed 0.08 m. v33 and earlier: mass ×0.7–1.4, sliding ×0.7–1.3, rolling ×0.6–1.6, no bounce randomization</p></td>
+</tr>
+<tr class="row-even"><td><p>Terrain</p></td>
+<td><p>v48+: 60 % flat, 40 % gentle bumps (0–2 cm, 5 mm steps, 0.2 m spacing), 16 m patches; play / eval on the flat plane unless stated</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="joint-order-jointindex-all-22-joint-blocks">
+<h2>4. Joint order (JointIndex, all 22-joint blocks)<a class="headerlink" href="#joint-order-jointindex-all-22-joint-blocks" title="Link to this heading">#</a></h2>
+<p>0 AAHead_yaw, 1 Head_pitch, 2 Left_Shoulder_Pitch, 3 Left_Shoulder_Roll,
+4 Left_Elbow_Pitch, 5 Left_Elbow_Yaw, 6 Right_Shoulder_Pitch,
+7 Right_Shoulder_Roll, 8 Right_Elbow_Pitch, 9 Right_Elbow_Yaw,
+10 Left_Hip_Pitch, 11 Left_Hip_Roll, 12 Left_Hip_Yaw, 13 Left_Knee_Pitch,
+14 Left_Ankle_Pitch, 15 Left_Ankle_Roll, 16 Right_Hip_Pitch, 17 Right_Hip_Roll,
+18 Right_Hip_Yaw, 19 Right_Knee_Pitch, 20 Right_Ankle_Pitch,
+21 Right_Ankle_Roll.</p>
+<p>Training (mjlab) uses the same order. On K1, <code class="docutils literal notranslate"><span class="pre">/joint_states</span></code> reports the
+shoulder pitches as <code class="docutils literal notranslate"><span class="pre">ALeft_Shoulder_Pitch</span></code> / <code class="docutils literal notranslate"><span class="pre">ARight_Shoulder_Pitch</span></code> (now
+accepted as aliases) and was seen without the head joints; <code class="docutils literal notranslate"><span class="pre">/low_state</span></code>
+<code class="docutils literal notranslate"><span class="pre">motor_state_serial</span></code> gives all 22 by index (<code class="docutils literal notranslate"><span class="pre">--joints-from-low-state</span></code>).</p>
+</section>
+<section id="verification">
+<h2>5. Verification<a class="headerlink" href="#verification" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">parity_check.py</span></code> (runs the training env and the runner side by side): all
+observation slots identical except the ball at episode start when the ball
+spawns out of view (training memory starts at the spawn position, the runner
+has none); ONNX vs training policy ≤ 3e-6; joint targets identical except the
+runner’s joint-range clamp (hip roll, ~1.6 % of steps).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sensor_check.py</span></code> on the robot: prints what the policy will see (gravity,
+gyro, head and shoulder joints, ball position, detection rate and
+camera-to-runner latency). Expected: upright gravity ≈ (0, 0, −1); nose-down
+15° → gravity x ≈ +0.26; right side down 15° → gravity y ≈ −0.26; gyro in
+rad/s.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--record-kick-obs</span> <span class="pre">PATH</span></code> saves every step’s 83 inputs, raw actions, sent
+targets, ball-lost time and has-ball flag to <code class="docutils literal notranslate"><span class="pre">PATH.npz</span></code> for replay.</p></li>
+</ul>
+</section>
+<section id="typical-robot-command">
+<h2>6. Typical robot command<a class="headerlink" href="#typical-robot-command" title="Link to this heading">#</a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>policy_runner_main.py<span class="w"> </span>kick_loop_v1<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--model-path<span class="w"> </span>../kick_loop_models/k1_kick_loop_v53_model_10700.onnx<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--kick-head<span class="w"> </span>track<span class="w"> </span>--kick-dir-mode<span class="w"> </span>through_ball<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--kick-range<span class="w"> </span>medium<span class="w"> </span>--kick-speed-limits<span class="w"> </span><span class="m">0</span>.8,0.5,0.9<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--imu-from-low-state<span class="w"> </span>/low_state<span class="w"> </span>--joints-from-low-state<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--record-kick-obs<span class="w"> </span>runs/kick_rec
+</pre></div>
+</div>
+</section>
+<section id="model-history-relevant-to-deployment">
+<h2>7. Model history relevant to deployment<a class="headerlink" href="#model-history-relevant-to-deployment" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Model</p></th>
+<th class="head"><p>Notes</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>v31/5450</p></td>
+<td><p>old robot candidate; trunk-frame ball (pre-v49)</p></td>
+</tr>
+<tr class="row-odd"><td><p>v47/8800</p></td>
+<td><p>strongest kick of the trunk-frame models — do not deploy (ball frame)</p></td>
+</tr>
+<tr class="row-even"><td><p>v49/9900</p></td>
+<td><p>first level-frame (base_link) model</p></td>
+</tr>
+<tr class="row-odd"><td><p>v50d/10200</p></td>
+<td><p>+ pushes / near-ball bumps; smoothest kick in the runner sim</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>v53/10700</strong></p></td>
+<td><p><strong>current candidate</strong>: lean at speed +0.7° (was +2.2°), flat 91.5 % within 20° / 1.05 goals, long kicks 5.18 m/s (nominal ball), walking jitter 0.073 (gold walk 0.083)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Speed limits in training (v34+): vx 0.3–2.0 (backward capped at 1.75), vy 0.2–1.5, wz 0.4–1.5. The runner’s <code class="docutils literal notranslate"><span class="pre">SPEED_LIMIT_RANGES</span></code> on branch <code class="docutils literal notranslate"><span class="pre">kick</span></code> still needs this update.</p>
+</section>
+</section>
+
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#observation-vector-83">1. Observation vector (83)</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#ball-slots-7274">1.1 Ball (slots 72–74)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#kick-direction-slots-7879">1.2 Kick direction (slots 78–79)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#observation-noise-in-training-not-added-by-the-runner">1.3 Observation noise in training (not added by the runner)</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#outputs-22-and-joint-targets">2. Outputs (22) and joint targets</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#head-actions-01-are-overridden">2.1 Head (actions 0–1 are overridden)</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#training-randomization-actor-relevant">3. Training randomization (actor-relevant)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#joint-order-jointindex-all-22-joint-blocks">4. Joint order (JointIndex, all 22-joint blocks)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#verification">5. Verification</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#typical-robot-command">6. Typical robot command</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#model-history-relevant-to-deployment">7. Model history relevant to deployment</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By The mjlab Developers
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2025, The mjlab Developers.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    <p class="last-updated">
+  Last updated on Oct 10, 2026.
+  <br/>
+</p>
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>
