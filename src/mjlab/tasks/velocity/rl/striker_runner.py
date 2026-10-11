@@ -156,6 +156,20 @@ class StrikerControllerRunner(MjlabOnPolicyRunner):
       self.logger.log_dir if self.logger.writer is not None else None,
     )
 
+  def load(
+    self,
+    path: str,
+    load_cfg: dict | None = None,
+    strict: bool = True,
+    map_location: str | None = None,
+  ) -> dict:
+    """Load, then mirror the loaded controller into the opponent. Play never
+    calls ``learn``, so without this its opponent stays the zero placeholder
+    (walk straight ahead at 0.6 m/s, ignoring the ball)."""
+    infos = super().load(path, load_cfg, strict, map_location)
+    self._sync(self.current_learning_iteration, snapshot=False)
+    return infos
+
   def learn(self, num_learning_iterations: int, init_at_random_ep_len: bool = False):
     self._it = self.current_learning_iteration
     self._sync(self._it, snapshot=False)

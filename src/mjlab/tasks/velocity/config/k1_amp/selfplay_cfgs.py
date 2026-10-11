@@ -203,6 +203,11 @@ def booster_k1_striker_controller_runner_cfg() -> StrikerControllerRunnerCfg:
       distribution_cfg={
         "class_name": "rsl_rl.modules.distribution:GaussianDistribution",
         "init_std": 0.5,
+        # The direction's sin output collapsed to std 0.002 (run
+        # 2026-10-11_11-21-21); KL ~ dmu^2 / std^2 then exploded and the
+        # adaptive schedule pinned the learning rate at 1e-5. 0.15 is ~8 deg
+        # of steering noise; 0.05 still drove KL past the target.
+        "std_range": (0.15, 1.0),
       },
     ),
     critic=RslRlModelCfg(
