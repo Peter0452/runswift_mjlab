@@ -195,7 +195,13 @@ def run_train(task_id: str, cfg: TrainConfig, log_dir: Path) -> None:
       kick_action_scale=cfg.env.actions["joint_pos"].scale,
     )
   else:
-    env = RslRlVecEnvWrapper(env, clip_actions=cfg.agent.clip_actions)
+    runner_cls = load_runner_cls(task_id) or MjlabOnPolicyRunner
+    # A runner may wrap the env itself (e.g. a controller over frozen skills).
+    make_vecenv = getattr(runner_cls, "make_vecenv", None)
+    if make_vecenv is not None:
+      env = make_vecenv(env, cfg.agent)
+    else:
+      env = RslRlVecEnvWrapper(env, clip_actions=cfg.agent.clip_actions)
 
   agent_cfg = asdict(cfg.agent)
   env_cfg = asdict(cfg.env)

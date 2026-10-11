@@ -262,7 +262,11 @@ def run_play(task_id: str, cfg: PlayConfig):
   if is_fast_sac:
     env = FastSacVecEnvWrapper(env, clip_actions=agent_cfg.clip_actions)
   else:
-    env = RslRlVecEnvWrapper(env, clip_actions=agent_cfg.clip_actions)
+    make_vecenv = getattr(load_runner_cls(task_id), "make_vecenv", None)
+    if make_vecenv is not None:
+      env = make_vecenv(env, agent_cfg)
+    else:
+      env = RslRlVecEnvWrapper(env, clip_actions=agent_cfg.clip_actions)
   if DUMMY_MODE:
     action_shape: tuple[int, ...] = env.unwrapped.action_space.shape
     if cfg.agent == "zero":
