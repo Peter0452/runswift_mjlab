@@ -1,5 +1,6 @@
 """Tests for the two-level striker (controller over frozen walk / kick)."""
 
+from dataclasses import asdict
 from types import SimpleNamespace
 
 import pytest
@@ -9,7 +10,7 @@ from rsl_rl.models import RNNModel
 from tensordict import TensorDict
 
 from mjlab.envs import ManagerBasedRlEnv
-from mjlab.tasks.registry import load_env_cfg
+from mjlab.tasks.registry import load_env_cfg, load_rl_cfg
 from mjlab.tasks.velocity.mdp import striker_skills as skills
 from mjlab.tasks.velocity.mdp.self_play import (
   OpponentPolicyAction,
@@ -226,3 +227,24 @@ def test_play_env_decides_per_chunk_and_resets_memory(venv):
   play.t = 0
   policy(play.get_observations())
   assert resets[-1].tolist() == [True, False]
+
+
+@pytest.mark.slow
+def test_runner_load_mirrors_into_the_opponent(venv, tmp_path):
+  """Play only loads: the opponent must still get the loaded controller."""
+  cfg = asdict(load_rl_cfg(TASK))
+  cfg["logger"] = "tensorboard"
+  runner = StrikerControllerRunner(venv, cfg, device=str(venv.device))
+  path = tmp_path / "model.pt"
+  torch.save(runner.alg.save() | {"iter": 0, "infos": None}, path)
+  opp = venv.unwrapped.action_manager.get_term("opponent")
+  assert isinstance(opp, OpponentPolicyAction)
+  opp.slots[0] = opp.slots[0].__class__(**{**vars(opp.slots[0]), "name": "stale"})
+  runner.load(str(path), load_cfg={"actor": True})
+  assert opp.slots[0].name == "latest" and opp.slots[0].hidden_dim > 0
+  x = torch.randn(2, 88, device=venv.device)
+  mirror, _ = opp.slots[0].step(x)
+  policy = runner.alg.get_policy()
+  policy.reset()
+  expect = policy(TensorDict({"actor": x}, batch_size=[2]))
+  torch.testing.assert_close(mirror, expect, rtol=1e-4, atol=1e-5)
