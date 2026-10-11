@@ -22,6 +22,10 @@ from mjlab.rl import (
 from mjlab.scripts._cli import maybe_print_top_level_help
 from mjlab.tasks.registry import list_tasks, load_env_cfg, load_rl_cfg, load_runner_cls
 from mjlab.tasks.tracking.mdp import MotionCommandCfg
+from mjlab.tasks.velocity.rl.striker_runner import (
+  StrikerControllerPlayEnv,
+  StrikerControllerVecEnv,
+)
 from mjlab.utils.os import get_wandb_checkpoint_path
 from mjlab.utils.torch import configure_torch_backends
 from mjlab.utils.wrappers import VideoRecorder
@@ -267,6 +271,11 @@ def run_play(task_id: str, cfg: PlayConfig):
       env = make_vecenv(env, agent_cfg)
     else:
       env = RslRlVecEnvWrapper(env, clip_actions=agent_cfg.clip_actions)
+  # Two-level striker: step one env step per viewer frame (training steps a
+  # whole controller decision chunk per call, which plays back choppy).
+  play_env = None
+  if isinstance(env, StrikerControllerVecEnv) and not cfg.video:
+    play_env = StrikerControllerPlayEnv(env)
   if DUMMY_MODE:
     action_shape: tuple[int, ...] = env.unwrapped.action_space.shape
     if cfg.agent == "zero":
@@ -292,6 +301,8 @@ def run_play(task_id: str, cfg: PlayConfig):
       str(resume_path), load_cfg={"actor": True}, strict=True, map_location=device
     )
     policy = runner.get_inference_policy(device=device)
+    if play_env is not None:
+      policy = play_env.hold(policy)
 
   # Build checkpoint manager for hot-swapping checkpoints in the viewer.
   ckpt_manager: CheckpointManager | None = None
@@ -305,7 +316,8 @@ def run_play(task_id: str, cfg: PlayConfig):
         strict=True,
         map_location=device,
       )
-      return _ckpt_runner.get_inference_policy(device=device)
+      new_policy = _ckpt_runner.get_inference_policy(device=device)
+      return play_env.hold(new_policy) if play_env is not None else new_policy
 
     if cfg.wandb_run_path is None:
       ckpt_dir = resume_path.parent
@@ -373,6 +385,8 @@ def run_play(task_id: str, cfg: PlayConfig):
   else:
     resolved_viewer = cfg.viewer
 
+  if play_env is not None:
+    env = play_env  # pyright: ignore[reportAssignmentType]
   if resolved_viewer == "native":
     NativeMujocoViewer(env, policy).run()
   elif resolved_viewer == "viser":

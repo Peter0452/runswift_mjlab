@@ -7,9 +7,13 @@ goal line, which the policy gets as its kick direction / range, as the
 behaviour would hand it) and defends the other goal (``own_goal_w``, the
 opponent's aim point); the opponent the reverse. The whole
 ball over a goal line between the posts and under the bar is a goal; over any
-other line it is out. Either ends the point and a new kickoff puts the ball
+other line it is out. Either ends the point and the side that did not cause
+it restarts, as in a match: after a goal the side that conceded, after an out
+the side that did not touch the ball last. A learner restart puts the ball
 ahead of the learner, inside the field, and the opponent at the learner's spot
-mirrored through the ball (both meet the ball from their own side).
+mirrored through the ball (both meet the ball from their own side). An
+opponent restart puts the ball near where it went out (the centre after a
+goal), clear of the learner, with the opponent behind it facing its attack.
 The learner is never teleported; episodes end on falls or time out.
 
 Both robots see each other as the robot's vision reports other robots: the
@@ -56,6 +60,7 @@ from mjlab.tasks.velocity.mdp.kick_loop import (
   SPEED_CAP_FINAL,
   KickLoopCommand,
   KickLoopCommandCfg,
+  _found,
   goal_tolerance,
   head_goal,
   head_step,
@@ -113,34 +118,61 @@ def resolve_checkpoint(path: str) -> Path:
 
 @dataclass
 class FrozenPolicy:
-  """Deterministic actor (normalizer + ELU MLP) with weights detached from
-  any optimizer, so the learner's updates never touch it."""
+  """Deterministic actor (normalizer, optional one-layer GRU, ELU MLP) with
+  weights detached from any optimizer, so the learner's updates never touch
+  it. A recurrent policy's hidden state is the caller's (one row per env)."""
 
   kind: str
   name: str
   mean: torch.Tensor
   std: torch.Tensor
   layers: list[tuple[torch.Tensor, torch.Tensor]]
+  gru: tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor] | None = None
+  """``weight_ih, weight_hh, bias_ih, bias_hh`` of rsl_rl's ``RNNModel``."""
 
   @property
   def in_dim(self) -> int:
-    return self.layers[0][0].shape[1]
+    return (self.gru[0] if self.gru is not None else self.layers[0][0]).shape[1]
 
-  def __call__(self, obs: torch.Tensor) -> torch.Tensor:
-    """``obs`` may carry more inputs than the policy takes (an 83-input
-    stage-3 policy ignores the appended detection)."""
+  @property
+  def hidden_dim(self) -> int:
+    """GRU state size (0: feed-forward)."""
+    return 0 if self.gru is None else self.gru[1].shape[1]
+
+  def step(
+    self, obs: torch.Tensor, h: torch.Tensor | None = None
+  ) -> tuple[torch.Tensor, torch.Tensor | None]:
+    """Output and next hidden state. ``obs`` may carry more inputs than the
+    policy takes (an 83-input stage-3 policy ignores the appended detection);
+    ``h`` None starts a recurrent policy from zeros."""
     x = (obs[:, : self.in_dim] - self.mean) / self.std
+    if self.gru is not None:
+      w_ih, w_hh, b_ih, b_hh = self.gru
+      if h is None:
+        h = x.new_zeros(x.shape[0], self.hidden_dim)
+      # torch.nn.GRU, gates ordered r, z, n.
+      ir, iz, in_ = F.linear(x, w_ih, b_ih).chunk(3, dim=-1)
+      hr, hz, hn = F.linear(h, w_hh, b_hh).chunk(3, dim=-1)
+      r = torch.sigmoid(ir + hr)
+      z = torch.sigmoid(iz + hz)
+      n = torch.tanh(in_ + r * hn)
+      h = (1.0 - z) * n + z * h
+      x = h
     for i, (w, b) in enumerate(self.layers):
       x = F.linear(x, w, b)
       if i < len(self.layers) - 1:
         x = F.elu(x)
-    return x
+    return x, h
+
+  def __call__(self, obs: torch.Tensor) -> torch.Tensor:
+    return self.step(obs)[0]
 
 
 def frozen_policy_from_state_dict(
   state_dict: dict[str, torch.Tensor], kind: str, name: str, device: str
 ) -> FrozenPolicy:
-  """Copy an rsl_rl ``MLPModel`` actor state dict into a ``FrozenPolicy``."""
+  """Copy an rsl_rl ``MLPModel`` or GRU ``RNNModel`` actor state dict into a
+  ``FrozenPolicy``."""
   idx = sorted(
     int(k.split(".")[1])
     for k in state_dict
@@ -153,7 +185,19 @@ def frozen_policy_from_state_dict(
     return state_dict[key].detach().to(device=device, dtype=torch.float32).clone()
 
   layers = [(get(f"mlp.{i}.weight"), get(f"mlp.{i}.bias")) for i in idx]
-  in_dim = layers[0][0].shape[1]
+  gru = None
+  if any(k.startswith("rnn.") for k in state_dict):
+    if "rnn.rnn.weight_hh_l1" in state_dict or "rnn.rnn.weight_ih_l0" not in state_dict:
+      raise ValueError(f"{name}: only one-layer GRU actors are supported")
+    gru = (
+      get("rnn.rnn.weight_ih_l0"),
+      get("rnn.rnn.weight_hh_l0"),
+      get("rnn.rnn.bias_ih_l0"),
+      get("rnn.rnn.bias_hh_l0"),
+    )
+    if gru[1].shape[0] != 3 * gru[1].shape[1]:
+      raise ValueError(f"{name}: recurrent actor is not a GRU (LSTM?)")
+  in_dim = (gru[0] if gru is not None else layers[0][0]).shape[1]
   if in_dim not in OBS_DIM[kind]:
     raise ValueError(
       f"{name}: a '{kind}' opponent takes {OBS_DIM[kind]} inputs, got {in_dim}"
@@ -164,7 +208,7 @@ def frozen_policy_from_state_dict(
   else:
     mean = torch.zeros(1, in_dim, device=device)
     std = torch.ones(1, in_dim, device=device)
-  return FrozenPolicy(kind=kind, name=name, mean=mean, std=std, layers=layers)
+  return FrozenPolicy(kind=kind, name=name, mean=mean, std=std, layers=layers, gru=gru)
 
 
 def zero_policy(kind: str, name: str, device: str) -> FrozenPolicy:
@@ -295,13 +339,23 @@ class SelfPlayKickCommand(KickLoopCommand):
     self.contest_scored = torch.zeros(n, dtype=torch.bool, device=dev)
     self.contest_conceded = torch.zeros(n, dtype=torch.bool, device=dev)
     self.ball_out = torch.zeros(n, dtype=torch.bool, device=dev)
+    # Last robot to touch the ball this point: 1 learner, -1 opponent, 0 none.
+    self.last_touch = torch.zeros(n, dtype=torch.long, device=dev)
     # Set on kickoffs, cleared by the opponent action once it has re-read the
     # field (its ball memory, head and last action restart).
     self.kickoff_pending = torch.ones(n, dtype=torch.bool, device=dev)
     self._scored = torch.zeros(n, device=dev)
     self._conceded = torch.zeros(n, device=dev)
     self._outs = torch.zeros(n, device=dev)
-    for name in ("contest_scored", "contest_conceded", "ball_out"):
+    self._outs_by_learner = torch.zeros(n, device=dev)
+    self._opponent_restarts = torch.zeros(n, device=dev)
+    for name in (
+      "contest_scored",
+      "contest_conceded",
+      "ball_out",
+      "ball_out_by_learner",
+      "opponent_restarts",
+    ):
       self.metrics[name] = torch.zeros(n, device=dev)
 
   def _update_metrics(self) -> None:
@@ -309,6 +363,8 @@ class SelfPlayKickCommand(KickLoopCommand):
     self.metrics["contest_scored"][:] = self._scored
     self.metrics["contest_conceded"][:] = self._conceded
     self.metrics["ball_out"][:] = self._outs
+    self.metrics["ball_out_by_learner"][:] = self._outs_by_learner
+    self.metrics["opponent_restarts"][:] = self._opponent_restarts
 
   def _place_target(self, env_ids: torch.Tensor, ball_xy: torch.Tensor) -> None:
     # The target is the centre of the goal the learner attacks; the kick loop
@@ -357,8 +413,15 @@ class SelfPlayKickCommand(KickLoopCommand):
     super()._resample_command(env_ids)
     for buf in (self.contest_scored, self.contest_conceded, self.ball_out):
       buf[env_ids] = False
-    for buf in (self._scored, self._conceded, self._outs):
+    for buf in (
+      self._scored,
+      self._conceded,
+      self._outs,
+      self._outs_by_learner,
+      self._opponent_restarts,
+    ):
       buf[env_ids] = 0.0
+    self.last_touch[env_ids] = 0
     # The ball may come from a mid-kick reference state; read it from qpos.
     ball_xy = _root_pose(self.ball, env_ids)[:, :2]
     self._place_field(env_ids, ball_xy)
@@ -419,6 +482,13 @@ class SelfPlayKickCommand(KickLoopCommand):
     finally:
       self._freeze_target = False
     self.goal_tol[:] = goal_tol
+    # Ties count as the learner's touch (an out from a scramble is not its
+    # free ball).
+    learner_touch = _found(self._env, self.cfg.feet_ball_sensor) | self.body_touch
+    opponent_touch = _found(self._env, self.cfg.opponent_ball_sensor)
+    self.last_touch[:] = torch.where(
+      learner_touch, 1, torch.where(opponent_touch, -1, self.last_touch)
+    )
     self.opponent_detection[:], self.opponent_true[:] = detect_robot(
       self.robot,
       self._head_id,
@@ -450,9 +520,24 @@ class SelfPlayKickCommand(KickLoopCommand):
     self._scored += scored.float()
     self._conceded += conceded.float()
     self._outs += out.float()
+    # Out off nobody (a rolling kickoff ball) counts as the learner's.
+    learner_out = out & (self.last_touch >= 0)
+    self._outs_by_learner += learner_out.float()
     restart = scored | conceded | out
-    if bool(restart.any()):
-      self._kickoff(restart.nonzero(as_tuple=False).squeeze(-1))
+    if not bool(restart.any()):
+      return
+    to_opponent = (scored | learner_out) & self.cfg.opponent_restarts
+    self._opponent_restarts += to_opponent.float()
+    ids = to_opponent.nonzero(as_tuple=False).squeeze(-1)
+    # Restart near where the ball went out; the centre after a goal.
+    anchor = torch.where(
+      scored[ids].unsqueeze(-1), self.field_center[ids], ball[ids, :2]
+    ).clone()
+    ours = restart & ~to_opponent
+    if bool(ours.any()):
+      self._kickoff(ours.nonzero(as_tuple=False).squeeze(-1))
+    if len(ids) > 0:
+      self._opponent_kickoff(ids, anchor)
 
   def _kickoff(self, env_ids: torch.Tensor) -> None:
     """New point on the same field: ball ahead of the learner as at spawn,
@@ -480,6 +565,10 @@ class SelfPlayKickCommand(KickLoopCommand):
     if bool(moved.any()):
       self._move_ball(env_ids[moved], inside[moved])
       ball_xy = inside
+    self._new_point(env_ids, ball_xy)
+    self.place_opponent(env_ids, ball_xy)
+
+  def _new_point(self, env_ids: torch.Tensor, ball_xy: torch.Tensor) -> None:
     self._set_goals(env_ids, ball_xy)
     for buf in (
       self.kicked_since_target,
@@ -488,7 +577,74 @@ class SelfPlayKickCommand(KickLoopCommand):
       self.near_pending,
     ):
       buf[env_ids] = False
-    self.place_opponent(env_ids, ball_xy)
+    self.last_touch[env_ids] = 0
+
+  def _opponent_kickoff(self, env_ids: torch.Tensor, anchor: torch.Tensor) -> None:
+    """New point for the opponent: the ball near ``anchor``, inside the
+    field and at least ``restart_learner_distance`` from the learner (the
+    learner is never teleported), the opponent behind it facing the goal it
+    attacks, clear of the learner. Of the candidates that qualify, the one
+    nearest the anchor; else the one farthest from the learner."""
+    n, dev, cfg = len(env_ids), self.device, self.cfg
+    k = 32
+    m = cfg.spawn_margin
+    half_l = (0.5 * self.field_length[env_ids] - m).unsqueeze(1)
+    half_w = (0.5 * self.field_width[env_ids] - m).unsqueeze(1)
+    a_along, a_across = self.field_coords(anchor, env_ids)
+    # Half the candidates around the anchor, half anywhere on the field.
+    r = cfg.restart_search_radius
+    local_along = (
+      a_along.unsqueeze(1) + (torch.rand(n, k // 2, device=dev) - 0.5) * 2 * r
+    )
+    local_across = (
+      a_across.unsqueeze(1) + (torch.rand(n, k // 2, device=dev) - 0.5) * 2 * r
+    )
+    any_along = (torch.rand(n, k - k // 2, device=dev) - 0.5) * 2 * half_l
+    any_across = (torch.rand(n, k - k // 2, device=dev) - 0.5) * 2 * half_w
+    along = torch.cat((local_along, any_along), 1)
+    across = torch.cat((local_across, any_across), 1)
+    along = torch.maximum(torch.minimum(along, half_l), -half_l)
+    across = torch.maximum(torch.minimum(across, half_w), -half_w)
+    rows = env_ids.repeat_interleave(k)
+    ball = self._to_world(along.reshape(-1), across.reshape(-1), rows).reshape(n, k, 2)
+    # The opponent attacks -axis: it stands on the +axis side of the ball.
+    lo, hi = cfg.restart_opponent_distance
+    d = torch.empty(n, k, device=dev).uniform_(lo, hi)
+    ang = torch.empty(n, k, device=dev).uniform_(
+      -cfg.opponent_spawn_half_angle, cfg.opponent_spawn_half_angle
+    )
+    u = self.field_axis[env_ids].unsqueeze(1)
+    c, s = ang.cos(), ang.sin()
+    back = torch.stack(
+      (c * u[..., 0] - s * u[..., 1], s * u[..., 0] + c * u[..., 1]), -1
+    )
+    opp = ball + back * d.unsqueeze(-1)
+    learner = _root_pose(self.robot, env_ids)[:, :2].unsqueeze(1)
+    ball_gap = (ball - learner).norm(dim=-1)
+    opp_gap = (opp - learner).norm(dim=-1)
+    o_along, o_across = self.field_coords(opp.reshape(-1, 2), rows)
+    on_field = (
+      (o_along.abs() < 0.5 * self.field_length[rows])
+      & (o_across.abs() < 0.5 * self.field_width[rows])
+    ).reshape(n, k)
+    ok = (
+      (ball_gap >= cfg.restart_learner_distance)
+      & (opp_gap >= cfg.opponent_clearance)
+      & on_field
+    )
+    near = (ball - anchor.unsqueeze(1)).norm(dim=-1)
+    score = torch.where(ok, 1.0e3 - near, ball_gap)
+    pick = score.argmax(dim=1)
+    idx = torch.arange(n, device=dev)
+    ball_xy, opp_xy = ball[idx, pick], opp[idx, pick]
+    self._move_ball(env_ids, ball_xy)
+    self._new_point(env_ids, ball_xy)
+    face = ball_xy - opp_xy
+    yaw = torch.atan2(face[:, 1], face[:, 0]) + torch.empty(n, device=dev).uniform_(
+      -cfg.opponent_yaw_noise, cfg.opponent_yaw_noise
+    )
+    place_upright(self.opponent, env_ids, opp_xy, yaw, self._env.scene.env_origins)
+    self.kickoff_pending[env_ids] = True
 
   def _move_ball(self, env_ids: torch.Tensor, xy: torch.Tensor) -> None:
     """Put a resting ball at ``xy`` where the learner just saw it."""
@@ -649,6 +805,17 @@ class SelfPlayKickCommandCfg(KickLoopCommandCfg):
   """Detection noise: sigma = base + rel * distance (m, per axis)."""
   opponent_dropout: float = 0.05
   """Probability per step that a robot in view is not detected."""
+  opponent_ball_sensor: str = "opponent_ball_contact"
+  """Opponent-ball contact (any body), for who touched the ball last."""
+  opponent_restarts: bool = True
+  """The opponent restarts after the learner scores or puts the ball out
+  (False: every point restarts with the learner's ball)."""
+  restart_search_radius: float = 1.5
+  """Opponent restart balls are sought within this of the anchor (m)."""
+  restart_learner_distance: float = 2.0
+  """Opponent restart balls are at least this far from the learner (m)."""
+  restart_opponent_distance: tuple[float, float] = (0.4, 0.9)
+  """The restarting opponent's distance behind the ball (m)."""
 
   def build(self, env: ManagerBasedRlEnv) -> SelfPlayKickCommand:
     return SelfPlayKickCommand(self, env)
@@ -811,6 +978,8 @@ class OpponentPolicyAction(ActionTerm):
     self.ctrl_level = torch.zeros(n, device=dev)
     self.ctrl_wait = torch.zeros(n, dtype=torch.long, device=dev)
     self.ctrl_since = torch.zeros(n, dtype=torch.long, device=dev)
+    # Recurrent controllers' hidden state, widened to the largest slot.
+    self.ctrl_h = torch.zeros(n, 0, device=dev)
     self._raw = torch.zeros(n, 0, device=dev)
     self._resample_speed_limit(torch.arange(n, device=dev))
 
@@ -837,6 +1006,8 @@ class OpponentPolicyAction(ActionTerm):
     self.fallen_time[ids] = 0.0
     self._resample_speed_limit(ids)
     self.slot[ids] = self._sample_slots(len(ids))
+    # As the learner's GRU: memory lasts an episode (across kickoffs).
+    self.ctrl_h[ids] = 0.0
 
   def process_actions(self, actions: torch.Tensor) -> None:
     del actions  # Width 0.
@@ -923,7 +1094,14 @@ class OpponentPolicyAction(ActionTerm):
       inputs = skills.controller_inputs(
         actor_obs[due], self.ctrl_kick[d], self.ctrl_since[d]
       )
-      kick, theta, level = skills.decode(policy(inputs))
+      hd = policy.hidden_dim
+      if hd > self.ctrl_h.shape[1]:
+        pad = self.ctrl_h.new_zeros(self.num_envs, hd - self.ctrl_h.shape[1])
+        self.ctrl_h = torch.cat((self.ctrl_h, pad), dim=1)
+      out, h = policy.step(inputs, self.ctrl_h[d, :hd] if hd else None)
+      if h is not None:
+        self.ctrl_h[d, :hd] = h
+      kick, theta, level = skills.decode(out)
       switched = kick != self.ctrl_kick[d]
       self.ctrl_since[d] = torch.where(switched, 0, self.ctrl_since[d])
       self.ctrl_kick[d], self.ctrl_theta[d], self.ctrl_level[d] = kick, theta, level
@@ -960,7 +1138,9 @@ class OpponentPolicyAction(ActionTerm):
       keep[drop] = False
       self.slot_wins = self.slot_wins[keep]
       self.slot_points = self.slot_points[keep]
-      self.slot[self.slot == drop] = 0
+      moved = self.slot == drop
+      self.slot[moved] = 0
+      self.ctrl_h[moved] = 0.0
       self.slot[self.slot > drop] -= 1
     self.slots.append(policy)
     self.slot_weights.append(float(self.cfg.snapshot_weight))

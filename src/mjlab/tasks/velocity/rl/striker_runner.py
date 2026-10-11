@@ -160,3 +160,88 @@ class StrikerControllerRunner(MjlabOnPolicyRunner):
     self._it = self.current_learning_iteration
     self._sync(self._it, snapshot=False)
     return super().learn(num_learning_iterations, init_at_random_ep_len)
+
+
+class StrikerControllerPlayEnv:
+  """Play-only view of ``StrikerControllerVecEnv``: one env step per ``step``.
+
+  Viewers pace ``step()`` at the env's ``step_dt``; the training wrapper runs a
+  whole decision chunk per call, so play advanced 0.2 s of sim per frame and
+  looked choppy. This runs the same chunk one env step at a time and asks the
+  controller (wrapped by :meth:`hold`) for a decision only at chunk starts, so
+  the controller and its GRU see exactly what they see in training.
+  """
+
+  def __init__(self, inner: StrikerControllerVecEnv) -> None:
+    self.inner = inner
+    self.num_envs = inner.num_envs
+    self.unwrapped = inner.unwrapped
+    self.t = 0
+    self._done = torch.zeros(inner.num_envs, dtype=torch.bool, device=inner.device)
+    self._decision: tuple[torch.Tensor, torch.Tensor, torch.Tensor] | None = None
+    self._wrapped = inner._wrap(inner._obs)
+
+  def __getattr__(self, name):
+    return getattr(self.inner, name)
+
+  def hold(self, policy):
+    """Query ``policy`` at chunk starts only; repeat its action in between."""
+    env = self
+
+    class _Held:
+      def __init__(self) -> None:
+        self.action: torch.Tensor | None = None
+
+      def __call__(self, obs):
+        if env.t == 0 or self.action is None:
+          self.action = policy(obs)
+        return self.action
+
+      def reset(self, *args, **kwargs):
+        self.action = None
+        fn = getattr(policy, "reset", None)
+        if fn is not None:
+          fn(*args, **kwargs)
+
+    return _Held()
+
+  def get_observations(self) -> TensorDict:
+    return self._wrapped
+
+  def reset(self) -> tuple[TensorDict, dict]:
+    obs, extras = self.inner.reset()
+    self.t = 0
+    self._done[:] = False
+    self._decision = None
+    self._wrapped = obs
+    return obs, extras
+
+  def step(self, actions: torch.Tensor):
+    inner = self.inner
+    if self.t == 0 or self._decision is None:
+      kick, theta, level = skills.decode(actions.to(inner.device))
+      switched = kick != inner.kick
+      inner.since = torch.where(switched, 0, inner.since)
+      inner.kick = kick
+      self._decision = (kick, theta, level)
+      self._done[:] = False
+      self.t = 0
+    kick, theta, level = self._decision
+    done = self._done
+    sk, st, sl = skills.stand_action(inner.num_envs, inner.device)
+    k = torch.where(done, sk, kick)
+    th = torch.where(done, st, theta)
+    lv = torch.where(done, sl, level)
+    actor = cast(torch.Tensor, inner._obs["actor"])
+    joint = skills.run_skills(actor, k, th, lv, inner.kick_skill, inner.walk_skill)
+    obs, rew, terminated, truncated, extras = inner.env.step(joint)
+    done |= (terminated | truncated) & ~done
+    inner.since += 1
+    inner._obs = obs
+    self.t += 1
+    if self.t >= inner.decision_steps:
+      inner.kick = inner.kick & ~done
+      inner.since = torch.where(done, 0, inner.since)
+      self.t = 0
+    self._wrapped = inner._wrap(obs)
+    return self._wrapped, rew, (terminated | truncated).long(), extras

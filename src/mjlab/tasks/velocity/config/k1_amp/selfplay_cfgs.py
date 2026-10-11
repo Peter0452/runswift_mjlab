@@ -9,6 +9,7 @@ from mjlab.envs.mdp.actions import JointPositionActionCfg
 from mjlab.managers.observation_manager import ObservationTermCfg
 from mjlab.managers.reward_manager import RewardTermCfg
 from mjlab.rl import RslRlModelCfg, RslRlPpoAlgorithmCfg
+from mjlab.sensor import ContactMatch, ContactSensorCfg
 from mjlab.tasks.velocity import mdp
 from mjlab.tasks.velocity.mdp.self_play import (
   SELFPLAY_KICK_CKPT,
@@ -48,6 +49,17 @@ def booster_k1_kick_selfplay_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg
   x, y, z = robot.init_state.pos
   cfg.scene.entities["opponent"] = dataclasses.replace(
     robot, init_state=dataclasses.replace(robot.init_state, pos=(x + 3.0, y, z))
+  )
+  # Who touched the ball last decides restarts.
+  cfg.scene.sensors = tuple(cfg.scene.sensors) + (
+    ContactSensorCfg(
+      name="opponent_ball_contact",
+      primary=ContactMatch(mode="body", entity="opponent", pattern=r".*"),
+      secondary=ContactMatch(mode="body", pattern="ball", entity="ball"),
+      fields=("found",),
+      reduce="none",
+      num_slots=1,
+    ),
   )
   cfg.sim.nconmax = 2 * (cfg.sim.nconmax or 80)
   cfg.sim.njmax = 2 * (cfg.sim.njmax or 1500)
@@ -172,10 +184,20 @@ def booster_k1_striker_controller_env_cfg(play: bool = False) -> ManagerBasedRlE
 
 
 def booster_k1_striker_controller_runner_cfg() -> StrikerControllerRunnerCfg:
-  """PPO on the controller at 5 Hz (gamma 0.99 is a ~20 s horizon)."""
+  """PPO on the controller at 5 Hz (gamma 0.99 is a ~20 s horizon).
+
+  The actor is a GRU: single-frame detections and a ball memory leave the
+  opponent's motion and the play's history to be remembered. Its state lasts
+  an episode; backprop is truncated at a rollout (24 decisions, 4.8 s). The
+  critic stays feed-forward on the true state.
+  """
   return StrikerControllerRunnerCfg(
     actor=RslRlModelCfg(
-      hidden_dims=(256, 128),
+      class_name="RNNModel",
+      rnn_type="gru",
+      rnn_hidden_dim=128,
+      rnn_num_layers=1,
+      hidden_dims=(128,),
       activation="elu",
       obs_normalization=True,
       distribution_cfg={
