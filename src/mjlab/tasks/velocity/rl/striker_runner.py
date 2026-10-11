@@ -192,6 +192,9 @@ class StrikerControllerPlayEnv:
     self.unwrapped = inner.unwrapped
     self.t = 0
     self._done = torch.zeros(inner.num_envs, dtype=torch.bool, device=inner.device)
+    # Episodes that ended since the controller last decided: its recurrent
+    # state is cleared for them first, as rsl_rl does after each done.
+    self._ended = torch.zeros_like(self._done)
     self._decision: tuple[torch.Tensor, torch.Tensor, torch.Tensor] | None = None
     self._wrapped = inner._wrap(inner._obs)
 
@@ -206,10 +209,15 @@ class StrikerControllerPlayEnv:
       def __init__(self) -> None:
         self.action: torch.Tensor | None = None
 
-      def __call__(self, obs):
-        if env.t == 0 or self.action is None:
-          self.action = policy(obs)
-        return self.action
+      def __call__(self, obs) -> torch.Tensor:
+        action = self.action
+        if env.t == 0 or action is None:
+          fn = getattr(policy, "reset", None)
+          if fn is not None and bool(env._ended.any()):
+            fn(env._ended.clone())
+          env._ended[:] = False
+          action = self.action = policy(obs)
+        return action
 
       def reset(self, *args, **kwargs):
         self.action = None
@@ -226,6 +234,7 @@ class StrikerControllerPlayEnv:
     obs, extras = self.inner.reset()
     self.t = 0
     self._done[:] = False
+    self._ended[:] = True
     self._decision = None
     self._wrapped = obs
     return obs, extras
@@ -250,6 +259,7 @@ class StrikerControllerPlayEnv:
     joint = skills.run_skills(actor, k, th, lv, inner.kick_skill, inner.walk_skill)
     obs, rew, terminated, truncated, extras = inner.env.step(joint)
     done |= (terminated | truncated) & ~done
+    self._ended |= terminated | truncated
     inner.since += 1
     inner._obs = obs
     self.t += 1

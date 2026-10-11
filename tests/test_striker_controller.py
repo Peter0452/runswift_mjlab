@@ -5,6 +5,8 @@ from types import SimpleNamespace
 import pytest
 import torch
 from conftest import get_test_device
+from rsl_rl.models import RNNModel
+from tensordict import TensorDict
 
 from mjlab.envs import ManagerBasedRlEnv
 from mjlab.tasks.registry import load_env_cfg
@@ -13,8 +15,11 @@ from mjlab.tasks.velocity.mdp.self_play import (
   OpponentPolicyAction,
   OpponentPolicyActionCfg,
   OpponentSeedCfg,
+  SelfPlayKickCommand,
+  frozen_policy_from_state_dict,
 )
 from mjlab.tasks.velocity.rl.striker_runner import (
+  StrikerControllerPlayEnv,
   StrikerControllerRunner,
   StrikerControllerVecEnv,
 )
@@ -130,3 +135,94 @@ def test_runner_mirrors_the_controller(venv, tmp_path):
   torch.testing.assert_close(
     opp.slots[0](x), x @ state["mlp.0.weight"].T.to(venv.device), rtol=1e-4, atol=1e-4
   )
+
+
+def test_frozen_gru_matches_rsl_rl_rnn_model():
+  """The opponent's GRU controller steps like rsl_rl's ``RNNModel`` actor."""
+  torch.manual_seed(0)
+  obs = TensorDict({"actor": torch.zeros(3, 88)}, batch_size=[3])
+  actor = RNNModel(
+    obs,
+    {"actor": ["actor"]},
+    "actor",
+    skills.CONTROLLER_ACTION_DIM,
+    hidden_dims=(128,),
+    obs_normalization=True,
+    rnn_type="gru",
+    rnn_hidden_dim=32,
+    distribution_cfg={
+      "class_name": "rsl_rl.modules.distribution:GaussianDistribution",
+      "init_std": 0.5,
+    },
+  )
+  # Non-trivial normalizer statistics.
+  actor.obs_normalizer.train()
+  actor.obs_normalizer(torch.randn(64, 88) * 3.0 + 1.0)
+  actor.eval()
+  frozen = frozen_policy_from_state_dict(actor.state_dict(), "controller", "t", "cpu")
+  assert frozen.hidden_dim == 32
+  h = None
+  for _ in range(4):
+    x = torch.randn(3, 88)
+    expect = actor(TensorDict({"actor": x}, batch_size=[3]))
+    got, h = frozen.step(x, h)
+    torch.testing.assert_close(got, expect, rtol=1e-4, atol=1e-5)
+
+
+@pytest.mark.slow
+def test_learner_out_restarts_with_the_opponent(venv):
+  cmd = venv.unwrapped.command_manager.get_term("twist")
+  assert isinstance(cmd, SelfPlayKickCommand)
+  hw = 0.5 * float(cmd.field_width[0])
+  before = int(cmd._opponent_restarts[0])
+  cmd.last_touch[0] = 1  # The learner touched it last.
+  ball = venv.unwrapped.scene["ball"]
+  ids = torch.tensor([0], device=venv.device)
+  state = ball.data.default_root_state[ids].clone()
+  state[:, :2] = cmd._to_world(
+    torch.zeros(1, device=venv.device),
+    torch.full((1,), hw + 0.3, device=venv.device),
+    ids,
+  )
+  state[:, 2] = ball.data.root_link_pos_w[ids, 2]
+  state[:, 3:] = 0.0
+  state[:, 3] = 1.0
+  ball.write_root_state_to_sim(state, env_ids=ids)
+  venv.unwrapped.step(torch.zeros(2, 22, device=venv.device))
+  assert bool(cmd.ball_out[0])
+  assert int(cmd._opponent_restarts[0]) == before + 1
+  # Ball back in, clear of the learner (the restart wrote it after the
+  # step's forward pass).
+  venv.unwrapped.sim.forward()
+  xy = ball.data.root_link_pos_w[0, :2]
+  learner = venv.unwrapped.scene["robot"].data.root_link_pos_w[0, :2]
+  _, across = cmd.field_coords(xy.unsqueeze(0), ids)
+  assert float(across.abs()) < hw
+  assert float((xy - learner).norm()) >= cmd.cfg.restart_learner_distance - 0.05
+
+
+@pytest.mark.slow
+def test_play_env_decides_per_chunk_and_resets_memory(venv):
+  calls, resets = [], []
+
+  class Recurrent:
+    def __call__(self, obs):
+      calls.append(1)
+      return torch.zeros(obs["actor"].shape[0], 4, device=venv.device)
+
+    def reset(self, dones=None):
+      resets.append(None if dones is None else dones.clone())
+
+  play = StrikerControllerPlayEnv(venv)
+  policy = play.hold(Recurrent())
+  play.reset()
+  for _ in range(2 * venv.decision_steps):
+    play.step(policy(play.get_observations()))
+  # One decision per chunk; the full reset cleared every env's memory.
+  assert len(calls) == 2
+  assert len(resets) == 1 and bool(resets[0].all())
+  # An episode ending inside a chunk clears that env before the next decision.
+  play._ended[0] = True
+  play.t = 0
+  policy(play.get_observations())
+  assert resets[-1].tolist() == [True, False]

@@ -8,6 +8,12 @@ Upcoming version (not yet released)
 Added
 ^^^^^
 
+- Self-play restarts follow match rules: after a goal the side that conceded
+  restarts, after an out the side that did not touch the ball last (the
+  learner no longer gets a free ball by kicking it out). The two-level
+  striker's controller is a GRU (opponents run recurrent controllers too),
+  and play steps it one env step at a time, clearing its memory when an
+  episode ends as training does.
 - Added a two-level striker (``Mjlab-Velocity-Striker-Controller-Booster-K1``):
   a controller picks kick or walk, a direction and a range / speed every 0.2 s
   and the frozen stage-3 kick and AMP walk 9950 skills run underneath. It is
