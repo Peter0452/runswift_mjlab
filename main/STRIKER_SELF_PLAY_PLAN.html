@@ -1,0 +1,952 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="./" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Learned striker by self-play — plan &#8212; mjlab Documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+
+  
+  <link href="_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/sphinx-book-theme.css?v=eba8b062" />
+    <link rel="stylesheet" type="text/css" href="_static/twemoji.css" />
+    <link rel="stylesheet" type="text/css" href="/home/runner/work/runswift_mjlab/runswift_mjlab/.venv/lib/python3.13/site-packages/sphinxcontrib/icon/node_modules/@fortawesome/fontawesome-free/css/all.min.css?v=53359634" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="_static/css/custom.css?v=3ea80bc3" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+    <script src="_static/documentation_options.js?v=9eb32ce0"></script>
+    <script src="_static/doctools.js?v=9bcbadda"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="https://unpkg.com/twemoji@latest/dist/twemoji.min.js"></script>
+    <script src="_static/twemoji.js"></script>
+    <script src="/home/runner/work/runswift_mjlab/runswift_mjlab/.venv/lib/python3.13/site-packages/sphinxcontrib/icon/node_modules/@fortawesome/fontawesome-free/js/all.min.js?v=ec35c6c9"></script>
+    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="_static/copybutton.js?v=f281be69"></script>
+    <script src="_static/scripts/sphinx-book-theme.js?v=887ef09a"></script>
+    <script src="_static/design-tabs.js?v=f930bc37"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'STRIKER_SELF_PLAY_PLAN';</script>
+    <link rel="icon" href="_static/favicon.ico"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+    <meta name="docbuild:last-update" content="Oct 11, 2026"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search..."
+         aria-label="Search..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">mjlab Documentation</p>
+  
+</a></div>
+        <div class="sidebar-primary-item">
+<form class="bd-search d-flex align-items-center"
+      action="search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search..."
+         aria-label="Search..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+        <div class="sidebar-primary-item">
+<div class="sidebar-version-switcher">
+  <label class="sidebar-version-label" for="version-select">Version</label>
+  <select id="version-select" class="sidebar-version-select" onchange="location = this.value;">
+    <option value="STRIKER_SELF_PLAY_PLAN.html" selected>main</option>
+  </select>
+</div>
+</div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="source/installation.html">Installation Guide</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="source/tutorials.html">Tutorials</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="source/tutorials/cartpole.html">Cartpole: Building Your First Environment</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="source/contributing.html">Contributing</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Concepts</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="source/architecture_overview.html">Architecture Overview</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="source/entity/index.html">Entity</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="source/entity/entity_data.html">Entity Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/entity/per_world_mesh.html">Heterogeneous Worlds</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="source/actuators.html">Actuators</a></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="source/sensors/index.html">Sensors</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="source/sensors/raycast_sensor.html">RayCast Sensor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/sensors/rgbd_camera.html">RGB-D Camera</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="source/scene.html">Scene</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/terrain.html">Terrain</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">The Manager Layer</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="source/environment_config.html">Environment Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/observations.html">Observations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/actions.html">Actions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/rewards.html">Rewards</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/terminations.html">Terminations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/commands.html">Commands</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/events.html">Events</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/randomization.html">Domain Randomization</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/curriculum.html">Curriculum</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/metrics.html">Metrics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/recorders.html">Recorders</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Training &amp; Debugging</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="source/training/rsl_rl.html">Training with RSL-RL</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="source/training/motion_imitation.html">Motion Imitation</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="source/viewers.html">Viewers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/training/distributed_training.html">Distributed Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/training/cloud.html">Cloud Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/debugging/nan_guard.html">NaN Guard</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/debugging/export_scene.html">Export Scene</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="source/api/index.html">API Reference</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="source/api/envs.html">mjlab.envs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/api/scene.html">mjlab.scene</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/api/sim.html">mjlab.sim</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/api/entity.html">mjlab.entity</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/api/actuator.html">mjlab.actuator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/api/sensor.html">mjlab.sensor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/api/managers.html">mjlab.managers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/api/terrains.html">mjlab.terrains</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/api/rl.html">mjlab.rl</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/api/viewer.html">mjlab.viewer</a></li>
+<li class="toctree-l2"><a class="reference internal" href="source/api/tasks.html">mjlab.tasks</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Further Reading</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="source/motivation.html">Why mjlab?</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/migration_isaac_lab.html">Migrating from Isaac Lab</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/faq.html">FAQ &amp; Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/research.html">Research</a></li>
+<li class="toctree-l1"><a class="reference internal" href="source/changelog.html">Changelog</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+
+
+
+<div class="dropdown dropdown-source-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Source repositories">
+    <i class="fab fa-github"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="https://github.com/mujocolab/mjlab" target="_blank"
+   class="btn btn-sm btn-source-repository-button dropdown-item"
+   title="Source repository"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fab fa-github"></i>
+  </span>
+<span class="btn__text-container">Repository</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li><a href="https://github.com/mujocolab/mjlab/edit/main/docs/STRIKER_SELF_PLAY_PLAN.md" target="_blank"
+   class="btn btn-sm btn-source-edit-button dropdown-item"
+   title="Suggest edit"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-pencil-alt"></i>
+  </span>
+<span class="btn__text-container">Suggest edit</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li><a href="https://github.com/mujocolab/mjlab/issues/new?title=Issue%20on%20page%20%2FSTRIKER_SELF_PLAY_PLAN.html&body=Your%20issue%20content%20here." target="_blank"
+   class="btn btn-sm btn-source-issues-button dropdown-item"
+   title="Open an issue"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-lightbulb"></i>
+  </span>
+<span class="btn__text-container">Open issue</span>
+</a>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+
+
+<div class="dropdown dropdown-download-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Download this page">
+    <i class="fas fa-download"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="_sources/STRIKER_SELF_PLAY_PLAN.md" target="_blank"
+   class="btn btn-sm btn-download-source-button dropdown-item"
+   title="Download source file"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="btn__text-container">.md</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li>
+<button onclick="window.print()"
+  class="btn btn-sm btn-download-pdf-button dropdown-item"
+  title="Print to PDF"
+  data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="btn__text-container">.pdf</span>
+</button>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm pst-navbar-icon search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+<button class="sidebar-toggle secondary-toggle btn btn-sm" title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</button>
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>Learned striker by self-play — plan</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#goal">1. Goal</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem-as-trained">2. Problem as trained</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#inputs-and-outputs">3. Inputs and outputs</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#flat-striker-one-policy-joints">Flat striker (one policy, joints)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#two-level-striker-controller-over-skills">Two-level striker (controller over skills)</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#algorithms">4. Algorithms</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#rewards">5. Rewards</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#training-recipe-option-2-alternate-controller-and-skills">6. Training recipe (option 2: alternate controller and skills)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#integration-with-the-runswift-behaviour">7. Integration with the runswift behaviour</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#built-so-far">8. Built so far</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#next-in-order">9. Next (in order)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#what-to-watch">10. What to watch</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#risks">11. Risks</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#references">12. References</a></li>
+</ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="learned-striker-by-self-play-plan">
+<h1>Learned striker by self-play — plan<a class="headerlink" href="#learned-striker-by-self-play-plan" title="Link to this heading">#</a></h1>
+<p>Living plan for training a K1 striker with self-play / multi-agent RL and
+plugging it into the runswift behaviour. Branch: <code class="docutils literal notranslate"><span class="pre">claude/inspiring-thompson-i5igqs</span></code>.</p>
+<section id="goal">
+<h2>1. Goal<a class="headerlink" href="#goal" title="Link to this heading">#</a></h2>
+<p>Demonstrate a learned <strong>striker</strong>: continuous ball handling, dribbling, kicking
+and outmanoeuvring the opposing striker to score, within the system’s
+constraints (deploy joint / torque limits, the robot’s real perception, the
+runswift behaviour’s rules and roles).</p>
+<p>Everything else is abstracted and given: referee states, roles, restarts,
+localisation, getting up, teammates. The striker runs only when the behaviour
+says <em>open play, you are the striker</em>.</p>
+</section>
+<section id="problem-as-trained">
+<h2>2. Problem as trained<a class="headerlink" href="#problem-as-trained" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><strong>Game</strong>: 1v1, striker against striker (runswift’s <code class="docutils literal notranslate"><span class="pre">RoleCoordinator</span></code> makes
+the robot closest to the ball each team’s striker, so the robot our striker
+meets at the ball is the other team’s striker).</p></li>
+<li><p><strong>Field</strong>: per episode 9 x 6 m up to 14 x 9 m (width scales with length),
+random heading, placed around the spawned ball and robot. Goals 2.4 m wide,
+crossbar 1.6 m (small) / 1.8 m (medium, length &gt;= 11.5 m).</p></li>
+<li><p><strong>Goal</strong>: whole ball over the goal line between the posts, under the bar.
+Over any other line: out. Either ends the point; a kickoff follows on the
+same field (ball ahead of the learner, opponent at the learner’s spot
+mirrored through the ball). Episodes end on falls or time out (30 s).</p></li>
+<li><p><strong>Opponent</strong>: frozen copies of the learner (mirror) or members of a pool of
+past selves and seeds. It is not trained on its own.</p></li>
+</ul>
+</section>
+<section id="inputs-and-outputs">
+<h2>3. Inputs and outputs<a class="headerlink" href="#inputs-and-outputs" title="Link to this heading">#</a></h2>
+<section id="flat-striker-one-policy-joints">
+<h3>Flat striker (one policy, joints)<a class="headerlink" href="#flat-striker-one-policy-joints" title="Link to this heading">#</a></h3>
+<p>86 inputs at 50 Hz, 22 joint targets out.</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Slots</p></th>
+<th class="head"><p>Input</p></th>
+<th class="head"><p>Robot source</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>0–2</p></td>
+<td><p>Trunk angular velocity</p></td>
+<td><p>IMU</p></td>
+</tr>
+<tr class="row-odd"><td><p>3–5</p></td>
+<td><p>Gravity in trunk frame</p></td>
+<td><p>IMU</p></td>
+</tr>
+<tr class="row-even"><td><p>6–27</p></td>
+<td><p>Joint positions − default</p></td>
+<td><p>Joint states</p></td>
+</tr>
+<tr class="row-odd"><td><p>28–49</p></td>
+<td><p>Joint velocities</p></td>
+<td><p>Joint states</p></td>
+</tr>
+<tr class="row-even"><td><p>50–71</p></td>
+<td><p>Previous raw action</p></td>
+<td><p>Runner</p></td>
+</tr>
+<tr class="row-odd"><td><p>72–73</p></td>
+<td><p>Ball x, y (level frame, origin between feet)</p></td>
+<td><p>Vision <code class="docutils literal notranslate"><span class="pre">position_projection</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>74</p></td>
+<td><p>Ball memory age exp(−t/2 s)</p></td>
+<td><p>Runner (IMU-yaw memory, no odometry)</p></td>
+</tr>
+<tr class="row-odd"><td><p>75–77</p></td>
+<td><p>Speed caps |vx|, |vy|, |wz|</p></td>
+<td><p>Constants</p></td>
+</tr>
+<tr class="row-even"><td><p>78–79</p></td>
+<td><p>Aim direction (cos, sin), robot heading frame</p></td>
+<td><p>Target source (§7)</p></td>
+</tr>
+<tr class="row-odd"><td><p>80–82</p></td>
+<td><p>Range one-hot (&lt; 4 / 4–8 / ≥ 8 m)</p></td>
+<td><p>Target source</p></td>
+</tr>
+<tr class="row-even"><td><p>83–84</p></td>
+<td><p>Opponent x, y</p></td>
+<td><p>Vision robot detection <code class="docutils literal notranslate"><span class="pre">position_projection</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>85</p></td>
+<td><p>Opponent seen (1 / 0; zeros when unseen)</p></td>
+<td><p>Runner</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Slots 0–82 are the stage-3 kick loop (<code class="docutils literal notranslate"><span class="pre">docs/K1_KICK_LOOP_POLICY_IO.md</span></code>).
+Opponent detection: trunk in the head camera’s view, within 6 m, 5 % dropout,
+noise 5 cm + 5 % of distance. Critic: 101 (stage-3 98 + true opponent).</p>
+</section>
+<section id="two-level-striker-controller-over-skills">
+<h3>Two-level striker (controller over skills)<a class="headerlink" href="#two-level-striker-controller-over-skills" title="Link to this heading">#</a></h3>
+<p>Controller every 0.2 s (10 env steps), 4 outputs in [−1, 1]:
+<code class="docutils literal notranslate"><span class="pre">a0</span></code> kick (&gt; 0) or walk, <code class="docutils literal notranslate"><span class="pre">a1:3</span></code> direction (cos, sin) in the robot frame,
+<code class="docutils literal notranslate"><span class="pre">a3</span></code> kick range (thirds) or walk speed (0–1.2 m/s). Inputs: the 86 above +
+current skill + time since switch (88). Skills (frozen):</p>
+<ul class="simple">
+<li><p><strong>Kick</strong>: stage-3 kick loop (<code class="docutils literal notranslate"><span class="pre">h022_c2_x50</span></code>); aim / range slots overwritten
+with the controller’s choice.</p></li>
+<li><p><strong>Walk</strong>: AMP walk <code class="docutils literal notranslate"><span class="pre">model_9950</span></code> (wwcmu50 stageA); velocity command from
+direction and speed (turns towards the direction). Dribble = walk through
+the ball.</p></li>
+</ul>
+<p>Both skills drive the same 22 joints, so switching only changes which network
+runs.</p>
+</section>
+</section>
+<section id="algorithms">
+<h2>4. Algorithms<a class="headerlink" href="#algorithms" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Piece</p></th>
+<th class="head"><p>Flat striker</p></th>
+<th class="head"><p>Controller</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>RL</p></td>
+<td><p>PPO (rsl_rl)</p></td>
+<td><p>PPO at 5 Hz</p></td>
+</tr>
+<tr class="row-odd"><td><p>Style prior</p></td>
+<td><p>AMP discriminator (weight 0.3, off around kicks)</p></td>
+<td><p>— (skills own style)</p></td>
+</tr>
+<tr class="row-even"><td><p>Optimiser</p></td>
+<td><p>Muon (actor / critic), Adam (discriminator)</p></td>
+<td><p>Adam</p></td>
+</tr>
+<tr class="row-odd"><td><p>Extras</p></td>
+<td><p>Mirror augmentation, CAPS smoothness, privileged critic</p></td>
+<td><p>Privileged critic</p></td>
+</tr>
+<tr class="row-even"><td><p>Horizon</p></td>
+<td><p>γ 0.995 (~4 s), λ 0.95</p></td>
+<td><p>γ 0.99 (~20 s), λ 0.95</p></td>
+</tr>
+<tr class="row-odd"><td><p>Opponents</p></td>
+<td><p>50 % mirror, 50 % pool</p></td>
+<td><p>50 % controller mirror, 50 % pool</p></td>
+</tr>
+<tr class="row-even"><td><p>Warm start</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">h022</span></code> with zero weights on the 3 opponent inputs</p></td>
+<td><p>Random (mirror starts as zeros)</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Pool: seeds (<code class="docutils literal notranslate"><span class="pre">h022</span></code> flat striker, walk 9950 dribbling under a scripted
+command), plus snapshots every 200 iterations (newest 8, saved to
+<code class="docutils literal notranslate"><span class="pre">&lt;run&gt;/opponents/</span></code>). A fallen opponent is stood up after 1 s.</p>
+</section>
+<section id="rewards">
+<h2>5. Rewards<a class="headerlink" href="#rewards" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Term</p></th>
+<th class="head"><p>Flat</p></th>
+<th class="head"><p>Controller</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Goal scored / conceded</p></td>
+<td><p>±30 per goal</p></td>
+<td><p>±30</p></td>
+</tr>
+<tr class="row-odd"><td><p>Dribble progress (ball towards goal while within 0.6 m and closer than the opponent)</p></td>
+<td><p>4/s per m/s</p></td>
+<td><p>yes</p></td>
+</tr>
+<tr class="row-even"><td><p>Stage-3 kick quality, aim, power</p></td>
+<td><p>yes</p></td>
+<td><p>kick_vel, kick_direction, kick_vel_accurate</p></td>
+</tr>
+<tr class="row-odd"><td><p>Fall / kick fall / alive</p></td>
+<td><p>yes</p></td>
+<td><p>yes</p></td>
+</tr>
+<tr class="row-even"><td><p>Posture, smoothness, torque, feet</p></td>
+<td><p>yes</p></td>
+<td><p>— (skills own them)</p></td>
+</tr>
+<tr class="row-odd"><td><p>Stage-3 second-touch penalty (−200), point-target goal</p></td>
+<td><p>off</p></td>
+<td><p>off</p></td>
+</tr>
+<tr class="row-even"><td><p>Kick / walk switch</p></td>
+<td><p>—</p></td>
+<td><p>−0.05 per switch</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="training-recipe-option-2-alternate-controller-and-skills">
+<h2>6. Training recipe (option 2: alternate controller and skills)<a class="headerlink" href="#training-recipe-option-2-alternate-controller-and-skills" title="Link to this heading">#</a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Phase</span> <span class="mi">1</span>  <span class="n">controller</span> <span class="n">learns</span><span class="p">,</span> <span class="n">skills</span> <span class="n">frozen</span>       <span class="n">Mjlab</span><span class="o">-</span><span class="n">Velocity</span><span class="o">-</span><span class="n">Striker</span><span class="o">-</span><span class="n">Controller</span><span class="o">-</span><span class="n">Booster</span><span class="o">-</span><span class="n">K1</span>
+<span class="n">Phase</span> <span class="mi">2</span>  <span class="n">kick</span> <span class="n">skill</span> <span class="n">learns</span> <span class="n">inside</span> <span class="n">the</span> <span class="n">game</span>       <span class="n">Mjlab</span><span class="o">-</span><span class="n">Velocity</span><span class="o">-</span><span class="n">Kick</span><span class="o">-</span><span class="n">SelfPlay</span><span class="o">-</span><span class="n">Amp</span><span class="o">-</span><span class="n">DA</span><span class="o">-</span><span class="n">Muon</span><span class="o">-</span><span class="n">Booster</span><span class="o">-</span><span class="n">K1</span>
+<span class="n">Phase</span> <span class="mi">3</span>  <span class="n">controller</span> <span class="n">re</span><span class="o">-</span><span class="n">learns</span> <span class="k">with</span> <span class="n">the</span> <span class="n">new</span> <span class="n">kick</span>  <span class="n">phase</span><span class="o">-</span><span class="mi">1</span> <span class="n">task</span><span class="p">,</span> <span class="n">new</span> <span class="n">kick</span> <span class="n">checkpoint</span>
+<span class="o">...</span> <span class="n">repeat</span><span class="p">;</span> <span class="n">optional</span> <span class="n">final</span><span class="p">:</span> <span class="n">distil</span> <span class="n">into</span> <span class="n">one</span> <span class="n">flat</span> <span class="n">policy</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">-</span><span class="n">play</span> <span class="n">it</span> <span class="n">end</span><span class="o">-</span><span class="n">to</span><span class="o">-</span><span class="n">end</span>
+</pre></div>
+</div>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span><span class="c1"># Phase 1</span>
+uv<span class="w"> </span>run<span class="w"> </span>train<span class="w"> </span>Mjlab-Velocity-Striker-Controller-Booster-K1<span class="w"> </span>--env.scene.num-envs<span class="w"> </span><span class="m">4096</span>
+<span class="c1"># Phase 2: kick fine-tunes against the phase-1 striker; aims are lanes across</span>
+<span class="c1"># the goal mouth (up to 40 % of its width) so the kick obeys commanded aims.</span>
+uv<span class="w"> </span>run<span class="w"> </span>train<span class="w"> </span>Mjlab-Velocity-Kick-SelfPlay-Amp-DA-Muon-Booster-K1<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--env.actions.opponent.controller-checkpoint<span class="w"> </span>&lt;phase1&gt;/model_N.pt
+<span class="c1"># Phase 3</span>
+uv<span class="w"> </span>run<span class="w"> </span>train<span class="w"> </span>Mjlab-Velocity-Striker-Controller-Booster-K1<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--env.actions.opponent.kick-skill-checkpoint<span class="w"> </span>&lt;phase2&gt;/model_M.pt
+</pre></div>
+</div>
+<p>Guardrails each round: deploy-safety terms stay on; gate on the runswift kick
+grid and the 90-case score grid (<code class="docutils literal notranslate"><span class="pre">runswift_code/behaviour/examples/booster_match/score-benchmark.md</span></code>)
+before accepting a skill round.</p>
+</section>
+<section id="integration-with-the-runswift-behaviour">
+<h2>7. Integration with the runswift behaviour<a class="headerlink" href="#integration-with-the-runswift-behaviour" title="Link to this heading">#</a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>MatchRunner (unchanged gates: playing, striker, no active restart, upright, localised)
+  _play_ball  →  learned striker branch
+     target = select_target(field, ball, scene, tactics)      # unchanged lane choice
+     d = target − ball_field;  aim = rotate(d, −θ)/|d|;  range = bucket(|d|)
+     StrikerIntent{active, aim, range, speed caps, stamp, deadline}
+policy_runner (50 Hz) StrikerPolicy
+  vision → ball (72–74), opponent (83–85);  IMU / joints → body (0–71)
+  aim held between intents, turned by IMU yaw change since its stamp
+  lease expired / whistle / role change / fall / lost localisation → hand back
+</pre></div>
+</div>
+<p>Ownership while the striker runs: behaviour decides <em>whether</em> and <em>where to
+attack</em>; the policy decides <em>how</em>; the runner’s head tracker owns the head; the
+existing get-up routine handles falls.</p>
+<p>No new odometry or localisation: the ball memory uses IMU yaw only (as
+trained), the opponent is single-frame detections, and the aim uses the
+behaviour’s existing field pose. Standalone (no behaviour): aim from a fixed
+IMU heading (<code class="docutils literal notranslate"><span class="pre">--kick-dir-mode</span> <span class="pre">field</span></code>) or through the ball, operator-supervised.</p>
+</section>
+<section id="built-so-far">
+<h2>8. Built so far<a class="headerlink" href="#built-so-far" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Commit</p></th>
+<th class="head"><p>What</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">55ff24d</span></code></p></td>
+<td><p>1v1 self-play task, frozen opponent action term, mirror + pool runner</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">8c8467f</span></code></p></td>
+<td><p>Opponent detection inputs (83–85), widening warm start, mirror augmentation</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">aca1b8c</span></code></p></td>
+<td><p>Real field, goal mouths, out lines, mirrored kickoffs, dribble reward</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">afa6f1d</span></code></p></td>
+<td><p>Two-level striker (controller task, wrapper, runner), controller opponents, aim lanes</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Verified on CPU: unit / env tests (<code class="docutils literal notranslate"><span class="pre">tests/test_self_play.py</span></code>,
+<code class="docutils literal notranslate"><span class="pre">tests/test_striker_controller.py</span></code>), 2-iteration training runs of both tasks,
+ONNX export 86 → 22, balanced 3–3 frozen-vs-frozen rollout, handoff check (no
+falls from random kick / walk switching, 2.7 robot-minutes). <strong>No GPU training
+run yet.</strong></p>
+</section>
+<section id="next-in-order">
+<h2>9. Next (in order)<a class="headerlink" href="#next-in-order" title="Link to this heading">#</a></h2>
+<ol class="arabic simple">
+<li><p><strong>Ball-out restart fix</strong>: after an out, give the kickoff to the opponent
+(ball ahead of it), optionally a small penalty. Today an out hands the
+learner a fresh ball in front of it — a loophole.</p></li>
+<li><p><strong>Aim realism</strong>: noise on slots 78–80 (per-episode heading bias, jitter,
+occasional jumps) for localisation error; occasional aim-lane switches
+mid-point (as <code class="docutils literal notranslate"><span class="pre">select_target</span></code> does when a lane closes).</p></li>
+<li><p><strong>Opponent sampling</strong> (OpenAI lessons): longer snapshot history (e.g. 32
+every 100 iterations, uniform over the recent half), mirror share ~0.2.</p></li>
+<li><p><strong>Anneal task shaping</strong> (OpenAI lessons): kick shaping towards ~20 % over
+the first 3–5k iterations; deploy-safety terms fixed.</p></li>
+<li><p><strong>Pushing constraint</strong>: cap robot–robot contact force (<code class="docutils literal notranslate"><span class="pre">c.&lt;term&gt;</span></code> adaptive
+constraints), so play is legal standalone.</p></li>
+<li><p>First GPU runs: phase 1, then phase 2; fixed-opponent evaluations (<code class="docutils literal notranslate"><span class="pre">h022</span></code>,
+walker, runswift scripted striker) logged alongside self-play win rates.</p></li>
+<li><p>Opponent motion: frame-stacked detections or a GRU controller.</p></li>
+<li><p>Integration: <code class="docutils literal notranslate"><span class="pre">StrikerIntent</span></code> in the behaviour, <code class="docutils literal notranslate"><span class="pre">StrikerPolicy</span></code> in the
+runner, SDK ↔ low-level mode handoff timing on the K1.</p></li>
+<li><p>Later: scripted runswift goalie (<code class="docutils literal notranslate"><span class="pre">blocking_target</span></code>) on the pitch; physical
+goal posts; learned defender / 2v1.</p></li>
+</ol>
+</section>
+<section id="what-to-watch">
+<h2>10. What to watch<a class="headerlink" href="#what-to-watch" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Signal</p></th>
+<th class="head"><p>Healthy</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">SelfPlay/win_rate_latest</span></code></p></td>
+<td><p>≈ 0.5 (even against itself)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">SelfPlay/win_rate_pool</span></code></p></td>
+<td><p>rising (beats past selves)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Metrics/twist/contest_scored</span></code></p></td>
+<td><p>rising per episode</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Metrics/twist/ball_out</span></code></p></td>
+<td><p>falling</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Episode_Reward/dribble_progress</span></code></p></td>
+<td><p>rising without goals falling (carrying, not stalling)</p></td>
+</tr>
+<tr class="row-odd"><td><p>Falls, kick speed</p></td>
+<td><p>stay at stage-3 levels</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="risks">
+<h2>11. Risks<a class="headerlink" href="#risks" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>Non-stationary opponents: the critic does not know which opponent it faces.</p></li>
+<li><p>Shooting earlier instead of outmanoeuvring (stage-3 kick shaping still pays).</p></li>
+<li><p>Phase 2 trains the kick on its own decisions plus random aims, not inside
+the controller’s decisions (an approximation).</p></li>
+<li><p>Localisation may degrade while the head tracks the ball during long plays.</p></li>
+<li><p>Controller-mode switching on the real K1 (SDK walking / soccer vs low-level)
+is unmeasured.</p></li>
+</ul>
+</section>
+<section id="references">
+<h2>12. References<a class="headerlink" href="#references" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p>Bansal et al., <em>Emergent Complexity via Multi-Agent Competition</em>, ICLR 2018
+(arXiv 1710.03748); code <code class="docutils literal notranslate"><span class="pre">openai/multiagent-competition</span></code> — PPO, dense-shaping
+curriculum annealed to win / lose, opponents sampled from past snapshots.</p></li>
+<li><p>Su et al., <em>Toward Real-World Cooperative and Competitive Soccer with
+Quadrupedal Robot Teams</em>, CoRL 2025 (arXiv 2505.13834) — frozen skills +
+learned high-level policy (MAPPO, fictitious self-play), real Go1 robots.</p></li>
+<li><p>runswift behaviour: <code class="docutils literal notranslate"><span class="pre">runswift_code/behaviour/scripts/match_runner.py</span></code>,
+<code class="docutils literal notranslate"><span class="pre">match_tactics.py</span></code>.</p></li>
+</ul>
+</section>
+</section>
+
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#goal">1. Goal</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#problem-as-trained">2. Problem as trained</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#inputs-and-outputs">3. Inputs and outputs</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#flat-striker-one-policy-joints">Flat striker (one policy, joints)</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#two-level-striker-controller-over-skills">Two-level striker (controller over skills)</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#algorithms">4. Algorithms</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#rewards">5. Rewards</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#training-recipe-option-2-alternate-controller-and-skills">6. Training recipe (option 2: alternate controller and skills)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#integration-with-the-runswift-behaviour">7. Integration with the runswift behaviour</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#built-so-far">8. Built so far</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#next-in-order">9. Next (in order)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#what-to-watch">10. What to watch</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#risks">11. Risks</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#references">12. References</a></li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By The mjlab Developers
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2025, The mjlab Developers.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    <p class="last-updated">
+  Last updated on Oct 11, 2026.
+  <br/>
+</p>
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>
