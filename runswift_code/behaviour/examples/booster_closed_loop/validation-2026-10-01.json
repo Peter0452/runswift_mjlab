@@ -1,0 +1,57 @@
+[
+  {
+    "scenario": "goal",
+    "passed": true,
+    "samples": 264,
+    "goal_distance_m": 0.22664606688420183,
+    "travelled_m": 1.2748664432777763,
+    "minimum_footprint_clearance_m": 1.8512341453218877,
+    "stop_drift_m": 0.054189070484094146,
+    "stop_delay_ms": null,
+    "motion_reason": "stopped"
+  },
+  {
+    "scenario": "obstacle",
+    "passed": true,
+    "samples": 814,
+    "goal_distance_m": 0.22872249508368037,
+    "travelled_m": 3.843945312379201,
+    "minimum_footprint_clearance_m": 0.48624217356166377,
+    "stop_drift_m": 0.05532278117380905,
+    "stop_delay_ms": null,
+    "motion_reason": "stopped"
+  },
+  {
+    "scenario": "cancel",
+    "passed": true,
+    "samples": 84,
+    "goal_distance_m": 1.1840486293036558,
+    "travelled_m": 0.32267514316112517,
+    "minimum_footprint_clearance_m": 2.2795834598327587,
+    "stop_drift_m": 0.07651203992038819,
+    "stop_delay_ms": 2.438813,
+    "motion_reason": "stopped"
+  },
+  {
+    "scenario": "command_expiry",
+    "passed": true,
+    "samples": 85,
+    "goal_distance_m": 1.1740400456088138,
+    "travelled_m": 0.3288251012793438,
+    "minimum_footprint_clearance_m": 2.2707056351573827,
+    "stop_drift_m": 0.06496349335196476,
+    "stop_delay_ms": 16.068894,
+    "motion_reason": "command_expired"
+  },
+  {
+    "scenario": "observation_expiry",
+    "passed": true,
+    "samples": 88,
+    "goal_distance_m": 1.1591055971445605,
+    "travelled_m": 0.3457170988645219,
+    "minimum_footprint_clearance_m": 2.262889694768393,
+    "stop_drift_m": 0.05775893226873214,
+    "stop_delay_ms": 13.625243,
+    "motion_reason": "observation_expired"
+  }
+]

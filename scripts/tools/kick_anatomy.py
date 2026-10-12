@@ -75,11 +75,22 @@ def main() -> None:
   pitch_hist = torch.zeros(H, n, device=DEV)
   R = {k: [] for k in (
     "left", "same_side", "sup_behind", "sup_lat", "steps", "swing_t", "flight",
-    "sup_contact", "pitch_range", "kick_lat", "long",
+    "sup_contact", "pitch_range", "kick_lat", "long", "speed", "aim", "foot_yaw",
   )}  # fmt: skip
+  # Falls within 2 s of a kick, by technique (hop / planted).
+  since = torch.full((n,), 10_000, device=DEV)
+  was_hop = torch.zeros(n, dtype=torch.bool, device=DEV)
+  falls = {"hop": 0, "planted": 0}
   with torch.inference_mode():
     for _ in range(1500):
-      obs, _, _, _ = env.step(act(obs))
+      obs, _, dones, extras = env.step(act(obs))
+      tout = extras.get("time_outs")
+      fell = dones.bool() & (~tout.bool() if tout is not None else True)
+      recent = fell & (since * u.step_dt < 2.0)
+      falls["hop"] += int((recent & was_hop).sum())
+      falls["planted"] += int((recent & ~was_hop).sum())
+      since += 1
+      since[dones.bool()] = 10_000
       con = u.scene["feet_ground_contact"].data.found.reshape(n, -1)[:, :2] > 0
       g = rob.data.projected_gravity_b
       con_hist = torch.roll(con_hist, -1, 0)
@@ -126,6 +137,11 @@ def main() -> None:
         pitch_hist[-15:, ids].amax(0) - pitch_hist[-15:, ids].amin(0)
       )
       R["long"].append(cmd.kick_long[ids].float())
+      R["speed"].append(cmd.kick_speed[ids])
+      R["aim"].append(torch.rad2deg(torch.acos(cmd.kick_cos[ids].clamp(-1.0, 1.0))))
+      R["foot_yaw"].append(torch.rad2deg(cmd.kick_foot_yaw[ids]))
+      since[ids] = 0
+      was_hop[ids] = ~ch[-1].any(-1)
   X = {k: torch.cat(v) for k, v in R.items()}
 
   def q(x, p):
@@ -149,6 +165,39 @@ def main() -> None:
     f" {q(X['swing_t'], 0.5):.2f} s | trunk pitch range in the last 0.3 s p50"
     f" {q(X['pitch_range'], 0.5):.1f} deg"
   )
+
+  sm = X["long"] < 0.5
+  lg = X["long"] > 0.5
+  print(
+    f"ANAT styles: short/medium support planted {100 * X['sup_contact'][sm].mean():.0f} %,"
+    f" short/medium inside-foot (60-120 deg) {100 * ((X['foot_yaw'][sm] > 60) & (X['foot_yaw'][sm] < 120)).float().mean():.0f} %,"
+    f" long hop {100 * X['flight'][lg].mean():.0f} %"
+  )
+  nh = max(1, int(X["flight"].sum()))
+  npl = max(1, int((X["flight"] < 0.5).sum()))
+  print(
+    f"ANAT falls within 2 s of a kick: after hop {100 * falls['hop'] / nh:.1f} %"
+    f" ({falls['hop']}/{nh}), after planted {100 * falls['planted'] / npl:.1f} %"
+  )
+  # Kick outcome by technique: hop (both feet up) vs planted, inside foot vs front.
+  side = (X["foot_yaw"] > 60) & (X["foot_yaw"] < 120)
+  groups = {
+    "hop": X["flight"] > 0.5,
+    "planted": X["sup_contact"] > 0.5,
+    "inside-foot": side,
+    "front": X["foot_yaw"] < 30,
+  }
+  for rng, m0 in (("long", X["long"] > 0.5), ("short/medium", X["long"] < 0.5)):
+    for g, m in groups.items():
+      mm = m & m0
+      if mm.sum() < 5:
+        print(f"ANAT {rng:12s} {g:11s} n {int(mm.sum())}")
+        continue
+      print(
+        f"ANAT {rng:12s} {g:11s} n {int(mm.sum()):4d} ({100 * mm.sum() / m0.sum():.0f} %)"
+        f" | ball 3D p50 {q(X['speed'][mm], 0.5):.2f} p90 {q(X['speed'][mm], 0.9):.2f} m/s"
+        f" | aim <= 20 deg {100 * (X['aim'][mm] <= 20).float().mean():.0f} %"
+      )
 
 
 if __name__ == "__main__":

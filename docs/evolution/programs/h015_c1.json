@@ -1,0 +1,28 @@
+[
+  {
+    "name": "tpl_far_cap_tracking",
+    "expr": {
+      "mul": [
+        {
+          "gt": [
+            {
+              "sig": "ball_dist"
+            },
+            3.0
+          ]
+        },
+        {
+          "linear_match": [
+            {
+              "sig": "vx"
+            },
+            {
+              "sig": "vx_cap"
+            }
+          ]
+        }
+      ]
+    },
+    "weight": 6.0
+  }
+]

@@ -1,0 +1,68 @@
+[
+  {
+    "name": "tpl_quick_kick",
+    "expr": {
+      "mul": [
+        {
+          "sig": "kick_event"
+        },
+        {
+          "exp_decay": [
+            {
+              "sig": "kick_near_time"
+            },
+            1.0
+          ]
+        },
+        {
+          "gauss": [
+            {
+              "sig": "kick_aim_err"
+            },
+            0.0,
+            0.3
+          ]
+        },
+        {
+          "sig": "kick_quality"
+        }
+      ]
+    },
+    "weight": 400.0
+  },
+  {
+    "name": "tpl_hop_power_long",
+    "expr": {
+      "mul": [
+        {
+          "sig": "kick_event"
+        },
+        {
+          "sig": "kick_long"
+        },
+        {
+          "sig": "kick_hop"
+        },
+        {
+          "ramp": [
+            {
+              "sig": "kick_speed"
+            },
+            5.0,
+            9.0
+          ]
+        },
+        {
+          "gauss": [
+            {
+              "sig": "kick_aim_err"
+            },
+            0.0,
+            0.25
+          ]
+        }
+      ]
+    },
+    "weight": 800.0
+  }
+]

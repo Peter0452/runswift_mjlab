@@ -1,0 +1,28 @@
+[
+  {
+    "name": "tpl_upright_fast",
+    "expr": {
+      "mul": [
+        {
+          "gt": [
+            {
+              "sig": "vx"
+            },
+            1.0
+          ]
+        },
+        {
+          "band": [
+            {
+              "sig": "trunk_pitch_deg"
+            },
+            -5.0,
+            1.0,
+            2.0
+          ]
+        }
+      ]
+    },
+    "weight": -0.0062
+  }
+]

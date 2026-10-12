@@ -1,0 +1,868 @@
+{
+ "frames": 23,
+ "queue": [
+  {
+   "level": "L5",
+   "desc": "time to kick T2 (strong): time cost -10, floor 0, tau 0.7, quick kick 700, turn-rate 10, 25 % low caps",
+   "genes": {
+    "s.spawn_any_prob": 0.15,
+    "s.far_spawn_prob": 0.1,
+    "s.unknown_start_prob": 0.15,
+    "w.kick_time_cost": -10.0,
+    "k.PROMPT_FLOOR": 0.0,
+    "k.PROMPT_KICK_TAU": 0.7,
+    "t.quick_kick": 700.0,
+    "w.turn_rate_track": 10.0,
+    "s.cap_low_prob": 0.25
+   }
+  }
+ ],
+ "history": [
+  {
+   "id": "h001",
+   "level": "L5",
+   "desc": "atom ball_behind_starts: spawn the ball at any bearing and far (v2 approach falls with the ball behind 23-45 %)",
+   "genes": {
+    "s.spawn_any_prob": 0.3,
+    "s.far_spawn_prob": 0.3
+   },
+   "atom": "ball_behind_starts",
+   "screen": 55.39,
+   "promoted": false,
+   "score": 118.83,
+   "regressions": [
+    "close_any/camera/typical:first_kick_s:low",
+    "approach/camera/typical:first_kick_pct:low",
+    "approach/camera/typical:first_kick_s:high",
+    "full_loop/camera/typical:first_kick_s:low",
+    "full_loop/camera/typical:goals_per_ep:low",
+    "full_loop/moving/camera/typical:goals_per_ep:low",
+    "full_loop/late_detect/camera/typical:goals_per_ep:low",
+    "full_loop/bumps/camera/typical:goals_per_ep:low",
+    "full_loop/robust/camera/typical:goals_per_ep:low"
+   ],
+   "blend": {
+    "name": "h001_c0_17300_x50",
+    "score": 161.22,
+    "regressions": [
+     "close_any/camera/typical:first_kick_s:low"
+    ]
+   }
+  },
+  {
+   "id": "h002",
+   "level": "L3",
+   "desc": "s.cap_low_prob 0.3 inside ball_behind_starts (fix low-cap time-to-kick regression of h001 blend)",
+   "genes": {
+    "s.cap_low_prob": 0.3
+   },
+   "screen": 42.0,
+   "promoted": false,
+   "result": "stopped early (user: move on): low-cap goals 1.11 -> 0.75-0.89, low-cap first kick 5.9 -> 6.6-6.9 s vs blend; accuracy / falls better"
+  },
+  {
+   "id": "h003",
+   "level": "L1@L5",
+   "desc": "situational styles: outcome-only rewards (no style shares / bonuses, hop_power_long off), RSI 15 % front + 10 % B-Human inside so no style is forgotten",
+   "genes": {
+    "k.STYLE_MAP": "free",
+    "k.STYLE_SHARE_INSIDE": 0.0,
+    "k.STYLE_SHARE_HOP": 0.0,
+    "w.inside_foot_style": 0.0,
+    "w.hop_kick_style": 0.0,
+    "t.hop_power_long": 0.0,
+    "w.hop_kick_fall": -1000.0,
+    "rsi_ours": 0.15,
+    "rsi_bhuman": 0.1
+   },
+   "screen": 63.9,
+   "promoted": false,
+   "result": "stopped after screens (user: move on): vs blend parent low-cap goals 1.11 -> 0.74-1.06, low-cap first kick 5.9 -> 6.1-8.0 s, style selection not better; high-cap goals up to 2.08"
+  },
+  {
+   "id": "h004",
+   "level": "L5",
+   "desc": "situational styles from the champion (no ball-behind)",
+   "genes": {
+    "k.STYLE_MAP": "free",
+    "k.STYLE_SHARE_INSIDE": 0.0,
+    "k.STYLE_SHARE_HOP": 0.0,
+    "w.inside_foot_style": 0.0,
+    "w.hop_kick_style": 0.0,
+    "t.hop_power_long": 0.0,
+    "w.hop_kick_fall": -1000.0,
+    "rsi_ours": 0.15,
+    "rsi_bhuman": 0.1
+   },
+   "screen": 35.6,
+   "promoted": false,
+   "result": "stopped after screens: low-cap first kick 5.6 -> 6.5-7.6 s, low-cap goals down, style selection not better"
+  },
+  {
+   "id": "h005",
+   "level": "L5",
+   "desc": "time to kick T1 (moderate): time cost, promptness floor 0.25 / tau 1.0, quick kick, turn-rate, 15 % low caps, 15 % unknown starts, mild ball-behind",
+   "genes": {
+    "s.spawn_any_prob": 0.15,
+    "s.far_spawn_prob": 0.1,
+    "s.unknown_start_prob": 0.15,
+    "w.kick_time_cost": -5.0,
+    "k.PROMPT_FLOOR": 0.25,
+    "k.PROMPT_KICK_TAU": 1.0,
+    "t.quick_kick": 400.0,
+    "w.turn_rate_track": 5.0,
+    "s.cap_low_prob": 0.15
+   },
+   "screen": 63.9,
+   "promoted": false,
+   "result": "not improving: best +63.9 vs parent blend +75.7; champion blends +50.2/+46.8; low-cap first kick 6.7-7.7 s (blend 5.9)"
+  },
+  {
+   "id": "h006",
+   "level": "L5",
+   "desc": "power + learned style choice: style forcing off, style_advantage 600, long uncapped 800, RSI front 15 % / inside 10 %, loft free, heavy balls",
+   "genes": {
+    "s.spawn_any_prob": 0.15,
+    "s.far_spawn_prob": 0.1,
+    "s.unknown_start_prob": 0.15,
+    "k.STYLE_MAP": "free",
+    "k.STYLE_SHARE_INSIDE": 0.0,
+    "k.STYLE_SHARE_HOP": 0.0,
+    "w.inside_foot_style": 0.0,
+    "w.hop_kick_style": 0.0,
+    "t.hop_power_long": 0.0,
+    "w.hop_kick_fall": -1000.0,
+    "rsi_ours": 0.15,
+    "rsi_bhuman": 0.1,
+    "w.style_advantage": 600.0,
+    "w.long_kick_speed_linear": 800.0
+   },
+   "atom": null,
+   "screen": 51.27,
+   "promoted": false,
+   "score": 159.28,
+   "regressions": [
+    "approach/camera/typical:first_kick_s:high",
+    "full_loop/camera/typical:first_kick_s:low",
+    "full_loop/camera/typical:style_selection_pct:low",
+    "full_loop/camera/typical:style_selection_pct:high"
+   ],
+   "blend": {
+    "name": "h006_c0_17650_x50",
+    "score": 128.72,
+    "regressions": [
+     "approach/camera/typical:first_kick_s:low",
+     "full_loop/camera/typical:style_selection_pct:low"
+    ]
+   }
+  },
+  {
+   "id": "h007",
+   "level": "L5",
+   "desc": "approach speed: track the vx cap with the braking profile down to 1 m (k.TRACK_BRAKE_PROFILE 1, w.walk_speed_track 6) - children walk to the ball 0.5-0.7 s slower at low caps",
+   "genes": {
+    "s.spawn_any_prob": 0.15,
+    "s.far_spawn_prob": 0.1,
+    "s.unknown_start_prob": 0.15,
+    "k.TRACK_BRAKE_PROFILE": 1.0,
+    "w.walk_speed_track": 6.0,
+    "s.cap_low_prob": 0.15
+   },
+   "atom": null,
+   "screen": 69.26,
+   "promoted": false,
+   "score": 146.77,
+   "regressions": [
+    "full_loop/camera/typical:first_kick_s:low",
+    "full_loop/camera/typical:short_stop_m:low",
+    "full_loop/camera/typical:short_stop_m:high",
+    "full_loop/moving/camera/typical:goals_per_ep:low",
+    "full_loop/bumps/camera/typical:goals_per_ep:low"
+   ],
+   "blend": {
+    "name": "h007_c1_17650_x50",
+    "score": 168.87,
+    "regressions": [
+     "full_loop/camera/typical:first_kick_s:low"
+    ]
+   }
+  },
+  {
+   "id": "h008",
+   "level": "L5",
+   "desc": "conservative fine-tune: desired_kl 0.004 (smaller policy steps, less drift of the champion's low-cap speed) + approach speed (brake profile, walk_speed_track 6) + 15 % low caps",
+   "genes": {
+    "s.spawn_any_prob": 0.15,
+    "s.far_spawn_prob": 0.1,
+    "s.unknown_start_prob": 0.15,
+    "k.TRACK_BRAKE_PROFILE": 1.0,
+    "w.walk_speed_track": 6.0,
+    "s.cap_low_prob": 0.15,
+    "desired_kl": 0.004
+   },
+   "atom": null,
+   "screen": 88.67,
+   "promoted": false,
+   "score": 251.4,
+   "regressions": [
+    "full_loop/camera/typical:first_kick_s:low",
+    "full_loop/camera/typical:short_stop_m:low",
+    "full_loop/camera/typical:short_stop_m:high",
+    "full_loop/camera/typical:goals_per_ep:low",
+    "approach/unknown/camera/typical:first_kick_s:high",
+    "full_loop/moving/camera/typical:goals_per_ep:low",
+    "full_loop/late_detect/camera/typical:goals_per_ep:low",
+    "full_loop/bumps/camera/typical:goals_per_ep:low",
+    "full_loop/robust/camera/typical:goals_per_ep:low"
+   ],
+   "blend": {
+    "name": "h008_c2_17650_x50",
+    "score": 228.8,
+    "regressions": [
+     "full_loop/camera/typical:first_kick_s:low",
+     "full_loop/camera/typical:short_stop_m:low",
+     "full_loop/camera/typical:short_stop_m:high",
+     "approach/unknown/camera/typical:first_kick_s:high"
+    ]
+   }
+  },
+  {
+   "id": "h009",
+   "level": "L5",
+   "desc": "power + learned style choice, small policy steps (KL 0.004), from the new champion",
+   "genes": {
+    "s.spawn_any_prob": 0.15,
+    "s.far_spawn_prob": 0.1,
+    "s.unknown_start_prob": 0.15,
+    "k.STYLE_MAP": "free",
+    "k.STYLE_SHARE_INSIDE": 0.0,
+    "k.STYLE_SHARE_HOP": 0.0,
+    "w.inside_foot_style": 0.0,
+    "w.hop_kick_style": 0.0,
+    "t.hop_power_long": 0.0,
+    "w.hop_kick_fall": -1000.0,
+    "rsi_ours": 0.15,
+    "rsi_bhuman": 0.1,
+    "w.style_advantage": 600.0,
+    "w.long_kick_speed_linear": 800.0,
+    "desired_kl": 0.004
+   },
+   "atom": null,
+   "screen": 58.12,
+   "promoted": false,
+   "score": 209.5,
+   "regressions": [
+    "full_loop/camera/typical:short_stop_m:low",
+    "full_loop/camera/typical:action_rate:high",
+    "full_loop/camera/typical:style_selection_pct:low",
+    "full_loop/camera/typical:style_selection_pct:high"
+   ],
+   "blend": {
+    "name": "h009_c0_17500_x50",
+    "score": 159.62,
+    "regressions": [
+     "full_loop/camera/typical:short_stop_m:low",
+     "full_loop/camera/typical:style_selection_pct:low",
+     "full_loop/camera/typical:style_selection_pct:high"
+    ]
+   }
+  },
+  {
+   "id": "h010",
+   "level": "L5",
+   "desc": "power + styles v2 from h009 child: style_advantage 1500, short-pass stop reward 1000, long uncapped 800, KL 0.004",
+   "genes": {
+    "s.spawn_any_prob": 0.15,
+    "s.far_spawn_prob": 0.1,
+    "s.unknown_start_prob": 0.15,
+    "k.STYLE_MAP": "free",
+    "k.STYLE_SHARE_INSIDE": 0.0,
+    "k.STYLE_SHARE_HOP": 0.0,
+    "w.inside_foot_style": 0.0,
+    "w.hop_kick_style": 0.0,
+    "t.hop_power_long": 0.0,
+    "w.hop_kick_fall": -1000.0,
+    "rsi_ours": 0.15,
+    "rsi_bhuman": 0.1,
+    "w.style_advantage": 1500.0,
+    "w.long_kick_speed_linear": 800.0,
+    "desired_kl": 0.004,
+    "w.kick_rest_accuracy": 1000.0
+   },
+   "atom": null,
+   "screen": 68.61,
+   "promoted": false,
+   "score": 186.4,
+   "regressions": [
+    "full_loop/camera/typical:short_stop_m:low"
+   ],
+   "blend": {
+    "name": "h010_c2_17850_x70",
+    "score": 118.92,
+    "regressions": []
+   }
+  },
+  {
+   "id": "h011",
+   "level": "L1@L5",
+   "desc": "add template long_power_ramp | in power + styles v2 from h009 child: style_advantage 1500, short-pass stop reward 1000, long uncapped 800, KL 0.004",
+   "genes": {
+    "s.spawn_any_prob": 0.15,
+    "s.far_spawn_prob": 0.1,
+    "s.unknown_start_prob": 0.15,
+    "k.STYLE_MAP": "free",
+    "k.STYLE_SHARE_INSIDE": 0.0,
+    "k.STYLE_SHARE_HOP": 0.0,
+    "w.inside_foot_style": 0.0,
+    "w.hop_kick_style": 0.0,
+    "t.hop_power_long": 0.0,
+    "w.hop_kick_fall": -1000.0,
+    "rsi_ours": 0.15,
+    "rsi_bhuman": 0.1,
+    "w.style_advantage": 1500.0,
+    "w.long_kick_speed_linear": 800.0,
+    "desired_kl": 0.004,
+    "w.kick_rest_accuracy": 1000.0,
+    "t.long_power_ramp": 1500.0
+   },
+   "atom": null,
+   "screen": 84.95,
+   "promoted": false,
+   "score": 252.71,
+   "regressions": [
+    "full_loop/camera/typical:action_rate:high",
+    "full_loop/camera/typical:style_selection_pct:low",
+    "full_loop/camera/typical:style_selection_pct:high"
+   ],
+   "blend": {
+    "name": "h011_c2_17750_x50",
+    "score": 160.78,
+    "regressions": [
+     "full_loop/camera/typical:style_selection_pct:high"
+    ]
+   }
+  },
+  {
+   "id": "h012",
+   "level": "L5",
+   "desc": "keep h011 long power (3D 4.4-4.5 m/s) and fix its high-cap regressions: smoother actions (action_rate -0.15), style_advantage kept",
+   "genes": {
+    "s.spawn_any_prob": 0.15,
+    "s.far_spawn_prob": 0.1,
+    "s.unknown_start_prob": 0.15,
+    "k.STYLE_MAP": "free",
+    "k.STYLE_SHARE_INSIDE": 0.0,
+    "k.STYLE_SHARE_HOP": 0.0,
+    "w.inside_foot_style": 0.0,
+    "w.hop_kick_style": 0.0,
+    "t.hop_power_long": 0.0,
+    "w.hop_kick_fall": -1000.0,
+    "rsi_ours": 0.15,
+    "rsi_bhuman": 0.1,
+    "w.style_advantage": 1500.0,
+    "w.long_kick_speed_linear": 800.0,
+    "desired_kl": 0.004,
+    "w.kick_rest_accuracy": 1000.0,
+    "w.action_rate_l2": -0.15
+   },
+   "atom": null,
+   "screen": 69.15,
+   "promoted": false,
+   "score": 175.6,
+   "regressions": [
+    "close_any/heavy/camera/typical:long_3d:high"
+   ],
+   "blend": {
+    "name": "h012_c1_18000_x30",
+    "score": 139.57,
+    "regressions": [
+     "full_loop/camera/typical:style_selection_pct:high"
+    ]
+   }
+  },
+  {
+   "id": "h013",
+   "level": "L2",
+   "desc": "smooth + stable actions (user 2026-10-08): action_rate held at 0.75x the parent level by dual ascent, power + style_advantage kept",
+   "genes": {
+    "s.spawn_any_prob": 0.15,
+    "s.far_spawn_prob": 0.1,
+    "s.unknown_start_prob": 0.15,
+    "k.STYLE_MAP": "free",
+    "k.STYLE_SHARE_INSIDE": 0.0,
+    "k.STYLE_SHARE_HOP": 0.0,
+    "w.inside_foot_style": 0.0,
+    "w.hop_kick_style": 0.0,
+    "t.hop_power_long": 0.0,
+    "w.hop_kick_fall": -1000.0,
+    "rsi_ours": 0.15,
+    "rsi_bhuman": 0.1,
+    "w.style_advantage": 1500.0,
+    "w.long_kick_speed_linear": 800.0,
+    "desired_kl": 0.004,
+    "w.kick_rest_accuracy": 1000.0,
+    "w.action_rate_l2": -0.15,
+    "c.action_rate_l2": 0.75
+   },
+   "atom": null,
+   "screen": 47.35,
+   "promoted": false,
+   "result": "not improving: best screen +47.4 (blend +42.2) vs parent +55.2"
+  },
+  {
+   "id": "h014",
+   "level": "L1@L2",
+   "desc": "add template aim_tight | in smooth + stable actions (user 2026-10-08): action_rate held at 0.75x the parent level by dual ascent, power + style_advantage kept",
+   "genes": {
+    "s.spawn_any_prob": 0.15,
+    "s.far_spawn_prob": 0.1,
+    "s.unknown_start_prob": 0.15,
+    "k.STYLE_MAP": "free",
+    "k.STYLE_SHARE_INSIDE": 0.0,
+    "k.STYLE_SHARE_HOP": 0.0,
+    "w.inside_foot_style": 0.0,
+    "w.hop_kick_style": 0.0,
+    "t.hop_power_long": 0.0,
+    "w.hop_kick_fall": -1000.0,
+    "rsi_ours": 0.15,
+    "rsi_bhuman": 0.1,
+    "w.style_advantage": 1500.0,
+    "w.long_kick_speed_linear": 800.0,
+    "desired_kl": 0.004,
+    "w.kick_rest_accuracy": 1000.0,
+    "w.action_rate_l2": -0.15,
+    "c.action_rate_l2": 0.75,
+    "t.aim_tight": 600.0
+   },
+   "atom": null,
+   "screen": 61.8,
+   "promoted": false,
+   "score": 137.33,
+   "regressions": [
+    "full_loop/camera/typical:action_rate:high",
+    "close_any/camera/typical:action_rate:high",
+    "approach/camera/typical:action_rate:high",
+    "close_any/heavy/camera/typical:long_3d:high",
+    "full_loop/camera/typical:style_selection_pct:low"
+   ],
+   "blend": {
+    "name": "h014_c1_18000_x50",
+    "score": 105.45,
+    "regressions": [
+     "close_any/camera/typical:action_rate:high",
+     "full_loop/camera/typical:style_selection_pct:high"
+    ]
+   }
+  },
+  {
+   "id": "h015",
+   "level": "L1@L5",
+   "desc": "add template far_cap_tracking | in keep h011 long power (3D 4.4-4.5 m/s) and fix its high-cap regressions: smoother actions (action_rate -0.15), style_advantage kept",
+   "genes": {
+    "s.spawn_any_prob": 0.15,
+    "s.far_spawn_prob": 0.1,
+    "s.unknown_start_prob": 0.15,
+    "k.STYLE_MAP": "free",
+    "k.STYLE_SHARE_INSIDE": 0.0,
+    "k.STYLE_SHARE_HOP": 0.0,
+    "w.inside_foot_style": 0.0,
+    "w.hop_kick_style": 0.0,
+    "t.hop_power_long": 0.0,
+    "w.hop_kick_fall": -1000.0,
+    "rsi_ours": 0.15,
+    "rsi_bhuman": 0.1,
+    "w.style_advantage": 1500.0,
+    "w.long_kick_speed_linear": 800.0,
+    "desired_kl": 0.004,
+    "w.kick_rest_accuracy": 1000.0,
+    "w.action_rate_l2": -0.15,
+    "t.far_cap_tracking": 6.0
+   },
+   "atom": null,
+   "screen": 52.3,
+   "promoted": false,
+   "result": "not improving: best screen +52.3 (blend +47.7) vs parent +55.2"
+  },
+  {
+   "id": "h016",
+   "level": "L2",
+   "desc": "smooth near the ball (user 2026-10-08): CAPS on the deterministic action, temporal 1.3, near-ball scale 0.5 -> 0.8; drop the action_rate constraint (noise-dominated); from h012_c1_18000 (power kept, close_any action_rate:high + heavy long regressions); env since 2026-10-08 21:30: ball 0.07-0.13 m / 0.05-0.45 kg, foot_flat settle 60 ms, touchdown_speed -50 (quiet steps)",
+   "genes": {
+    "s.spawn_any_prob": 0.15,
+    "s.far_spawn_prob": 0.1,
+    "s.unknown_start_prob": 0.15,
+    "k.STYLE_MAP": "free",
+    "k.STYLE_SHARE_INSIDE": 0.0,
+    "k.STYLE_SHARE_HOP": 0.0,
+    "w.inside_foot_style": 0.0,
+    "w.hop_kick_style": 0.0,
+    "t.hop_power_long": 0.0,
+    "w.hop_kick_fall": -1000.0,
+    "rsi_ours": 0.15,
+    "rsi_bhuman": 0.1,
+    "w.style_advantage": 1500.0,
+    "w.long_kick_speed_linear": 800.0,
+    "desired_kl": 0.004,
+    "w.kick_rest_accuracy": 1000.0,
+    "w.action_rate_l2": -0.15,
+    "caps_temporal_coef": 1.3,
+    "caps_near_ball_scale": 0.8
+   },
+   "atom": null,
+   "screen": 49.77,
+   "promoted": false,
+   "result": "not improving: best screen +49.8 (blend +42.2) vs parent +67.3"
+  },
+  {
+   "id": "h017",
+   "level": "L1@L2",
+   "desc": "add template quick_kick | in smooth near the ball (user 2026-10-08): CAPS on the deterministic action, temporal 1.3, near-ball scale 0.5 -> 0.8; drop the action_rate constraint (noise-dominated); from h012_c1_18000 (power kept, close_any action_rate:high + heavy long regressions); env since 2026-10-08 21:30: ball 0.07-0.13 m / 0.05-0.45 kg, foot_flat settle 60 ms, touchdown_speed -50 (quiet steps)",
+   "genes": {
+    "s.spawn_any_prob": 0.15,
+    "s.far_spawn_prob": 0.1,
+    "s.unknown_start_prob": 0.15,
+    "k.STYLE_MAP": "free",
+    "k.STYLE_SHARE_INSIDE": 0.0,
+    "k.STYLE_SHARE_HOP": 0.0,
+    "w.inside_foot_style": 0.0,
+    "w.hop_kick_style": 0.0,
+    "t.hop_power_long": 0.0,
+    "w.hop_kick_fall": -1000.0,
+    "rsi_ours": 0.15,
+    "rsi_bhuman": 0.1,
+    "w.style_advantage": 1500.0,
+    "w.long_kick_speed_linear": 800.0,
+    "desired_kl": 0.004,
+    "w.kick_rest_accuracy": 1000.0,
+    "w.action_rate_l2": -0.15,
+    "caps_temporal_coef": 1.3,
+    "caps_near_ball_scale": 0.8,
+    "t.quick_kick": 400.0
+   },
+   "atom": null,
+   "screen": 54.47,
+   "promoted": false,
+   "result": "not improving: best screen +54.5 (blend +39.1) vs parent +67.5"
+  },
+  {
+   "id": "h018",
+   "level": "L3",
+   "desc": "cold starts with the ball behind (runswift goal grid, aligned fixture: every miss of h014 at high caps is a fall within 0.8 s of a standing start with the ball ~10 m behind; training only reset from moving motion clips): stand_start 0.35, spawn_any 0.3, far spawn 0.2; CAPS back to defaults; from h012_c1_18000",
+   "genes": {
+    "s.spawn_any_prob": 0.3,
+    "s.far_spawn_prob": 0.2,
+    "s.unknown_start_prob": 0.15,
+    "k.STYLE_MAP": "free",
+    "k.STYLE_SHARE_INSIDE": 0.0,
+    "k.STYLE_SHARE_HOP": 0.0,
+    "w.inside_foot_style": 0.0,
+    "w.hop_kick_style": 0.0,
+    "t.hop_power_long": 0.0,
+    "w.hop_kick_fall": -1000.0,
+    "rsi_ours": 0.15,
+    "rsi_bhuman": 0.1,
+    "w.style_advantage": 1500.0,
+    "w.long_kick_speed_linear": 800.0,
+    "desired_kl": 0.004,
+    "w.kick_rest_accuracy": 1000.0,
+    "w.action_rate_l2": -0.15,
+    "caps_temporal_coef": 1.0,
+    "caps_near_ball_scale": 0.5,
+    "stand_start_prob": 0.35
+   },
+   "atom": null,
+   "screen": 17.88,
+   "promoted": false,
+   "result": "not improving: best screen +17.9 (blend +10.1) vs parent +81.8"
+  },
+  {
+   "id": "h019",
+   "level": "L3",
+   "desc": "world-model ball (2026-10-09): the runswift harness (truth inputs) and v2 'world' perception report a ball 10 m behind as seen; training never did (world_ball_prob 0: only camera view, memory, or the lost virtual ball), and the champion falls 32-40 % in exactly that start. s.world_ball_prob 0.3 with the cold starts (stand 0.35, ball behind 0.3, far 0.2), alive +2/s, touchdown -15; from h012_c1_18000",
+   "genes": {
+    "s.spawn_any_prob": 0.3,
+    "s.far_spawn_prob": 0.2,
+    "s.unknown_start_prob": 0.15,
+    "k.STYLE_MAP": "free",
+    "k.STYLE_SHARE_INSIDE": 0.0,
+    "k.STYLE_SHARE_HOP": 0.0,
+    "w.inside_foot_style": 0.0,
+    "w.hop_kick_style": 0.0,
+    "t.hop_power_long": 0.0,
+    "w.hop_kick_fall": -1000.0,
+    "rsi_ours": 0.15,
+    "rsi_bhuman": 0.1,
+    "w.style_advantage": 1500.0,
+    "w.long_kick_speed_linear": 800.0,
+    "desired_kl": 0.004,
+    "w.kick_rest_accuracy": 1000.0,
+    "w.action_rate_l2": -0.15,
+    "caps_temporal_coef": 1.0,
+    "caps_near_ball_scale": 0.5,
+    "stand_start_prob": 0.35,
+    "s.world_ball_prob": 0.3
+   },
+   "atom": null,
+   "screen": -1000000000.0,
+   "promoted": false,
+   "result": "no checkpoints"
+  },
+  {
+   "id": "h020",
+   "level": "L1@L3",
+   "desc": "add template aim_tight | in world-model ball (2026-10-09): the runswift harness (truth inputs) and v2 'world' perception report a ball 10 m behind as seen; training never did (world_ball_prob 0: only camera view, memory, or the lost virtual ball), and the champion falls 32-40 % in exactly that start. s.world_ball_prob 0.3 with the cold starts (stand 0.35, ball behind 0.3, far 0.2), alive +2/s, touchdown -15; from h012_c1_18000",
+   "genes": {
+    "s.spawn_any_prob": 0.3,
+    "s.far_spawn_prob": 0.2,
+    "s.unknown_start_prob": 0.15,
+    "k.STYLE_MAP": "free",
+    "k.STYLE_SHARE_INSIDE": 0.0,
+    "k.STYLE_SHARE_HOP": 0.0,
+    "w.inside_foot_style": 0.0,
+    "w.hop_kick_style": 0.0,
+    "t.hop_power_long": 0.0,
+    "w.hop_kick_fall": -1000.0,
+    "rsi_ours": 0.15,
+    "rsi_bhuman": 0.1,
+    "w.style_advantage": 1500.0,
+    "w.long_kick_speed_linear": 800.0,
+    "desired_kl": 0.004,
+    "w.kick_rest_accuracy": 1000.0,
+    "w.action_rate_l2": -0.15,
+    "caps_temporal_coef": 1.0,
+    "caps_near_ball_scale": 0.5,
+    "stand_start_prob": 0.35,
+    "s.world_ball_prob": 0.3,
+    "t.aim_tight": 600.0
+   },
+   "atom": null,
+   "screen": 59.07,
+   "promoted": false,
+   "result": "not improving: best screen +59.1 (blend +34.8) vs parent +77.5"
+  },
+  {
+   "id": "h021",
+   "level": "L1@L3",
+   "desc": "add template aim_tight | in world-model ball (2026-10-09): the runswift harness (truth inputs) and v2 'world' perception report a ball 10 m behind as seen; training never did (world_ball_prob 0: only camera view, memory, or the lost virtual ball), and the champion falls 32-40 % in exactly that start. s.world_ball_prob 0.3 with the cold starts (stand 0.35, ball behind 0.3, far 0.2), alive +2/s, touchdown -15; from h012_c1_18000",
+   "genes": {
+    "s.spawn_any_prob": 0.3,
+    "s.far_spawn_prob": 0.2,
+    "s.unknown_start_prob": 0.15,
+    "k.STYLE_MAP": "free",
+    "k.STYLE_SHARE_INSIDE": 0.0,
+    "k.STYLE_SHARE_HOP": 0.0,
+    "w.inside_foot_style": 0.0,
+    "w.hop_kick_style": 0.0,
+    "t.hop_power_long": 0.0,
+    "w.hop_kick_fall": -1000.0,
+    "rsi_ours": 0.15,
+    "rsi_bhuman": 0.1,
+    "w.style_advantage": 1500.0,
+    "w.long_kick_speed_linear": 800.0,
+    "desired_kl": 0.004,
+    "w.kick_rest_accuracy": 1000.0,
+    "w.action_rate_l2": -0.15,
+    "caps_temporal_coef": 1.0,
+    "caps_near_ball_scale": 0.5,
+    "stand_start_prob": 0.35,
+    "s.world_ball_prob": 0.3,
+    "t.aim_tight": 600.0
+   },
+   "atom": null,
+   "screen": 68.94,
+   "promoted": false,
+   "result": "not improving: best screen +68.9 (blend +60.6) vs parent +77.5"
+  },
+  {
+   "id": "h022",
+   "level": "L1@L3",
+   "desc": "add template far_cap_tracking | in cold starts with the ball behind (runswift goal grid, aligned fixture: every miss of h014 at high caps is a fall within 0.8 s of a standing start with the ball ~10 m behind; training only reset from moving motion clips): stand_start 0.35, spawn_any 0.3, far spawn 0.2; CAPS back to defaults; from h012_c1_18000",
+   "genes": {
+    "s.spawn_any_prob": 0.3,
+    "s.far_spawn_prob": 0.2,
+    "s.unknown_start_prob": 0.15,
+    "k.STYLE_MAP": "free",
+    "k.STYLE_SHARE_INSIDE": 0.0,
+    "k.STYLE_SHARE_HOP": 0.0,
+    "w.inside_foot_style": 0.0,
+    "w.hop_kick_style": 0.0,
+    "t.hop_power_long": 0.0,
+    "w.hop_kick_fall": -1000.0,
+    "rsi_ours": 0.15,
+    "rsi_bhuman": 0.1,
+    "w.style_advantage": 1500.0,
+    "w.long_kick_speed_linear": 800.0,
+    "desired_kl": 0.004,
+    "w.kick_rest_accuracy": 1000.0,
+    "w.action_rate_l2": -0.15,
+    "caps_temporal_coef": 1.0,
+    "caps_near_ball_scale": 0.5,
+    "stand_start_prob": 0.35,
+    "t.far_cap_tracking": 6.0
+   },
+   "atom": null,
+   "screen": 56.26,
+   "promoted": false,
+   "result": "not improving: best screen +56.3 (blend +27.3) vs parent +77.5"
+  },
+  {
+   "id": "h023",
+   "level": "L2",
+   "desc": "fix h022_c2_18450's two regressions (seed 1 +172.9 / seed 2 +126.5 vs champion; camera runswift 90/90 goals 0 falls; quietest landings): low-cap approach first-kick 61 % vs 70 % (walk at the cap: walk_speed_track 6 -> 8) and action_rate high +0.007 (CAPS temporal 1.3); ball frame trunk 0.3; from h022_c2_18450",
+   "genes": {
+    "s.spawn_any_prob": 0.3,
+    "s.far_spawn_prob": 0.2,
+    "s.unknown_start_prob": 0.15,
+    "k.STYLE_MAP": "free",
+    "k.STYLE_SHARE_INSIDE": 0.0,
+    "k.STYLE_SHARE_HOP": 0.0,
+    "w.inside_foot_style": 0.0,
+    "w.hop_kick_style": 0.0,
+    "t.hop_power_long": 0.0,
+    "w.hop_kick_fall": -1000.0,
+    "rsi_ours": 0.15,
+    "rsi_bhuman": 0.1,
+    "w.style_advantage": 1500.0,
+    "w.long_kick_speed_linear": 800.0,
+    "desired_kl": 0.004,
+    "w.kick_rest_accuracy": 1000.0,
+    "w.action_rate_l2": -0.15,
+    "caps_temporal_coef": 1.3,
+    "caps_near_ball_scale": 0.5,
+    "stand_start_prob": 0.35,
+    "w.walk_speed_track": 8.0,
+    "s.ball_origin_trunk_prob": 0.3
+   },
+   "atom": null,
+   "screen": 41.24,
+   "promoted": false,
+   "result": "not improving: best screen +41.2 (blend +37.7) vs parent +58.0"
+  }
+ ],
+ "last_l4": 0.0,
+ "last_l5": 1791337315.828649,
+ "stack": [
+  {
+   "level": "L5",
+   "desc": "keep h011 long power (3D 4.4-4.5 m/s) and fix its high-cap regressions: smoother actions (action_rate -0.15), style_advantage kept",
+   "genes": {
+    "s.spawn_any_prob": 0.15,
+    "s.far_spawn_prob": 0.1,
+    "s.unknown_start_prob": 0.15,
+    "k.STYLE_MAP": "free",
+    "k.STYLE_SHARE_INSIDE": 0.0,
+    "k.STYLE_SHARE_HOP": 0.0,
+    "w.inside_foot_style": 0.0,
+    "w.hop_kick_style": 0.0,
+    "t.hop_power_long": 0.0,
+    "w.hop_kick_fall": -1000.0,
+    "rsi_ours": 0.15,
+    "rsi_bhuman": 0.1,
+    "w.style_advantage": 1500.0,
+    "w.long_kick_speed_linear": 800.0,
+    "desired_kl": 0.004,
+    "w.kick_rest_accuracy": 1000.0,
+    "w.action_rate_l2": -0.15
+   },
+   "origin": "L5",
+   "left": 1,
+   "first": false,
+   "best": {
+    "name": "h011_c2_17750",
+    "ck": "/home/peter/Desktop/Project/RL/runswift_mjlab/logs/rsl_rl/k1_kick_stage3_amp/2026-10-08_12-04-08_h011_c2/model_17750.pt",
+    "score": 252.71,
+    "regressions": [
+     "full_loop/camera/typical:action_rate:high",
+     "full_loop/camera/typical:style_selection_pct:low",
+     "full_loop/camera/typical:style_selection_pct:high"
+    ]
+   }
+  },
+  {
+   "level": "L2",
+   "desc": "smooth near the ball (user 2026-10-08): CAPS on the deterministic action, temporal 1.3, near-ball scale 0.5 -> 0.8; drop the action_rate constraint (noise-dominated); from h012_c1_18000 (power kept, close_any action_rate:high + heavy long regressions); env since 2026-10-08 21:30: ball 0.07-0.13 m / 0.05-0.45 kg, foot_flat settle 60 ms, touchdown_speed -50 (quiet steps)",
+   "genes": {
+    "s.spawn_any_prob": 0.15,
+    "s.far_spawn_prob": 0.1,
+    "s.unknown_start_prob": 0.15,
+    "k.STYLE_MAP": "free",
+    "k.STYLE_SHARE_INSIDE": 0.0,
+    "k.STYLE_SHARE_HOP": 0.0,
+    "w.inside_foot_style": 0.0,
+    "w.hop_kick_style": 0.0,
+    "t.hop_power_long": 0.0,
+    "w.hop_kick_fall": -1000.0,
+    "rsi_ours": 0.15,
+    "rsi_bhuman": 0.1,
+    "w.style_advantage": 1500.0,
+    "w.long_kick_speed_linear": 800.0,
+    "desired_kl": 0.004,
+    "w.kick_rest_accuracy": 1000.0,
+    "caps_temporal_coef": 1.3,
+    "caps_near_ball_scale": 0.8
+   },
+   "origin": "L2",
+   "left": 0,
+   "first": false,
+   "best": {
+    "name": "h012_c1_18000",
+    "ck": "/home/peter/Desktop/Project/RL/runswift_mjlab/logs/rsl_rl/k1_kick_stage3_amp/2026-10-08_13-36-19_h012_c1/model_18000.pt",
+    "score": 170.3,
+    "regressions": [
+     "close_any/camera/typical:action_rate:high",
+     "close_any/heavy/camera/typical:long_3d:high"
+    ]
+   }
+  },
+  {
+   "level": "L3",
+   "desc": "cold starts with the ball behind (runswift goal grid, aligned fixture: every miss of h014 at high caps is a fall within 0.8 s of a standing start with the ball ~10 m behind; training only reset from moving motion clips): stand_start 0.35, spawn_any 0.3, far spawn 0.2; CAPS back to defaults; from h012_c1_18000",
+   "genes": {
+    "stand_start_prob": 0.35,
+    "s.spawn_any_prob": 0.3,
+    "s.far_spawn_prob": 0.2,
+    "caps_temporal_coef": 1.0,
+    "caps_near_ball_scale": 0.5
+   },
+   "origin": "L3",
+   "left": 0,
+   "first": false,
+   "best": {
+    "name": "h012_c1_18000",
+    "ck": "/home/peter/Desktop/Project/RL/runswift_mjlab/logs/rsl_rl/k1_kick_stage3_amp/2026-10-08_13-36-19_h012_c1/model_18000.pt",
+    "score": 164.3,
+    "regressions": [
+     "close_any/camera/typical:action_rate:high",
+     "close_any/heavy/camera/typical:long_3d:high"
+    ]
+   }
+  },
+  {
+   "level": "L2",
+   "desc": "fix h022_c2_18450's two regressions (seed 1 +172.9 / seed 2 +126.5 vs champion; camera runswift 90/90 goals 0 falls; quietest landings): low-cap approach first-kick 61 % vs 70 % (walk at the cap: walk_speed_track 6 -> 8) and action_rate high +0.007 (CAPS temporal 1.3); ball frame trunk 0.3; from h022_c2_18450",
+   "genes": {
+    "w.walk_speed_track": 8.0,
+    "caps_temporal_coef": 1.3,
+    "s.ball_origin_trunk_prob": 0.3
+   },
+   "origin": "L2",
+   "left": 1,
+   "first": false,
+   "best": {
+    "name": "h022_c2_18450",
+    "ck": "/home/peter/Desktop/Project/RL/runswift_mjlab/logs/rsl_rl/k1_kick_stage3_amp/2026-10-09_07-17-43_h022_c2/model_18450.pt",
+    "score": 126.5,
+    "regressions": [
+     "approach/camera/typical:first_kick_pct:low",
+     "close_any/camera/typical:action_rate:high",
+     "full_loop/camera/typical:action_rate:high"
+    ]
+   }
+  }
+ ],
+ "stall": {
+  "L1": 0,
+  "L2": 1,
+  "L3": 1
+ }
+}

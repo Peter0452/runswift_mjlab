@@ -1,0 +1,35 @@
+[
+  {
+    "level": "L5",
+    "desc": "keep h011 long power (3D 4.4-4.5 m/s) and fix its high-cap regressions: smoother actions (action_rate -0.15), style_advantage kept",
+    "genes": {
+      "s.spawn_any_prob": 0.15,
+      "s.far_spawn_prob": 0.1,
+      "s.unknown_start_prob": 0.15,
+      "k.STYLE_MAP": "free",
+      "k.STYLE_SHARE_INSIDE": 0.0,
+      "k.STYLE_SHARE_HOP": 0.0,
+      "w.inside_foot_style": 0.0,
+      "w.hop_kick_style": 0.0,
+      "t.hop_power_long": 0.0,
+      "w.hop_kick_fall": -1000.0,
+      "rsi_ours": 0.15,
+      "rsi_bhuman": 0.1,
+      "w.style_advantage": 1500.0,
+      "w.long_kick_speed_linear": 800.0,
+      "desired_kl": 0.004,
+      "w.kick_rest_accuracy": 1000.0,
+      "w.action_rate_l2": -0.15
+    },
+    "best": {
+      "name": "h011_c2_17750",
+      "ck": "/home/peter/Desktop/Project/RL/runswift_mjlab/logs/rsl_rl/k1_kick_stage3_amp/2026-10-08_12-04-08_h011_c2/model_17750.pt",
+      "score": 252.71,
+      "regressions": [
+        "full_loop/camera/typical:action_rate:high",
+        "full_loop/camera/typical:style_selection_pct:low",
+        "full_loop/camera/typical:style_selection_pct:high"
+      ]
+    }
+  }
+]

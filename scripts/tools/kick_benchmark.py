@@ -43,6 +43,16 @@ METRICS: dict[str, tuple[bool, float, bool, str]] = {
   "h2h_long_knee_p90": (False, 5.0, True, "long kicks, knee torque p90 (Nm)"),
   "h2h_long_hip_p90": (False, 5.0, True, "long kicks, hip pitch torque p90 (Nm)"),
   "h2h_support_planted_pct": (True, 3.0, True, "support foot on ground at contact (%)"),
+  # Kick styles (2026-10-06): inside foot for short / medium, hop for long.
+  "h2h_support_planted_short_pct": (
+    True,
+    3.0,
+    True,
+    "short / medium kicks: support foot on ground at contact (%)",
+  ),
+  "style_inside_short_pct": (True, 5.0, False, "short / medium kicks with the inside foot (%)"),
+  "style_hop_long_pct": (True, 5.0, False, "long kicks with a hop (%)"),
+  "hop_fall_pct": (False, 2.0, False, "falls within 2 s of a hop kick (%)"),
   # Same close-start scenario with perfect perception for both policies
   # (fairness both ways, 2026-10-06): exact ball every step.
   "h2h_true_first_kick_s": (
@@ -131,6 +141,31 @@ METRICS: dict[str, tuple[bool, float, bool, str]] = {
 }
 
 
+# Reported, not gated: with hop long kicks (kick styles, user 2026-10-06) the
+# overall planted share drops by design; h2h_support_planted_short_pct and
+# hop_fall_pct gate instead.
+INFO_ONLY = {"h2h_support_planted_pct"}
+# The user's primary objectives (2026-10-06): accuracy, time to kick, power.
+PRIMARY = {
+  "h2h_first_kick_s", "h2h_first_on_target_pct", "h2h_aim_pct", "h2h_long_3d",
+  "h2h_long_aim_pct", "h2h_true_first_kick_s", "h2h_true_first_on_target_pct",
+  "h2h_true_aim_pct", "h2h_true_long_3d", "h2h_true_long_aim_pct",
+  "bumps_aim_pct", "flat_aim_pct", "long_x_needed", "approach_first_s",
+  "approach_on_target_pct", "latency_aim_pct",
+}  # fmt: skip
+
+
+def convincing_beats(m: dict, bh: dict) -> list[str]:
+  """Head-to-head metrics where m beats B-Human by at least the tolerance."""
+  out = []
+  for key, (hib, tol, h2h, _) in METRICS.items():
+    v, b = m.get(key), bh.get(key)
+    if h2h and key not in INFO_ONLY and v is not None and b is not None:
+      if (v - b if hib else b - v) >= tol:
+        out.append(key)
+  return out
+
+
 def sh(args: list[str]) -> str:
   r = subprocess.run(args, cwd=ROOT, capture_output=True, text=True)
   return r.stdout + r.stderr
@@ -170,6 +205,7 @@ def run_bhuman() -> dict:
   a = sh(PY + ["scripts/tools/kick_anatomy.py", "bhuman"])
   _style(m, s)
   m["h2h_support_planted_pct"] = num(r"support foot on ground at contact (\d+) %", a)
+  _anat_styles(m, a)
   return m
 
 
@@ -188,6 +224,13 @@ def _style(m: dict, s: str, pre: str = "h2h_") -> None:
     if pre == "h2h_":
       m["h2h_long_knee_p90"] = num(r"knee p90 ([\d.]+)", t)
       m["h2h_long_hip_p90"] = num(r"hip p90 ([\d.]+)", t)
+
+
+def _anat_styles(m: dict, a: str) -> None:
+  m["h2h_support_planted_short_pct"] = num(r"short/medium support planted (\d+) %", a)
+  m["style_inside_short_pct"] = num(r"short/medium inside-foot \(60-120 deg\) (\d+) %", a)
+  m["style_hop_long_pct"] = num(r"long hop (\d+) %", a)
+  m["hop_fall_pct"] = num(r"after hop ([\d.]+) %", a)
 
 
 def run_ours(ck: str) -> dict:
@@ -268,6 +311,7 @@ def run_ours(ck: str) -> dict:
   _style(m, s)
   a = sh(PY + ["scripts/tools/kick_anatomy.py", "ours", ck])
   m["h2h_support_planted_pct"] = num(r"support foot on ground at contact (\d+) %", a)
+  _anat_styles(m, a)
   return m
 
 
@@ -299,7 +343,7 @@ def compare(name: str, best: str) -> None:
   for key, (_, tol, h2h, desc) in METRICS.items():
     v, b, r = cur.get(key), bh.get(key), ref.get(key)
     verdict = []
-    if v is not None and r is not None and worse_by(key, v, r) > tol:
+    if key not in INFO_ONLY and v is not None and r is not None and worse_by(key, v, r) > tol:
       verdict.append("REGRESSION")
       regress.append(key)
     if h2h and v is not None and b is not None:
@@ -315,6 +359,8 @@ def compare(name: str, best: str) -> None:
       f"| {desc} | {fmt(v)} | {fmt(b) if h2h else ''} | {fmt(r)} | {', '.join(verdict)} |"
     )
   h2h_n = sum(1 for k in METRICS if METRICS[k][2])
+  conv = convincing_beats(cur, bh)
+  print(f"\nCONVINCING (beats B-Human by >= tolerance): {len(conv)} / {h2h_n}: {', '.join(conv)}")
   print(
     f"\nBEATS B-Human on {len(beats)} / {h2h_n} head-to-head metrics; transcends (beats"
     f" B-Human and {best}) on {len(trans)}; regressions vs {best}: {len(regress)}"
