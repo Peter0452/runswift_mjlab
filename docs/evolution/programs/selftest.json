@@ -1,0 +1,109 @@
+[
+  {
+    "name": "tpl_far_cap_tracking",
+    "expr": {
+      "mul": [
+        {
+          "gt": [
+            {
+              "sig": "ball_dist"
+            },
+            3.0
+          ]
+        },
+        {
+          "linear_match": [
+            {
+              "sig": "vx"
+            },
+            {
+              "sig": "vx_cap"
+            }
+          ]
+        }
+      ]
+    },
+    "weight": 6.0
+  },
+  {
+    "name": "tpl_long_power_ramp",
+    "expr": {
+      "mul": [
+        {
+          "sig": "kick_event"
+        },
+        {
+          "sig": "kick_long"
+        },
+        {
+          "ramp": [
+            {
+              "sig": "kick_speed"
+            },
+            4.0,
+            9.0
+          ]
+        },
+        {
+          "gauss": [
+            {
+              "sig": "kick_aim_err"
+            },
+            0.0,
+            0.25
+          ]
+        },
+        {
+          "sig": "kick_loft"
+        }
+      ]
+    },
+    "weight": 1500.0
+  },
+  {
+    "name": "tpl_aim_tight",
+    "expr": {
+      "mul": [
+        {
+          "sig": "kick_event"
+        },
+        {
+          "gauss": [
+            {
+              "sig": "kick_aim_err"
+            },
+            0.0,
+            0.15
+          ]
+        }
+      ]
+    },
+    "weight": 600.0
+  },
+  {
+    "name": "tpl_upright_fast",
+    "expr": {
+      "mul": [
+        {
+          "gt": [
+            {
+              "sig": "vx"
+            },
+            1.0
+          ]
+        },
+        {
+          "band": [
+            {
+              "sig": "trunk_pitch_deg"
+            },
+            -5.0,
+            1.0,
+            2.0
+          ]
+        }
+      ]
+    },
+    "weight": -1.0
+  }
+]

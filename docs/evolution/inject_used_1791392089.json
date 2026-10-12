@@ -1,0 +1,24 @@
+[
+ {
+  "level": "L5",
+  "origin": "L5",
+  "desc": "conservative fine-tune: desired_kl 0.004 (smaller policy steps, less drift of the champion's low-cap speed) + approach speed (brake profile, walk_speed_track 6) + 15 % low caps",
+  "genes": {
+   "s.spawn_any_prob": 0.15,
+   "s.far_spawn_prob": 0.1,
+   "s.unknown_start_prob": 0.15,
+   "k.TRACK_BRAKE_PROFILE": 1.0,
+   "w.walk_speed_track": 6.0,
+   "s.cap_low_prob": 0.15,
+   "desired_kl": 0.004
+  },
+  "best": {
+   "name": "h001_c0_17300_x50",
+   "ck": "/home/peter/Desktop/Project/RL/runswift_mjlab/logs/rsl_rl/k1_kick_stage3_amp/2026-10-07_16-55-20_ctx_h001_c0_17300_x50/model_17149.pt",
+   "score": 161.22,
+   "regressions": [
+    "close_any/camera/typical:first_kick_s:low"
+   ]
+  }
+ }
+]

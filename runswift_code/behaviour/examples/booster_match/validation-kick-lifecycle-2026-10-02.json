@@ -1,0 +1,1550 @@
+{
+  "date": "2026-10-02",
+  "host": "marvin",
+  "container": "runswift-world-model-sim",
+  "image_id": "sha256:cf69bc9d2baafa216d55a9e2f62781329a0dfcccae42ae58bfd3ac1000cdde9c",
+  "sdk_version": "1.5.6",
+  "scene": "mjcf/football_pitch_4_K1.xml",
+  "scene_revision": "3ac43631993a4a8094c36b27c76c6c541b8addcab34236767440f8b74e88af22",
+  "base_commit": "7bb1af9f2b1cb00e3a8bbf8e9fa84c07d876959c",
+  "inputs": "simulator ground truth; scripted playing permission",
+  "primary_pilot_series": "kick-lifecycle-11",
+  "primary_safety_series": {
+    "sequence": "match-sequence-13",
+    "cancel_kick": "match-lifecycle-12",
+    "command_expiry": "match-lifecycle-12",
+    "observation_expiry": "match-lifecycle-12",
+    "referee_stop": "match-lifecycle-12"
+  },
+  "settings": {
+    "ball_xyz_m": [
+      -4,
+      0,
+      0.11
+    ],
+    "robot_xy_yaw": [
+      -4.65,
+      0,
+      0
+    ],
+    "target_xy_m": [
+      7,
+      0
+    ],
+    "helper_xy_m": [
+      -6,
+      6
+    ],
+    "input_hz": 20,
+    "world_timer_hz": 50,
+    "requested_pilot_hz": 20,
+    "snapshot_state_limit_ms": 150,
+    "command_limit_ms": 250,
+    "observation_limit_ms": 350,
+    "kick_timeout_s": 12,
+    "departure_displacement_m": 0.25,
+    "post_departure_s": 0.35,
+    "post_stop_observation_s": 8,
+    "stop_confirmation_timeout_s": 2,
+    "match_activation_timeout_s": 8,
+    "departure_margin": "0.25 m + 2 * (initial position std + current position std)",
+    "stop_confirmation": "Fresh fast/status/phase receipts after the stop, inactive VisualKick and measured Walking readiness; correlated attempt ID."
+  },
+  "timing_benchmark": {
+    "before": {
+      "python": "3.12.3",
+      "blackwell": "0.0.2",
+      "jax": "0.11.2",
+      "steps": 200,
+      "snapshot_bytes": 31011,
+      "workload": "synthetic K1 exact pose, ball, one obstacle; warmed CPU; no live actuation",
+      "milliseconds": {
+        "input": {
+          "median": 0.573705,
+          "p95": 0.600029,
+          "max": 0.635929
+        },
+        "update": {
+          "median": 60.1273,
+          "p95": 60.69995,
+          "max": 63.450392
+        },
+        "snapshot_wire": {
+          "median": 0.425557,
+          "p95": 0.473206,
+          "max": 0.5991
+        },
+        "total": {
+          "median": 61.1241675,
+          "p95": 61.700552,
+          "max": 64.582523
+        }
+      }
+    },
+    "after": {
+      "python": "3.12.3",
+      "blackwell": "0.0.2",
+      "jax": "0.11.2",
+      "steps": 200,
+      "snapshot_bytes": 31011,
+      "workload": "synthetic K1 exact pose, ball, one obstacle; warmed CPU; no live actuation",
+      "milliseconds": {
+        "input": {
+          "median": 0.625158,
+          "p95": 0.647121,
+          "max": 1.516766
+        },
+        "update": {
+          "median": 9.135220499999999,
+          "p95": 11.028257,
+          "max": 13.007031
+        },
+        "snapshot_wire": {
+          "median": 0.465343,
+          "p95": 0.510041,
+          "max": 1.078826
+        },
+        "total": {
+          "median": 10.227607500000001,
+          "p95": 12.123708,
+          "max": 14.079643
+        }
+      }
+    },
+    "method": "Same 200 warmed synthetic K1 updates on marvin. Exact pose, ball and one obstacle; no ROS or motion. All geometry still uses Blackwell. JIT whole operations replaces eager dispatch.",
+    "measured_script_sha256": "a09b6aca7795a21e9c64bcd98e7ea2937e7e9302250af2cdcc0e3c27f4f963fe",
+    "current_script_sha256": "5d6cb0368ee2d91ddcbe77518ccf838e017ca2dab82f0678c0e4a127012034f4",
+    "script_note": "Current benchmark differs only in formatting; Python AST verified identical."
+  },
+  "final_source_sha256": {
+    "src/behaviour/scripts/action/match_actuator.py": "fff7f779966c793cad0160a6a593d88a8649733b921c23f04827010ea94e3ad8",
+    "src/behaviour/scripts/action/booster_match_sdk.py": "c4e124e4e827e967026cea66efa2ce49f1d2cbc1723c4c87fc39dfc62ba2dfd1",
+    "src/behaviour/scripts/skills/single_shot.py": "4b8fe5ed615b01469100334d45db5c5f08120839f3d2143aad9719025ce2b2d1",
+    "src/behaviour/scripts/match_runner.py": "5a8ab9b0c601659658bea27422273fea76c8f264f40886cf4f5b8b05214156b7",
+    "src/behaviour/examples/booster_match/kick_pilot.py": "7ec2f9a7b5fc2bcae3062058594db391e70514efcf5de41647b7d13220e0708c",
+    "src/behaviour/examples/booster_match/run_kick_pilot.py": "ca920480e8d40a272bd737dfde79b021ddcc321a33a16f7f50888a5333ef0caf",
+    "src/behaviour/examples/booster_match/run.py": "d61ed6a6308d73b001f03c076693f7a15ed68bba01395896a7eb1332208cf446",
+    "src/world_model/world_model/providers/_blackwell_geometry.py": "c06daccd759faca3d273d85b89bf1328c470d5e48f30b76ae7bfb1e83d8e4aa3",
+    "src/world_model/world_model_ros/session.py": "a07fa839f1d2bdf127e279ab469583f3d62a4b82c0a58ee8a130e1504dbfa665",
+    "src/world_model/world_model_ros/node.py": "5c8e41786a20fecbef0a5b5343d3b7bd74318013b68a0cb88a6740e705dee8b0"
+  },
+  "validation": {
+    "python_versions": [
+      "3.11",
+      "3.14"
+    ],
+    "automated_tests_each": 491,
+    "suites_each": 13,
+    "distribution_check": "passed: build sdist/wheel, install outside checkout, core and transport without ROS or SDK",
+    "ros_jazzy_recorded_replay": {
+      "mode": "recording",
+      "navigation_ticks": 7,
+      "fault": "input_stalled",
+      "stopped": true
+    },
+    "simulator_final_state": "exited; docker stop confirmed after all live validation",
+    "ci": "Not run on GitHub; local matrix and live host checks only."
+  },
+  "series": [
+    {
+      "directory": "/home/oliver/runswift-simulation/booster-1.10.5/kick-lifecycle-06",
+      "note": "First six-shot pass after single-shot and update-timing changes; before Walking brake.",
+      "summary_sha256": "c08df5dd7592b8240c25b547beaea31ad00101c9df9024d010a36d65853f18be",
+      "trials": [
+        {
+          "stop_reason": "shot_departed_and_stopped",
+          "ball_samples": 271,
+          "ball_moved": true,
+          "first_motion_wall_ns": 1459320599969563,
+          "first_motion_after_request_s": 3.15731928,
+          "stop_requested_wall_ns": 1459321151595787,
+          "max_displacement_m": 1.5676084409831672,
+          "max_forward_m": 1.4581937185798988,
+          "max_lateral_m": 0.5753844830509446,
+          "max_ball_height_m": 0.11006900365108975,
+          "final_ball": [
+            -2.5418062814201012,
+            0.5753844830509446,
+            0.10990117180811956
+          ],
+          "range_settled": true,
+          "field_boundary_reached": false,
+          "sdk_completed": false,
+          "single_shot_finished": true,
+          "phase_transitions": [
+            {
+              "phase": 0,
+              "receipt_ns": 1459316388843943
+            },
+            {
+              "phase": 1,
+              "receipt_ns": 1459319390896594
+            },
+            {
+              "phase": 0,
+              "receipt_ns": 1459321399370804
+            }
+          ],
+          "contact_confirmed": false,
+          "power": 1.0,
+          "profile": "booster-studio-1.10.5:K1-ground-truth",
+          "inputs": "ground_truth",
+          "origin": [
+            -4.0,
+            0.0
+          ],
+          "target": [
+            7.0,
+            0.0
+          ],
+          "error": null,
+          "executor_errors": [],
+          "mode": "range",
+          "input_hz": 20.0,
+          "controller_stopped": true,
+          "range_usable": true,
+          "trial": "power-1-repeat-1",
+          "trace_sha256": "1d3c8ae392a19662aa97e93e3d24ca95938dbbfec7158d60173f4d710af61547",
+          "observed_activation_count": 1,
+          "max_command_snapshot_age_ms": 54.0,
+          "max_intent_gap_ms": 51.047802,
+          "full_stop_confirmation_s": 0.801324906
+        },
+        {
+          "stop_reason": "shot_departed_and_stopped",
+          "ball_samples": 281,
+          "ball_moved": true,
+          "first_motion_wall_ns": 1459339136065765,
+          "first_motion_after_request_s": 4.370924204,
+          "stop_requested_wall_ns": 1459339636450144,
+          "max_displacement_m": 4.640029497847487,
+          "max_forward_m": 4.551848832992625,
+          "max_lateral_m": 0.9003032502876364,
+          "max_ball_height_m": 0.11221748911834635,
+          "final_ball": [
+            0.5518488329926247,
+            0.9003032502876364,
+            0.10985827518638433
+          ],
+          "range_settled": true,
+          "field_boundary_reached": false,
+          "sdk_completed": false,
+          "single_shot_finished": true,
+          "phase_transitions": [
+            {
+              "phase": 0,
+              "receipt_ns": 1459333747732852
+            },
+            {
+              "phase": 1,
+              "receipt_ns": 1459336747345466
+            },
+            {
+              "phase": 0,
+              "receipt_ns": 1459339747420208
+            }
+          ],
+          "contact_confirmed": false,
+          "power": 1.5,
+          "profile": "booster-studio-1.10.5:K1-ground-truth",
+          "inputs": "ground_truth",
+          "origin": [
+            -4.0,
+            0.0
+          ],
+          "target": [
+            7.0,
+            0.0
+          ],
+          "error": null,
+          "executor_errors": [],
+          "mode": "range",
+          "input_hz": 20.0,
+          "controller_stopped": true,
+          "range_usable": true,
+          "trial": "power-1.5-repeat-1",
+          "trace_sha256": "1cc9589e56b1d5a6462981bb6fbb84aefede8c29f004def7ec19dd8489e03fbc",
+          "observed_activation_count": 1,
+          "max_command_snapshot_age_ms": 54.0,
+          "max_intent_gap_ms": 51.603103,
+          "full_stop_confirmation_s": 0.150094801
+        },
+        {
+          "stop_reason": "shot_departed_and_stopped",
+          "ball_samples": 292,
+          "ball_moved": true,
+          "first_motion_wall_ns": 1459356315480140,
+          "first_motion_after_request_s": 4.25694347,
+          "stop_requested_wall_ns": 1459356818268651,
+          "max_displacement_m": 7.116871520418934,
+          "max_forward_m": 6.942101169901712,
+          "max_lateral_m": 1.5675112710916603,
+          "max_ball_height_m": 0.12244125168411417,
+          "final_ball": [
+            2.9421011699017123,
+            1.5675112710916603,
+            0.1099933146227111
+          ],
+          "range_settled": true,
+          "field_boundary_reached": false,
+          "sdk_completed": false,
+          "single_shot_finished": true,
+          "phase_transitions": [
+            {
+              "phase": 0,
+              "receipt_ns": 1459351042972221
+            },
+            {
+              "phase": 1,
+              "receipt_ns": 1459354051217525
+            },
+            {
+              "phase": 0,
+              "receipt_ns": 1459357051171524
+            }
+          ],
+          "contact_confirmed": false,
+          "power": 2.0,
+          "profile": "booster-studio-1.10.5:K1-ground-truth",
+          "inputs": "ground_truth",
+          "origin": [
+            -4.0,
+            0.0
+          ],
+          "target": [
+            7.0,
+            0.0
+          ],
+          "error": null,
+          "executor_errors": [],
+          "mode": "range",
+          "input_hz": 20.0,
+          "controller_stopped": true,
+          "range_usable": true,
+          "trial": "power-2-repeat-1",
+          "trace_sha256": "0e688a2d4dcb22302296ac69fe98f3c68ba5cb5bed24092e02ab55bb46c8ee60",
+          "observed_activation_count": 1,
+          "max_command_snapshot_age_ms": 56.0,
+          "max_intent_gap_ms": 52.571622,
+          "full_stop_confirmation_s": 0.804095768
+        },
+        {
+          "stop_reason": "shot_departed_and_stopped",
+          "ball_samples": 262,
+          "ball_moved": true,
+          "first_motion_wall_ns": 1459373652378211,
+          "first_motion_after_request_s": 3.21171329,
+          "stop_requested_wall_ns": 1459374153515831,
+          "max_displacement_m": 1.6256499729808016,
+          "max_forward_m": 1.5172402304229697,
+          "max_lateral_m": 0.5837121875021412,
+          "max_ball_height_m": 0.11004341794925657,
+          "final_ball": [
+            -2.4827597695770303,
+            0.5837121875021412,
+            0.10985827518638433
+          ],
+          "range_settled": true,
+          "field_boundary_reached": false,
+          "sdk_completed": false,
+          "single_shot_finished": true,
+          "phase_transitions": [
+            {
+              "phase": 0,
+              "receipt_ns": 1459369435547818
+            },
+            {
+              "phase": 1,
+              "receipt_ns": 1459372437497046
+            },
+            {
+              "phase": 0,
+              "receipt_ns": 1459374443502880
+            }
+          ],
+          "contact_confirmed": false,
+          "power": 1.0,
+          "profile": "booster-studio-1.10.5:K1-ground-truth",
+          "inputs": "ground_truth",
+          "origin": [
+            -4.0,
+            0.0
+          ],
+          "target": [
+            7.0,
+            0.0
+          ],
+          "error": null,
+          "executor_errors": [],
+          "mode": "range",
+          "input_hz": 20.0,
+          "controller_stopped": true,
+          "range_usable": true,
+          "trial": "power-1-repeat-2",
+          "trace_sha256": "65013774ce82096f3a0ca9d6ac81a405b57f94320bb5416a032a58c736eab327",
+          "observed_activation_count": 1,
+          "max_command_snapshot_age_ms": 54.0,
+          "max_intent_gap_ms": 54.207835,
+          "full_stop_confirmation_s": 0.35018946
+        },
+        {
+          "stop_reason": "shot_departed_and_stopped",
+          "ball_samples": 282,
+          "ball_moved": true,
+          "first_motion_wall_ns": 1459391692949908,
+          "first_motion_after_request_s": 4.36191875,
+          "stop_requested_wall_ns": 1459392195717719,
+          "max_displacement_m": 4.626606053032544,
+          "max_forward_m": 4.549261679391836,
+          "max_lateral_m": 0.8424379753871223,
+          "max_ball_height_m": 0.1112761489247831,
+          "final_ball": [
+            0.5492616793918355,
+            0.8424379753871223,
+            0.10990171002474779
+          ],
+          "range_settled": true,
+          "field_boundary_reached": false,
+          "sdk_completed": false,
+          "single_shot_finished": true,
+          "phase_transitions": [
+            {
+              "phase": 0,
+              "receipt_ns": 1459386315560788
+            },
+            {
+              "phase": 1,
+              "receipt_ns": 1459389330652077
+            },
+            {
+              "phase": 0,
+              "receipt_ns": 1459392338801350
+            }
+          ],
+          "contact_confirmed": false,
+          "power": 1.5,
+          "profile": "booster-studio-1.10.5:K1-ground-truth",
+          "inputs": "ground_truth",
+          "origin": [
+            -4.0,
+            0.0
+          ],
+          "target": [
+            7.0,
+            0.0
+          ],
+          "error": null,
+          "executor_errors": [],
+          "mode": "range",
+          "input_hz": 20.0,
+          "controller_stopped": true,
+          "range_usable": true,
+          "trial": "power-1.5-repeat-2",
+          "trace_sha256": "a6d24211ab64f608f84876481c58176d15933d35a0a9560be1976bda4de18cf3",
+          "observed_activation_count": 1,
+          "max_command_snapshot_age_ms": 56.0,
+          "max_intent_gap_ms": 51.323756,
+          "full_stop_confirmation_s": 0.200407158
+        },
+        {
+          "stop_reason": "shot_departed_and_stopped",
+          "ball_samples": 292,
+          "ball_moved": true,
+          "first_motion_wall_ns": 1459408975605648,
+          "first_motion_after_request_s": 4.261772774,
+          "stop_requested_wall_ns": 1459409476590688,
+          "max_displacement_m": 6.2540107974784584,
+          "max_forward_m": 6.123881031214458,
+          "max_lateral_m": 1.2691462368493611,
+          "max_ball_height_m": 0.11157098027065696,
+          "final_ball": [
+            2.123881031214458,
+            1.2691462368493611,
+            0.10990171002474777
+          ],
+          "range_settled": true,
+          "field_boundary_reached": false,
+          "sdk_completed": false,
+          "single_shot_finished": true,
+          "phase_transitions": [
+            {
+              "phase": 0,
+              "receipt_ns": 1459403695121283
+            },
+            {
+              "phase": 1,
+              "receipt_ns": 1459406703210183
+            },
+            {
+              "phase": 0,
+              "receipt_ns": 1459409719175178
+            }
+          ],
+          "contact_confirmed": false,
+          "power": 2.0,
+          "profile": "booster-studio-1.10.5:K1-ground-truth",
+          "inputs": "ground_truth",
+          "origin": [
+            -4.0,
+            0.0
+          ],
+          "target": [
+            7.0,
+            0.0
+          ],
+          "error": null,
+          "executor_errors": [],
+          "mode": "range",
+          "input_hz": 20.0,
+          "controller_stopped": true,
+          "range_usable": true,
+          "trial": "power-2-repeat-2",
+          "trace_sha256": "dbd2daf4b8cd45ef15b17afa4ddd05f403432c098179dbfb02dc410ff2c6dd45",
+          "observed_activation_count": 1,
+          "max_command_snapshot_age_ms": 54.0,
+          "max_intent_gap_ms": 52.970709,
+          "full_stop_confirmation_s": 0.801484546
+        }
+      ]
+    },
+    {
+      "directory": "/home/oliver/runswift-simulation/booster-1.10.5/match-lifecycle-07",
+      "note": "Observation-expiry settling drift failed at 0.18318 m against unchanged 0.15 m limit; other scenarios passed. Sequence exit timer began after skill success, so its near-zero latency is not valid.",
+      "summary_sha256": "a170328e141d15c94bf056663f9090dc505f023cea6953a3e724ece797b1f896",
+      "trials": [
+        {
+          "scenario": "sequence",
+          "profile": "booster-studio-1.10.5:K1-ground-truth",
+          "referee": "scripted",
+          "inputs": "ground_truth",
+          "travel_m": 1.5534344306844112,
+          "head_yaw_range_rad": 0.9927826672792435,
+          "ball_displacement_m": 1.8429127360488669,
+          "sdk_kick_entered": true,
+          "sdk_controller_exit_ms": 0.030559,
+          "settling_drift_m": 0.09836626660453332,
+          "outcomes": [
+            "idle",
+            "running",
+            "stopped",
+            "stopping"
+          ],
+          "passed": true,
+          "trace_sha256": "112f4a9cbe51848c569b71fc665d9270bb952d55c7d51555a83c89a4bc63f2e6"
+        },
+        {
+          "scenario": "cancel_kick",
+          "profile": "booster-studio-1.10.5:K1-ground-truth",
+          "referee": "scripted",
+          "inputs": "ground_truth",
+          "travel_m": 0.16774162315072716,
+          "head_yaw_range_rad": 0.1320028780028224,
+          "ball_displacement_m": 0.0,
+          "sdk_kick_entered": true,
+          "sdk_controller_exit_ms": 551.016864,
+          "settling_drift_m": 0.013796749542424935,
+          "outcomes": [
+            "failed",
+            "idle",
+            "running"
+          ],
+          "passed": true,
+          "trace_sha256": "1c5f1ec6486a0d4349ef87f54fa082a50f5f30571502553813ae57a81bf83135"
+        },
+        {
+          "scenario": "command_expiry",
+          "profile": "booster-studio-1.10.5:K1-ground-truth",
+          "referee": "scripted",
+          "inputs": "ground_truth",
+          "travel_m": 0.3599871318014842,
+          "head_yaw_range_rad": 0.10008536092936993,
+          "ball_displacement_m": 0.0,
+          "sdk_kick_entered": true,
+          "sdk_controller_exit_ms": 299.941036,
+          "settling_drift_m": 0.08803061314559321,
+          "outcomes": [
+            "failed",
+            "idle",
+            "running"
+          ],
+          "passed": true,
+          "trace_sha256": "7d367862c35eee983dab8433c891cf98175bd3b016cf040bd897c08e5f8d4226"
+        },
+        {
+          "scenario": "observation_expiry",
+          "passed": false,
+          "error": "('settling drift', 0.1831826406068943)",
+          "trace_sha256": "2e0bf1d91b46c41082b799a969b1137807e1f7b0b4cfed39b06bedc3f389168d"
+        },
+        {
+          "scenario": "referee_stop",
+          "profile": "booster-studio-1.10.5:K1-ground-truth",
+          "referee": "scripted",
+          "inputs": "ground_truth",
+          "travel_m": 0.19663539894991408,
+          "head_yaw_range_rad": 0.1354054077528417,
+          "ball_displacement_m": 0.0,
+          "sdk_kick_entered": true,
+          "sdk_controller_exit_ms": 449.700358,
+          "settling_drift_m": 0.02292110939533081,
+          "outcomes": [
+            "idle",
+            "running",
+            "stopped",
+            "stopping"
+          ],
+          "passed": true,
+          "trace_sha256": "748a81cdd454223e2017d4cfacf32986a0fbf4e54ea46e582adfe3d1adc76db0"
+        }
+      ]
+    },
+    {
+      "directory": "/home/oliver/runswift-simulation/booster-1.10.5/match-stop-08",
+      "note": "Focused observation-expiry passed with zero-velocity Walking stop.",
+      "summary_sha256": "e4c46bc9e6953fe746901b0f444316ca3a986500d617f00bc6754f29dc8115c1",
+      "trials": [
+        {
+          "scenario": "observation_expiry",
+          "profile": "booster-studio-1.10.5:K1-ground-truth",
+          "referee": "scripted",
+          "inputs": "ground_truth",
+          "travel_m": 0.3338860583012429,
+          "head_yaw_range_rad": 0.1423802200006321,
+          "ball_displacement_m": 0.0,
+          "sdk_kick_entered": true,
+          "sdk_controller_exit_ms": 1290.742353,
+          "settling_drift_m": 0.029065618937515237,
+          "outcomes": [
+            "failed",
+            "idle",
+            "running"
+          ],
+          "passed": true,
+          "trace_sha256": "6d0ec607cf081aeef62ecc331e3bb1c4da6dfe88e248b04d2cfde53698575bb8"
+        }
+      ]
+    },
+    {
+      "directory": "/home/oliver/runswift-simulation/booster-1.10.5/kick-lifecycle-09",
+      "note": "All six attempts failed: RotateHead rejected with SDK code 400 during the newly requested Walking transition. Excluded as completed-shot measurements.",
+      "summary_sha256": "792869f4cd183fbdbe2336027806bd2a6d76f8572e1313e46be7c34177ddeae8",
+      "trials": [
+        {
+          "stop_reason": "actuator_fault:sdk_error:kRotateHead rejected: 400",
+          "ball_samples": 250,
+          "ball_moved": true,
+          "first_motion_wall_ns": 1459944030055640,
+          "first_motion_after_request_s": 2.804348777,
+          "stop_requested_wall_ns": 1459944630612529,
+          "max_displacement_m": 1.4848521862554638,
+          "max_forward_m": 1.3733992260349122,
+          "max_lateral_m": 0.5644117122760076,
+          "max_ball_height_m": 0.11001510541195292,
+          "final_ball": [
+            -2.626600773965088,
+            0.5644117122760076,
+            0.1099834772666396
+          ],
+          "range_settled": true,
+          "field_boundary_reached": false,
+          "sdk_completed": false,
+          "single_shot_finished": false,
+          "phase_transitions": [
+            {
+              "phase": 0,
+              "receipt_ns": 1459940215397900
+            },
+            {
+              "phase": 1,
+              "receipt_ns": 1459943220914613
+            },
+            {
+              "phase": 0,
+              "receipt_ns": 1459944724744774
+            }
+          ],
+          "contact_confirmed": false,
+          "power": 1.0,
+          "profile": "booster-studio-1.10.5:K1-ground-truth",
+          "inputs": "ground_truth",
+          "origin": [
+            -4.0,
+            0.0
+          ],
+          "target": [
+            7.0,
+            0.0
+          ],
+          "error": null,
+          "executor_errors": [],
+          "mode": "range",
+          "input_hz": 20.0,
+          "controller_stopped": true,
+          "range_usable": false,
+          "trial": "power-1-repeat-1",
+          "trace_sha256": "abb2a24ea3c6b8562ab2a0282919a382f1a59f4d6a2fff0056a4453bc810cd85",
+          "observed_activation_count": 1,
+          "max_command_snapshot_age_ms": 48.0,
+          "max_intent_gap_ms": 50.612631
+        },
+        {
+          "stop_reason": "actuator_fault:sdk_error:kRotateHead rejected: 400",
+          "ball_samples": 279,
+          "ball_moved": true,
+          "first_motion_wall_ns": 1459961437931293,
+          "first_motion_after_request_s": 4.357828274,
+          "stop_requested_wall_ns": 1459961938540677,
+          "max_displacement_m": 4.487141893237321,
+          "max_forward_m": 4.423165334492125,
+          "max_lateral_m": 0.7550170817886033,
+          "max_ball_height_m": 0.11132554604282094,
+          "final_ball": [
+            0.4231653344921248,
+            0.7550170817886033,
+            0.10987403472180966
+          ],
+          "range_settled": true,
+          "field_boundary_reached": false,
+          "sdk_completed": false,
+          "single_shot_finished": false,
+          "phase_transitions": [
+            {
+              "phase": 0,
+              "receipt_ns": 1459956060828004
+            },
+            {
+              "phase": 1,
+              "receipt_ns": 1459959067152967
+            },
+            {
+              "phase": 0,
+              "receipt_ns": 1459962066908502
+            }
+          ],
+          "contact_confirmed": false,
+          "power": 1.5,
+          "profile": "booster-studio-1.10.5:K1-ground-truth",
+          "inputs": "ground_truth",
+          "origin": [
+            -4.0,
+            0.0
+          ],
+          "target": [
+            7.0,
+            0.0
+          ],
+          "error": null,
+          "executor_errors": [],
+          "mode": "range",
+          "input_hz": 20.0,
+          "controller_stopped": true,
+          "range_usable": false,
+          "trial": "power-1.5-repeat-1",
+          "trace_sha256": "af2ab701dbb6c144565bf7525dea01dcd4c9719ec6b577359d16029b8d913163",
+          "observed_activation_count": 1,
+          "max_command_snapshot_age_ms": 0.0,
+          "max_intent_gap_ms": 51.885878
+        },
+        {
+          "stop_reason": "actuator_fault:sdk_error:kRotateHead rejected: 400",
+          "ball_samples": 267,
+          "ball_moved": true,
+          "first_motion_wall_ns": 1459978238873754,
+          "first_motion_after_request_s": 3.856336822,
+          "stop_requested_wall_ns": 1459978691228025,
+          "max_displacement_m": 7.216256871003284,
+          "max_forward_m": 7.060016725020745,
+          "max_lateral_m": 1.4934949182134711,
+          "max_ball_height_m": 0.1103760873730128,
+          "final_ball": [
+            3.0600167250207453,
+            1.4934949182134711,
+            0.10988889951894006
+          ],
+          "range_settled": true,
+          "field_boundary_reached": false,
+          "sdk_completed": false,
+          "single_shot_finished": false,
+          "phase_transitions": [
+            {
+              "phase": 0,
+              "receipt_ns": 1459973357087813
+            },
+            {
+              "phase": 1,
+              "receipt_ns": 1459976359209019
+            },
+            {
+              "phase": 0,
+              "receipt_ns": 1459978861169049
+            }
+          ],
+          "contact_confirmed": false,
+          "power": 2.0,
+          "profile": "booster-studio-1.10.5:K1-ground-truth",
+          "inputs": "ground_truth",
+          "origin": [
+            -4.0,
+            0.0
+          ],
+          "target": [
+            7.0,
+            0.0
+          ],
+          "error": null,
+          "executor_errors": [],
+          "mode": "range",
+          "input_hz": 20.0,
+          "controller_stopped": true,
+          "range_usable": false,
+          "trial": "power-2-repeat-1",
+          "trace_sha256": "5a1cf2beae78cb63b894d55f28a7a9ad29882657439ac41102fac89de79145c5",
+          "observed_activation_count": 1,
+          "max_command_snapshot_age_ms": 48.0,
+          "max_intent_gap_ms": 51.411961
+        },
+        {
+          "stop_reason": "actuator_fault:sdk_error:kRotateHead rejected: 400",
+          "ball_samples": 257,
+          "ball_moved": true,
+          "first_motion_wall_ns": 1459994784888516,
+          "first_motion_after_request_s": 3.208466965,
+          "stop_requested_wall_ns": 1459995335404712,
+          "max_displacement_m": 1.6216712791208865,
+          "max_forward_m": 1.5107117965827546,
+          "max_lateral_m": 0.5895486453137501,
+          "max_ball_height_m": 0.11032288214746995,
+          "final_ball": [
+            -2.4892882034172454,
+            0.5895486453137501,
+            0.10993077108226844
+          ],
+          "range_settled": true,
+          "field_boundary_reached": false,
+          "sdk_completed": false,
+          "single_shot_finished": false,
+          "phase_transitions": [
+            {
+              "phase": 0,
+              "receipt_ns": 1459990553114905
+            },
+            {
+              "phase": 1,
+              "receipt_ns": 1459993553226123
+            },
+            {
+              "phase": 0,
+              "receipt_ns": 1459995553404501
+            }
+          ],
+          "contact_confirmed": false,
+          "power": 1.0,
+          "profile": "booster-studio-1.10.5:K1-ground-truth",
+          "inputs": "ground_truth",
+          "origin": [
+            -4.0,
+            0.0
+          ],
+          "target": [
+            7.0,
+            0.0
+          ],
+          "error": null,
+          "executor_errors": [],
+          "mode": "range",
+          "input_hz": 20.0,
+          "controller_stopped": true,
+          "range_usable": false,
+          "trial": "power-1-repeat-2",
+          "trace_sha256": "81bcbd1ede136544a12b4c205e05ad8f4d088dce4abfbb0e70a53d2dd836babd",
+          "observed_activation_count": 1,
+          "max_command_snapshot_age_ms": 54.0,
+          "max_intent_gap_ms": 50.725591
+        },
+        {
+          "stop_reason": "actuator_fault:sdk_error:kRotateHead rejected: 400",
+          "ball_samples": 279,
+          "ball_moved": true,
+          "first_motion_wall_ns": 1460012535276329,
+          "first_motion_after_request_s": 4.360220242,
+          "stop_requested_wall_ns": 1460013035673633,
+          "max_displacement_m": 4.581083729820874,
+          "max_forward_m": 4.520678403814369,
+          "max_lateral_m": 0.7414815634362772,
+          "max_ball_height_m": 0.11058952942020049,
+          "final_ball": [
+            0.5206784038143693,
+            0.7414815634362772,
+            0.10997794023672021
+          ],
+          "range_settled": true,
+          "field_boundary_reached": false,
+          "sdk_completed": false,
+          "single_shot_finished": false,
+          "phase_transitions": [
+            {
+              "phase": 0,
+              "receipt_ns": 1460007163148556
+            },
+            {
+              "phase": 1,
+              "receipt_ns": 1460010175022679
+            },
+            {
+              "phase": 0,
+              "receipt_ns": 1460013177031282
+            }
+          ],
+          "contact_confirmed": false,
+          "power": 1.5,
+          "profile": "booster-studio-1.10.5:K1-ground-truth",
+          "inputs": "ground_truth",
+          "origin": [
+            -4.0,
+            0.0
+          ],
+          "target": [
+            7.0,
+            0.0
+          ],
+          "error": null,
+          "executor_errors": [],
+          "mode": "range",
+          "input_hz": 20.0,
+          "controller_stopped": true,
+          "range_usable": false,
+          "trial": "power-1.5-repeat-2",
+          "trace_sha256": "3487ba6b6a0e0618b78b34b520f35216fe34b743f8e19e77cffaca1c222b8b52",
+          "observed_activation_count": 1,
+          "max_command_snapshot_age_ms": 60.0,
+          "max_intent_gap_ms": 52.280004
+        },
+        {
+          "stop_reason": "actuator_fault:sdk_error:kRotateHead rejected: 400",
+          "ball_samples": 277,
+          "ball_moved": true,
+          "first_motion_wall_ns": 1460029776831158,
+          "first_motion_after_request_s": 4.308193719,
+          "stop_requested_wall_ns": 1460030227257880,
+          "max_displacement_m": 7.155494838258698,
+          "max_forward_m": 6.928803027184941,
+          "max_lateral_m": 1.7868393858485627,
+          "max_ball_height_m": 0.11521947386269582,
+          "final_ball": [
+            2.9288030271849412,
+            1.7868393858485627,
+            0.10991864398881812
+          ],
+          "range_settled": true,
+          "field_boundary_reached": false,
+          "sdk_completed": false,
+          "single_shot_finished": false,
+          "phase_transitions": [
+            {
+              "phase": 0,
+              "receipt_ns": 1460024440611429
+            },
+            {
+              "phase": 1,
+              "receipt_ns": 1460027440499323
+            },
+            {
+              "phase": 0,
+              "receipt_ns": 1460030444683396
+            }
+          ],
+          "contact_confirmed": false,
+          "power": 2.0,
+          "profile": "booster-studio-1.10.5:K1-ground-truth",
+          "inputs": "ground_truth",
+          "origin": [
+            -4.0,
+            0.0
+          ],
+          "target": [
+            7.0,
+            0.0
+          ],
+          "error": null,
+          "executor_errors": [],
+          "mode": "range",
+          "input_hz": 20.0,
+          "controller_stopped": true,
+          "range_usable": false,
+          "trial": "power-2-repeat-2",
+          "trace_sha256": "b6619e70edd7902c0e8615157b4c3a744b03bac2f2075dca07d6cdad877fe83f",
+          "observed_activation_count": 1,
+          "max_command_snapshot_age_ms": 48.0,
+          "max_intent_gap_ms": 50.962444
+        }
+      ]
+    },
+    {
+      "directory": "/home/oliver/runswift-simulation/booster-1.10.5/kick-stop-10",
+      "note": "Focused shot passed after holding head before mode change and retaining acknowledged hold.",
+      "summary_sha256": "51cfbb161c3f4f088279a6266535301b3a2dcd89a30ff7028aeaede641c06a48",
+      "trials": [
+        {
+          "stop_reason": "shot_departed_and_stopped",
+          "ball_samples": 301,
+          "ball_moved": true,
+          "first_motion_wall_ns": 1471492557437669,
+          "first_motion_after_request_s": 4.266096885,
+          "stop_requested_wall_ns": 1471493010136895,
+          "max_displacement_m": 4.6836706983516265,
+          "max_forward_m": 4.513918880961989,
+          "max_lateral_m": 1.2495229276377764,
+          "max_ball_height_m": 0.11065356245306514,
+          "final_ball": [
+            0.5139188809619892,
+            1.2495229276377764,
+            0.10985827518638432
+          ],
+          "range_settled": true,
+          "field_boundary_reached": false,
+          "sdk_completed": false,
+          "single_shot_finished": true,
+          "phase_transitions": [
+            {
+              "phase": 0,
+              "receipt_ns": 1471487277579601
+            },
+            {
+              "phase": 1,
+              "receipt_ns": 1471490283446683
+            },
+            {
+              "phase": 0,
+              "receipt_ns": 1471493306271047
+            }
+          ],
+          "contact_confirmed": false,
+          "power": 1.5,
+          "profile": "booster-studio-1.10.5:K1-ground-truth",
+          "inputs": "ground_truth",
+          "origin": [
+            -4.0,
+            0.0
+          ],
+          "target": [
+            7.0,
+            0.0
+          ],
+          "error": null,
+          "executor_errors": [],
+          "mode": "range",
+          "input_hz": 20.0,
+          "controller_stopped": true,
+          "range_usable": true,
+          "trial": "power-1.5-repeat-1",
+          "trace_sha256": "189a8f1afca4eae6f26c1881f37b51cbe7d76560baa10eaa2e7232a3ad97a72a",
+          "observed_activation_count": 1,
+          "max_command_snapshot_age_ms": 66.0,
+          "max_intent_gap_ms": 52.155099,
+          "full_stop_confirmation_s": 1.305693726
+        }
+      ]
+    },
+    {
+      "directory": "/home/oliver/runswift-simulation/booster-1.10.5/kick-lifecycle-11",
+      "note": "Final six-shot pilot: one observed activation each; departure, confirmed stop and settling all pass at 20 Hz.",
+      "summary_sha256": "e66f34998b114aa11ae99a4fe0eccb93232f9923ad8e7ede9e92b3e3a7057d28",
+      "trials": [
+        {
+          "stop_reason": "shot_departed_and_stopped",
+          "ball_samples": 292,
+          "ball_moved": true,
+          "first_motion_wall_ns": 1471532581536185,
+          "first_motion_after_request_s": 3.205379605,
+          "stop_requested_wall_ns": 1471533185768579,
+          "max_displacement_m": 1.4702892215345669,
+          "max_forward_m": 1.3487752645322204,
+          "max_lateral_m": 0.5852825648750881,
+          "max_ball_height_m": 0.11003799577612507,
+          "final_ball": [
+            -2.6512247354677796,
+            0.5852825648750881,
+            0.10996218217624673
+          ],
+          "range_settled": true,
+          "field_boundary_reached": false,
+          "sdk_completed": false,
+          "single_shot_finished": true,
+          "phase_transitions": [
+            {
+              "phase": 0,
+              "receipt_ns": 1471528359913632
+            },
+            {
+              "phase": 1,
+              "receipt_ns": 1471531379879495
+            },
+            {
+              "phase": 0,
+              "receipt_ns": 1471533399460298
+            }
+          ],
+          "contact_confirmed": false,
+          "power": 1.0,
+          "profile": "booster-studio-1.10.5:K1-ground-truth",
+          "inputs": "ground_truth",
+          "origin": [
+            -4.0,
+            0.0
+          ],
+          "target": [
+            7.0,
+            0.0
+          ],
+          "error": null,
+          "executor_errors": [],
+          "mode": "range",
+          "input_hz": 20.0,
+          "controller_stopped": true,
+          "range_usable": true,
+          "trial": "power-1-repeat-1",
+          "trace_sha256": "783d8180cbff46d9a99ff9be573fc2ca6cfeff991ec985e8eb21d3bcc57665e6",
+          "observed_activation_count": 1,
+          "max_command_snapshot_age_ms": 64.0,
+          "max_intent_gap_ms": 53.221794,
+          "full_stop_confirmation_s": 1.754243474
+        },
+        {
+          "stop_reason": "shot_departed_and_stopped",
+          "ball_samples": 311,
+          "ball_moved": true,
+          "first_motion_wall_ns": 1471551998865358,
+          "first_motion_after_request_s": 4.367197969,
+          "stop_requested_wall_ns": 1471552451287155,
+          "max_displacement_m": 4.661073607430221,
+          "max_forward_m": 4.546153649220857,
+          "max_lateral_m": 1.0286370455891904,
+          "max_ball_height_m": 0.11148261082201087,
+          "final_ball": [
+            0.5461536492208566,
+            1.0286370455891904,
+            0.10996218217624676
+          ],
+          "range_settled": true,
+          "field_boundary_reached": false,
+          "sdk_completed": false,
+          "single_shot_finished": true,
+          "phase_transitions": [
+            {
+              "phase": 0,
+              "receipt_ns": 1471546616024579
+            },
+            {
+              "phase": 1,
+              "receipt_ns": 1471549623970312
+            },
+            {
+              "phase": 0,
+              "receipt_ns": 1471552626076295
+            }
+          ],
+          "contact_confirmed": false,
+          "power": 1.5,
+          "profile": "booster-studio-1.10.5:K1-ground-truth",
+          "inputs": "ground_truth",
+          "origin": [
+            -4.0,
+            0.0
+          ],
+          "target": [
+            7.0,
+            0.0
+          ],
+          "error": null,
+          "executor_errors": [],
+          "mode": "range",
+          "input_hz": 20.0,
+          "controller_stopped": true,
+          "range_usable": true,
+          "trial": "power-1.5-repeat-1",
+          "trace_sha256": "a1e72ab39438909a14de5d498f7a0e193687c32765f0d174ed87afabebf46ad2",
+          "observed_activation_count": 1,
+          "max_command_snapshot_age_ms": 64.0,
+          "max_intent_gap_ms": 52.294185,
+          "full_stop_confirmation_s": 1.704920365
+        },
+        {
+          "stop_reason": "shot_departed_and_stopped",
+          "ball_samples": 301,
+          "ball_moved": true,
+          "first_motion_wall_ns": 1471570769011696,
+          "first_motion_after_request_s": 4.255657778,
+          "stop_requested_wall_ns": 1471571221711585,
+          "max_displacement_m": 7.415783306969844,
+          "max_forward_m": 7.2710040032056895,
+          "max_lateral_m": 1.4581984917354085,
+          "max_ball_height_m": 0.12355912282443966,
+          "final_ball": [
+            3.2710040032056895,
+            1.4581984917354085,
+            0.10987766898829028
+          ],
+          "range_settled": true,
+          "field_boundary_reached": false,
+          "sdk_completed": false,
+          "single_shot_finished": true,
+          "phase_transitions": [
+            {
+              "phase": 0,
+              "receipt_ns": 1471565505872687
+            },
+            {
+              "phase": 1,
+              "receipt_ns": 1471568507542057
+            },
+            {
+              "phase": 0,
+              "receipt_ns": 1471571507923136
+            }
+          ],
+          "contact_confirmed": false,
+          "power": 2.0,
+          "profile": "booster-studio-1.10.5:K1-ground-truth",
+          "inputs": "ground_truth",
+          "origin": [
+            -4.0,
+            0.0
+          ],
+          "target": [
+            7.0,
+            0.0
+          ],
+          "error": null,
+          "executor_errors": [],
+          "mode": "range",
+          "input_hz": 20.0,
+          "controller_stopped": true,
+          "range_usable": true,
+          "trial": "power-2-repeat-1",
+          "trace_sha256": "959106b8033c7b83b8ba83d821416b4f68af550b35b556bf659c8b58430db8f0",
+          "observed_activation_count": 1,
+          "max_command_snapshot_age_ms": 54.0,
+          "max_intent_gap_ms": 52.635257,
+          "full_stop_confirmation_s": 1.303149251
+        },
+        {
+          "stop_reason": "shot_departed_and_stopped",
+          "ball_samples": 281,
+          "ball_moved": true,
+          "first_motion_wall_ns": 1471588492932800,
+          "first_motion_after_request_s": 3.206265446,
+          "stop_requested_wall_ns": 1471589044042563,
+          "max_displacement_m": 1.6092978573631154,
+          "max_forward_m": 1.4979534075823655,
+          "max_lateral_m": 0.5881965508449478,
+          "max_ball_height_m": 0.11001661006494107,
+          "final_ball": [
+            -2.5020465924176345,
+            0.5881965508449478,
+            0.10996013461979959
+          ],
+          "range_settled": true,
+          "field_boundary_reached": false,
+          "sdk_completed": false,
+          "single_shot_finished": true,
+          "phase_transitions": [
+            {
+              "phase": 0,
+              "receipt_ns": 1471584273943779
+            },
+            {
+              "phase": 1,
+              "receipt_ns": 1471587277462898
+            },
+            {
+              "phase": 0,
+              "receipt_ns": 1471589283311826
+            }
+          ],
+          "contact_confirmed": false,
+          "power": 1.0,
+          "profile": "booster-studio-1.10.5:K1-ground-truth",
+          "inputs": "ground_truth",
+          "origin": [
+            -4.0,
+            0.0
+          ],
+          "target": [
+            7.0,
+            0.0
+          ],
+          "error": null,
+          "executor_errors": [],
+          "mode": "range",
+          "input_hz": 20.0,
+          "controller_stopped": true,
+          "range_usable": true,
+          "trial": "power-1-repeat-2",
+          "trace_sha256": "b1f6c549967c21aab8ee2ce303fcb20bdfbcfad6af6a000451f09db8177596f3",
+          "observed_activation_count": 1,
+          "max_command_snapshot_age_ms": 48.0,
+          "max_intent_gap_ms": 51.267227,
+          "full_stop_confirmation_s": 1.251416541
+        },
+        {
+          "stop_reason": "shot_departed_and_stopped",
+          "ball_samples": 301,
+          "ball_moved": true,
+          "first_motion_wall_ns": 1471609900599489,
+          "first_motion_after_request_s": 4.265925201,
+          "stop_requested_wall_ns": 1471610350522802,
+          "max_displacement_m": 4.604406896775087,
+          "max_forward_m": 4.490402331842563,
+          "max_lateral_m": 1.0182582036265977,
+          "max_ball_height_m": 0.11113394244331948,
+          "final_ball": [
+            0.4904023318425628,
+            1.0182582036265977,
+            0.1099186439888181
+          ],
+          "range_settled": true,
+          "field_boundary_reached": false,
+          "sdk_completed": false,
+          "single_shot_finished": true,
+          "phase_transitions": [
+            {
+              "phase": 0,
+              "receipt_ns": 1471604614214840
+            },
+            {
+              "phase": 1,
+              "receipt_ns": 1471607621906486
+            },
+            {
+              "phase": 0,
+              "receipt_ns": 1471610623905144
+            }
+          ],
+          "contact_confirmed": false,
+          "power": 1.5,
+          "profile": "booster-studio-1.10.5:K1-ground-truth",
+          "inputs": "ground_truth",
+          "origin": [
+            -4.0,
+            0.0
+          ],
+          "target": [
+            7.0,
+            0.0
+          ],
+          "error": null,
+          "executor_errors": [],
+          "mode": "range",
+          "input_hz": 20.0,
+          "controller_stopped": true,
+          "range_usable": true,
+          "trial": "power-1.5-repeat-2",
+          "trace_sha256": "0af3f20b037e39c87cc3f92739aeeb463147c3294264c0b2ab498c5313447c9f",
+          "observed_activation_count": 1,
+          "max_command_snapshot_age_ms": 54.0,
+          "max_intent_gap_ms": 52.119414,
+          "full_stop_confirmation_s": 1.302672374
+        },
+        {
+          "stop_reason": "shot_departed_and_stopped",
+          "ball_samples": 301,
+          "ball_moved": true,
+          "first_motion_wall_ns": 1471630797776956,
+          "first_motion_after_request_s": 4.266573309,
+          "stop_requested_wall_ns": 1471631200893711,
+          "max_displacement_m": 7.470221726280565,
+          "max_forward_m": 7.250824621075787,
+          "max_lateral_m": 1.7971519007015957,
+          "max_ball_height_m": 0.11497811839627804,
+          "final_ball": [
+            3.250824621075787,
+            1.7971519007015957,
+            0.10997794023672021
+          ],
+          "range_settled": true,
+          "field_boundary_reached": false,
+          "sdk_completed": false,
+          "single_shot_finished": true,
+          "phase_transitions": [
+            {
+              "phase": 0,
+              "receipt_ns": 1471625514353238
+            },
+            {
+              "phase": 1,
+              "receipt_ns": 1471628524066566
+            },
+            {
+              "phase": 0,
+              "receipt_ns": 1471631534032571
+            }
+          ],
+          "contact_confirmed": false,
+          "power": 2.0,
+          "profile": "booster-studio-1.10.5:K1-ground-truth",
+          "inputs": "ground_truth",
+          "origin": [
+            -4.0,
+            0.0
+          ],
+          "target": [
+            7.0,
+            0.0
+          ],
+          "error": null,
+          "executor_errors": [],
+          "mode": "range",
+          "input_hz": 20.0,
+          "controller_stopped": true,
+          "range_usable": true,
+          "trial": "power-2-repeat-2",
+          "trace_sha256": "ef26e95387058ee36da15ba1b9ba33593b0055937fc8d14174579dffe9bd8dff",
+          "observed_activation_count": 1,
+          "max_command_snapshot_age_ms": 54.0,
+          "max_intent_gap_ms": 52.26492,
+          "full_stop_confirmation_s": 1.350576283
+        }
+      ]
+    },
+    {
+      "directory": "/home/oliver/runswift-simulation/booster-1.10.5/match-lifecycle-12",
+      "note": "All five safety scenarios passed. Sequence latency starts after completed stop; use the corrected rerun in match-sequence-13 for that measurement.",
+      "summary_sha256": "31626db474620bdfebeb40a88924bb25b4827c8bde89d861481369d8c9844dcc",
+      "trials": [
+        {
+          "scenario": "sequence",
+          "profile": "booster-studio-1.10.5:K1-ground-truth",
+          "referee": "scripted",
+          "inputs": "ground_truth",
+          "travel_m": 1.5716761407899122,
+          "head_yaw_range_rad": 1.0087866187095642,
+          "ball_displacement_m": 1.7945586752989697,
+          "sdk_kick_entered": true,
+          "sdk_controller_exit_ms": 0.049846,
+          "settling_drift_m": 0.020847354611863222,
+          "outcomes": [
+            "idle",
+            "running",
+            "stopped",
+            "stopping"
+          ],
+          "passed": true,
+          "trace_sha256": "e1ea76be8ec03d40d56f69f8f11aee8db84802af2a129dce8d28b12abc985253"
+        },
+        {
+          "scenario": "cancel_kick",
+          "profile": "booster-studio-1.10.5:K1-ground-truth",
+          "referee": "scripted",
+          "inputs": "ground_truth",
+          "travel_m": 0.20831499206795612,
+          "head_yaw_range_rad": 0.17171739949844778,
+          "ball_displacement_m": 0.0,
+          "sdk_kick_entered": true,
+          "sdk_controller_exit_ms": 500.889766,
+          "settling_drift_m": 0.0444601232092595,
+          "outcomes": [
+            "failed",
+            "idle",
+            "running"
+          ],
+          "passed": true,
+          "trace_sha256": "cbf8dee4c5300b4c5c6e6f84fc24080772cfcf3b78e9ed6e75c52fa8b5215e1a"
+        },
+        {
+          "scenario": "command_expiry",
+          "profile": "booster-studio-1.10.5:K1-ground-truth",
+          "referee": "scripted",
+          "inputs": "ground_truth",
+          "travel_m": 0.37307400305582006,
+          "head_yaw_range_rad": 0.12547181535046548,
+          "ball_displacement_m": 0.0,
+          "sdk_kick_entered": true,
+          "sdk_controller_exit_ms": 299.871504,
+          "settling_drift_m": 0.08277879126730944,
+          "outcomes": [
+            "failed",
+            "idle",
+            "running"
+          ],
+          "passed": true,
+          "trace_sha256": "5f26de4e30e44799a80c878ae922ba6420e12a958ad6036aef97722475c84330"
+        },
+        {
+          "scenario": "observation_expiry",
+          "profile": "booster-studio-1.10.5:K1-ground-truth",
+          "referee": "scripted",
+          "inputs": "ground_truth",
+          "travel_m": 0.3423125892047272,
+          "head_yaw_range_rad": 0.1782571227522567,
+          "ball_displacement_m": 0.0,
+          "sdk_kick_entered": true,
+          "sdk_controller_exit_ms": 188.440262,
+          "settling_drift_m": 0.07647006679962809,
+          "outcomes": [
+            "failed",
+            "idle",
+            "running"
+          ],
+          "passed": true,
+          "trace_sha256": "88dee9790f8c275dc3d8117dc17c5b684c292abe8184a03cbf7883c138d76abd"
+        },
+        {
+          "scenario": "referee_stop",
+          "profile": "booster-studio-1.10.5:K1-ground-truth",
+          "referee": "scripted",
+          "inputs": "ground_truth",
+          "travel_m": 0.3050569837087801,
+          "head_yaw_range_rad": 0.16186279489193112,
+          "ball_displacement_m": 0.0,
+          "sdk_kick_entered": true,
+          "sdk_controller_exit_ms": 450.924585,
+          "settling_drift_m": 0.05400903548869617,
+          "outcomes": [
+            "idle",
+            "running",
+            "stopped",
+            "stopping"
+          ],
+          "passed": true,
+          "trace_sha256": "96f8809542f4982e372a52b483c708b1aff784e088e5c55fd9f8fdb26b1f7f0b"
+        }
+      ]
+    },
+    {
+      "directory": "/home/oliver/runswift-simulation/booster-1.10.5/match-sequence-13",
+      "note": "Sequence fixture now requires shot_departed_and_stopped; SDK exit timer begins at first shot_stopping intent. No runtime behaviour/actuator changes since final pilot.",
+      "summary_sha256": "67de7bf679cdc302a595f9bc01447efa6f37328b974be1f986350a524e7be5c0",
+      "trials": [
+        {
+          "scenario": "sequence",
+          "profile": "booster-studio-1.10.5:K1-ground-truth",
+          "referee": "scripted",
+          "inputs": "ground_truth",
+          "travel_m": 1.5580386336329575,
+          "head_yaw_range_rad": 1.0367206037044525,
+          "ball_displacement_m": 1.5504214771570561,
+          "sdk_kick_entered": true,
+          "sdk_controller_exit_ms": 250.0438,
+          "settling_drift_m": 0.10802142214748515,
+          "outcomes": [
+            "idle",
+            "running",
+            "stopped",
+            "stopping"
+          ],
+          "passed": true,
+          "trace_sha256": "ef0c8ec91f641b58167a5e07ec4ab01c978996104e5278794e58bce928bb6138"
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Ground truth and scripted referee input only. No physical robot or camera validation in this run.",
+    "One controller activation is measured; no contact impulse or strike-count signal proves exactly one foot contact.",
+    "Departure plus controller exit is a behaviour outcome, not native SDK completion or a goal. No goal adjudication or video recording.",
+    "Six final shots are a small validation sample, not a reliability estimate or power/range calibration. Significant lateral error remains.",
+    "SDK inactive timing includes asynchronous feedback latency and differs from full fresh Walking-readiness confirmation. Neither guarantees physical braking distance.",
+    "Synthetic warmed timing improvements do not guarantee real-time scheduling or exclude first-use compilation for other uncertainty shapes."
+  ],
+  "source_hash_note": "Final runtime hashes match the host for pilot 11 and safety runs 12/13. The run.py hash is the corrected sequence fixture used in 13; 12 used the previous timing calculation. Earlier diagnostic series used intermediate revisions."
+}

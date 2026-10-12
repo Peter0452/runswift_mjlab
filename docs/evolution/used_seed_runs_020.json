@@ -1,0 +1,27 @@
+[
+  {
+    "name": "sty_range_strong",
+    "genes": {
+      "w.long_kick_power": 3000.0,
+      "w.torque_over_soft_limit": -100.0,
+      "w.kick_rest_accuracy": 600.0,
+      "w.kick_direction": 900.0,
+      "w.long_kick_underpower": -300.0,
+      "w.search_turn": 10.0,
+      "rsi_bhuman": 0.3,
+      "rsi_ours": 0.0,
+      "style_w": 0.3,
+      "k.SUPPORT_PLANT_FACTOR": 1.0,
+      "k.MOMENTUM_KICK_MAX_SPEED": 1.0,
+      "k.LONG_AIM_SIGMA2": 0.05,
+      "amp_kick_data": 1.0,
+      "k.KICK_STYLE_AMP": 1.0,
+      "w.inside_foot_style": 600.0,
+      "w.hop_kick_style": 300.0,
+      "w.hop_kick_fall": -1000.0,
+      "k.STYLE_MAP": "range",
+      "k.STYLE_SHARE_INSIDE": 0.7
+    },
+    "cks": []
+  }
+]

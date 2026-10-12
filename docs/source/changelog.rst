@@ -8,6 +8,29 @@ Upcoming version (not yet released)
 Added
 ^^^^^
 
+- Added a two-level striker (``Mjlab-Velocity-Striker-Controller-Booster-K1``):
+  a controller picks kick or walk, a direction and a range / speed every 0.2 s
+  and the frozen stage-3 kick and AMP walk 9950 skills run underneath. It is
+  trained by self-play against controller copies of itself (phase 1); the flat
+  self-play task, now aiming at lanes across the goal mouth and able to face
+  controller strikers (``controller_checkpoint``), fine-tunes the kick skill in
+  the game (phase 2). Runners can wrap the env themselves (``make_vecenv``).
+- Added 1v1 self-play on the stage-3 kick loop, striker against striker
+  (``Mjlab-Velocity-Kick-SelfPlay-Amp-DA-Muon-Booster-K1``). Each episode has a
+  field from 9 x 6 to 14 x 9 m with 2.4 m goals (bar 1.6 / 1.8 m); a goal
+  (whole ball over the line between the posts) pays ±30, any other line is
+  out, and either starts a kickoff with the opponent mirrored through the ball.
+  The stage-3 second-touch penalty is off and ball carried towards goal in
+  possession is paid, so the striker can dribble past the opponent. The opponent runs frozen policies inside the env (the learner's
+  latest weights half the time, else a pool of the stage-3 blend, the AMP walk
+  9950 dribbling under a scripted command, and snapshots every 200
+  iterations). Both robots see each other as the vision reports robots: the
+  ground position (``position_projection``, x / y in the robot frame) and a
+  seen flag, zero when out of the head camera's view or beyond 6 m. These 3
+  inputs follow the stage-3 actor's 83 (86 total; the critic gets the truth),
+  and stage-3 checkpoints warm-start from ``init_checkpoint`` (default the
+  ``h022_c2_x50`` blend) with zero weights on them. The deployed runner must
+  feed the detection in slots 83–85.
 - Added Booster K1 get-up task (``Mjlab-Getup-Flat-Booster-K1``), a discovery-based
   fall-recovery port of ``booster_train`` ``Booster-K1-Getup-v1``. Flat plane,
   random fallen spawn (full roll/pitch/yaw), 20-DOF legs+arms actions, upright-gated

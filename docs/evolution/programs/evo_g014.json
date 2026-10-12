@@ -1,0 +1,37 @@
+[
+  {
+    "name": "tpl_long_power_ramp",
+    "expr": {
+      "mul": [
+        {
+          "sig": "kick_event"
+        },
+        {
+          "sig": "kick_long"
+        },
+        {
+          "ramp": [
+            {
+              "sig": "kick_speed"
+            },
+            4.0,
+            9.0
+          ]
+        },
+        {
+          "gauss": [
+            {
+              "sig": "kick_aim_err"
+            },
+            0.0,
+            0.25
+          ]
+        },
+        {
+          "sig": "kick_loft"
+        }
+      ]
+    },
+    "weight": 1500.0
+  }
+]
