@@ -36,11 +36,13 @@ from mjlab.terrains.terrain_generator import TerrainGeneratorCfg
 
 # Rough FT terrain mix (flat / random_rough / wave).
 _AMP_ROUGH_FT_MIX = (0.80, 0.10, 0.10)
-# Early FT: hold mid speeds until tracking recovers (~4k iters @ 24 steps/iter).
+# Early FT: speeds the LAFAN clips actually contain. The previous box
+# (±1.5 m/s from step 0) left a 0.6 m/s tracking floor the policy could not
+# close. Widen only after that error has had time to come down.
 _AMP_EARLY_VEL = {
-  "lin_vel_x": (-1.25, 1.5),
-  "lin_vel_y": (-1.5, 1.5),
-  "ang_vel_z": (-1.25, 1.25),
+  "lin_vel_x": (-0.5, 1.0),
+  "lin_vel_y": (-0.5, 0.5),
+  "ang_vel_z": (-0.8, 0.8),
 }
 # After widen (matches prior max FT ranges).
 _AMP_MAX_VEL = {
@@ -48,8 +50,9 @@ _AMP_MAX_VEL = {
   "lin_vel_y": (-1.8, 1.8),
   "ang_vel_z": (-1.6, 1.6),
 }
-# PPO iters → env steps (num_steps_per_env=24).
-_AMP_VEL_WIDEN_STEP = 4000 * 24
+# PPO iters → env steps (num_steps_per_env=24). Held past the DecAP resume
+# point (iter ~3100) so the narrow box is what this run actually trains on.
+_AMP_VEL_WIDEN_STEP = 12_000 * 24
 # Kick-handoff FT only: one more widen after the rough-walk ranges.
 _HANDOFF_VEL_WIDEN_STEP = 8000 * 24
 _HANDOFF_LATE_VEL = {
@@ -222,8 +225,15 @@ def booster_k1_amp_rough_ft_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   _apply_amp_rough_ft_terrain(cfg)
   _apply_amp_max_vel_curriculum(cfg)
   # Stronger tracking for rough FT (base AMP is 2.25 / 2.0).
-  cfg.rewards["track_linear_velocity"].weight = 3.0
-  cfg.rewards["track_angular_velocity"].weight = 2.5
+  # 6.0 / 5.0 made the gait jerkier (action rate −2.4/s → −3.9/s) and left the
+  # velocity error at 0.6 m/s. 5.0 / 4.0 keeps tracking ahead of the original
+  # 3.0 / 2.5, and action rate −0.05 (was −0.1) stops smoothness from
+  # outweighing it. Yaw std 0.71 put a 1 rad/s error in the flat tail, so the
+  # angular kernel is widened to 1 rad/s.
+  cfg.rewards["track_linear_velocity"].weight = 5.0
+  cfg.rewards["track_angular_velocity"].weight = 4.0
+  cfg.rewards["track_angular_velocity"].params["std"] = 1.0
+  cfg.rewards["action_rate_l2"].weight = -0.05
   return cfg
 
 
@@ -771,7 +781,9 @@ def booster_k1_kick_stage3_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     "kick_direction": (mdp.kick_direction, 900.0),
     "kick_vel": (mdp.kick_vel, 900.0),
     "kick_vel_accurate": (mdp.kick_vel_accurate, 300.0),
-    "ball_avoidance": (mdp.ball_avoidance, -5.0),
+    # Off for the kick-retarget prior: the ball is placed where the foot
+    # meets it, so the strike itself must not be charged as a touch.
+    "ball_avoidance": (mdp.ball_avoidance, 0.0),
     "single_feet_avoidance": (mdp.single_feet_avoidance, -5.0),
     "kick_goal": (mdp.kick_goal, 1500.0),
     "kick_lined_up": (mdp.kick_lined_up, 200.0),

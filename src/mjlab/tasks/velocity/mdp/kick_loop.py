@@ -34,6 +34,7 @@ from mjlab.tasks.velocity.mdp.approach import (
   ApproachYawCommandCfg,
   _command,
   _current,
+  _root_pose,
   _yaw_angle,
   ball_radius,
 )
@@ -590,6 +591,7 @@ class KickLoopCommand(ApproachYawCommand):
     # Recorded mid-kick starts bring their own targets: off while a range is pinned.
     if self.cfg.rsi_files and len(env_ids) > 0 and self._range_pin is None:
       self._reference_state_init(env_ids)
+    self._apply_decap_spawn(env_ids, move_robot=True)
 
   def _load_rsi(self) -> list[tuple[float, dict[str, torch.Tensor]]]:
     if not hasattr(self, "_rsi_sets"):
@@ -688,6 +690,111 @@ class KickLoopCommand(ApproachYawCommand):
       dist = (self.target_w[ids] - ball_n[:, :2]).norm(dim=-1)
       self.goal_tol[ids] = goal_tolerance(dist)
       self.rsi_start[ids] = True
+
+  def _apply_decap_spawn(self, env_ids: torch.Tensor, move_robot: bool) -> None:
+    """Put the ball on this clip's strike.
+
+    A reset places the robot on this frame of the retarget. The base then
+    follows the clip while the take is active; the joint spring holds the
+    clip at β = 1. Leaving the base planted and playing only the joints
+    tips the body onto a hand.
+    """
+    decap = getattr(self._env, "decap", None)
+    if decap is None or decap.ball_pos is None or len(env_ids) == 0:
+      return
+    dev = self.device
+    ids = env_ids.to(device=dev, dtype=torch.long)
+    k = len(ids)
+    frame = decap.clip_starts[decap.clip_id[ids]] + decap.frame[ids]
+    root_c = decap.root_pos[frame]
+    quat_c = decap.root_quat[frame]
+    yaw_c = _yaw_angle(quat_c)
+    if move_robot:
+      yaw_n = torch.rand(k, device=dev) * (2.0 * math.pi) - math.pi
+      # Pose-pool qpos is already written; xpos lags until the next forward.
+      pool = _root_pose(self.robot, ids)
+      origins_z = self._env.scene.env_origins[ids, 2]
+      decap.capture_anchor(ids, pool[:, :2], origins_z + root_c[:, 2], yaw_n)
+      decap.refresh(ids)
+      decap.write_root(self.robot, ids)
+      self.robot.write_joint_state_to_sim(
+        decap.spawn_joint_pos[frame], decap.spawn_joint_vel[frame], env_ids=ids
+      )
+      anchor = torch.empty(k, 3, device=dev)
+      anchor[:, :2] = pool[:, :2]
+      anchor[:, 2] = origins_z + root_c[:, 2]
+      ground = origins_z
+      half = 0.5 * (yaw_n - yaw_c)
+      qz = torch.stack(
+        (half.cos(), torch.zeros_like(half), torch.zeros_like(half), half.sin()),
+        -1,
+      )
+      quat_n = quat_mul(qz, quat_c)
+    else:
+      yaw_n = _yaw_angle(self.robot.data.root_link_quat_w[ids])
+      anchor = self.robot.data.root_link_pos_w[ids]
+      ground = anchor[:, 2] - root_c[:, 2]
+      decap.capture_anchor(ids, anchor[:, :2], anchor[:, 2], yaw_n)
+      decap.refresh(ids)
+      half = 0.5 * (yaw_n - yaw_c)
+      qz = torch.stack(
+        (half.cos(), torch.zeros_like(half), torch.zeros_like(half), half.sin()),
+        -1,
+      )
+      quat_n = quat_mul(qz, quat_c)
+    dyaw = yaw_n - yaw_c
+    c, s_ = dyaw.cos(), dyaw.sin()
+
+    def rot(v: torch.Tensor) -> torch.Tensor:
+      out = v.clone()
+      out[:, 0] = c * v[:, 0] - s_ * v[:, 1]
+      out[:, 1] = s_ * v[:, 0] + c * v[:, 1]
+      return out
+
+    ball_c = decap.ball_pos[decap.clip_id[ids]]
+    ball_rel = rot(ball_c - root_c)
+    dr = ball_radius(self._env, ids) - BALL_RADIUS
+    away = ball_rel[:, :2] / ball_rel[:, :2].norm(dim=-1, keepdim=True).clamp(min=1e-6)
+    ball_n = anchor.clone()
+    ball_n[:, :2] = anchor[:, :2] + ball_rel[:, :2] + away * dr.unsqueeze(-1)
+    ball_n[:, 2] = ground + ball_c[:, 2] + dr
+    bstate = self.ball.data.default_root_state[ids].clone()
+    bstate[:, 0:3] = ball_n
+    bstate[:, 3:7] = torch.tensor([1.0, 0.0, 0.0, 0.0], device=dev)
+    bstate[:, 7:] = 0.0
+    self.ball.write_root_state_to_sim(bstate, ids)
+    tgt_rel = torch.zeros(k, 3, device=dev)
+    tgt_rel[:, :2] = decap.target_xy[decap.clip_id[ids]] - ball_c[:, :2]
+    self.target_w[ids] = ball_n[:, :2] + rot(tgt_rel)[:, :2]
+    self.target_dist[ids] = (self.target_w[ids] - ball_n[:, :2]).norm(dim=-1)
+    self.goal_tol[ids] = goal_tolerance(self.target_dist[ids])
+    self.last_seen_ball_w[ids] = ball_n[:, :2]
+    self.time_since_seen[ids] = 0.0
+    self.ball_lost[ids] = False
+    self.never_seen[ids] = False
+    rel = torch.zeros(k, 3, device=dev)
+    rel[:, :2] = ball_n[:, :2] - anchor[:, :2]
+    self.last_seen_ball_b[ids] = quat_apply_inverse(yaw_quat(quat_n), rel)[:, :2]
+    self.last_seen_yaw[ids] = yaw_n
+    self.kicked_since_target[ids] = False
+    self.lined_up_latched[ids] = False
+
+  def _rearm_decap(self) -> None:
+    """After a take ends, start the next one once the robot is lined up."""
+    decap = getattr(self._env, "decap", None)
+    if decap is None or not decap.stop_at_end:
+      return
+    lined = (
+      self.in_wedge
+      & (self.dist <= STAND_DISTANCE)
+      & (self.yaw_error.abs() <= YAW_ALIGN_LIMIT)
+    )
+    ready = decap.pending & lined & ~decap.active
+    if not bool(ready.any()):
+      return
+    ids = ready.nonzero(as_tuple=False).flatten()
+    decap.arm(ids)
+    self._apply_decap_spawn(ids, move_robot=False)
 
   def _replace_targets(self, env_ids: torch.Tensor, ball_xy: torch.Tensor) -> None:
     super()._replace_targets(env_ids, ball_xy)
@@ -974,6 +1081,7 @@ class KickLoopCommand(ApproachYawCommand):
     )
     self.lined_up_event[:] = lined & ~self.lined_up_latched
     self.lined_up_latched |= lined
+    self._rearm_decap()
 
     recent_kick = self.time_since_kick < STYLE_OFF_AFTER_KICK
     self.near_pending[:] = (self.dist <= self.cfg.near_distance) & ~recent_kick
@@ -1072,6 +1180,17 @@ class HeadTrackedJointPositionAction(JointPositionAction):
     self._scan_phase[env_ids] = torch.rand(k, device=self.device) * 6.2832
     self._scan_pitch[env_ids] = torch.empty(k, device=self.device).uniform_(0.1, 0.6)
     self._t[env_ids] = 0.0
+    decap = getattr(self._env, "decap", None)
+    if decap is not None:
+      decap.reset(env_ids)
+
+  def apply_actions(self) -> None:
+    decap = getattr(self._env, "decap", None)
+    if decap is not None and decap.factor > 0.0 and hasattr(self, "_policy_targets"):
+      joint_pos = self._entity.data.joint_pos[:, self._target_ids]
+      self._processed_actions = decap.blend(self._policy_targets, joint_pos)
+      decap.write_root(self._entity)
+    super().apply_actions()
 
   def process_actions(self, actions: torch.Tensor) -> None:
     super().process_actions(actions)
@@ -1099,6 +1218,13 @@ class HeadTrackedJointPositionAction(JointPositionAction):
     processed = self._processed_actions.clone()
     processed[:, self._head_cols] = self.head_target
     self._processed_actions = processed
+    decap = getattr(self._env, "decap", None)
+    if decap is not None:
+      # Cache the policy target, then step the clip. apply_actions blends
+      # against the live joint position on every physics substep.
+      self._policy_targets = self._processed_actions
+      decap.refresh()
+      decap.advance()
 
 
 @dataclass(kw_only=True)

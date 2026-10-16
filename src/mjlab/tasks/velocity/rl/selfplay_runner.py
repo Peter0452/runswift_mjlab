@@ -54,7 +54,10 @@ class SelfPlayAmpOnPolicyRunner(VelocityAmpOnPolicyRunner):
       ("actor_state_dict", self.alg.actor),
       ("critic_state_dict", self.alg.critic),
     ):
-      in_dim = model.state_dict()["mlp.0.weight"].shape[1]
+      weights = model.state_dict()
+      if "mlp.0.weight" not in weights:
+        continue
+      in_dim = weights["mlp.0.weight"].shape[1]
       sd = loaded.get(key)
       if sd is not None and sd["mlp.0.weight"].shape[1] < in_dim:
         loaded[key] = pad_input_columns(sd, in_dim)

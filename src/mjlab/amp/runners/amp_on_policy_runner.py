@@ -39,6 +39,8 @@ class AmpRslRlPpoAlgorithmCfg(RslRlPpoAlgorithmCfg):
   """Teacher imitation (kick tasks): MSE weight on near-ball teacher actions (0 = off)."""
   imitation_decay_updates: int = 1000
   """Updates over which the imitation weight decays linearly to 0."""
+  multi_critic_alphas: tuple[float, ...] | None = None
+  """APEX multi-critic mix. ``None`` keeps one critic. ``(0.5, 0.5)`` is motion style, then task."""
 
 
 @dataclass
@@ -71,6 +73,14 @@ class AmpOnPolicyRunnerCfg(RslRlOnPolicyRunnerCfg):
   """The configuration for the AMP discriminator."""
   style_reward_weight: float = 0.5
   """The weight of the style reward."""
+  decap: bool = False
+  """Blend policy joint targets toward the AMP clips with an exponential decay."""
+  decap_source: str = "kick"
+  """``kick`` plays the kick takes. ``loader`` plays this task's AMP clips (walk)."""
+  decap_gamma: float = 0.99
+  """Base of the exponential DecAP schedule (APEX ``gamma``)."""
+  decap_k: float = 100.0
+  """Time constant of the exponential DecAP schedule (APEX ``k``)."""
   amp_replay_buffer_size: int = 200_000
   """The size of the AMP replay buffer."""
   amp_replay_insert_size: int = 1_000
@@ -131,12 +141,81 @@ class AmpOnPolicyRunner(AmpRunner, MjlabOnPolicyRunner):
         "optimizer state and iteration counter start fresh."
       )
       load_cfg = {"actor": True, "critic": True}
-    return super().load(
+    infos = super().load(
       path, load_cfg=load_cfg, strict=strict, map_location=map_location
+    )
+    # Play only loads weights. The clip spring, root playback, and strike-ball
+    # snap are training aids; ``learn`` attaches them. A deployed policy does
+    # not have them, so play must not either.
+    return infos
+
+  def _attach_decap(self) -> None:
+    """Point the kick action at AMP-clip joint targets, if DecAP is enabled."""
+    if not self.cfg.get("decap", False):
+      return
+    from mjlab.tasks.velocity.mdp.decap import DecapReference, from_kick_clips
+
+    action = self.env.unwrapped.action_manager.get_term("joint_pos")
+    gamma = float(self.cfg.get("decap_gamma", 0.99))
+    k = float(self.cfg.get("decap_k", 100.0))
+    names = list(action.target_names)
+    if self.cfg.get("decap_source", "kick") == "loader":
+      reference = DecapReference.from_loader(
+        self.alg.amp.amp_loader, names, self.env.num_envs, gamma=gamma, k=k
+      )
+    else:
+      try:
+        reference = from_kick_clips(
+          names, self.env.num_envs, gamma=gamma, k=k, device=self.device
+        )
+      except FileNotFoundError:
+        reference = DecapReference.from_loader(
+          self.alg.amp.amp_loader, names, self.env.num_envs, gamma=gamma, k=k
+        )
+    reference.set_decay_steps(
+      self.current_learning_iteration * int(self.cfg["num_steps_per_env"])
+    )
+    env = self.env.unwrapped
+    env.decap = reference
+    if reference.ball_pos is not None and hasattr(
+      env.command_manager.get_term("twist"), "_apply_decap_spawn"
+    ):
+      import torch
+
+      cmd = env.command_manager.get_term("twist")
+      cmd._apply_decap_spawn(
+        torch.arange(env.num_envs, device=self.device), move_robot=True
+      )
+      env.scene.write_data_to_sim()
+      env.sim.forward()
+    if reference.body_vel is not None:
+      import torch
+
+      all_ids = torch.arange(env.num_envs, device=self.device)
+      env.event_manager.apply(
+        mode="reset",
+        env_ids=all_ids,
+        global_env_step_count=env.common_step_counter,
+      )
+      reference.synced.zero_()
+      env.scene.write_data_to_sim()
+      env.sim.forward()
+      cmd = env.command_manager.get_term("twist")
+      if hasattr(cmd, "_resample_command"):
+        cmd._resample_command(all_ids)
+        cmd._update_command()
+    mixed = ""
+    if reference.clip_mixed is not None:
+      mixed = f", mixed {int(reference.clip_mixed.sum())}"
+    print(
+      f"[INFO] DecAP: {reference.joint_pos.shape[0]} frames, "
+      f"{int(reference.clip_lengths.shape[0])} clips{mixed}, "
+      f"factor {reference.factor:.4f} at step {reference.decay_steps}"
     )
 
   def _on_learn_start(self) -> None:
-    """Hook for subclasses: before the first rollout of ``learn``."""
+    """Attach DecAP playback before the first rollout, when it is enabled."""
+    self._attach_decap()
 
   def _on_policy_update(self, it: int) -> None:
     """Hook for subclasses: after each policy update."""
