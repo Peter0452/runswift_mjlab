@@ -17,6 +17,7 @@ from mjlab.amp.modules.amp import (
   AMP,
   construct_amp,
 )
+from mjlab.amp.modules.multi_critic import MultiCritic, mix_group_advantages
 from mjlab.rl.muon import HybridMuonOptimizer
 
 
@@ -45,6 +46,7 @@ class AmpPPO(PPO):
     caps_ball_slot: int = 72,
     imitation_coef: float = 0.0,
     imitation_decay_updates: int = 1000,
+    multi_critic_alphas: tuple[float, ...] | None = None,
     device: Union[str, torch.device] = "cpu",
     **kwargs,
   ):
@@ -73,6 +75,22 @@ class AmpPPO(PPO):
     self._teacher_actions: torch.Tensor | None = None
     self._teacher_mask: torch.Tensor | None = None
     self.imitation_cols: list[int] | None = None
+    # APEX multi-critic: one advantage weight per reward group. None keeps the
+    # single critic. Order matches the groups stacked in the AMP runner
+    # (motion style, then task).
+    self.multi_critic_alphas = (
+      None
+      if not multi_critic_alphas
+      else tuple(float(alpha) for alpha in multi_critic_alphas)
+    )
+    self._reward_groups: torch.Tensor | None = None
+    self.loaded_matching_critic = False
+    if self.multi_critic_alphas is not None:
+      groups = len(self.multi_critic_alphas)
+      steps, envs = storage.num_transitions_per_env, storage.num_envs
+      storage.rewards = torch.zeros(steps, envs, groups, device=self.device)
+      storage.values = torch.zeros(steps, envs, groups, device=self.device)
+      storage.returns = torch.zeros(steps, envs, groups, device=self.device)
 
     # Rebuild optimizer to include discriminator parameters alongside actor+critic
     params = [
@@ -133,6 +151,100 @@ class AmpPPO(PPO):
         muon_momentum=muon_momentum,
         muon_ns_steps=muon_ns_steps,
       )
+
+  def set_reward_groups(self, groups: torch.Tensor) -> None:
+    """Store per-group rewards for the transition about to be recorded."""
+    self._reward_groups = groups
+
+  def process_env_step(
+    self,
+    obs: TensorDict,
+    rewards: torch.Tensor,
+    dones: torch.Tensor,
+    extras: dict[str, torch.Tensor],
+  ) -> None:
+    """Record one step. Grouped rewards replace the scalar when multi-critic is on."""
+    if self.multi_critic_alphas is None:
+      return super().process_env_step(obs, rewards, dones, extras)
+    if self._reward_groups is None:
+      raise RuntimeError(
+        "Multi-critic is enabled but this step did not record reward groups."
+      )
+
+    groups = self._reward_groups.to(self.device).clone()
+    self._reward_groups = None
+    self.actor.update_normalization(obs)
+    self.critic.update_normalization(obs)
+    if self.rnd:
+      self.intrinsic_rewards = self.rnd.get_intrinsic_reward(obs)
+      self.rnd.update_normalization(obs)
+      groups[:, -1] = groups[:, -1] + self.intrinsic_rewards.view(-1)
+    if "time_outs" in extras:
+      timeouts = extras["time_outs"].to(self.device).view(-1, 1)
+      groups = groups + self.gamma * self.transition.values * timeouts
+    self.transition.rewards = groups
+    self.transition.dones = dones
+    self._add_grouped_transition()
+    self.transition.clear()
+    self.actor.reset(dones)
+    self.critic.reset(dones)
+
+  def _add_grouped_transition(self) -> None:
+    """``RolloutStorage.add_transition`` with rewards shaped ``(N, G)``."""
+    storage = self.storage
+    assert storage is not None
+    transition = self.transition
+    if storage.step >= storage.num_transitions_per_env:
+      raise OverflowError(
+        "Rollout buffer overflow! You should call clear() before adding new transitions."
+      )
+    storage.observations[storage.step].copy_(transition.observations)
+    storage.actions[storage.step].copy_(transition.actions)
+    storage.rewards[storage.step].copy_(transition.rewards)
+    storage.dones[storage.step].copy_(transition.dones.view(-1, 1))
+    storage.values[storage.step].copy_(transition.values)
+    storage.actions_log_prob[storage.step].copy_(
+      transition.actions_log_prob.view(-1, 1)
+    )
+    if storage.distribution_params is None:
+      storage.distribution_params = tuple(
+        torch.zeros(
+          storage.num_transitions_per_env, *param.shape, device=storage.device
+        )
+        for param in transition.distribution_params
+      )
+    for index, param in enumerate(transition.distribution_params):
+      storage.distribution_params[index][storage.step].copy_(param)
+    storage._save_hidden_states(transition.hidden_states)
+    storage.step += 1
+
+  def compute_returns(self, obs: TensorDict) -> None:
+    """Per-group GAE, then APEX's normalized weighted advantage."""
+    if self.multi_critic_alphas is None:
+      return super().compute_returns(obs)
+    storage = self.storage
+    assert storage is not None
+    critic_hidden_state = self.critic.get_hidden_state()
+    last_values = self.critic(obs).detach()
+    self.critic.reset(hidden_state=critic_hidden_state)
+    advantage = torch.zeros_like(last_values)
+    for step in reversed(range(storage.num_transitions_per_env)):
+      next_values = (
+        last_values
+        if step == storage.num_transitions_per_env - 1
+        else storage.values[step + 1]
+      )
+      next_is_not_terminal = (1.0 - storage.dones[step].float()).expand_as(next_values)
+      delta = (
+        storage.rewards[step]
+        + next_is_not_terminal * self.gamma * next_values
+        - storage.values[step]
+      )
+      advantage = delta + next_is_not_terminal * self.gamma * self.lam * advantage
+      storage.returns[step] = advantage + storage.values[step]
+    storage.advantages = mix_group_advantages(
+      storage.returns, storage.values, self.multi_critic_alphas
+    )
 
   def act_amp(self, amp_obs: torch.Tensor) -> None:
     """Initialize AMP history if collection has not started yet."""
@@ -542,12 +654,38 @@ class AmpPPO(PPO):
       saved_dict["rnd_optimizer_state_dict"] = self.rnd.optimizer.state_dict()
     return saved_dict
 
+  def _critic_state_matches(self, loaded_critic: dict) -> bool:
+    current = self._raw_critic.state_dict()
+    if set(current) != set(loaded_critic):
+      return False
+    return all(
+      current[key].shape == loaded_critic[key].shape for key in current
+    )
+
   def load(self, loaded_dict: dict, load_cfg: dict | None, strict: bool) -> bool:
     """Load specified models from a saved dict."""
     if "discriminator_state_dict" in loaded_dict:
       self.amp.discriminator.load_state_dict(
         loaded_dict["discriminator_state_dict"], strict=strict
       )
+
+    loaded_critic = loaded_dict.get("critic_state_dict")
+    self.loaded_matching_critic = (
+      loaded_critic is not None and self._critic_state_matches(loaded_critic)
+    )
+    if loaded_critic is not None and not self.loaded_matching_critic:
+      print(
+        "[INFO] Checkpoint critic does not match this model "
+        "(multi-critic layout or tensor shapes). "
+        "Loading the actor and discriminator only; critic, optimizer, and "
+        "iteration counter start fresh."
+      )
+      load_cfg = dict(load_cfg or {})
+      load_cfg["critic"] = False
+      load_cfg["optimizer"] = False
+      load_cfg["iteration"] = False
+      if "actor" not in load_cfg:
+        load_cfg["actor"] = True
 
     return super().load(loaded_dict, load_cfg, strict)
 
@@ -584,9 +722,22 @@ class AmpPPO(PPO):
     print(f"Actor Model: {actor}")
     if cfg["algorithm"].pop("share_cnn_encoders", None):
       cfg["critic"]["cnns"] = actor.cnns  # type: ignore[attr-defined]
-    critic: MLPModel = critic_class(
-      obs, cfg["obs_groups"], "critic", 1, **cfg["critic"]
-    ).to(device)
+    alphas = cfg["algorithm"].get("multi_critic_alphas")
+    n_critics = len(alphas) if alphas else 1
+    if n_critics == 1:
+      critic: MLPModel | MultiCritic = critic_class(
+        obs, cfg["obs_groups"], "critic", 1, **cfg["critic"]
+      ).to(device)
+    else:
+      # A fresh critic config per head: constructing a head can pop keys.
+      critic = MultiCritic(
+        [
+          critic_class(
+            obs, cfg["obs_groups"], "critic", 1, **dict(cfg["critic"])
+          ).to(device)
+          for _ in range(n_critics)
+        ]
+      ).to(device)
     print(f"Critic Model: {critic}")
 
     # Create storage

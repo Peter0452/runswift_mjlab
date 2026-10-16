@@ -320,9 +320,14 @@ class MotionLoader:
       batch_idx = indices[i * mini_batch_size : (i + 1) * mini_batch_size]
       yield self.all_obs[batch_idx]
 
-  def get_state_for_reset(self, number_of_samples: int) -> Tuple[torch.Tensor, ...]:
+  def get_state_for_reset(
+    self, number_of_samples: int, return_indices: bool = False
+  ) -> Tuple[torch.Tensor, ...]:
     idx = torch.multinomial(self.per_frame_weights, number_of_samples, replacement=True)
     full = self.all_states[idx]
     joint_dim = self.motion_data[0].joint_positions.shape[1]
     dims = [4, joint_dim, joint_dim, 3, 3]
-    return torch.split(full, dims, dim=1)
+    parts = torch.split(full, dims, dim=1)
+    if return_indices:
+      return (*parts, idx)
+    return parts

@@ -65,6 +65,8 @@ class UniformVelocityCommand(CommandTerm):
     self.is_standing_env = torch.zeros_like(self.is_heading_env)
     self.is_world_env = torch.zeros_like(self.is_heading_env)
     self.is_forward_env = torch.zeros_like(self.is_heading_env)
+    # Walk spring: True while this command window should copy the clip velocity.
+    self.follow_clip = torch.zeros(self.num_envs, dtype=torch.bool, device=self.device)
     self.vel_scale = float(cfg.init_vel_scale if cfg.vel_curriculum else 1.0)
 
     self.metrics["error_vel_xy"] = torch.zeros(self.num_envs, device=self.device)
@@ -203,7 +205,32 @@ class UniformVelocityCommand(CommandTerm):
       if grid is not None and grid.enabled:
         self.env_curriculum_level[standing_ids] = 0
     # Booster still: freeze gait clock whenever twist magnitude is near zero.
+    self._roll_clip_follow(env_ids)
+    self._apply_clip_velocity()
     self._zero_gait_freq_when_still()
+
+  def _roll_clip_follow(self, env_ids: torch.Tensor) -> None:
+    """Resample whether this window's command comes from the clip.
+
+    Probability is the spring scale. At the start of training that is 1, so
+    the command matches the clip. Later windows fall back to the random draw
+    already written into ``vel_command_b``.
+    """
+    decap = getattr(self._env, "decap", None)
+    if decap is None or getattr(decap, "body_vel", None) is None or decap.factor <= 0.0:
+      self.follow_clip[env_ids] = False
+      return
+    self.follow_clip[env_ids] = (
+      torch.rand(len(env_ids), device=self.device) < decap.factor
+    )
+
+  def _apply_clip_velocity(self) -> None:
+    decap = getattr(self._env, "decap", None)
+    if decap is None or not bool(self.follow_clip.any()):
+      return
+    from mjlab.tasks.velocity.mdp.decap import apply_clip_velocity_command
+
+    apply_clip_velocity_command(self.vel_command_b, decap, self.follow_clip)
 
   def _uniform_scaled(
     self, generator: torch.Tensor, bounds: tuple[float, float]
@@ -357,6 +384,7 @@ class UniformVelocityCommand(CommandTerm):
     standing_env_ids = self.is_standing_env.nonzero(as_tuple=False).flatten()
     self.vel_command_b[standing_env_ids, :] = 0.0
     self.vel_command_w[standing_env_ids, :] = 0.0
+    self._apply_clip_velocity()
     self._zero_gait_freq_when_still()
 
   def _zero_gait_freq_when_still(self) -> None:

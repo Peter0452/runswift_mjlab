@@ -125,6 +125,17 @@ def run_play(task_id: str, cfg: PlayConfig):
         twist.speed_cap_final = ((vx, vx), (vy, vy), (wz, wz))
         twist.speed_cap_start_max = (vx, vy, wz)
       print(f"[INFO]: Speed limits pinned to vx={vx} vy={vy} wz={wz}")
+  else:
+    twist = env_cfg.commands.get("twist")
+    # The robot runs fixed caps. Training draws them at random; play should not.
+    if twist is not None and getattr(twist, "speed_cap_final", None) is not None:
+      vx, vy, wz = 0.5, 0.3, 0.6
+      twist.speed_limit_vx = (vx, vx)
+      twist.speed_limit_vy = (vy, vy)
+      twist.speed_limit_wz = (wz, wz)
+      twist.speed_cap_final = ((vx, vx), (vy, vy), (wz, wz))
+      twist.speed_cap_start_max = (vx, vy, wz)
+      print(f"[INFO]: Speed limits pinned to deploy vx={vx} vy={vy} wz={wz}")
 
   twist = env_cfg.commands.get("twist")
   if twist is not None and hasattr(twist, "ball_distance_range"):
@@ -298,7 +309,10 @@ def run_play(task_id: str, cfg: PlayConfig):
     runner_cls = load_runner_cls(task_id) or MjlabOnPolicyRunner
     runner = runner_cls(env, asdict(agent_cfg), device=device)
     runner.load(
-      str(resume_path), load_cfg={"actor": True}, strict=True, map_location=device
+      str(resume_path),
+      load_cfg={"actor": True, "iteration": True},
+      strict=True,
+      map_location=device,
     )
     policy = runner.get_inference_policy(device=device)
     if play_env is not None:
@@ -312,7 +326,7 @@ def run_play(task_id: str, cfg: PlayConfig):
     def _reload_policy(path: str):
       _ckpt_runner.load(
         path,
-        load_cfg={"actor": True},
+        load_cfg={"actor": True, "iteration": True},
         strict=True,
         map_location=device,
       )

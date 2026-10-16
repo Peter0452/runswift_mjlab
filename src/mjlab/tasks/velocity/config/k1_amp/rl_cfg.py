@@ -188,6 +188,10 @@ def booster_k1_kick_stage3_runner_cfg() -> AmpOnPolicyRunnerCfg:
     meta = json.loads(_AMP_KICK_MIX_WEIGHTS.read_text())
     cfg.dataset_root = str(_AMP_KICK_MIX_DIR)
     cfg.dataset_weights = [float(w) for w in meta["weights"]]
+  # APEX DecAP (exponential, gamma 0.99, k 100) and two critics: AMP style
+  # versus the kick task and its penalties, mixed 0.5 / 0.5.
+  cfg.decap = True
+  cfg.algorithm.multi_critic_alphas = (0.5, 0.5)
   return cfg
 
 

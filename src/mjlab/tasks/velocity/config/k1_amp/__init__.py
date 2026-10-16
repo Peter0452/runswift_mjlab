@@ -59,6 +59,12 @@ for use_muon in (False, True):
   optimizer = "-Muon" if use_muon else ""
   for name, (env_cfg_fn, rl_cfg_fn) in _AMP_TASKS.items():
     rl_cfg = rl_cfg_fn(use_muon=use_muon)
+    # Walk spring and two critics. Style is 0.2: at a 98% discriminator
+    # accuracy the style advantage is saturated noise, and 0.5 of it was
+    # washing out the tracking gradient.
+    rl_cfg.decap = True
+    rl_cfg.decap_source = "loader"
+    rl_cfg.algorithm.multi_critic_alphas = (0.2, 0.8)
     register_mjlab_task(
       task_id=f"Mjlab-Velocity-{name}{optimizer}-Booster-K1",
       env_cfg=_with_amp_reset_cfg(env_cfg_fn(), rl_cfg),

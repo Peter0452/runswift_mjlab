@@ -143,6 +143,9 @@ def booster_k1_kick_selfplay_runner_cfg() -> SelfPlayAmpRunnerCfg:
   cfg.experiment_name = "k1_kick_selfplay_amp"
   cfg.run_name = "selfplay"
   cfg.init_checkpoint = SELFPLAY_KICK_CKPT
+  # Stage 3 turns these on. Self-play warm-starts a single-critic checkpoint.
+  cfg.decap = False
+  cfg.algorithm.multi_critic_alphas = None
   return cfg
 
 

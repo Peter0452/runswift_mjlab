@@ -222,10 +222,44 @@ class JointPositionAction(BaseAction):
     if cfg.use_default_offset:
       self._offset = self._entity.data.default_joint_pos[:, self._target_ids].clone()
 
+  def reset(self, env_ids: torch.Tensor | slice | None = None) -> None:
+    super().reset(env_ids)
+    decap = self._walk_decap()
+    if decap is not None:
+      decap.reset(env_ids)
+
+  def process_actions(self, actions: torch.Tensor) -> None:
+    super().process_actions(actions)
+    decap = self._walk_decap()
+    if decap is None:
+      return
+    # The spring uses this target on every physics substep. Advance once per
+    # policy step so the next observation's command matches the next frame.
+    self._policy_targets = self._processed_actions.clone()
+    decap.refresh()
+    decap.advance()
+
   def apply_actions(self) -> None:
+    decap = self._walk_decap()
+    if (
+      decap is not None
+      and decap.factor > 0.0
+      and getattr(self, "_policy_targets", None) is not None
+    ):
+      joint_pos = self._entity.data.joint_pos[:, self._target_ids]
+      self._processed_actions = decap.blend(self._policy_targets, joint_pos)
     encoder_bias = self._entity.data.encoder_bias[:, self._target_ids]
     target = self._processed_actions - encoder_bias
     self._entity.set_joint_position_target(target, joint_ids=self._target_ids)
+
+  def _walk_decap(self):
+    """The walk spring. Kick actions subclass this and play their own takes."""
+    if type(self) is not JointPositionAction:
+      return None
+    decap = getattr(self._env, "decap", None)
+    if decap is None or decap.body_vel is None:
+      return None
+    return decap
 
 
 @dataclass(kw_only=True)

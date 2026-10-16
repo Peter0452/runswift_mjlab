@@ -52,6 +52,7 @@ class reset_from_pose_pool:
     )
     self._min_foot_height: float = params.get("min_foot_height", -0.005)
     self._z_lift_factor: float = params.get("z_lift_factor", 0.0)
+    self._stand_prob: float = float(params.get("stand_prob", 0.25))
 
     # Motion dataset params (optional).
     self._dataset_root: str | None = params.get("dataset_root")
@@ -62,6 +63,7 @@ class reset_from_pose_pool:
 
     self._device = env.device
     self._pool: torch.Tensor | None = None
+    self._pool_frame_idx: torch.Tensor | None = None
     self._pool_size: int = 0
     self._num_joints: int = 0
 
@@ -131,6 +133,7 @@ class reset_from_pose_pool:
     joint_offset_hi = hi_frac * dist_to_upper
 
     all_valid_poses: list[torch.Tensor] = []
+    all_valid_frame_ids: list[torch.Tensor] = []
     total_self_collision = 0
     total_terrain_contact = 0
     total_feet_below = 0
@@ -145,6 +148,7 @@ class reset_from_pose_pool:
 
     for i in range(self._num_iterations):
       # 1. Get base state: either from motion data or default pose.
+      frame_idx: torch.Tensor | None = None
       if loader is not None:
         (
           base_quat_xyzw,
@@ -152,7 +156,8 @@ class reset_from_pose_pool:
           motion_joint_vel,
           base_lin_vel_local,
           base_ang_vel_local,
-        ) = loader.get_state_for_reset(num_envs)
+          frame_idx,
+        ) = loader.get_state_for_reset(num_envs, return_indices=True)
         # scipy (x,y,z,w) -> mjlab (w,x,y,z)
         base_quat = base_quat_xyzw[:, [3, 0, 1, 2]]
         joint_pos = motion_joint_pos
@@ -265,6 +270,8 @@ class reset_from_pose_pool:
             dim=-1,
           )
         )
+        if frame_idx is not None:
+          all_valid_frame_ids.append(frame_idx[valid_ids])
 
     total_candidates = self._num_iterations * num_envs
     if not all_valid_poses:
@@ -278,6 +285,9 @@ class reset_from_pose_pool:
       )
 
     self._pool = torch.cat(all_valid_poses, dim=0)
+    self._pool_frame_idx = (
+      torch.cat(all_valid_frame_ids, dim=0) if all_valid_frame_ids else None
+    )
     self._pool_size = self._pool.shape[0]
     self._num_joints = joint_pos.shape[-1]
     print_info(
@@ -317,8 +327,46 @@ class reset_from_pose_pool:
 
     positions = root_pos_rel + env.scene.env_origins[env_ids]
 
+    if self._stand_prob > 0.0:
+      is_stand = torch.rand(num_reset, device=self._device) < self._stand_prob
+    else:
+      is_stand = torch.zeros(num_reset, dtype=torch.bool, device=self._device)
+
+    if bool(is_stand.any()):
+      stand_ids = env_ids[is_stand]
+      q = root_quat[is_stand]
+      yaw = torch.atan2(
+        2.0 * (q[:, 0] * q[:, 3] + q[:, 1] * q[:, 2]),
+        1.0 - 2.0 * (q[:, 2] ** 2 + q[:, 3] ** 2),
+      )
+      half = 0.5 * yaw
+      zero = torch.zeros_like(half)
+      positions = positions.clone()
+      root_quat = root_quat.clone()
+      joint_pos = joint_pos.clone()
+      root_vel = root_vel.clone()
+      joint_vel = joint_vel.clone()
+      positions[is_stand, 2] = (
+        asset.data.default_root_state[stand_ids, 2]
+        + env.scene.env_origins[stand_ids, 2]
+      )
+      root_quat[is_stand] = torch.stack((half.cos(), zero, zero, half.sin()), dim=-1)
+      joint_pos[is_stand] = asset.data.default_joint_pos[stand_ids]
+      root_vel[is_stand] = 0.0
+      joint_vel[is_stand] = 0.0
+
     asset.write_root_link_pose_to_sim(
       torch.cat([positions, root_quat], dim=-1), env_ids=env_ids
     )
     asset.write_root_link_velocity_to_sim(root_vel, env_ids=env_ids)
     asset.write_joint_state_to_sim(joint_pos, joint_vel, env_ids=env_ids)
+
+    decap = getattr(env, "decap", None)
+    if decap is not None and getattr(decap, "body_vel", None) is not None:
+      motion_mask = ~is_stand
+      if bool(motion_mask.any()) and self._pool_frame_idx is not None:
+        decap.sync_to_flat_index(
+          env_ids[motion_mask], self._pool_frame_idx[pool_indices[motion_mask]]
+        )
+      if bool(is_stand.any()):
+        decap.sync_to_stance(env_ids[is_stand])

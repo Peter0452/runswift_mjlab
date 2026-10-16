@@ -151,6 +151,18 @@ class AmpRunner:
       active_w = style_weight * style_mask
       task_rewards = (1.0 - active_w) * rewards
       style_rewards = active_w * self._compute_style_reward_scale() * style_pred
+      alphas = getattr(self.alg, "multi_critic_alphas", None)
+      if alphas:
+        # Motion head sees the style reward. Task head sees the env reward,
+        # including penalties, without the style weight scaling it down.
+        # The scalar returned below stays the previous mix so episode logs
+        # keep their old meaning.
+        self.alg.set_reward_groups(
+          torch.stack(
+            (style_rewards.view(-1), rewards.view(-1)),
+            dim=-1,
+          )
+        )
       rewards = task_rewards + style_rewards
       log = extras.setdefault("log", {})
       if isinstance(log, dict):
@@ -170,6 +182,11 @@ class AmpRunner:
       )
       amp_obs = next_amp_obs
 
+    decap = getattr(self.env.unwrapped, "decap", None)
+    if decap is not None:
+      log = extras.setdefault("log", {})
+      if isinstance(log, dict):
+        log["Metrics/decap_factor"] = decap.factor
     self.alg.process_env_step(obs, rewards, dones, extras)
     return obs, amp_obs, rewards, dones, extras
 
