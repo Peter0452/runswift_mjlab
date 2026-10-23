@@ -7,6 +7,7 @@ import numpy as np
 import pytest
 import torch
 
+from k1.robot.k1_constants import K1_ACTION_SCALE
 from mjlab.asset_zoo.props.ball import get_ball_radius
 from mjlab.asset_zoo.props.goal import (
   GOAL_DIVISION_SCALE,
@@ -14,7 +15,6 @@ from mjlab.asset_zoo.props.goal import (
   MID_GOAL_WIDTH,
   get_goal_spec,
 )
-from mjlab.asset_zoo.robots.booster_k1.k1_constants import K1_ACTION_SCALE
 from mjlab.envs.mdp.actions import JointPositionActionCfg
 from mjlab.tasks.registry import load_env_cfg, load_rl_cfg
 from mjlab.tasks.tracking.config.k1.env_cfgs import (

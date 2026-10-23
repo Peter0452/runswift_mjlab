@@ -153,7 +153,7 @@ def main() -> None:
   traj = TRAJECTORIES[args.kick]
   cycle_duration = args.cycle if args.cycle is not None else traj.cycle
 
-  xml_path = Path(__file__).resolve().parent / "asset_zoo/robots/booster_k1/xml/k1.xml"
+  xml_path = Path(__file__).resolve().parents[1] / "k1/robot/xml/k1.xml"
   spec = mujoco.MjSpec.from_file(str(xml_path))
   for joint in list(spec.joints):
     if joint.name == "floating_base_joint":

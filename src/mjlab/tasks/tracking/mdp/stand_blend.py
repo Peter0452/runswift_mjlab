@@ -15,7 +15,7 @@ import mujoco
 import numpy as np
 import torch
 
-from mjlab.asset_zoo.robots.booster_k1.k1_constants import (
+from k1.robot.k1_constants import (
   ARMATURE_ANKLE,
   ARMATURE_ARM,
   ARMATURE_HEAD,
@@ -35,7 +35,7 @@ from mjlab.asset_zoo.robots.booster_k1.k1_constants import (
   STIFFNESS_KNEE,
   get_spec,
 )
-from mjlab.asset_zoo.robots.booster_k1.k1_whirlwind_constants import (
+from k1.robot.k1_whirlwind_constants import (
   ACTUATOR_E4310,
   ACTUATOR_E4315,
   ACTUATOR_E6408,

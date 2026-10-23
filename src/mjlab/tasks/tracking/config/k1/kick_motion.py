@@ -24,7 +24,7 @@ import mujoco
 import numpy as np
 import torch
 
-from mjlab.asset_zoo.robots.booster_k1.k1_constants import get_k1_robot_cfg
+from k1.robot.k1_constants import get_k1_robot_cfg
 from mjlab.entity import Entity
 from mjlab.motion.motion_data import MotionFile
 from mjlab.utils.lab_api.math import (

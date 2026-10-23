@@ -23,9 +23,9 @@ import functools
 import mujoco
 import numpy as np
 
+from k1.robot.k1_constants import get_spec as get_k1_spec
 from k1.tasks.bhuman.actuator import BHumanPdActuatorCfg
 from mjlab.asset_zoo.props.ball import BALL_XML, get_ball_radius
-from mjlab.asset_zoo.robots.booster_k1.k1_constants import get_spec as get_k1_spec
 from mjlab.entity import EntityArticulationInfoCfg, EntityCfg
 from mjlab.utils.spec_config import CollisionCfg
 

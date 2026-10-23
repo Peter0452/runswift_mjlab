@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 import mujoco
 
-from mjlab.asset_zoo.robots.booster_k1.whirlwind_actuators import (
+from k1.robot.whirlwind_actuators import (
   ActuatorConfig,
   MotorPositionActuatorCfg,
 )

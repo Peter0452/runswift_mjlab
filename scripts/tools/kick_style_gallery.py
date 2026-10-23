@@ -23,7 +23,7 @@ import numpy as np
 from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parents[2]
-XML = ROOT / "src/mjlab/asset_zoo/robots/booster_k1/xml_whirlwind/k1.xml"
+XML = ROOT / "src/k1/robot/xml_whirlwind/k1.xml"
 FPS = 50
 DT = 0.002
 BALL_R, BALL_M = 0.08, 0.10

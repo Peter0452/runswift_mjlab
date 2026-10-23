@@ -9,7 +9,7 @@ from __future__ import annotations
 import math
 from dataclasses import replace
 
-from mjlab.asset_zoo.robots.booster_k1.k1_constants import (
+from k1.robot.k1_constants import (
   HOME_KEYFRAME,
   get_k1_robot_cfg,
 )

@@ -2,15 +2,15 @@
 
 import math
 
-from mjlab.asset_zoo.robots import (
-  K1_ACTION_SCALE,
-  get_k1_robot_cfg,
-)
-from mjlab.asset_zoo.robots.booster_k1.k1_constants import (
+from k1.robot.k1_constants import (
   HOME_KEYFRAME,
   KNEES_BENT_KEYFRAME,
   NUBOTS_KEYFRAME,
   get_k1_nubots_robot_cfg,
+)
+from mjlab.asset_zoo.robots import (
+  K1_ACTION_SCALE,
+  get_k1_robot_cfg,
 )
 from mjlab.envs import ManagerBasedRlEnvCfg
 from mjlab.envs import mdp as envs_mdp

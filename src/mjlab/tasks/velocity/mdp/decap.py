@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING
 
 import torch
 
-from mjlab.asset_zoo.robots.booster_k1.k1_whirlwind_constants import K1_JOINT_ORDER
+from k1.robot.k1_whirlwind_constants import K1_JOINT_ORDER
 from mjlab.utils.lab_api.math import quat_mul
 
 if TYPE_CHECKING:
@@ -592,7 +592,7 @@ def from_kick_clips(
   """
   import mujoco
 
-  from mjlab.asset_zoo.robots.booster_k1.k1_whirlwind_constants import (
+  from k1.robot.k1_whirlwind_constants import (
     get_k1_whirlwind_robot_cfg,
   )
   from mjlab.entity import Entity

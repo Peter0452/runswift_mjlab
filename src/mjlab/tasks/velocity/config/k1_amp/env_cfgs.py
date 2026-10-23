@@ -7,15 +7,15 @@ from pathlib import Path
 
 import mujoco
 
-from mjlab.asset_zoo.props.ball import BALL_XML, get_ball_radius
-from mjlab.asset_zoo.robots.booster_k1.k1_whirlwind_constants import (
+from k1.robot.k1_whirlwind_constants import (
   K1_ACTION_SCALE,
   get_k1_whirlwind_robot_cfg,
 )
-from mjlab.asset_zoo.robots.booster_k1.whirlwind_sensors import (
+from k1.robot.whirlwind_sensors import (
   FootClearanceSensorCfg,
   FootSoleGridPatternCfg,
 )
+from mjlab.asset_zoo.props.ball import BALL_XML, get_ball_radius
 from mjlab.entity import EntityCfg
 from mjlab.envs import ManagerBasedRlEnvCfg
 from mjlab.envs.mdp.actions import JointPositionActionCfg
@@ -1217,7 +1217,7 @@ _FOOT_CAPSULES = (
 
 
 def _capsule_foot_spec() -> mujoco.MjSpec:
-  from mjlab.asset_zoo.robots.booster_k1.k1_whirlwind_constants import get_spec
+  from k1.robot.k1_whirlwind_constants import get_spec
 
   spec = get_spec()
   for side in ("left", "right"):

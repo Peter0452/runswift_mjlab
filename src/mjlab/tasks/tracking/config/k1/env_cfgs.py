@@ -9,13 +9,11 @@ can resume the same input.
 
 from dataclasses import replace
 
-from mjlab.asset_zoo.props.ball import get_ball_radius, get_ball_spec
-from mjlab.asset_zoo.props.goal import get_goal_spec
-from mjlab.asset_zoo.robots.booster_k1.k1_constants import (
+from k1.robot.k1_constants import (
   K1_ACTION_SCALE,
   get_k1_robot_cfg,
 )
-from mjlab.asset_zoo.robots.booster_k1.k1_whirlwind_constants import (
+from k1.robot.k1_whirlwind_constants import (
   ACTUATOR_E4310,
   ACTUATOR_E4315,
   ACTUATOR_E6408,
@@ -24,6 +22,8 @@ from mjlab.asset_zoo.robots.booster_k1.k1_whirlwind_constants import (
   ACTUATOR_K1_ANKLE,
   ACTUATOR_R14,
 )
+from mjlab.asset_zoo.props.ball import get_ball_radius, get_ball_spec
+from mjlab.asset_zoo.props.goal import get_goal_spec
 from mjlab.entity import EntityArticulationInfoCfg, EntityCfg
 from mjlab.envs import ManagerBasedRlEnvCfg
 from mjlab.envs.mdp import dr
