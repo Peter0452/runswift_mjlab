@@ -339,7 +339,7 @@ def booster_k1_kick_stage1_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   return cfg
 
 
-# The ball model (ours or B-Human's) is chosen with K1_BALL; see approach.py.
+# The ball model (ours or B-Human's) is chosen with K1_BALL; see k1/common/ball.py.
 _APPROACH_BALL_RADIUS = approach_mdp.BALL_RADIUS
 _APPROACH_BALL_MASS = approach_mdp.BALL_MASS
 _APPROACH_BALL_FRICTION = (1.0, 0.5, 0.015)

@@ -63,7 +63,7 @@ selfplay-run-authority).
   0.07–0.13 m and mass 0.05–0.45 kg around 0.08 m / 0.1 kg, because every
   kept model was trained on it. **Future training should move to B-Human's
   ball** (0.095 m ± 0.01, 0.29 kg ± 0.01, solid): opt in per run with
-  `K1_BALL=bhuman` (read at import, `mdp/approach.py`); switch the default
+  `K1_BALL=bhuman` (read at import, `src/k1/common/ball.py`); switch the default
   when a lineage has been retrained on it, then re-record the golden
   references.
 - runswift's fixture is a proxy soft gate: we may be slightly worse where its
