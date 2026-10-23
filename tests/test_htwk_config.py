@@ -143,6 +143,7 @@ def test_htwk_exact_task_matches_reference_command_and_runner():
 
 
 def test_htwk_robust_ft_task_has_staged_yaw_and_terrain_setup():
+  # Values follow the 2026-09-13 retune (5c39e73) of the robust fine-tune.
   task = "Mjlab-Velocity-HTWK-Robust-FT-Booster-K1-Nubots"
   cfg = load_env_cfg(task)
   runner = load_rl_cfg(task)
@@ -168,7 +169,7 @@ def test_htwk_robust_ft_task_has_staged_yaw_and_terrain_setup():
   assert [
     cfg.scene.terrain.terrain_generator.sub_terrains[name].proportion
     for name in ("flat", "random_rough", "wave_terrain")
-  ] == pytest.approx([0.8, 0.1, 0.1])
+  ] == pytest.approx([0.70, 0.15, 0.15])  # retuned 2026-09-13 (5c39e73)
   assert cfg.observations["critic"].terms["base_height"].params["sensor_name"] == (
     "terrain_scan"
   )
@@ -180,10 +181,10 @@ def test_htwk_robust_ft_task_has_staged_yaw_and_terrain_setup():
     "scheduled_terrain_mix_curriculum"
   )
   assert cfg.curriculum["terrain_mix"].params["steps_per_iteration"] == 24
+  # One fixed 70/15/15 stage since 2026-09-13 (5c39e73); the staged 80 -> 70 %
+  # flat schedule this test first described was dropped then.
   assert cfg.curriculum["terrain_mix"].params["stages"] == [
-    {"iteration": 0, "proportions": [0.8, 0.1, 0.1]},
-    {"iteration": 20_000, "proportions": [0.8, 0.1, 0.1]},
-    {"iteration": 40_000, "proportions": [0.7, 0.15, 0.15]},
+    {"iteration": 0, "proportions": [0.7, 0.15, 0.15]},
   ]
   assert runner.experiment_name == "k1_walk_htwk_robust_ft"
   assert cfg.events["foot_friction"].params["ranges"] == pytest.approx((0.1, 2.0))
@@ -196,8 +197,8 @@ def test_htwk_robust_ft_task_has_staged_yaw_and_terrain_setup():
   assert runner.algorithm.schedule == "fixed"
   assert runner.clip_actions == pytest.approx(1.0)
   assert cfg.rewards["knee_separation"].func.__name__ == "htwk_knee_separation"
-  assert cfg.rewards["knee_separation"].weight == pytest.approx(-3.0)
-  assert cfg.rewards["knee_separation"].params["safe_distance"] == pytest.approx(0.18)
+  assert cfg.rewards["knee_separation"].weight == pytest.approx(-3.5)
+  assert cfg.rewards["knee_separation"].params["safe_distance"] == pytest.approx(0.19)
   assert cfg.rewards["knee_separation"].params["softness"] == pytest.approx(0.01)
   assert cfg.rewards["knee_separation"].params["asset_cfg"].body_names == (
     "Left_Shank",
@@ -229,17 +230,17 @@ def test_htwk_robust_ft_task_has_staged_yaw_and_terrain_setup():
   )
   assert cfg.curriculum["shoulder_release"].params["end_weight"] == pytest.approx(-0.05)
   assert cfg.rewards["feet_offset_x"].params["min_velocity_scale"] == pytest.approx(
-    0.35
+    0.25
   )
   assert cfg.rewards["feet_minimum_separation"].params["min_separation"] == (
-    pytest.approx(0.14)
+    pytest.approx(0.16)
   )
-  assert cfg.rewards["feet_minimum_separation"].weight == pytest.approx(-3.0)
+  assert cfg.rewards["feet_minimum_separation"].weight == pytest.approx(-4.0)
   assert cfg.rewards["feet_site_xy_separation"].func.__name__ == (
     "htwk_feet_site_xy_separation"
   )
-  assert cfg.rewards["feet_site_xy_separation"].weight == pytest.approx(-2.0)
-  assert cfg.rewards["foot_foot_collision"].weight == pytest.approx(-3.0)
+  assert cfg.rewards["feet_site_xy_separation"].weight == pytest.approx(-3.0)
+  assert cfg.rewards["foot_foot_collision"].weight == pytest.approx(-4.0)
   assert cfg.events["fold_elbows"].func.__name__ == (
     "set_joint_position_targets_random"
   )

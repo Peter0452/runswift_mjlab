@@ -6,6 +6,11 @@ from mjlab.envs import ManagerBasedRlEnvCfg
 from mjlab.managers.observation_manager import ObservationGroupCfg
 from mjlab.tasks.registry import list_tasks, load_env_cfg
 
+# The B-Human port reproduces Booster Gym exactly (docs/K1_BHUMAN_KICK_PORT.md):
+# its actor observation adds B-Human's own noise model inside the term (so the
+# manager's corruption flag stays off) and its play episodes are 1e5 s long.
+BHUMAN_PORT = "Mjlab-BHuman-Kick"
+
 
 @pytest.fixture(scope="module")
 def all_task_ids() -> list[str]:
@@ -41,6 +46,9 @@ def test_play_mode_episode_length(all_task_ids: list[str]) -> None:
   """Play mode tasks should have infinite episode length."""
   for task_id in all_task_ids:
     cfg = load_env_cfg(task_id, play=True)
+    if task_id.startswith(BHUMAN_PORT):
+      assert cfg.episode_length_s >= 1e5, task_id
+      continue
     assert cfg.episode_length_s >= 1e9, (
       f"{task_id} (play mode) episode_length_s={cfg.episode_length_s}, expected >= 1e9"
     )
@@ -68,6 +76,8 @@ def test_play_mode_observation_corruption_disabled(all_task_ids: list[str]) -> N
 def test_training_mode_observation_corruption_enabled(all_task_ids: list[str]) -> None:
   """Training mode tasks should have observation corruption enabled for policy."""
   for task_id in all_task_ids:
+    if task_id.startswith(BHUMAN_PORT):
+      continue  # noise is applied inside the port's own observation term
     cfg = load_env_cfg(task_id)
 
     assert "actor" in cfg.observations, (

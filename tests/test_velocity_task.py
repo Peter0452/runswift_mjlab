@@ -6,6 +6,8 @@ from mjlab.asset_zoo.robots import G1_ACTION_SCALE, GO1_ACTION_SCALE
 from mjlab.envs.mdp.actions import JointPositionActionCfg
 from mjlab.tasks.registry import list_tasks, load_env_cfg
 from mjlab.tasks.velocity.mdp import UniformVelocityCommandCfg
+from mjlab.tasks.velocity.mdp.approach import ApproachYawCommandCfg
+from mjlab.tasks.velocity.mdp.velocity_command import ParameterWalkCommandCfg
 
 
 @pytest.fixture(scope="module")
@@ -46,8 +48,13 @@ def test_velocity_tasks_have_twist_command(velocity_task_ids: list[str]) -> None
     assert "twist" in cfg.commands, f"Task {task_id} missing 'twist' command"
 
     twist_cmd = cfg.commands["twist"]
-    assert isinstance(twist_cmd, UniformVelocityCommandCfg), (
-      f"Task {task_id} twist command is not UniformVelocityCommandCfg"
+    # Three command families: sampled twist (walks), HTWK ParameterWalk (HTWK
+    # walks) and the approach family (approach, kick loop, dribble, self-play).
+    assert isinstance(
+      twist_cmd,
+      (UniformVelocityCommandCfg, ParameterWalkCommandCfg, ApproachYawCommandCfg),
+    ), (
+      f"Task {task_id} twist command is not a velocity, ParameterWalk or approach command"
     )
 
 

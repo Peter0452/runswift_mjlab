@@ -56,7 +56,9 @@ def test_walkamp_reward_and_term_set():
   assert cfg.rewards["ball_velocity_toward_goal"].params["max_reward"] == 6.0
   assert cfg.rewards["ball_velocity_toward_goal"].params["use_decay"] is False
   assert cfg.rewards["base_height"].weight == -15.0
-  assert cfg.rewards["base_height"].params["target_height"] == 0.52
+  # The config has used 0.5 / 0.3 since 2026-09-28 (8468d7c), when the legacy
+  # walk-AMP kick runs were trained.
+  assert cfg.rewards["base_height"].params["target_height"] == 0.5
   assert cfg.rewards["ball_stagnant"].weight == -0.02
   assert cfg.rewards["ball_stagnant"].params["max_ball_distance"] == 0.3
   assert "min_ball_distance" not in cfg.rewards["agent_approach_ball"].params
@@ -146,8 +148,8 @@ def test_walkamp_play_keeps_double_touch():
   assert "target_hit" not in cfg.terminations
   assert "target_missed" not in cfg.terminations
   reset = cfg.events["reset_walkamp"].params
-  assert reset["ball_x_min_base"] == 0.6
-  assert reset["ball_x_max"] == 0.6
+  assert reset["ball_x_min_base"] == 0.3
+  assert reset["ball_x_max"] == 0.3
   assert reset["momentum_time_s"] == 0.0
   assert reset["face_ball"] is True
   assert reset["spawn_half_angle"] == 0.0
