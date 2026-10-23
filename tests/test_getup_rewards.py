@@ -6,13 +6,13 @@ from unittest.mock import MagicMock
 
 import torch
 
-from mjlab.managers.reward_manager import RewardTermCfg
-from mjlab.managers.scene_entity_config import SceneEntityCfg
-from mjlab.tasks.getup.mdp.rewards import (
+from k1.tasks.getup.mdp.rewards import (
   standing_bonus,
   upright,
   upright_climb,
 )
+from mjlab.managers.reward_manager import RewardTermCfg
+from mjlab.managers.scene_entity_config import SceneEntityCfg
 
 
 def _identity_quat(batch: int) -> torch.Tensor:

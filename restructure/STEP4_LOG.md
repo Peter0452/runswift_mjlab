@@ -32,7 +32,8 @@ when kick-loop code is touched.
 | 544fe20 | `k1/deploy/obs_layout.py` + `tests/test_deploy_obs_layout.py` (deployed actor layouts as code, checked against golden) | new tests pass |
 | ea8abe5 | `k1.compat` import finder replaces alias folders | 1272 pass, golden ok |
 | 311ad64 | Legacy kick (`Mjlab-Kick-*`, arc kick, walk-AMP kick) → `k1/tasks/legacy/kick/`; alias `mjlab.tasks.kick` | 1273 pass, golden ok |
-| (this) | K1 tracking kick tasks (`Mjlab-Tracking-Flat-Booster-K1-Kick*`) → `k1/tasks/legacy/tracking/` | 1273 pass, golden ok |
+| e9587e3 | K1 tracking kick tasks (`Mjlab-Tracking-Flat-Booster-K1-Kick*`) → `k1/tasks/legacy/tracking/` | 1273 pass, golden ok |
+| (this) | Getup (`Mjlab-Getup-Flat-Booster-K1`) → `k1/tasks/getup/` | 1273 pass, golden ok |
 
 ## Best guesses (review these)
 
