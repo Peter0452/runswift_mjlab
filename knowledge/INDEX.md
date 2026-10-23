@@ -54,7 +54,7 @@ Tasks removed on 2026-10-23 (upstream demos, unused variants) are on branch
 
 | Thing | Place |
 |---|---|
-| Task configs and rewards | `src/mjlab/tasks/velocity/{config/k1_amp,mdp,rl}/`, `src/mjlab/tasks/bhuman_kick/` |
+| Task configs and rewards | `src/k1/tasks/` (moved families; registered via the `mjlab.tasks` entry point), `src/mjlab/tasks/velocity/{config/k1_amp,mdp,rl}/` (not yet moved). Old module paths stay as aliases |
 | AMP, multi-critic, kick teacher, anchor | `src/mjlab/amp/`, `src/mjlab/tasks/velocity/rl/anchor.py` |
 | Training runs | `logs/rsl_rl/<experiment>/<run>/` (latest, best and referenced checkpoints kept; configs in `params/`) |
 | Eval and bench tools | `scripts/tools/` (see each skill page) |

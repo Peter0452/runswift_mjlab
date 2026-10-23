@@ -7,6 +7,10 @@
 
 from __future__ import annotations
 
+from k1.tasks.bhuman import mdp
+from k1.tasks.bhuman.kick_command import BHumanKickCommandCfg
+from k1.tasks.bhuman.robot import FEET, get_bhuman_ball_cfg, get_bhuman_k1_cfg
+from k1.tasks.bhuman.terrain import bhuman_field_generator_cfg
 from mjlab.envs import ManagerBasedRlEnvCfg
 from mjlab.managers.event_manager import EventTermCfg
 from mjlab.managers.observation_manager import ObservationGroupCfg, ObservationTermCfg
@@ -15,10 +19,6 @@ from mjlab.managers.termination_manager import TerminationTermCfg
 from mjlab.scene import SceneCfg
 from mjlab.sensor import ContactMatch, ContactSensorCfg
 from mjlab.sim import MujocoCfg, SimulationCfg
-from mjlab.tasks.bhuman_kick import mdp
-from mjlab.tasks.bhuman_kick.kick_command import BHumanKickCommandCfg
-from mjlab.tasks.bhuman_kick.robot import FEET, get_bhuman_ball_cfg, get_bhuman_k1_cfg
-from mjlab.tasks.bhuman_kick.terrain import bhuman_field_generator_cfg
 from mjlab.terrains import TerrainEntityCfg
 from mjlab.viewer import ViewerConfig
 

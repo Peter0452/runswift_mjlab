@@ -26,9 +26,8 @@ from typing import TYPE_CHECKING, Literal
 import numpy as np
 import torch
 
-from mjlab.managers.command_manager import CommandTerm, CommandTermCfg
-from mjlab.tasks.bhuman_kick.actuator import BHumanPdActuator
-from mjlab.tasks.bhuman_kick.robot import (
+from k1.tasks.bhuman.actuator import BHumanPdActuator
+from k1.tasks.bhuman.robot import (
   BALL_RADIUS,
   DEFAULT_LEG_POS,
   FEET,
@@ -37,7 +36,8 @@ from mjlab.tasks.bhuman_kick.robot import (
   LEG_JOINTS,
   URDF_EFFORT,
 )
-from mjlab.tasks.bhuman_kick.terrain import FieldHeights
+from k1.tasks.bhuman.terrain import FieldHeights
+from mjlab.managers.command_manager import CommandTerm, CommandTermCfg
 from mjlab.utils.lab_api.math import (
   euler_xyz_from_quat,
   quat_apply,
@@ -46,9 +46,9 @@ from mjlab.utils.lab_api.math import (
 )
 
 if TYPE_CHECKING:
+  from k1.tasks.bhuman.mdp import BHumanKickAction
   from mjlab.entity import Entity
   from mjlab.envs import ManagerBasedRlEnv
-  from mjlab.tasks.bhuman_kick.mdp import BHumanKickAction
   from mjlab.viewer.debug_visualizer import DebugVisualizer
 
 _PI = math.pi

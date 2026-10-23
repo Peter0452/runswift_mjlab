@@ -21,9 +21,9 @@ from dataclasses import asdict
 import torch
 
 import mjlab.tasks  # noqa: F401
+from k1.tasks.bhuman.kick_command import BHumanKickCommand
+from k1.tasks.bhuman.runner import BHumanPpoRunner, BHumanPpoRunnerCfg
 from mjlab.envs import ManagerBasedRlEnv
-from mjlab.tasks.bhuman_kick.kick_command import BHumanKickCommand
-from mjlab.tasks.bhuman_kick.runner import BHumanPpoRunner, BHumanPpoRunnerCfg
 from mjlab.tasks.registry import load_env_cfg
 
 

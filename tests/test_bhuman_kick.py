@@ -9,15 +9,15 @@ import torch
 from conftest import get_test_device
 
 import mjlab.tasks  # noqa: F401
-from mjlab.envs import ManagerBasedRlEnv
-from mjlab.tasks.bhuman_kick.kick_command import (
+from k1.tasks.bhuman.kick_command import (
   BHumanKickCommand,
   BHumanKickCommandCfg,
   Rand,
   apply_rand,
 )
-from mjlab.tasks.bhuman_kick.robot import LEG_JOINTS, get_bhuman_k1_spec
-from mjlab.tasks.bhuman_kick.terrain import FieldHeights, bhuman_field_generator_cfg
+from k1.tasks.bhuman.robot import LEG_JOINTS, get_bhuman_k1_spec
+from k1.tasks.bhuman.terrain import FieldHeights, bhuman_field_generator_cfg
+from mjlab.envs import ManagerBasedRlEnv
 from mjlab.tasks.registry import list_tasks, load_env_cfg, load_rl_cfg
 from mjlab.terrains.terrain_generator import TerrainGenerator
 

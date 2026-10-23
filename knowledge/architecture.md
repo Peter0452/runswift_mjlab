@@ -4,7 +4,8 @@ The structure the restructure moves toward, and the design of the evolution
 loop that follows it. Decisions: package `k1`; per-task folders; methods with
 cards; YAML recipes; deploy contract as code; our own evolution loop (no
 harbor dependency); hybrid promotion rule. Status: Steps 1–3 done (keep-list,
-knowledge base, safety net); Step 4 (code move) next, then the evolution loop.
+knowledge base, safety net); Step 4 (code move) in progress: B-Human pilot moved to `src/k1/tasks/bhuman/`
+(2026-10-23; `mjlab.tasks.bhuman_kick` kept as an alias), then the evolution loop.
 
 ## Layout
 

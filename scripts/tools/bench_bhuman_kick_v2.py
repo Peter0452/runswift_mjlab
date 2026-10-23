@@ -38,13 +38,13 @@ import numpy as np
 import torch
 
 import mjlab.tasks  # noqa: F401
+from k1.tasks.bhuman.kick_command import BHumanKickCommand, BHumanKickCommandCfg
+from k1.tasks.bhuman.mdp import set_ball_size_mass
+from k1.tasks.bhuman.robot import get_bhuman_ball_cfg
+from k1.tasks.bhuman.runner import BHumanPpoRunner, BHumanPpoRunnerCfg
 from mjlab.envs import ManagerBasedRlEnv
 from mjlab.managers.event_manager import RecomputeLevel
 from mjlab.scripts.play_bhuman_kick import _load_mlp
-from mjlab.tasks.bhuman_kick.kick_command import BHumanKickCommand, BHumanKickCommandCfg
-from mjlab.tasks.bhuman_kick.mdp import set_ball_size_mass
-from mjlab.tasks.bhuman_kick.robot import get_bhuman_ball_cfg
-from mjlab.tasks.bhuman_kick.runner import BHumanPpoRunner, BHumanPpoRunnerCfg
 from mjlab.tasks.registry import load_env_cfg
 
 SECTORS = {

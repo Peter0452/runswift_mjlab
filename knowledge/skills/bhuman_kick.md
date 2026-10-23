@@ -13,7 +13,7 @@ Sources: `docs/K1_BHUMAN_KICK_PORT.md` (use, file map, known differences),
 
 - `Mjlab-BHuman-Kick-Booster-K1` (= Stage1) and `-Stage2`, `-Stage3a`,
   `-Stage3b`, `-Stage4`, `-Stage5`, `-Stage6a`, `-Stage6`: cumulative stages
-  from B-Human's readme (`src/mjlab/tasks/bhuman_kick/stages.py`).
+  from B-Human's readme (`src/k1/tasks/bhuman/stages.py`).
 - Own runner `BHumanPpoRunner` (loads Booster Gym `.pth` directly via
   `--agent.bhuman-checkpoint`); optional `--agent.decap`, `--agent.amp`.
 - Eval `scripts/tools/eval_bhuman_kick.py`; benchmark v2 to B-Human's spec

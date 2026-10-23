@@ -16,9 +16,9 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
+from k1.tasks.bhuman.kick_command import BHumanKickCommandCfg
+from k1.tasks.bhuman.runner import BHumanPpoRunnerCfg
 from mjlab.envs import ManagerBasedRlEnvCfg
-from mjlab.tasks.bhuman_kick.kick_command import BHumanKickCommandCfg
-from mjlab.tasks.bhuman_kick.runner import BHumanPpoRunnerCfg
 
 Stage = Callable[[ManagerBasedRlEnvCfg, BHumanPpoRunnerCfg], None]
 

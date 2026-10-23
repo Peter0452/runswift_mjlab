@@ -9,21 +9,21 @@ from typing import TYPE_CHECKING
 
 import torch
 
-from mjlab.managers.action_manager import ActionTerm, ActionTermCfg
-from mjlab.managers.event_manager import RecomputeLevel, requires_model_fields
-from mjlab.tasks.bhuman_kick.actuator import BHumanPdActuator
-from mjlab.tasks.bhuman_kick.kick_command import (
+from k1.tasks.bhuman.actuator import BHumanPdActuator
+from k1.tasks.bhuman.kick_command import (
   BHumanKickCommand,
   wrap,
   yaw_of,
 )
-from mjlab.tasks.bhuman_kick.robot import (
+from k1.tasks.bhuman.robot import (
   BALL_MASS,
   BALL_RADIUS,
   LEG_JOINTS,
   TOE_NUB_HIDDEN_POS,
   TOE_NUB_Y,
 )
+from mjlab.managers.action_manager import ActionTerm, ActionTermCfg
+from mjlab.managers.event_manager import RecomputeLevel, requires_model_fields
 from mjlab.utils.lab_api.math import quat_apply_inverse
 
 if TYPE_CHECKING:

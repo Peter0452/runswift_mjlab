@@ -71,6 +71,13 @@ list-envs = "mjlab.scripts.list_envs:main"
 viz-nan = "mjlab.scripts.nan_viz:main"
 export-scene = "mjlab.scripts.export_scene:main"
 
+# The K1 work registers its tasks the way an external task package does.
+[project.entry-points."mjlab.tasks"]
+k1 = "k1.tasks"
+
+[tool.uv.build-backend]
+module-name = ["mjlab", "k1"]
+
 [dependency-groups]
 dev = [
   "ipdb>=0.13.13",

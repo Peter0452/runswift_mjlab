@@ -15,12 +15,12 @@ from pathlib import Path
 
 import torch
 
+from k1.tasks.bhuman.kick_command import BHumanKickCommand
+from k1.tasks.bhuman.robot import DEFAULT_LEG_POS, LEG_JOINTS
 from mjlab.amp.modules.amp import AMP
 from mjlab.amp.modules.discriminator import Discriminator
 from mjlab.asset_zoo.robots.booster_k1.k1_whirlwind_constants import K1_JOINT_ORDER
 from mjlab.motion import MotionLoader
-from mjlab.tasks.bhuman_kick.kick_command import BHumanKickCommand
-from mjlab.tasks.bhuman_kick.robot import DEFAULT_LEG_POS, LEG_JOINTS
 
 WALK_DATASET = Path(__file__).resolve().parents[5] / "data" / "amp_mix_ww_cmu"
 AUGMENTATIONS = [
