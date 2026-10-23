@@ -1,0 +1,15 @@
+# Default recipe: two-level striker controller. Generated 2026-10-24 from the registered task;
+# edit by hand from here on.
+name: striker_controller_default
+task: Mjlab-Velocity-Striker-Controller-Booster-K1
+change: 'none: the registered task as it is'
+why: Baseline and control for two-level striker controller. Declares every method the task
+  has on, so the code and the recipe can't drift apart.
+touches: training-only
+control: null
+init: null
+ball: ours
+genes: {}
+methods: {}
+rewards: {}
+rl: {}

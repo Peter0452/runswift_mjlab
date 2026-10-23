@@ -253,15 +253,22 @@ def run_train(task_id: str, cfg: TrainConfig, log_dir: Path) -> None:
   env.close()
 
 
-def launch_training(task_id: str, args: TrainConfig | None = None):
-  args = args or TrainConfig.from_task(task_id)
-
-  # Create log directory once before launching workers.
+def run_log_dir(args: TrainConfig) -> Path:
+  """The directory a new run of ``args`` logs to (timestamp + run name)."""
   log_root_path = (Path(args.log_root) / args.agent.experiment_name).resolve()
   log_dir_name = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
   if args.agent.run_name:
     log_dir_name += f"_{args.agent.run_name}"
-  log_dir = log_root_path / log_dir_name
+  return log_root_path / log_dir_name
+
+
+def launch_training(
+  task_id: str, args: TrainConfig | None = None, log_dir: Path | None = None
+):
+  args = args or TrainConfig.from_task(task_id)
+
+  # Create log directory once before launching workers.
+  log_dir = log_dir or run_log_dir(args)
 
   # Select GPUs based on CUDA_VISIBLE_DEVICES and user specification.
   selected_gpus, num_gpus = select_gpus(args.gpu_ids)

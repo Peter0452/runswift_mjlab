@@ -70,6 +70,7 @@ play-bhuman-kick = "mjlab.scripts.play_bhuman_kick:main"
 list-envs = "mjlab.scripts.list_envs:main"
 viz-nan = "mjlab.scripts.nan_viz:main"
 export-scene = "mjlab.scripts.export_scene:main"
+rsw = "k1.cli:main"
 
 # The K1 work registers its tasks the way an external task package does.
 [project.entry-points."mjlab.tasks"]

@@ -1,0 +1,22 @@
+# Default recipe: walk fine-tune on kick handoffs. Generated 2026-10-24 from the registered task;
+# edit by hand from here on.
+name: kick_handoff_default
+task: Mjlab-Velocity-Rough-Amp-DA-Muon-Booster-K1-KickHandoff
+change: 'none: the registered task as it is'
+why: Baseline and control for walk fine-tune on kick handoffs. Declares every method the task
+  has on, so the code and the recipe can't drift apart.
+touches: training-only
+control: null
+init: null
+ball: ours
+genes: {}
+methods:
+  amp:
+    style_reward_weight: 0.3
+    style_start: 0.3
+    style_end: 0.3
+  muon: {}
+  symmetry_aug:
+    augmentation: k1.tasks.velocity.mdp.amp_symmetry:augment_symmetries
+rewards: {}
+rl: {}

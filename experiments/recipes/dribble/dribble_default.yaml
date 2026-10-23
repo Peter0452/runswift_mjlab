@@ -1,0 +1,32 @@
+# Default recipe: dribble with kick mode. Generated 2026-10-24 from the registered task;
+# edit by hand from here on.
+name: dribble_default
+task: Mjlab-Velocity-Dribble-Amp-DA-Muon-Booster-K1
+change: 'none: the registered task as it is'
+why: Baseline and control for dribble with kick mode. Declares every method the task has on,
+  so the code and the recipe can't drift apart.
+touches: training-only
+control: null
+init: null
+ball: ours
+genes: {}
+methods:
+  amp:
+    style_reward_weight: 0.3
+    style_start: 0.3
+    style_end: 0.3
+  muon: {}
+  symmetry_aug:
+    augmentation: k1.tasks.dribble.mdp.dribble:augment_symmetries_dribble
+  multi_critic:
+    alphas:
+    - 0.2
+    - 0.8
+    extra_group: null
+  caps:
+    temporal: 1.0
+    spatial: 0.4
+    spatial_sigma: 0.05
+    near_ball_scale: 0.5
+rewards: {}
+rl: {}

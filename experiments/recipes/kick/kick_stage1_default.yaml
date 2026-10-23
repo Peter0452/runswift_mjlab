@@ -1,0 +1,31 @@
+# Default recipe: kick stage 1 (walk with kick command slots). Generated 2026-10-24 from the registered task;
+# edit by hand from here on.
+name: kick_stage1_default
+task: Mjlab-Velocity-Kick-Stage1-Amp-DA-Muon-Booster-K1
+change: 'none: the registered task as it is'
+why: Baseline and control for kick stage 1 (walk with kick command slots). Declares every
+  method the task has on, so the code and the recipe can't drift apart.
+touches: training-only
+control: null
+init: null
+ball: ours
+genes: {}
+methods:
+  amp:
+    style_reward_weight: 0.3
+    style_start: 0.3
+    style_end: 0.3
+  muon: {}
+  symmetry_aug:
+    augmentation: k1.tasks.velocity.mdp.amp_symmetry:augment_symmetries
+  decap:
+    source: loader
+    gamma: 0.99
+    k: 100.0
+  multi_critic:
+    alphas:
+    - 0.2
+    - 0.8
+    extra_group: null
+rewards: {}
+rl: {}

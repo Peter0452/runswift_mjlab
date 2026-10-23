@@ -1,0 +1,33 @@
+# Default recipe: 1v1 self-play on the stage-3 kick loop. Generated 2026-10-24 from the registered task;
+# edit by hand from here on.
+name: selfplay_default
+task: Mjlab-Velocity-Kick-SelfPlay-Amp-DA-Muon-Booster-K1
+change: 'none: the registered task as it is'
+why: Baseline and control for 1v1 self-play on the stage-3 kick loop. Declares every method
+  the task has on, so the code and the recipe can't drift apart.
+touches: training-only
+control: null
+init: null
+ball: ours
+genes: {}
+methods:
+  amp:
+    style_reward_weight: 0.3
+    style_start: 0.3
+    style_end: 0.3
+  muon: {}
+  symmetry_aug:
+    augmentation: k1.tasks.selfplay.mdp.self_play:augment_symmetries_selfplay
+  caps:
+    temporal: 1.0
+    spatial: 0.4
+    spatial_sigma: 0.05
+    near_ball_scale: 0.5
+  kl_anchor:
+    checkpoint: logs/rsl_rl/k1_kick_selfplay_amp/2026-10-13_23-24-12_p2_kick_v15_std04/model_7600.pt
+    coef: 0.5
+    coef_final: 0.1
+    decay_updates: 5000
+    loss: kl
+rewards: {}
+rl: {}

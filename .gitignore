@@ -36,3 +36,6 @@ nubots_models/*.pt
 
 # Scratch outputs of scripts/tools/golden_bench.py (reference lives in tests/golden/).
 docs/benchmarks_v2/golden_h022_quick*.json
+
+# Evolution-loop state (recipes in experiments/recipes are tracked).
+experiments/evolution/
