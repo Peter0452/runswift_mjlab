@@ -25,7 +25,11 @@ from mjlab.envs.mdp.events import push_by_setting_velocity
 from mjlab.managers.event_manager import RecomputeLevel, requires_model_fields
 from mjlab.managers.scene_entity_config import SceneEntityCfg
 from mjlab.tasks.velocity.mdp.approach import (
+  BALL_ALPHA_RANGE,
+  BALL_MASS,
   BALL_RADIUS,
+  BALL_RADIUS_RANGE,
+  BALL_SOLID,
   NOMINAL_ROOT_HEIGHT,
   STAND_DISTANCE,
   WALK_COMMAND_SPEED,
@@ -2005,18 +2009,20 @@ def ball_relocate_unseen(
 def ball_size_mass(
   env: ManagerBasedRlEnv,
   env_ids: torch.Tensor | None,
-  radius_range: tuple[float, float] = (0.085, 0.105),
-  alpha_range: tuple[float, float] = (-0.0175, 0.0170),
-  nominal_mass: float = 0.290,
+  radius_range: tuple[float, float] = BALL_RADIUS_RANGE,
+  alpha_range: tuple[float, float] = BALL_ALPHA_RANGE,
+  nominal_mass: float = BALL_MASS,
   *,
   geom_cfg: SceneEntityCfg,
   body_cfg: SceneEntityCfg,
 ) -> None:
-  """B-Human ball each episode (K1_Ball.yaml): collision radius uniform in
-  ``radius_range`` (0.095 m ± 0.01) and mass ``nominal_mass * e^{2 alpha}``
-  (0.290 kg ± 0.01), independent; solid-sphere inertia 2/5 m r^2 to match
-  Isaac Gym ``recomputeInertia`` on the collision sphere. Spawns read the
-  radius back (``ball_radius``); the visual mesh keeps the nominal size."""
+  """A different ball every episode: collision radius uniform in
+  ``radius_range`` and mass ``nominal_mass * e^{2 alpha}``, independent.
+  Defaults follow the K1_BALL model (approach.py): ours 0.07-0.13 m and
+  0.05-0.45 kg with thin-shell inertia 2/3 m r^2 (user 2026-10-08); B-Human's
+  0.095 +- 0.01 m and 0.29 +- 0.01 kg with solid-sphere inertia 2/5 m r^2, as
+  Isaac Gym ``recomputeInertia``. Spawns read the radius back
+  (``ball_radius``); the visual mesh keeps the nominal size."""
   if env_ids is None:
     env_ids = torch.arange(env.num_envs, device=env.device)
   env_ids = env_ids.to(env.device, dtype=torch.long)
@@ -2034,7 +2040,7 @@ def ball_size_mass(
     -1, len(g), 3
   )
   model.body_mass[env_ids[:, None], b[None, :]] = m[:, None]
-  inertia = (2.0 / 5.0) * m * r * r
+  inertia = (2.0 / 5.0 if BALL_SOLID else 2.0 / 3.0) * m * r * r
   model.body_inertia[env_ids[:, None], b[None, :]] = inertia[:, None, None].expand(
     -1, len(b), 3
   )

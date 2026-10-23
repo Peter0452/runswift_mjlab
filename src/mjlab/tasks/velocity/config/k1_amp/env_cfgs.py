@@ -31,6 +31,7 @@ from mjlab.sensor import (
   ObjRef,
 )
 from mjlab.tasks.velocity import mdp
+from mjlab.tasks.velocity.mdp import approach as approach_mdp
 from mjlab.tasks.velocity.velocity_amp_env_cfg import make_velocity_env_cfg
 from mjlab.terrains.config import flat, random_rough, wave_terrain
 from mjlab.terrains.terrain_generator import TerrainGeneratorCfg
@@ -338,14 +339,14 @@ def booster_k1_kick_stage1_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   return cfg
 
 
-# B-Human K1 ball (MachineLearning/IsaacGymRL envs/K1_Ball.yaml asset.ball).
-_APPROACH_BALL_RADIUS = 0.095
-_APPROACH_BALL_MASS = 0.290
+# The ball model (ours or B-Human's) is chosen with K1_BALL; see approach.py.
+_APPROACH_BALL_RADIUS = approach_mdp.BALL_RADIUS
+_APPROACH_BALL_MASS = approach_mdp.BALL_MASS
 _APPROACH_BALL_FRICTION = (1.0, 0.5, 0.015)
 
 
 def _get_approach_ball_spec() -> mujoco.MjSpec:
-  """Size-5 mesh scaled to the B-Human 0.095 m kick ball."""
+  """Size-5 mesh scaled to the kick ball (K1_BALL model)."""
   spec = mujoco.MjSpec.from_file(str(BALL_XML))
   scale = _APPROACH_BALL_RADIUS / get_ball_radius(5)
   for mesh in spec.meshes:
@@ -359,8 +360,13 @@ def _get_approach_ball_spec() -> mujoco.MjSpec:
     elif geom.name == "ball_collision":
       geom.group = 3
       geom.size = (_APPROACH_BALL_RADIUS, 0, 0)
-      # Solid sphere, matching Isaac Gym recomputeInertia on create_sphere.
-      geom.typeinertia = mujoco.mjtGeomInertia.mjINERTIA_VOLUME
+      # B-Human's ball is solid (Isaac Gym recomputeInertia on create_sphere);
+      # ours is a thin shell.
+      geom.typeinertia = (
+        mujoco.mjtGeomInertia.mjINERTIA_VOLUME
+        if approach_mdp.BALL_SOLID
+        else mujoco.mjtGeomInertia.mjINERTIA_SHELL
+      )
       geom.priority = 1
       geom.condim = 6
       geom.mass = _APPROACH_BALL_MASS
@@ -610,8 +616,8 @@ def _dribble_deploy_match(cfg: ManagerBasedRlEnvCfg, play: bool) -> None:
     mode="reset",
     func=mdp.ball_size_mass,
     params={
-      "radius_range": (0.07, 0.13),
-      "alpha_range": (-0.347, 0.752),
+      "radius_range": approach_mdp.BALL_RADIUS_RANGE,
+      "alpha_range": approach_mdp.BALL_ALPHA_RANGE,
       "nominal_mass": _APPROACH_BALL_MASS,
       "geom_cfg": SceneEntityCfg("ball", geom_names=("ball_collision",)),
       "body_cfg": SceneEntityCfg("ball", body_names=("ball",)),
@@ -815,16 +821,17 @@ def booster_k1_kick_stage3_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     ),
   )
 
-  # B-Human's ball (K1_Ball.yaml): radius 0.095 m ± 0.01, mass 0.290 kg ± 0.01,
-  # drawn independently each episode. alpha is the existing e^{2α} mass factor
-  # around 0.290 kg (0.280–0.300 kg). The key stays "ball_mass" so tools that
-  # pop it get the fixed nominal ball.
+  # A different ball every episode, so the kick does not depend on one ball.
+  # Ours (default): radius 0.07–0.13 m and mass 0.05–0.45 kg (e^{2α} × 0.1 kg),
+  # drawn independently (user 2026-10-08). K1_BALL=bhuman: B-Human's ball,
+  # 0.095 m ± 0.01 and 0.290 kg ± 0.01. The key stays "ball_mass" so tools
+  # that pop it get the fixed nominal ball.
   cfg.events["ball_mass"] = EventTermCfg(
     mode="reset",
     func=mdp.ball_size_mass,
     params={
-      "radius_range": (0.085, 0.105),
-      "alpha_range": (-0.0175, 0.0170),
+      "radius_range": approach_mdp.BALL_RADIUS_RANGE,
+      "alpha_range": approach_mdp.BALL_ALPHA_RANGE,
       "nominal_mass": _APPROACH_BALL_MASS,
       "geom_cfg": SceneEntityCfg("ball", geom_names=("ball_collision",)),
       "body_cfg": SceneEntityCfg("ball", body_names=("ball",)),
@@ -1169,9 +1176,9 @@ def booster_k1_kick_stage3_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   twist = cfg.commands["twist"]
   twist.ball_origin = str(KICK_GENES.get("ball_origin", "feet"))  # ty: ignore[unresolved-attribute]
   twist.ball_origin_jitter = float(KICK_GENES.get("ball_origin_jitter", 0.02))  # ty: ignore[unresolved-attribute]
-  # Gene ball_mass_alpha_max only raises the mass ceiling above the B-Human
-  # ball (default alpha 0.017 → 0.300 kg). Old genes (0.55, 0.752) were
-  # written for the 0.1 kg ball and will make this ball much heavier.
+  # Gene ball_mass_alpha_max only raises the mass ceiling (alpha, around the
+  # nominal mass of the K1_BALL model). Genes written for our 0.1 kg ball
+  # (0.55, 0.752) make B-Human's 0.29 kg ball much heavier.
   if "ball_mass_alpha_max" in KICK_GENES and "ball_mass" in cfg.events:
     lo, hi = cfg.events["ball_mass"].params["alpha_range"]
     hi = max(hi, float(KICK_GENES["ball_mass_alpha_max"]))
