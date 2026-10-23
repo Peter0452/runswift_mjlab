@@ -327,7 +327,7 @@ def test_v34_posture_bands_and_speed_caps() -> None:
   cfg = load_env_cfg(TASK)
   assert cfg.commands is not None
   twist = cfg.commands["twist"]
-  assert twist.speed_cap_final == ((0.3, 2.0), (0.2, 1.5), (0.4, 1.5))
+  assert twist.speed_cap_final == ((0.3, 2.0), (0.2, 2.0), (0.4, 3.0))  # chase caps
   assert kl.BACKWARD_SPEED_MAX == 1.75
   assert twist.ball_distance_range == (1.0, 4.0)
   for name in (
