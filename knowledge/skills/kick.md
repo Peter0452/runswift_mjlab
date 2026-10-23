@@ -172,7 +172,7 @@ Kept because they produced checkpoints that are still referenced:
   produced the curated `plant1_65600` and `stance_81800` (now only on the
   archive branch) and the deployed `k1_v24_*` ONNX.
 - `Mjlab-Kick-WalkAmp[-Amp]-DA-Muon-Booster-K1`: kick on the walk-AMP stack
-  (`src/mjlab/tasks/kick/DESIGN_kick_on_walk_amp.md`, `PROBLEM.md`).
+  (`src/k1/tasks/legacy/kick/DESIGN_kick_on_walk_amp.md`, `PROBLEM.md`).
 - `Mjlab-Tracking-Flat-Booster-K1-Kick[-Box,-Stage2]`: motion-tracking kick
   (`docs/K1_KICK_TRACKING_NOTES.md`). Stage-2 kicker
   `logs/rsl_rl/k1_kick_tracking/2026-09-29_08-23-57/model_99000.pt`; the

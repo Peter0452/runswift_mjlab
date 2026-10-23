@@ -16,9 +16,8 @@ from dataclasses import dataclass
 import torch
 from tensordict import TensorDict
 
-from mjlab.rl.vecenv_wrapper import RslRlVecEnvWrapper
-from mjlab.tasks.kick.mdp.ball_phase import ensure_ball_phase_updated
-from mjlab.tasks.kick.mdp.walk_handoff import (
+from k1.tasks.legacy.kick.mdp.ball_phase import ensure_ball_phase_updated
+from k1.tasks.legacy.kick.mdp.walk_handoff import (
   DEFAULT_WALK_CKPT,
   DEFAULT_WALK_TASK,
   KICK_LEG_JOINTS,
@@ -31,6 +30,7 @@ from mjlab.tasks.kick.mdp.walk_handoff import (
   load_walk_inference_policy,
   resolve_scale_dict,
 )
+from mjlab.rl.vecenv_wrapper import RslRlVecEnvWrapper
 from mjlab.tasks.registry import load_env_cfg
 
 

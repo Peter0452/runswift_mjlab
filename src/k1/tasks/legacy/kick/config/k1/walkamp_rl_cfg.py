@@ -14,7 +14,7 @@ from mjlab.amp.runners import (
 from mjlab.rl import RslRlModelCfg, RslRlOnPolicyRunnerCfg, RslRlPpoAlgorithmCfg
 
 _KICK_AMP_DIR = (
-  Path(__file__).resolve().parents[6].parent / "data" / "retargeted" / "k1" / "kick"
+  Path(__file__).resolve().parents[7].parent / "data" / "retargeted" / "k1" / "kick"
 )
 
 _AMP_SYMMETRY_CFG = {

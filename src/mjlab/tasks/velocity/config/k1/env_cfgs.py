@@ -1115,8 +1115,8 @@ def _apply_base_walk_commands(cfg: ManagerBasedRlEnvCfg) -> None:
 
 def _apply_base_walk_obs(cfg: ManagerBasedRlEnvCfg, *, play: bool) -> None:
   """56-D actor: 47-D walk core + 9 zero kick slots (same layout as kick tasks)."""
+  from k1.tasks.legacy.kick.kick_obs import add_kick_slot_placeholders
   from mjlab.managers.observation_manager import ObservationGroupCfg
-  from mjlab.tasks.kick.kick_obs import add_kick_slot_placeholders
   from mjlab.utils.noise import UniformNoiseCfg as Unoise
 
   policy_joints = _base_walk_policy_joint_cfg()

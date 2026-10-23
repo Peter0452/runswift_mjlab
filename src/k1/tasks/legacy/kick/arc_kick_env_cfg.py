@@ -4,6 +4,22 @@ from __future__ import annotations
 
 import math
 
+from k1.tasks.legacy.kick import mdp as kick_mdp
+from k1.tasks.legacy.kick.kick_obs import add_unified_kick_observations
+from k1.tasks.legacy.kick.mdp.ball_phase import reset_ball_phase_state
+from k1.tasks.legacy.kick.mdp.commands import UniformGoalPositionCommandCfg
+from k1.tasks.legacy.kick.mdp.events import (
+  reset_ball_uniform,
+  reset_robot_around_ball_facing,
+  update_ball_phase_buffers,
+  update_pref_pose_twist_command,
+)
+from k1.tasks.legacy.kick.mdp.pref_pose import reset_pref_pose_state
+from k1.tasks.legacy.kick.mdp.terminations import (
+  double_touch,
+  target_hit,
+  target_missed,
+)
 from mjlab.asset_zoo.props.ball import get_ball_radius, get_ball_spec
 from mjlab.entity import EntityCfg
 from mjlab.envs import ManagerBasedRlEnvCfg
@@ -12,22 +28,6 @@ from mjlab.managers.event_manager import EventTermCfg
 from mjlab.managers.reward_manager import RewardTermCfg
 from mjlab.managers.scene_entity_config import SceneEntityCfg
 from mjlab.managers.termination_manager import TerminationTermCfg
-from mjlab.tasks.kick import mdp as kick_mdp
-from mjlab.tasks.kick.kick_obs import add_unified_kick_observations
-from mjlab.tasks.kick.mdp.ball_phase import reset_ball_phase_state
-from mjlab.tasks.kick.mdp.commands import UniformGoalPositionCommandCfg
-from mjlab.tasks.kick.mdp.events import (
-  reset_ball_uniform,
-  reset_robot_around_ball_facing,
-  update_ball_phase_buffers,
-  update_pref_pose_twist_command,
-)
-from mjlab.tasks.kick.mdp.pref_pose import reset_pref_pose_state
-from mjlab.tasks.kick.mdp.terminations import (
-  double_touch,
-  target_hit,
-  target_missed,
-)
 from mjlab.tasks.velocity import mdp as velocity_mdp
 from mjlab.utils.spec_config import CollisionCfg
 
@@ -548,11 +548,11 @@ def make_approach_only_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRl
   Keep-out stops ball touch; success is holding near the ball outside keep-out.
   Full-annulus spawn so wrong-side starts must circle.
   """
+  from k1.tasks.legacy.kick import mdp as kick_mdp
+  from k1.tasks.legacy.kick.mdp.terminations import near_ball_reached
   from mjlab.managers.reward_manager import RewardTermCfg
   from mjlab.managers.scene_entity_config import SceneEntityCfg
   from mjlab.managers.termination_manager import TerminationTermCfg
-  from mjlab.tasks.kick import mdp as kick_mdp
-  from mjlab.tasks.kick.mdp.terminations import near_ball_reached
 
   cfg = make_arc_kick_env_cfg(base_cfg)
   robot = SceneEntityCfg("robot")
@@ -796,15 +796,15 @@ def make_near_kick_env_cfg(base_cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvC
   (beside/behind ball), gate contact bridge on plant score, shape instep
   ankle at contact, then post-kick upright + standing feet.
   """
-  from mjlab.managers.reward_manager import RewardTermCfg
-  from mjlab.managers.scene_entity_config import SceneEntityCfg
-  from mjlab.managers.termination_manager import TerminationTermCfg
-  from mjlab.tasks.kick import mdp as kick_mdp
-  from mjlab.tasks.kick.mdp.terminations import (
+  from k1.tasks.legacy.kick import mdp as kick_mdp
+  from k1.tasks.legacy.kick.mdp.terminations import (
     double_touch,
     target_hit,
     target_missed,
   )
+  from mjlab.managers.reward_manager import RewardTermCfg
+  from mjlab.managers.scene_entity_config import SceneEntityCfg
+  from mjlab.managers.termination_manager import TerminationTermCfg
 
   cfg = make_approach_only_env_cfg(base_cfg)
   robot = SceneEntityCfg("robot")

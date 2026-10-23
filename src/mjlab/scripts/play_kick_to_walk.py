@@ -20,9 +20,9 @@ import torch
 import tyro
 from tensordict import TensorDict
 
+from k1.tasks.legacy.kick.mdp.ball_phase import ensure_ball_phase_updated
 from mjlab.envs import ManagerBasedRlEnv
 from mjlab.rl import MjlabOnPolicyRunner, RslRlVecEnvWrapper
-from mjlab.tasks.kick.mdp.ball_phase import ensure_ball_phase_updated
 from mjlab.tasks.registry import load_env_cfg, load_rl_cfg, load_runner_cls
 from mjlab.utils.lab_api.math import quat_apply_inverse, wrap_to_pi, yaw_quat
 from mjlab.utils.torch import configure_torch_backends

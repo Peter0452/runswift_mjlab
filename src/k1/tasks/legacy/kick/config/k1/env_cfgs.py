@@ -1,10 +1,10 @@
 """K1 unified Arc→Setup→Strike kick environment configuration."""
 
-from mjlab.envs import ManagerBasedRlEnvCfg
-from mjlab.tasks.kick.arc_kick_env_cfg import (
+from k1.tasks.legacy.kick.arc_kick_env_cfg import (
   make_approach_only_env_cfg,
   make_near_kick_env_cfg,
 )
+from mjlab.envs import ManagerBasedRlEnvCfg
 from mjlab.tasks.velocity.config.k1.env_cfgs import booster_k1_base_walk_env_cfg
 
 
@@ -56,13 +56,13 @@ def k1_kick_near_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
 
 def k1_kick_walkamp_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   """Kick-on-Walk-AMP: Flat AMP Walk + thesis kick (78/95, no AMP style)."""
-  from mjlab.tasks.kick.walkamp_kick_env_cfg import make_walkamp_kick_env_cfg
+  from k1.tasks.legacy.kick.walkamp_kick_env_cfg import make_walkamp_kick_env_cfg
 
   return make_walkamp_kick_env_cfg(play=play)
 
 
 def k1_kick_walkamp_amp_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   """Kick-on-Walk-AMP + kick AMP obs (style until ``kick_detected``)."""
-  from mjlab.tasks.kick.walkamp_kick_env_cfg import make_walkamp_kick_amp_env_cfg
+  from k1.tasks.legacy.kick.walkamp_kick_env_cfg import make_walkamp_kick_amp_env_cfg
 
   return make_walkamp_kick_amp_env_cfg(play=play)

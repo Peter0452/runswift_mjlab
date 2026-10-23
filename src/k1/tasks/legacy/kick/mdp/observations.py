@@ -7,9 +7,9 @@ from typing import TYPE_CHECKING
 
 import torch
 
+from k1.tasks.legacy.kick.mdp.geometry import expected_ballistic_speed
 from mjlab.entity import Entity
 from mjlab.managers.scene_entity_config import SceneEntityCfg
-from mjlab.tasks.kick.mdp.geometry import expected_ballistic_speed
 from mjlab.utils.lab_api.math import quat_apply_inverse
 
 if TYPE_CHECKING:

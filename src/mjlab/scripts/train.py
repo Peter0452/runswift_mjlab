@@ -10,6 +10,10 @@ from typing import Literal, cast
 
 import tyro
 
+from k1.tasks.legacy.kick.rl.frozen_walk_handoff import (
+  FrozenWalkHandoffCfg,
+  FrozenWalkHandoffWrapper,
+)
 from mjlab.envs import ManagerBasedRlEnv, ManagerBasedRlEnvCfg
 from mjlab.rl import (
   FastSacRunnerCfg,
@@ -19,10 +23,6 @@ from mjlab.rl import (
   RslRlVecEnvWrapper,
 )
 from mjlab.scripts._cli import maybe_print_top_level_help
-from mjlab.tasks.kick.rl.frozen_walk_handoff import (
-  FrozenWalkHandoffCfg,
-  FrozenWalkHandoffWrapper,
-)
 from mjlab.tasks.registry import list_tasks, load_env_cfg, load_rl_cfg, load_runner_cls
 from mjlab.tasks.tracking.mdp import MotionCommandCfg
 from mjlab.utils.gpu import select_gpus

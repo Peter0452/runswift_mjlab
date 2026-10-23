@@ -22,7 +22,7 @@ ARRIVAL_KEYS = (
 )
 
 _DEFAULT_BUFFER_PATH = (
-  Path(__file__).resolve().parents[6].parent
+  Path(__file__).resolve().parents[7].parent
   / "data"
   / "kick"
   / "arrival_pose_buffer.pt"

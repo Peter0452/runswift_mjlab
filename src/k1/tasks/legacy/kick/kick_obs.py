@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+from k1.tasks.legacy.kick import mdp as kick_mdp
 from mjlab.envs import ManagerBasedRlEnvCfg
 from mjlab.managers.observation_manager import ObservationTermCfg
 from mjlab.managers.scene_entity_config import SceneEntityCfg
-from mjlab.tasks.kick import mdp as kick_mdp
 
 KICK_BALL_OBS_DIM = 9
 K1_BASE_WALK_CORE_DIM = 47

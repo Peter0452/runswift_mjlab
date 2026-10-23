@@ -7,20 +7,20 @@ from typing import TYPE_CHECKING
 
 import torch
 
-from mjlab.entity import Entity
-from mjlab.managers.scene_entity_config import SceneEntityCfg
-from mjlab.sensor.contact_sensor import ContactSensor
-from mjlab.tasks.kick.mdp.ball_phase import ensure_ball_phase_updated
-from mjlab.tasks.kick.mdp.geometry import (
+from k1.tasks.legacy.kick.mdp.ball_phase import ensure_ball_phase_updated
+from k1.tasks.legacy.kick.mdp.geometry import (
   ball_to_goal_direction_xy,
   behind_ball_waypoint_xy,
   expected_ballistic_speed,
   get_approach_waypoint_latch,
 )
-from mjlab.tasks.kick.mdp.kick_ready_pose import (
+from k1.tasks.legacy.kick.mdp.kick_ready_pose import (
   compute_kick_ready_score,
   kick_ready_activation_mask,
 )
+from mjlab.entity import Entity
+from mjlab.managers.scene_entity_config import SceneEntityCfg
+from mjlab.sensor.contact_sensor import ContactSensor
 from mjlab.utils.lab_api.math import quat_apply, quat_apply_inverse
 
 if TYPE_CHECKING:
@@ -730,7 +730,7 @@ def body_face_ball(
   Zero when ``‖xy − P_ref‖ < min_pref_dist`` so facing-at-loiter cannot replace
   plant/align/kick (``P_ref`` is setup_xy).
   """
-  from mjlab.tasks.kick.mdp.pref_pose import compute_reference_pose_xy
+  from k1.tasks.legacy.kick.mdp.pref_pose import compute_reference_pose_xy
 
   robot: Entity = env.scene[robot_cfg.name]
   ball: Entity = env.scene[ball_cfg.name]
@@ -792,7 +792,7 @@ def loiter_stage_penalty(
   or ``‖xy−P_ref‖ < activate_inside_pref_dist``, cost ``(t/τ)²`` (cap
   ``max_scale``) until ``kick_detected``. Far approach is free.
   """
-  from mjlab.tasks.kick.mdp.pref_pose import compute_reference_pose_xy
+  from k1.tasks.legacy.kick.mdp.pref_pose import compute_reference_pose_xy
 
   state = ensure_ball_phase_updated(
     env,
@@ -879,7 +879,7 @@ def _plant_proximity_walk_scale(
   (``kick_detected`` and ``time_since_kick_s >= settle_time_s``),
   optionally restores full scale so post-kick gait is not crushed.
   """
-  from mjlab.tasks.kick.mdp.pref_pose import compute_reference_pose_xy
+  from k1.tasks.legacy.kick.mdp.pref_pose import compute_reference_pose_xy
 
   robot: Entity = env.scene[robot_cfg.name]
   pref, _phase = compute_reference_pose_xy(
@@ -1013,7 +1013,7 @@ def track_lin_vel_axis_for_kick(
 ) -> torch.Tensor:
   """Lin-vel tracking vs robot→ball / orbit twist targets × plant-proximity scale."""
   del loiter_ball_distance, loiter_scale
-  from mjlab.tasks.kick.mdp.events import ensure_robot_ball_twist_command
+  from k1.tasks.legacy.kick.mdp.events import ensure_robot_ball_twist_command
   from mjlab.tasks.velocity import mdp as velocity_mdp
 
   robot = robot_cfg if robot_cfg is not None else asset_cfg
@@ -1163,7 +1163,7 @@ def track_ang_vel_z_for_kick(
 ) -> torch.Tensor:
   """Yaw tracking vs robot→ball / orbit twist targets × plant-proximity scale."""
   del loiter_ball_distance, loiter_scale
-  from mjlab.tasks.kick.mdp.events import ensure_robot_ball_twist_command
+  from k1.tasks.legacy.kick.mdp.events import ensure_robot_ball_twist_command
   from mjlab.tasks.velocity import mdp as velocity_mdp
 
   robot = robot_cfg if robot_cfg is not None else asset_cfg
@@ -1272,8 +1272,8 @@ def kick_heading_misalignment(
   heading error inside ``free_angle`` is free; larger misalignment is constrained.
   Inactive during Arc approach.
   """
-  from mjlab.tasks.kick.mdp.geometry import ball_to_goal_direction_xy
-  from mjlab.tasks.kick.mdp.pref_pose import PHASE_SETUP, compute_reference_pose_xy
+  from k1.tasks.legacy.kick.mdp.geometry import ball_to_goal_direction_xy
+  from k1.tasks.legacy.kick.mdp.pref_pose import PHASE_SETUP, compute_reference_pose_xy
 
   robot: Entity = env.scene[robot_cfg.name]
   ball: Entity = env.scene[ball_cfg.name]
@@ -2244,7 +2244,7 @@ def stance_foot_near_ball_penalty(
   Uses the latched swing foot from ``pref_pose`` so straddling / ball-between-legs
   is punished while the swing foot may still approach for the kick.
   """
-  from mjlab.tasks.kick.mdp.pref_pose import (
+  from k1.tasks.legacy.kick.mdp.pref_pose import (
     PHASE_SETUP,
     compute_reference_pose_xy,
     get_latched_kicking_foot,
@@ -3334,7 +3334,7 @@ def ball_not_moving_penalty(
   Cost ``(t / ramp_tau_s)²`` clamped at ``max_scale``. Cleared after
   ``kick_detected``.
   """
-  from mjlab.tasks.kick.mdp.pref_pose import (
+  from k1.tasks.legacy.kick.mdp.pref_pose import (
     PHASE_SETUP,
     compute_reference_pose_xy,
   )
@@ -3488,7 +3488,7 @@ def pref_pose_tracking(
   term once in Setup/Strike so plant camping cannot replace a kick. Arrived
   at the plant band (``pref_dist < setup_pos_thresh``) is also zeroed.
   """
-  from mjlab.tasks.kick.mdp.pref_pose import (
+  from k1.tasks.legacy.kick.mdp.pref_pose import (
     PHASE_SETUP,
     PHASE_STRIKE,
     compute_reference_pose_xy,
@@ -3597,7 +3597,7 @@ def pref_pose_approach_velocity(
   Zero inside ``arrival_dist`` and in Setup/Strike so the policy cannot farm
   micro-shuffles on the plant instead of aligning and kicking.
   """
-  from mjlab.tasks.kick.mdp.pref_pose import (
+  from k1.tasks.legacy.kick.mdp.pref_pose import (
     PHASE_SETUP,
     PHASE_STRIKE,
     compute_reference_pose_xy,
@@ -3673,7 +3673,7 @@ def swing_foot_ball_proximity(
   Decayed by near-ball ball-still time so proximity alone does not replace a
   swing (``ball_velocity_toward_goal``, ``swing_foot_velocity_toward_ball``).
   """
-  from mjlab.tasks.kick.mdp.pref_pose import (
+  from k1.tasks.legacy.kick.mdp.pref_pose import (
     compute_reference_pose_xy,
     get_kick_aligned,
     get_latched_kicking_foot,
@@ -3754,7 +3754,7 @@ def swing_foot_velocity_toward_ball(
   Same ``aligned`` gate as ``swing_foot_ball_proximity``. Far / unaligned
   approach stays off so the policy cannot touch early for shaping.
   """
-  from mjlab.tasks.kick.mdp.pref_pose import (
+  from k1.tasks.legacy.kick.mdp.pref_pose import (
     compute_reference_pose_xy,
     get_kick_aligned,
     get_latched_kicking_foot,
@@ -3826,7 +3826,7 @@ def collision_except_strike_phase(
   ball_cfg: SceneEntityCfg = _DEFAULT_BALL_CFG,
 ) -> torch.Tensor:
   """Self-collision penalty gated off during Phase C (CoM through ball)."""
-  from mjlab.tasks.kick.mdp.pref_pose import PHASE_STRIKE, compute_reference_pose_xy
+  from k1.tasks.legacy.kick.mdp.pref_pose import PHASE_STRIKE, compute_reference_pose_xy
   from mjlab.tasks.velocity import mdp as velocity_mdp
 
   _pref, phase = compute_reference_pose_xy(
@@ -3881,7 +3881,7 @@ def ball_avoidance_except_strike(
   crowd/touch the ball on the way in. Clears once plant pose + bearing match
   ball→goal so the swing can enter. (Name kept for cfg compatibility.)
   """
-  from mjlab.tasks.kick.mdp.pref_pose import (
+  from k1.tasks.legacy.kick.mdp.pref_pose import (
     compute_reference_pose_xy,
     get_kick_aligned,
   )
@@ -3941,7 +3941,7 @@ def premature_ball_contact_penalty(
   Complements CoM ``ball_avoidance``: even a grazing foot touch while still
   unaligned is costly. Clears when ``aligned`` so the real strike is allowed.
   """
-  from mjlab.tasks.kick.mdp.pref_pose import (
+  from k1.tasks.legacy.kick.mdp.pref_pose import (
     compute_reference_pose_xy,
     get_kick_aligned,
   )
@@ -4019,7 +4019,7 @@ def _kick_phase_walk_scale(
   Phase: full in Arc, soft Setup, off Strike. Plant proximity (when enabled)
   further weakens far-from-plant walk farming: full near ``P_ref``, weak far.
   """
-  from mjlab.tasks.kick.mdp.pref_pose import (
+  from k1.tasks.legacy.kick.mdp.pref_pose import (
     PHASE_SETUP,
     PHASE_STRIKE,
     compute_reference_pose_xy,

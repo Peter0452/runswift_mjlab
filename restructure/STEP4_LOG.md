@@ -30,6 +30,8 @@ when kick-loop code is touched.
 | 0565b45 | Ball model → `k1/common/ball.py` (re-exported by `approach.py`) | 1261 pass, golden ok, bench ok (2 separated) |
 | bd17078 | Fix: gait-clock state on the env, not a dict keyed by `id(env)` (cause of the intermittent env-build test failures) | 1261 pass, golden ok |
 | 544fe20 | `k1/deploy/obs_layout.py` + `tests/test_deploy_obs_layout.py` (deployed actor layouts as code, checked against golden) | new tests pass |
+| ea8abe5 | `k1.compat` import finder replaces alias folders | 1272 pass, golden ok |
+| (this) | Legacy kick (`Mjlab-Kick-*`, arc kick, walk-AMP kick) → `k1/tasks/legacy/kick/`; alias `mjlab.tasks.kick` | 1273 pass, golden ok |
 
 ## Best guesses (review these)
 
@@ -40,3 +42,6 @@ when kick-loop code is touched.
    `git apply restructure/user_uncommitted/kick_loop_goal_mouth.patch` before
    the split lands, or from the new location afterwards.
 2. `deploy_2.py` deletion (yours) left uncommitted, untouched.
+3. **`arrival_buffer.py` default path** resolves to `Desktop/Project/data/kick/` (outside
+   `RL/`; `parents[6].parent`, now `parents[7].parent` after the move). Looks like a
+   pre-existing bug, but kept identical: the legacy task's behaviour must not change.

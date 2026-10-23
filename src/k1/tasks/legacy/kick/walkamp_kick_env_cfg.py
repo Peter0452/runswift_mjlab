@@ -6,6 +6,13 @@ import math
 
 import mujoco
 
+from k1.tasks.legacy.kick import mdp as kick_mdp
+from k1.tasks.legacy.kick.mdp.ball_phase import reset_ball_phase_state
+from k1.tasks.legacy.kick.mdp.commands import UniformGoalPositionCommandCfg
+from k1.tasks.legacy.kick.mdp.events import (
+  reset_walkamp_kick_episode,
+  update_ball_phase_buffers,
+)
 from mjlab.asset_zoo.props.ball import BALL_XML, get_ball_radius
 from mjlab.entity import EntityCfg
 from mjlab.envs import ManagerBasedRlEnvCfg
@@ -17,13 +24,6 @@ from mjlab.managers.reward_manager import RewardTermCfg
 from mjlab.managers.scene_entity_config import SceneEntityCfg
 from mjlab.managers.termination_manager import TerminationTermCfg
 from mjlab.sensor import ContactMatch, ContactSensorCfg
-from mjlab.tasks.kick import mdp as kick_mdp
-from mjlab.tasks.kick.mdp.ball_phase import reset_ball_phase_state
-from mjlab.tasks.kick.mdp.commands import UniformGoalPositionCommandCfg
-from mjlab.tasks.kick.mdp.events import (
-  reset_walkamp_kick_episode,
-  update_ball_phase_buffers,
-)
 from mjlab.tasks.velocity import mdp as velocity_mdp
 from mjlab.tasks.velocity.config.k1_amp.env_cfgs import booster_k1_amp_flat_env_cfg
 from mjlab.utils.noise import UniformNoiseCfg as Unoise
@@ -461,7 +461,7 @@ def make_walkamp_kick_amp_env_cfg(
   style_weight: float = 0.3,
 ) -> ManagerBasedRlEnvCfg:
   """WalkAmp kick + AMP obs group (style gated on ``kick_detected``)."""
-  from mjlab.tasks.kick.config.k1.amp_wrapper import with_kick_amp_obs_group
+  from k1.tasks.legacy.kick.config.k1.amp_wrapper import with_kick_amp_obs_group
 
   return with_kick_amp_obs_group(
     make_walkamp_kick_env_cfg(

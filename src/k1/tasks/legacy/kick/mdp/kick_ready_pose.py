@@ -6,12 +6,12 @@ from typing import TYPE_CHECKING
 
 import torch
 
-from mjlab.entity import Entity
-from mjlab.managers.scene_entity_config import SceneEntityCfg
-from mjlab.tasks.kick.mdp.geometry import (
+from k1.tasks.legacy.kick.mdp.geometry import (
   ball_to_goal_direction_xy,
   behind_ball_waypoint_xy,
 )
+from mjlab.entity import Entity
+from mjlab.managers.scene_entity_config import SceneEntityCfg
 from mjlab.utils.lab_api.math import quat_apply, quat_apply_inverse
 
 if TYPE_CHECKING:

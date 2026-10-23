@@ -55,8 +55,8 @@ result; true for its time), **superseded** (replaced; see the pointer),
 | `docs/K1_WALK_TRAINING_NOTES.md` | 08-14 | record | Plain PPO K1 walk: reward hacking, curricula, oscillating plots. Its FastSAC tasks were removed 2026-10-23 |
 | `docs/K1_KICK_TRAINING_NOTES.md` | 09-19 | record (legacy) | Arc / approach / near-kick tasks (September). Arc kick task removed 2026-10-23 |
 | `docs/K1_KICK_TRACKING_NOTES.md` | 09-30 | record (legacy) | Motion-tracking kick: stand after kick, ball box, failed box fine-tune, DR matched to the walk, deploy mismatches |
-| `src/mjlab/tasks/kick/PROBLEM.md` | 09-27 | record (legacy) | Living problem context for the Near kick ↔ walk handoff |
-| `src/mjlab/tasks/kick/DESIGN_kick_on_walk_amp.md` | 09-28 | record (legacy) | Kick-on-walk-AMP design spec |
+| `src/k1/tasks/legacy/kick/PROBLEM.md` | 09-27 | record (legacy) | Living problem context for the Near kick ↔ walk handoff |
+| `src/k1/tasks/legacy/kick/DESIGN_kick_on_walk_amp.md` | 09-28 | record (legacy) | Kick-on-walk-AMP design spec |
 
 ## Self-play
 

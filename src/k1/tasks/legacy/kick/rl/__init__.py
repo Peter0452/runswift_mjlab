@@ -1,6 +1,6 @@
 """Kick-task RL helpers (train wrappers)."""
 
-from mjlab.tasks.kick.rl.frozen_walk_handoff import (
+from k1.tasks.legacy.kick.rl.frozen_walk_handoff import (
   FrozenWalkHandoffCfg,
   FrozenWalkHandoffWrapper,
 )

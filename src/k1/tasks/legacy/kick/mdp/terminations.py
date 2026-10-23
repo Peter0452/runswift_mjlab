@@ -16,8 +16,8 @@ from typing import TYPE_CHECKING
 
 import torch
 
+from k1.tasks.legacy.kick.mdp.ball_phase import ensure_ball_phase_updated
 from mjlab.managers.scene_entity_config import SceneEntityCfg
-from mjlab.tasks.kick.mdp.ball_phase import ensure_ball_phase_updated
 
 if TYPE_CHECKING:
   from mjlab.envs import ManagerBasedRlEnv
@@ -55,7 +55,7 @@ def ball_still_timeout(
   robot_cfg: SceneEntityCfg = _DEFAULT_ROBOT_CFG,
 ) -> torch.Tensor:
   """Terminate when the ball stays still too long without a kick while ready."""
-  from mjlab.tasks.kick.mdp.kick_ready_pose import kick_ready_activation_mask
+  from k1.tasks.legacy.kick.mdp.kick_ready_pose import kick_ready_activation_mask
 
   state = ensure_ball_phase_updated(
     env,
@@ -327,8 +327,8 @@ def near_ball_reached(
   Optional waypoint success: ``‖robot−waypoint‖ < max_waypoint_distance``
   (soft curriculum when finishing the last meter is hard).
   """
+  from k1.tasks.legacy.kick.mdp.geometry import behind_ball_waypoint_xy
   from mjlab.entity import Entity
-  from mjlab.tasks.kick.mdp.geometry import behind_ball_waypoint_xy
 
   robot: Entity = env.scene[robot_cfg.name]
   ball: Entity = env.scene[ball_cfg.name]

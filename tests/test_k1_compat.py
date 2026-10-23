@@ -10,6 +10,7 @@ SAMPLES = {
   "mjlab.tasks.bhuman_kick": "k1.tasks.bhuman",
   "mjlab.tasks.bhuman_kick.kick_command": "k1.tasks.bhuman.kick_command",
   "mjlab.asset_zoo.robots.booster_k1.k1_constants": "k1.robot.k1_constants",
+  "mjlab.tasks.kick.mdp.rewards": "k1.tasks.legacy.kick.mdp.rewards",
 }
 
 

@@ -17,6 +17,7 @@ from types import ModuleType
 ALIASES = {
   "mjlab.tasks.bhuman_kick": "k1.tasks.bhuman",
   "mjlab.asset_zoo.robots.booster_k1": "k1.robot",
+  "mjlab.tasks.kick": "k1.tasks.legacy.kick",
 }
 
 

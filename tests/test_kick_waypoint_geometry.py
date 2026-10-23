@@ -4,14 +4,14 @@ from types import SimpleNamespace
 
 import torch
 
-from mjlab.tasks.kick.mdp.geometry import (
+from k1.tasks.legacy.kick.mdp.geometry import (
   ensure_approach_waypoint_latch,
   expected_ballistic_speed,
   nearest_foot_kick_side,
   offset_behind_ball_waypoint_xy,
   update_plant_arrival_latch,
 )
-from mjlab.tasks.kick.mdp.rewards import plant_latch_arrival_bonus
+from k1.tasks.legacy.kick.mdp.rewards import plant_latch_arrival_bonus
 
 
 def test_lateral_offset_puts_swing_foot_on_kick_line():

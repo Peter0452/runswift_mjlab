@@ -7,16 +7,16 @@ from typing import TYPE_CHECKING
 
 import torch
 
-from mjlab.entity import Entity
-from mjlab.envs.mdp.events import resolve_env_ids
-from mjlab.managers.scene_entity_config import SceneEntityCfg
-from mjlab.tasks.kick.mdp.geometry import (
+from k1.tasks.legacy.kick.mdp.geometry import (
   behind_ball_waypoint_xy,
   ensure_approach_waypoint_latch,
   get_approach_waypoint_latch,
   nearest_foot_kick_side,
   update_plant_arrival_latch,
 )
+from mjlab.entity import Entity
+from mjlab.envs.mdp.events import resolve_env_ids
+from mjlab.managers.scene_entity_config import SceneEntityCfg
 from mjlab.utils.lab_api.math import (
   euler_xyz_from_quat,
   quat_apply,
@@ -630,8 +630,8 @@ def ensure_robot_ball_twist_command(
     env._kick_robot_ball_twist_step = step
     return
 
-  from mjlab.tasks.kick.mdp.geometry import ball_to_goal_direction_xy
-  from mjlab.tasks.kick.mdp.pref_pose import setup_offset_xy
+  from k1.tasks.legacy.kick.mdp.geometry import ball_to_goal_direction_xy
+  from k1.tasks.legacy.kick.mdp.pref_pose import setup_offset_xy
   from mjlab.tasks.velocity.mdp.velocity_command import UniformVelocityCommand
   from mjlab.utils.lab_api.math import wrap_to_pi
 
@@ -675,7 +675,7 @@ def ensure_robot_ball_twist_command(
 
   support_ready = None
   if require_support_plant_for_latch:
-    from mjlab.tasks.kick.mdp.rewards import support_plant_ready_mask
+    from k1.tasks.legacy.kick.mdp.rewards import support_plant_ready_mask
 
     support_ready = support_plant_ready_mask(
       env,
@@ -690,7 +690,7 @@ def ensure_robot_ball_twist_command(
 
   com_ready = None
   if require_com_over_plant_for_latch:
-    from mjlab.tasks.kick.mdp.rewards import com_over_plant_ready_mask
+    from k1.tasks.legacy.kick.mdp.rewards import com_over_plant_ready_mask
 
     com_ready = com_over_plant_ready_mask(
       env,
@@ -701,7 +701,7 @@ def ensure_robot_ball_twist_command(
 
   swing_ready = None
   if require_swing_foot_for_latch:
-    from mjlab.tasks.kick.mdp.rewards import swing_foot_ready_mask
+    from k1.tasks.legacy.kick.mdp.rewards import swing_foot_ready_mask
 
     swing_ready = swing_foot_ready_mask(
       env,
@@ -904,7 +904,7 @@ def ensure_robot_ball_twist_command(
   # Post-kick settle: stand cmd for T_settle (stable pose for walk handoff).
   settle = torch.zeros(env.num_envs, dtype=torch.bool, device=env.device)
   if float(settle_time_s) > 0.0:
-    from mjlab.tasks.kick.mdp.ball_phase import ensure_ball_phase_updated
+    from k1.tasks.legacy.kick.mdp.ball_phase import ensure_ball_phase_updated
 
     phase = ensure_ball_phase_updated(
       env,
@@ -1115,7 +1115,7 @@ def update_ball_phase_buffers(
   correct; params here document the intended recipe and matter if call order
   changes.
   """
-  from mjlab.tasks.kick.mdp.ball_phase import ensure_ball_phase_updated
+  from k1.tasks.legacy.kick.mdp.ball_phase import ensure_ball_phase_updated
 
   ensure_ball_phase_updated(
     env,
@@ -1277,13 +1277,13 @@ def reset_walkamp_kick_episode(
   Falls back to standing pose (``v_x=0``) when the buffer file is missing so
   smoke tests and early play still work.
   """
-  from mjlab.tasks.kick.mdp.arrival_buffer import (
+  from k1.tasks.legacy.kick.mdp.arrival_buffer import (
     apply_arrival_state,
     apply_fallback_standing,
     load_arrival_buffer,
     sample_arrival_indices,
   )
-  from mjlab.tasks.kick.mdp.ball_phase import reset_ball_phase_state
+  from k1.tasks.legacy.kick.mdp.ball_phase import reset_ball_phase_state
 
   env_ids = resolve_env_ids(env, env_ids)
   n = len(env_ids)

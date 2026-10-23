@@ -58,8 +58,8 @@ class UniformGoalPositionCommand(CommandTerm):
 
   def _debug_vis_impl(self, visualizer: DebugVisualizer) -> None:
     """Draw kick target (goal), approach waypoint, 3-phase ``P_ref``, and heading aids."""
-    from mjlab.tasks.kick.mdp.geometry import behind_ball_waypoint_xy
-    from mjlab.tasks.kick.mdp.pref_pose import (
+    from k1.tasks.legacy.kick.mdp.geometry import behind_ball_waypoint_xy
+    from k1.tasks.legacy.kick.mdp.pref_pose import (
       PHASE_ARC,
       PHASE_SETUP,
       PHASE_STRIKE,
