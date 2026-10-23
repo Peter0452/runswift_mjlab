@@ -60,10 +60,12 @@ Tasks removed on 2026-10-23 (upstream demos, unused variants) are on branch
 | Old module paths | `mjlab.tasks.velocity.*`, `mjlab.tasks.kick.*` etc. still import (served by `src/k1/compat.py`); patch family modules, not the re-export shims |
 | AMP, multi-critic, kick teacher | `src/mjlab/amp/` |
 | Methods, recipes, CLI | `src/k1/methods/` (registry + `METHOD.md` cards), `experiments/recipes/<family>/*.yaml` (run definitions, checked against the code), `rsw` (`rsw --help`; `src/k1/cli.py`) |
+| Judges, verdicts, deploy gate | `src/k1/eval/` (`rsw judge`), `src/k1/deploy/{contract,obs_layout,parity}.py` (`rsw deploy check`) |
 | Training runs | `logs/rsl_rl/<experiment>/<run>/` (latest, best and referenced checkpoints kept; configs in `params/`; `run.json` for runs started with `rsw train`) |
 | Eval and bench tools | `scripts/tools/` (catalog: `scripts/tools/README.md`) |
 | Benchmark results | `docs/benchmarks*/` (JSON) |
-| Kick evolution loop state | `docs/evolution/` (`HANDOFF.md` first) |
+| Evolution loop (new) | `src/k1/evolve/`, `rsw evolve status|step|run`; state in `experiments/evolution/` (gitignored) |
+| Kick evolution loop state (old loop, history) | `docs/evolution/` (`HANDOFF.md` first) |
 | Experience records | `docs/experience/` |
 | Robot runner, ONNX models, robot recordings | `../k1_policy_runner/` |
 

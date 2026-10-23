@@ -5,8 +5,9 @@ loop that follows it. Decisions: package `k1`; per-task folders; methods with
 cards; YAML recipes; deploy contract as code; our own evolution loop (no
 harbor dependency); hybrid promotion rule. Status: Steps 1–3 done (keep-list, knowledge base, safety net); Step 4 (code
 move) done 2026-10-24 except the big-file splits, deferred to Step 5 (see "As built"
-below and `restructure/STEP4_LOG.md`); Step 5 started 2026-10-24: methods registry, recipes, `run.json` and `rsw` built
-(`restructure/STEP5_LOG.md`); parity gate, verdicts and the loops next.
+below and `restructure/STEP4_LOG.md`); Step 5 built 2026-10-24: methods registry, recipes, `run.json`, `rsw`, deploy
+contract + gate, verdicts and judges, outer loop + inner PBT (`k1/evolve`, not yet
+run: needs your budget and designer choices; `restructure/STEP5_LOG.md`).
 
 ## Layout
 
