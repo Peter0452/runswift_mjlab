@@ -1,0 +1,42 @@
+# Step 4 log: moving K1 code into `src/k1/`
+
+Running record of the code move (branch `restructure`), written while the user
+was away (night of 2026-10-23). Each entry: what moved, the safety-net result,
+and every **best guess** made without asking, so it can be reviewed and undone.
+
+Safety net per commit: full `pytest tests/` + `scripts/tools/golden.py check`
+(6 models, action diff must be 0); plus `scripts/tools/golden_bench.py check`
+when kick-loop code is touched.
+
+## Mechanism
+
+- `k1` is a second top-level package next to `mjlab` (`pyproject.toml`:
+  `[tool.uv.build-backend] module-name = ["mjlab", "k1"]`), registered through
+  mjlab's own `mjlab.tasks` entry point (`k1 = "k1.tasks"`).
+- Old module paths keep working through `k1.compat`: a finder first on
+  `sys.meta_path` serves `<old>.<x>` as the module `<new>.<x>` itself (same
+  objects, no double registration, real `__spec__` restored). One line per
+  moved package in `k1.compat.ALIASES`. Run-log `params/*.yaml` that name old
+  paths therefore still resolve.
+- Files move with `git mv`; diffs of moved files are import lines only.
+
+## Done
+
+| Commit | What | Safety net |
+|---|---|---|
+| e25c412 | Stage 3 `ball_avoidance` −5 default, 0 only with the kick-retarget prior (user decision) | 1261 pass, golden ok |
+| 609225f | B-Human port → `k1/tasks/bhuman/` | 1261 pass, golden ok |
+| 9a8c1d1 | K1 model → `k1/robot/` | 1261 pass, golden ok. **Correction:** its message says "ty clean on k1"; the moved robot code has ~13 pre-existing ty diagnostics (unchanged by the move). Only the B-Human code is ty-clean. |
+| 0565b45 | Ball model → `k1/common/ball.py` (re-exported by `approach.py`) | 1261 pass, golden ok, bench ok (2 separated) |
+| bd17078 | Fix: gait-clock state on the env, not a dict keyed by `id(env)` (cause of the intermittent env-build test failures) | 1261 pass, golden ok |
+| 544fe20 | `k1/deploy/obs_layout.py` + `tests/test_deploy_obs_layout.py` (deployed actor layouts as code, checked against golden) | new tests pass |
+
+## Best guesses (review these)
+
+1. **Your uncommitted `kick_loop.py` edit** (joins `goal_mouth`'s return onto
+   one 99-column line; whitespace only). `kick_loop.py` has to be split, so the
+   edit was saved to `restructure/user_uncommitted/kick_loop_goal_mouth.patch`
+   and the file reset to the committed version. Re-apply with
+   `git apply restructure/user_uncommitted/kick_loop_goal_mouth.patch` before
+   the split lands, or from the new location afterwards.
+2. `deploy_2.py` deletion (yours) left uncommitted, untouched.

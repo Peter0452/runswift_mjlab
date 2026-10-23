@@ -1,0 +1,18 @@
+diff --git a/src/mjlab/tasks/velocity/mdp/kick_loop.py b/src/mjlab/tasks/velocity/mdp/kick_loop.py
+index 48a9165..7bbcade 100644
+--- a/src/mjlab/tasks/velocity/mdp/kick_loop.py
++++ b/src/mjlab/tasks/velocity/mdp/kick_loop.py
+@@ -1590,12 +1590,7 @@ def goal_mouth(env: ManagerBasedRlEnv) -> torch.Tensor:
+   collect this on top of the unchanged aim and power rewards.
+   """
+   cmd = _kick_command(env)
+-  return (
+-    cmd.kick_event.float()
+-    * _mouth_ramp(cmd)
+-    * cmd.kick_quality
+-    * _promptness(cmd)
+-  )
++  return cmd.kick_event.float() * _mouth_ramp(cmd) * cmd.kick_quality * _promptness(cmd)
+ 
+ 
+ def long_kick_speed_in_mouth(env: ManagerBasedRlEnv) -> torch.Tensor:
