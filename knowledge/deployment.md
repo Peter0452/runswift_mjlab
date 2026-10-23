@@ -49,6 +49,9 @@ pitch / shoulder roll / elbow pitch / elbow yaw, 6–9 right arm (same order),
 
 ## 3. Policy families
 
+The slot tables below are also code: `src/k1/deploy/obs_layout.py`, checked
+against the golden models by `tests/test_deploy_obs_layout.py`.
+
 ### kick_loop_v1: kick loop (83 → 22)
 Task `Mjlab-Velocity-Kick-Stage3-Amp-DA-Muon-Booster-K1`; runner
 `policy/kick_loop_policy.py`, `start_kick.sh`.
@@ -138,7 +141,8 @@ fix pending.
 ## 6. Changing the contract
 
 A change to any row above is a **runtime change**:
-1. Make it in training (later: `k1/deploy/contract.py`, the single source).
+1. Make it in training and in `src/k1/deploy/obs_layout.py` (actor slots; the
+   rest of the contract moves into `k1/deploy/contract.py` later).
 2. Write down the matching runner change (file, function) and who makes it.
 3. Export with the contract in ONNX metadata; run parity until it passes.
 4. Mark the run `research` until the runner side exists; only then `deployable`.

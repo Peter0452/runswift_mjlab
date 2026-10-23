@@ -9,6 +9,7 @@ and say so in the commit.
 | Check | Command | What must hold | Time |
 |---|---|---|---|
 | Task set and configs | `.venv/bin/python -m pytest tests/test_task_registry.py -m "not slow"` | exactly the 34 expected tasks; every train/play/RL config loads | ~1 s |
+| Deployment layouts | `.venv/bin/python -m pytest tests/test_deploy_obs_layout.py` | the actor inputs of every deployed family (`src/k1/deploy/obs_layout.py`) match the golden models' recorded layouts; documented slot indices hold | ~1 s |
 | Every env builds | `.venv/bin/python -m pytest tests/test_task_registry.py -m slow` | each task builds with 2 envs and steps once with finite rewards and observations | ~3.5 min |
 | Model snapshots | `.venv/bin/python scripts/tools/golden.py check` (or `pytest tests/test_golden_policies.py -m slow`) | for 6 key models: same observation layout, same actions on the stored observations (≤ 1e-5), same actor observations after a seeded reset (≤ 1e-4) | ~3 min |
 | Champion benchmark | `.venv/bin/python scripts/tools/golden_bench.py check` | benchmark v2 quick on the kick champion: at most 3 metric CIs separate from the reference (equivalent code: 0–2; the ball regression: 29); style statistics reported, not gated | ~10 min, GPU alone |
