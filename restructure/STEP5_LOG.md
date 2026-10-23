@@ -15,7 +15,8 @@ made without asking.
 | 6138b66 | `mjlab/scripts/train.py`: `launch_training(..., log_dir=None)` and `run_log_dir()` so `rsw train` can write `run.json` first (backward compatible) | full test suite |
 | c35e46e | `k1/deploy/contract.py` (rate, joint order, default pose, scales, PD, joint-target clip, torque clip, delay) + `tests/test_deploy_contract.py` | configs unchanged; contract test on walk, kick, dribble, self-play |
 | 86cb231 | Deploy gate `k1/deploy/parity.py` + `rsw deploy check` (export, ONNX metadata vs contract, ONNX vs actor, lost-ball rule) recording a verdict in `run.json` and labelling the run `deployable` | deployed champion h022 passes (ONNX diff 3.8e-6, lost-rule p99 0); metadata check on the four deployed ONNX files |
-| (this) | `k1/eval`: `Verdict` (fixed shape; only `scored` has a score; `promotable` needs a seed-2 confirmation) and judges per task (kick wrapped: bench v2 + `fitness_v2` vs the champion and B-Human; dribble, self-play, striker, B-Human listed with their current tools); `rsw judge` appends the verdict to `run.json` | `tests/test_k1_eval.py`; `rsw judge` on the champion |
+| 1ffc692, 7b73768 | `k1/eval`: `Verdict` (fixed shape; only `scored` has a score; `promotable` needs a seed-2 confirmation) and judges per task (kick wrapped: bench v2 + `fitness_v2` vs the champion and B-Human; dribble, self-play, striker, B-Human listed with their current tools); `rsw judge` appends the verdict to `run.json` | `tests/test_k1_eval.py`; `rsw judge` on the champion |
+| (this) | `k1/evolve`: outer loop (collect → screen → confirm → promote / record; escalate with a decision packet; refill the pool from designers through `rsw recipe check`), inner PBT (exploit / explore within ranges), state store, deterministic designers (genes, method), real trainer (`rsw train` detached, pid + log) and judge; `rsw evolve init|status|step|run` (trains only with `--go`). Loop state initialised with the h022 champion | `tests/test_k1_evolve.py` (fake trainer and judge); real designer proposals pass `rsw recipe check`; **not run for real** |
 
 ## What the checks found
 
@@ -77,6 +78,18 @@ made without asking.
 11. **CI-less style metrics are findings, not regressions** in the kick judge
    (`style_selection_pct`, `style_repertoire`), matching golden_bench's UNGATED set;
    `fitness_v2` itself still counts them (left unchanged: the old loop uses it).
+12. **Loop defaults:** at most 2 trainings in flight (lesson O3), 500 iterations per
+   child from the champion checkpoint, escalate after 6 non-improving verdicts,
+   quick screen then full two-seed confirmation (as the old loop). Designers: one-gene
+   steps (x0.8 / x1.25) on `w.kick_direction`, `w.kick_vel`, `w.long_kick_power`,
+   `w.walk_speed_track`, `w.action_rate_l2` within ranges in `k1/cli.py`
+   (`EVOLVE_GENES`), and switching `caps` (temporal 1.5) or `decap` (kick clips) on
+   (`EVOLVE_METHODS`). No LLM designer. All of these are placeholders to review.
+13. **`ball_avoidance` rule enforced in recipes:** with DecAP from kick clips on,
+   `recipes.build` sets `ball_avoidance` to 0 even over a recipe's override (your
+   2026-10-23 rule), so a designer that turns the prior on can't keep -5.
+14. **The loop was not started.** Running it spends GPU nights on the choices above;
+   start with `rsw evolve step --go` (one step) or `rsw evolve run --hours 8 --go`.
 7. The smoke run used `--agent.logger tensorboard --agent.upload-model False`
    so nothing went to wandb.
 
@@ -84,8 +97,9 @@ made without asking.
 
 - Wrap the dribble / self-play / striker judges; seed-2 confirmation in `rsw judge`;
   behaviour checklist filled automatically (falls, posture, peak vs final).
-- Outer loop (diagnose → designer → recipe → gates → pool → judge → verdict →
-  escalate) and inner PBT/PB2 loop; loop state in `experiments/evolution/`
-  (gitignored). These need decisions from you (GPU budget per night, which
-  designers to enable first, whether an LLM front-end may write recipes
-  unattended), so they wait.
+- Decisions from you before the loop runs: GPU budget per night, designer ranges,
+  whether an LLM front-end may write recipes unattended.
+- Wire the inner PBT loop into training (needs mid-run checkpoint swaps in the
+  runner); PB2 instead of random explore.
+- Retire the old loop (`evolve_hier.py`, `docs/evolution/`) once the new one has
+  promoted a champion; its records stay as history.

@@ -15,6 +15,10 @@ rsw deploy check CKPT [--run RUN_DIR | --task TASK]
                                deploy gate: export, ONNX parity, contract
                                metadata, lost-ball rule; records the result in
                                run.json and labels the run deployable
+rsw evolve init RECIPE CKPT    set the outer loop's champion
+rsw evolve status              champion, children in flight, recent verdicts
+rsw evolve step [--go]         one outer-loop step (collect, escalate, refill)
+rsw evolve run --hours H [--go]  repeat steps; trains only with --go
 rsw check [--bench]            the safety net (tests/golden/README.md)
 """
 
@@ -146,6 +150,76 @@ def _judge(args: argparse.Namespace) -> int:
   return 0 if verdict.status == "scored" else 1
 
 
+# Outer-loop defaults (best guesses, restructure/STEP5_LOG.md): two deterministic
+# designers on the kick champion's recipe; no LLM front-end.
+EVOLVE_GENES = {
+  "w.kick_direction": (300.0, 2000.0),
+  "w.kick_vel": (300.0, 2000.0),
+  "w.long_kick_power": (1000.0, 8000.0),
+  "w.walk_speed_track": (1.0, 12.0),
+  "w.action_rate_l2": (-0.4, -0.05),
+}
+EVOLVE_METHODS = {"caps": {"temporal": 1.5}, "decap": {"source": "kick"}}
+
+
+def _evolve(args: argparse.Namespace) -> int:
+  import random
+  import time
+
+  import yaml
+
+  from k1.evolve import outer, state
+  from k1.evolve.designers import GeneDesigner, MethodDesigner
+
+  path = state.DIR / "state.json"
+  if args.evolve_cmd == "init":
+    recipe = yaml.safe_load(Path(args.recipe).read_text())
+    ckpt = str(Path(args.checkpoint).resolve())
+    champ = {"recipe": recipe, "checkpoint": ckpt, "verdict": None}
+    state.save(state.State(champion=champ), path)
+    print(f"champion set: {recipe['name']} @ {ckpt}")
+    return 0
+  if not path.is_file():
+    print("no loop state: rsw evolve init RECIPE CKPT first")
+    return 2
+  st = state.load(path)
+  if args.evolve_cmd == "status":
+    print(
+      f"champion: {st.champion['recipe'].get('name')} @ {st.champion.get('checkpoint')}"
+    )
+    print(f"in flight: {[c['id'] + ' ' + c['change'] for c in st.in_flight]}")
+    print(f"non-improving in a row: {st.non_improving}")
+    for h in st.history[-10:]:
+      v = h["verdict"]
+      print(
+        f"  {h['id']} {h['designer']:7s} {v['status']:13s} {v['score']} {h['change']}"
+      )
+    return 0
+  if not args.go:
+    print(
+      "dry run: add --go to let the loop train (one or two GPU trainings at a time)"
+    )
+    return 0
+  from k1.evolve.real import BenchJudge, RsTrainer
+
+  designers = [GeneDesigner(EVOLVE_GENES), MethodDesigner(EVOLVE_METHODS)]
+  cfg = outer.Config()
+  rng = random.Random(st.counter)
+  deadline = time.time() + 3600 * (args.hours if args.evolve_cmd == "run" else 0)
+  with state.single_writer(path):
+    while True:
+      for line in outer.step(
+        st, cfg, designers, RsTrainer(), BenchJudge(), rng, state.DIR
+      ):
+        print(line, flush=True)
+      state.save(st, path)
+      if args.evolve_cmd == "step" or time.time() > deadline:
+        return 0
+      if st.non_improving >= cfg.escalate_after and not st.in_flight:
+        return 0
+      time.sleep(60)
+
+
 def _check(args: argparse.Namespace) -> int:
   py = sys.executable
   steps = [
@@ -214,6 +288,20 @@ def main(argv: list[str] | None = None) -> int:
     "--confirm", action="store_true", help="full benchmark, seeds 1 and 2 (promotion)"
   )
   p.set_defaults(func=_judge)
+  evo = sub.add_parser("evolve").add_subparsers(dest="evolve_cmd", required=True)
+  p = evo.add_parser("init")
+  p.add_argument("recipe")
+  p.add_argument("checkpoint")
+  p.set_defaults(func=_evolve)
+  evo.add_parser("status").set_defaults(func=_evolve)
+  for name in ("step", "run"):
+    p = evo.add_parser(name)
+    p.add_argument(
+      "--go", action="store_true", help="actually train (default: dry run)"
+    )
+    if name == "run":
+      p.add_argument("--hours", type=float, required=True)
+    p.set_defaults(func=_evolve)
   p = sub.add_parser("check")
   p.add_argument("--bench", action="store_true", help="also the champion benchmark")
   p.set_defaults(func=_check)

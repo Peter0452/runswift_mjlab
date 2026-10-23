@@ -164,6 +164,11 @@ def build(recipe: Recipe) -> tuple[Any, Any]:
     _set_path(rl_cfg, dotted, value)
   for dotted, value in recipe.env.items():
     _set_path(env_cfg, dotted, value)
+  # User rule (2026-10-23): ball_avoidance stays -5 except when the kick-retarget
+  # prior places the ball at the foot; it wins over a recipe's reward override.
+  if getattr(rl_cfg, "decap", False) and getattr(rl_cfg, "decap_source", "") == "kick":
+    if "ball_avoidance" in env_cfg.rewards:
+      env_cfg.rewards["ball_avoidance"].weight = 0.0
   return env_cfg, rl_cfg
 
 

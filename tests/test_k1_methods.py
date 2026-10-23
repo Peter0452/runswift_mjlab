@@ -82,3 +82,13 @@ def test_changed_actor_inputs_need_touches_runtime() -> None:
 def test_unknown_reward_term_is_an_error() -> None:
   with pytest.raises(KeyError):
     recipes.build(_stage3_recipe(rewards={"no_such_term": 1.0}))
+
+
+def test_kick_prior_turns_ball_avoidance_off_in_recipes() -> None:
+  h022 = recipes.load(recipes.RECIPES / "kick" / "kick_stage3_h022.yaml")
+  assert h022.rewards["ball_avoidance"] == -5.0
+  methods = {**h022.methods, "decap": {"source": "kick"}}
+  env_cfg, _ = recipes.build(
+    dataclasses.replace(h022, methods=methods, genes={}, reward_program=None)
+  )
+  assert env_cfg.rewards["ball_avoidance"].weight == 0.0
