@@ -59,7 +59,13 @@ selfplay-run-authority).
   hop) and let the policy choose per situation from outcomes; no style forced
   by range.
 - **83 inputs fixed** for the kick loop (86 with opponent inputs in self-play).
-- Ball randomisation: radius 0.07–0.13 m, mass 0.05–0.45 kg (2026-10-08).
+- **Ball (2026-10-08, 2026-10-23):** the default stays our ball, radius
+  0.07–0.13 m and mass 0.05–0.45 kg around 0.08 m / 0.1 kg, because every
+  kept model was trained on it. **Future training should move to B-Human's
+  ball** (0.095 m ± 0.01, 0.29 kg ± 0.01, solid): opt in per run with
+  `K1_BALL=bhuman` (read at import, `mdp/approach.py`); switch the default
+  when a lineage has been retrained on it, then re-record the golden
+  references.
 - runswift's fixture is a proxy soft gate: we may be slightly worse where its
   ideal assumptions matter, but not on falls, accuracy or kick speed (kick
   speed gated on 6/9 m tasks only).

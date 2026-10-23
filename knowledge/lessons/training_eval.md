@@ -55,6 +55,12 @@ B-Human's technique still won.
 kicked accurately on the K1; the rejected evo_g014/14550 kept missing. Trust
 the gates.
 
+**E27. Benchmark noise between identical runs:** ~220 bootstrapped
+metric/cap pairs separate on 0–2 between equivalent code; the two
+whole-run style statistics (`style_selection_pct`, `style_repertoire`) have
+no CI and swing 33 ↔ 92 %, so don't read them from one run. *Source:*
+`scripts/tools/golden_bench.py`, 2026-10-23.
+
 ## Run hygiene
 
 **E12. One change per run.** When two changes ship together and results drop,

@@ -61,6 +61,14 @@ Tasks removed on 2026-10-23 (upstream demos, unused variants) are on branch
 | Experience records | `docs/experience/` |
 | Robot runner, ONNX models, robot recordings | `../k1_policy_runner/` |
 
+## Before and after changing code
+
+Run the safety net in `tests/golden/README.md`: the task-set test, the
+env-build test, the model snapshots (`scripts/tools/golden.py check`) and,
+for anything that touches the kick loop, the champion benchmark
+(`scripts/tools/golden_bench.py check`). A failure means behaviour changed;
+either fix the change or, if it was intended, re-record and say why.
+
 ## Keeping this up to date
 
 - New finding with evidence → add it to the right `lessons/` file with its

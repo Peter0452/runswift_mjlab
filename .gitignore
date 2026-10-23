@@ -33,3 +33,6 @@ kick_play_record_analyse.py
 # Extra local checkpoints (already-tracked files stay tracked).
 nubots_models/*.onnx
 nubots_models/*.pt
+
+# Scratch outputs of scripts/tools/golden_bench.py (reference lives in tests/golden/).
+docs/benchmarks_v2/golden_h022_quick*.json

@@ -85,6 +85,17 @@ around kicks). The ones that matter most:
 - Speed caps since 2026-10-23: chase caps (lateral 2 m/s, yaw 3 rad/s), see
   [objectives](../objectives.md).
 
+## Ball
+
+Default: our ball (0.08 m / 0.1 kg nominal, randomised 0.07–0.13 m and
+0.05–0.45 kg, shell inertia). `K1_BALL=bhuman` switches the kick, approach
+and dribble tasks to B-Human's ball (0.095 m / 0.29 kg, solid), the ball
+future training should use. The one run trained on it so far,
+`k1_kick_stage3_amp/2026-10-16_01-30-01_h022_from_v54c_b`, needs
+`K1_BALL=bhuman` to replay. On B-Human's ball the champion scores clearly
+lower (goals 1.1 → 0.9, long kick 4.6 → 3.8 m/s, passes ~2 m long, knee
+peak +35 %), so expect a retraining step when switching.
+
 ## How it is judged
 
 - **Benchmark v2** (`scripts/tools/kick_bench2.py`, scored by

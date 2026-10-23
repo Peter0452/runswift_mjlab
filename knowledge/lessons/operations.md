@@ -48,6 +48,13 @@ the first eval runs longer than a minute.
 stashed before a pull and never re-applied; its runs were unreproducible for a
 week. Commit or branch before pulling; check `git stash list`.
 
+**O10b. A merge can carry hidden environment changes.** The self-play stash
+also switched the shared kick ball to B-Human's (0.29 kg) in an Oct 16
+experiment, so after the merge every kept model ran on a ball it never
+trained on (champion goals 1.19 → 0.91, long kick 4.5 → 3.8 m/s). Only the
+champion benchmark check caught it, by bisecting commits. Run the
+safety net (`tests/golden/README.md`) after every merge.
+
 **O11. Archive before deleting.** Tasks that look unused can back curated
 checkpoints (BaseWalk, Kick-Approach, Kick-Near did). The 2026-10-23
 restructure kept every run's latest + best + referenced checkpoints and all
