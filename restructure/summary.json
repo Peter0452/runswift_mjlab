@@ -1,0 +1,761 @@
+{
+ "n_runs": 430,
+ "n_ckpts": 10040,
+ "total_gb": 49.678287227,
+ "by_decision": {
+  "ASK (unreferenced blend/SWA)": [
+   32,
+   0.15239539200000005
+  ],
+  "KEEP": [
+   1103,
+   5.139401267999948
+  ],
+  "PRUNE (intermediate, unreferenced)": [
+   7945,
+   37.02885789100256
+  ],
+  "KEEP (active run)": [
+   960,
+   7.3576326759999535
+  ]
+ },
+ "by_status": {
+  "PLAIN": 4,
+  "REFERENCED": 146,
+  "NOTABLE": 236,
+  "ACTIVE": 44
+ },
+ "deployed_matched": 108,
+ "deployed_unmatched": [
+  "k1_v24_model_105600.onnx",
+  "k1_v28_model_116000.onnx",
+  "kick_loop_models/stage2_approach_8550.onnx",
+  "kick_models/model_10600.onnx",
+  "nubots_models/2026-08-21_06-32-23.onnx",
+  "nubots_models/k1_walk_htwk_k1_walk_htwk.onnx",
+  "v2_models/model_31150.onnx",
+  "v2_models/model_9100.onnx",
+  "v2_models/robocup_s2r_v40k.onnx",
+  "v2_models/robocup_s2r_v40p.onnx",
+  "v3_models/2026-08-03_10-06-26_robocup_s2r_v40w (1).onnx",
+  "v3_models/2026-08-03_10-06-26_robocup_s2r_v40w (2).onnx",
+  "v3_models/2026-08-03_10-06-26_robocup_s2r_v40w.onnx",
+  "v3_models/2026-08-03_15-42-11_robocup_s2r_v40x.onnx",
+  "v3_models/2026-08-03_17-29-17_robocup_s2r_v40y (1).onnx",
+  "v3_models/2026-08-03_17-29-17_robocup_s2r_v40y.onnx",
+  "v3_models/2026-08-04_09-23-09_robocup_s2r_v40z2 (1).onnx",
+  "v3_models/2026-08-04_09-23-09_robocup_s2r_v40z2.onnx",
+  "v4_models/2026-08-07_11-37-16_booster_ppo_rough_ft_f13_26.onnx",
+  "v4_models/2026-08-07_12-56-29_booster_ppo_rough_ft_track_stance.onnx",
+  "v4_models/model_31000 (1).onnx",
+  "v4_models/model_31500.onnx",
+  "v4_models/model_33000.onnx",
+  "v4_models/model_35300.onnx",
+  "v4_models/model_40900.onnx",
+  "v5_models/2026-08-10_21-41-32_k1_minimal_phase2_dr_wave.onnx",
+  "v5_models/2026-08-11_12-47-49_k1_minimal_ankle_torque_ft_v3.onnx",
+  "v5_models/2026-08-11_14-03-01_k1_minimal_ankle_hip_balance_ft.onnx",
+  "v5_models/2026-08-11_15-12-48_k1_minimal_gait_and_mass_ft.onnx",
+  "v5_models/2026-08-11_17-07-35_k1_minimal_transition_torque_ft.onnx",
+  "v5_models/k1_minimal_model_76350.onnx",
+  "v6_models/2026-08-12_10-41-21_k1_minimal_scratch_v3_noheightscan.onnx"
+ ],
+ "deployed": [
+  [
+   "amp_models/model_29999.onnx",
+   "logs/rsl_rl/k1_velocity_amp_symmetric_muon_wwcmu30/2026-09-20_21-17-22/model_29999.pt",
+   "deployed ONNX (match by name tokens)"
+  ],
+  [
+   "amp_models/model_9950.onnx",
+   "logs/rsl_rl/k1_velocity_amp_symmetric_muon_wwcmu30/2026-09-20_21-17-22/model_9950.pt",
+   "deployed ONNX (match by name tokens)"
+  ],
+  [
+   "dribble_models/k1_dribble_aimcurr_v46b_9750.onnx",
+   "logs/rsl_rl/k1_dribble_amp/2026-10-23_01-52-45_dribble_aimcurrb_v46b/model_9750.pt",
+   "deployed ONNX (match by version+step)"
+  ],
+  [
+   "dribble_models/k1_dribble_aimhead_v51_10750.onnx",
+   "logs/rsl_rl/k1_dribble_amp/2026-10-23_08-22-20_dribble_aimhead_v51/model_10750.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "dribble_models/k1_dribble_aimhead_v51_11250.onnx",
+   "logs/rsl_rl/k1_dribble_amp/2026-10-23_08-22-20_dribble_aimhead_v51/model_11250.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "dribble_models/k1_dribble_aimhead_v51_11750.onnx",
+   "logs/rsl_rl/k1_dribble_amp/2026-10-23_08-22-20_dribble_aimhead_v51/model_11750.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "dribble_models/k1_dribble_aimwide_v49_10250.onnx",
+   "logs/rsl_rl/k1_dribble_amp/2026-10-23_05-35-32_dribble_aimwide_v49/model_10250.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "dribble_models/k1_dribble_aimwide_v49_9750.onnx",
+   "logs/rsl_rl/k1_dribble_amp/2026-10-23_05-35-32_dribble_aimwide_v49/model_9750.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "dribble_models/k1_dribble_balanced_v39_8750.onnx",
+   "logs/rsl_rl/k1_dribble_amp/2026-10-22_05-34-23_dribble_v36cont_v39/model_8750.pt",
+   "deployed ONNX (match by version+step)"
+  ],
+  [
+   "dribble_models/k1_dribble_deploy_swa_v16_13300-13900.onnx",
+   "logs/rsl_rl/k1_dribble_amp/swa_v15/swa_v16_13300-13900.pt",
+   "deployed ONNX (match by name tokens)"
+  ],
+  [
+   "dribble_models/k1_dribble_deploy_swa_v16_13300-13900.onnx",
+   "logs/rsl_rl/k1_dribble_amp/2026-10-19_17-44-27_dribble_deploymatch_v16/model_13900.pt",
+   "deployed ONNX (match by version+step)"
+  ],
+  [
+   "dribble_models/k1_dribble_findball_v30_7250.onnx",
+   "logs/rsl_rl/k1_dribble_amp/2026-10-21_17-17-41_dribble_findball_v30/model_7250.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "dribble_models/k1_dribble_flat_swa_v17_14200-15400.onnx",
+   "logs/rsl_rl/k1_dribble_amp/swa_v15/swa_v17_14200-15400.pt",
+   "deployed ONNX (match by name tokens)"
+  ],
+  [
+   "dribble_models/k1_dribble_flat_swa_v17_14200-15400.onnx",
+   "logs/rsl_rl/k1_dribble_amp/2026-10-20_10-07-53_dribble_flatfoot_v17/model_15400.pt",
+   "deployed ONNX (match by version+step)"
+  ],
+  [
+   "dribble_models/k1_dribble_headup_v50_9750.onnx",
+   "logs/rsl_rl/k1_dribble_amp/2026-10-23_07-21-01_dribble_headup_v50/model_9750.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "dribble_models/k1_dribble_power_v33_7750.onnx",
+   "logs/rsl_rl/k1_dribble_amp/2026-10-21_23-01-21_dribble_power_v33/model_7750.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "dribble_models/k1_dribble_push_v27_6750.onnx",
+   "logs/rsl_rl/k1_dribble_amp/2026-10-21_09-43-51_dribble_pushside_v27/model_6750.pt",
+   "deployed ONNX (match by version+step)"
+  ],
+  [
+   "dribble_models/k1_dribble_push_v27_7250.onnx",
+   "logs/rsl_rl/k1_dribble_amp/2026-10-21_09-43-51_dribble_pushside_v27/model_7250.pt",
+   "deployed ONNX (match by version+step)"
+  ],
+  [
+   "dribble_models/k1_dribble_safefast_v28b_7250.onnx",
+   "logs/rsl_rl/k1_dribble_amp/2026-10-21_14-09-21_dribble_safefast_v28b/model_7250.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "dribble_models/k1_dribble_sidegate_v35_8250.onnx",
+   "logs/rsl_rl/k1_dribble_amp/2026-10-22_01-19-57_dribble_sidegate_v35/model_8250.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "dribble_models/k1_dribble_sideteach_v36_8250.onnx",
+   "logs/rsl_rl/k1_dribble_amp/2026-10-22_02-10-44_dribble_teachstraight_v36/model_8250.pt",
+   "deployed ONNX (match by version+step)"
+  ],
+  [
+   "dribble_models/k1_dribble_sidew_v42_8750.onnx",
+   "logs/rsl_rl/k1_dribble_amp/2026-10-22_08-42-34_dribble_sidew_v42/model_8750.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "dribble_models/k1_dribble_sidew_v42_9250.onnx",
+   "logs/rsl_rl/k1_dribble_amp/2026-10-22_08-42-34_dribble_sidew_v42/model_9250.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "dribble_models/k1_dribble_sidew_v42_9750.onnx",
+   "logs/rsl_rl/k1_dribble_amp/2026-10-22_08-42-34_dribble_sidew_v42/model_9750.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "dribble_models/k1_dribble_skills_v25_5550.onnx",
+   "logs/rsl_rl/k1_dribble_amp/2026-10-21_03-20-16_dribble_lightteacher_v25/model_5550.pt",
+   "deployed ONNX (match by version+step)"
+  ],
+  [
+   "dribble_models/k1_dribble_skills_v26_6250.onnx",
+   "logs/rsl_rl/k1_dribble_amp/2026-10-21_05-24-53_dribble_kickfix_v26/model_6250.pt",
+   "deployed ONNX (match by version+step)"
+  ],
+  [
+   "dribble_models/k1_dribble_swaA_v15b_12400.onnx",
+   "logs/rsl_rl/k1_dribble_amp/swa_v15/swaA_v15b_12150-12400.pt",
+   "deployed ONNX (match by name tokens)"
+  ],
+  [
+   "k1_v24_model_100800.onnx",
+   "logs/rsl_rl/k1_kick_approach/2026-09-19_11-36-19_near_kick_gated_v1/model_100800.pt",
+   "deployed ONNX (probable: unique step)"
+  ],
+  [
+   "kick_loop_models/2026-10-02_17-25-32_stage3_v31.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_17-25-32_stage3_v31/model_5700.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/2026-10-03_12-12-18_stage3_v50.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-03_12-12-18_stage3_v50/model_10500.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/2026-10-03_12-51-41_stage3_v50b.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-03_12-51-41_stage3_v50b/model_10300.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_bh_prec2_18949.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-09_11-20-44_bh_prec2/model_18949.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_blend_x3_g003_60.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-06_06-45-00_blend_x3_g003_60/model_14200.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_blend_x4_g004_70.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-06_08-40-00_blend_x4_g004_70/model_14200.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_capfoot_18949.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-09_11-26-40_capfoot/model_18949.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_evo_g014_14550.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-06_15-25-11_evo_g014/model_14550.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_h001_blend.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/blends/h001_c0_17300_x70.pt",
+   "deployed ONNX (match by name tokens)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_h007_c1_17650_x50.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/blends/h007_c1_17650_x50.pt",
+   "deployed ONNX (match by name tokens)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_h010_c2_17850_x70.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/blends/h010_c2_17850_x70.pt",
+   "deployed ONNX (match by name tokens)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_h011_c2_17750.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-08_12-04-08_h011_c2/model_17750.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_h012_c1_18000_x50.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/blends/h012_c1_18000_x50.pt",
+   "deployed ONNX (match by name tokens)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_h022_c2_18450.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-09_07-17-43_h022_c2/model_18450.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_mouthnarrow_14050.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-16_10-18-11_h022_mouthnarrow/model_14050.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_sty_power_17149.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-07_05-08-47_sty_power/model_17149.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_swa_v15v16_9100.onnx",
+   "logs/rsl_rl/k1_kick_selfplay_amp/swa_v15v16/model_9100.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v17_model_1800.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_08-25-15_stage3_v17/model_1800.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v18_model_1950.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_12-08-27_stage3_v18/model_1950.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v18_model_2150.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_12-08-27_stage3_v18/model_2150.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v19_model_2300.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_12-22-54_stage3_v19/model_2300.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v19_model_2500.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_12-22-54_stage3_v19/model_2500.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v20_model_2350.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_12-44-00_stage3_v20/model_2350.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v20_model_2550.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_12-44-00_stage3_v20/model_2550.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v21_model_2500.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_13-14-11_stage3_v21/model_2500.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v21_model_2650.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_13-14-11_stage3_v21/model_2650.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v21_model_2800.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_13-14-11_stage3_v21/model_2800.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v21_model_2950.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_13-14-11_stage3_v21/model_2950.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v22_model_2900.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_13-38-50_stage3_v22/model_2900.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v22_model_3000.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_13-38-50_stage3_v22/model_3000.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v23_model_3100.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_13-47-46_stage3_v23/model_3100.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v23_model_3150.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_13-47-46_stage3_v23/model_3150.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v23_model_3250.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_13-47-46_stage3_v23/model_3250.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v23_model_3350.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_13-47-46_stage3_v23/model_3350.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v24_model_3450.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_14-02-06_stage3_v24/model_3450.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v24_model_3550.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_14-02-06_stage3_v24/model_3550.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v25_model_3550.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_14-13-20_stage3_v25/model_3550.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v25_model_3650.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_14-13-20_stage3_v25/model_3650.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v25_model_3750.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_14-13-20_stage3_v25/model_3750.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v25_model_3850.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_14-13-20_stage3_v25/model_3850.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v27_model_3800.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_14-33-18_stage3_v27/model_3800.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v27_model_3900.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_14-33-18_stage3_v27/model_3900.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v27_model_4050.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_14-33-18_stage3_v27/model_4050.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v27_model_4150.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_14-33-18_stage3_v27/model_4150.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v28_model_4150.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_14-55-07_stage3_v28/model_4150.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v28_model_4250.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_14-55-07_stage3_v28/model_4250.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v28_model_4400.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_14-55-07_stage3_v28/model_4400.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v28_model_4500.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_14-55-07_stage3_v28/model_4500.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v28_model_4650.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_14-55-07_stage3_v28/model_4650.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v28_model_4750.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_14-55-07_stage3_v28/model_4750.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v29_model_4500.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_16-55-34_stage3_v29/model_4500.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v29_model_4600.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_16-55-34_stage3_v29/model_4600.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v29_model_4750.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_16-55-34_stage3_v29/model_4750.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v29_model_4850.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_16-55-34_stage3_v29/model_4850.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v30_model_4900.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_17-11-37_stage3_v30/model_4900.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v30_model_5000.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_17-11-37_stage3_v30/model_5000.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v31_model_5150.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_17-25-32_stage3_v31/model_5150.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v31_model_5250.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_17-25-32_stage3_v31/model_5250.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v31_model_5300.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_17-25-32_stage3_v31/model_5300.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v31_model_5350.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_17-25-32_stage3_v31/model_5350.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v31_model_5400.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_17-25-32_stage3_v31/model_5400.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v31_model_5450.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_17-25-32_stage3_v31/model_5450.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v31_model_5500.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_17-25-32_stage3_v31/model_5500.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v31_model_5700.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_17-25-32_stage3_v31/model_5700.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v32_model_5650.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_17-48-20_stage3_v32/model_5650.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v32_model_5750.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_17-48-20_stage3_v32/model_5750.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v35_model_5950.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-03_00-06-53_stage3_v35/model_5950.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v37_model_6350.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-03_00-37-18_stage3_v37/model_6350.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v38_model_6800.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-03_01-03-24_stage3_v38/model_6800.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v43_model_7550.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-03_02-21-32_stage3_v43/model_7550.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v44_model_7800.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-03_02-39-19_stage3_v44/model_7800.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v47_model_8300.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-03_03-14-12_stage3_v47/model_8300.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v47_model_8700.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-03_03-14-12_stage3_v47/model_8700.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v49_model_9900.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-03_10-42-58_stage3_v49/model_9900.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v50_model_10400.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-03_12-12-18_stage3_v50/model_10400.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v50d_model_10200.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-03_13-37-15_stage3_v50d/model_10200.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v52b_model_10700.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-03_16-27-00_stage3_v52b/model_10700.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v53_model_10450.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-03_17-40-12_stage3_v53/model_10450.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v55b_model_12200.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-05_13-21-06_stage3_v55b/model_12200.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ],
+  [
+   "kick_loop_models/k1_kick_loop_v56d_model_13450.onnx",
+   "logs/rsl_rl/k1_kick_stage3_amp/2026-10-05_16-52-58_stage3_v56d/model_13450.pt",
+   "deployed ONNX (k1_policy_runner)"
+  ]
+ ],
+ "by_exp": {
+  "blends": {
+   "runs": 1,
+   "ckpts": 2,
+   "gb": 0.009523982,
+   "keep": 2,
+   "keep_gb": 0.009523982,
+   "active": 0,
+   "notable": 0
+  },
+  "k1_bhuman_kick": {
+   "runs": 4,
+   "ckpts": 28,
+   "gb": 0.072576694,
+   "keep": 26,
+   "keep_gb": 0.068101728,
+   "active": 0,
+   "notable": 3
+  },
+  "k1_dribble_amp": {
+   "runs": 67,
+   "ckpts": 1509,
+   "gb": 10.917743265,
+   "keep": 1011,
+   "keep_gb": 7.6820498230000025,
+   "active": 44,
+   "notable": 1
+  },
+  "k1_kick_approach": {
+   "runs": 47,
+   "ckpts": 994,
+   "gb": 2.5999093209999997,
+   "keep": 69,
+   "keep_gb": 0.19062730699999994,
+   "active": 0,
+   "notable": 14
+  },
+  "k1_kick_approach_amp": {
+   "runs": 11,
+   "ckpts": 718,
+   "gb": 3.413961966,
+   "keep": 21,
+   "keep_gb": 0.093922769,
+   "active": 0,
+   "notable": 6
+  },
+  "k1_kick_selfplay_amp": {
+   "runs": 18,
+   "ckpts": 609,
+   "gb": 2.45930006,
+   "keep": 41,
+   "keep_gb": 0.196297675,
+   "active": 0,
+   "notable": 8
+  },
+  "k1_kick_stage1_amp": {
+   "runs": 2,
+   "ckpts": 300,
+   "gb": 1.5000904780000002,
+   "keep": 4,
+   "keep_gb": 0.020787394,
+   "active": 0,
+   "notable": 1
+  },
+  "k1_kick_stage3_amp": {
+   "runs": 234,
+   "ckpts": 2587,
+   "gb": 12.310475002999974,
+   "keep": 831,
+   "keep_gb": 3.945988273000012,
+   "active": 0,
+   "notable": 194
+  },
+  "k1_kick_tracking": {
+   "runs": 8,
+   "ckpts": 346,
+   "gb": 3.467841458,
+   "keep": 17,
+   "keep_gb": 0.170491007,
+   "active": 0,
+   "notable": 3
+  },
+  "k1_kick_walkamp_amp_da_muon": {
+   "runs": 5,
+   "ckpts": 127,
+   "gb": 0.600725257,
+   "keep": 9,
+   "keep_gb": 0.042570759,
+   "active": 0,
+   "notable": 0
+  },
+  "k1_kick_walkamp_da_muon": {
+   "runs": 9,
+   "ckpts": 412,
+   "gb": 1.399567676,
+   "keep": 18,
+   "keep_gb": 0.061145648000000004,
+   "active": 0,
+   "notable": 0
+  },
+  "k1_striker_controller": {
+   "runs": 10,
+   "ckpts": 127,
+   "gb": 0.210392382,
+   "keep": 18,
+   "keep_gb": 0.03505322099999999,
+   "active": 0,
+   "notable": 5
+  },
+  "k1_velocity": {
+   "runs": 1,
+   "ckpts": 1,
+   "gb": 0.006041013,
+   "keep": 1,
+   "keep_gb": 0.006041013,
+   "active": 0,
+   "notable": 0
+  },
+  "k1_velocity_amp_symmetric_muon": {
+   "runs": 1,
+   "ckpts": 169,
+   "gb": 0.793857675,
+   "keep": 2,
+   "keep_gb": 0.009394794,
+   "active": 0,
+   "notable": 0
+  },
+  "k1_velocity_amp_symmetric_muon_wwcmu30": {
+   "runs": 1,
+   "ckpts": 601,
+   "gb": 2.823170873,
+   "keep": 3,
+   "keep_gb": 0.014092285,
+   "active": 0,
+   "notable": 1
+  },
+  "k1_velocity_amp_symmetric_muon_wwcmu45_roughft": {
+   "runs": 5,
+   "ckpts": 869,
+   "gb": 4.082070245,
+   "keep": 9,
+   "keep_gb": 0.042276128999999996,
+   "active": 0,
+   "notable": 0
+  },
+  "k1_velocity_amp_symmetric_muon_wwcmu50_roughft": {
+   "runs": 6,
+   "ckpts": 641,
+   "gb": 3.011039879,
+   "keep": 13,
+   "keep_gb": 0.061065529,
+   "active": 0,
+   "notable": 0
+  }
+ }
+}

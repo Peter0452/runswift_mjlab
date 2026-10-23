@@ -1,0 +1,1664 @@
+{
+  "schema": "runswift-goal-policy-comparison/1",
+  "suite": "grid",
+  "cases": [
+    {
+      "name": "x1-y1-west-away-positive",
+      "direction": 1,
+      "ball": [
+        -4.5,
+        -2.5
+      ],
+      "start": [
+        -5.736,
+        -0.287
+      ],
+      "yaw": 3.266099,
+      "power": 1.5,
+      "ball_id": "x1-y1",
+      "start_id": "west-away"
+    },
+    {
+      "name": "x1-y1-west-away-negative",
+      "direction": -1,
+      "ball": [
+        -4.5,
+        -2.5
+      ],
+      "start": [
+        -5.736,
+        -0.287
+      ],
+      "yaw": 3.266099,
+      "power": 1.5,
+      "ball_id": "x1-y1",
+      "start_id": "west-away"
+    },
+    {
+      "name": "x1-y1-east-away-positive",
+      "direction": 1,
+      "ball": [
+        -4.5,
+        -2.5
+      ],
+      "start": [
+        5.548,
+        0.16
+      ],
+      "yaw": 0.123181,
+      "power": 1.5,
+      "ball_id": "x1-y1",
+      "start_id": "east-away"
+    },
+    {
+      "name": "x1-y1-east-away-negative",
+      "direction": -1,
+      "ball": [
+        -4.5,
+        -2.5
+      ],
+      "start": [
+        5.548,
+        0.16
+      ],
+      "yaw": 0.123181,
+      "power": 1.5,
+      "ball_id": "x1-y1",
+      "start_id": "east-away"
+    },
+    {
+      "name": "x1-y1-north-away-positive",
+      "direction": 1,
+      "ball": [
+        -4.5,
+        -2.5
+      ],
+      "start": [
+        -1.41,
+        3.8
+      ],
+      "yaw": 1.502417,
+      "power": 1.5,
+      "ball_id": "x1-y1",
+      "start_id": "north-away"
+    },
+    {
+      "name": "x1-y1-north-away-negative",
+      "direction": -1,
+      "ball": [
+        -4.5,
+        -2.5
+      ],
+      "start": [
+        -1.41,
+        3.8
+      ],
+      "yaw": 1.502417,
+      "power": 1.5,
+      "ball_id": "x1-y1",
+      "start_id": "north-away"
+    },
+    {
+      "name": "x1-y1-south-away-positive",
+      "direction": 1,
+      "ball": [
+        -4.5,
+        -2.5
+      ],
+      "start": [
+        1.565,
+        -3.727
+      ],
+      "yaw": -1.451622,
+      "power": 1.5,
+      "ball_id": "x1-y1",
+      "start_id": "south-away"
+    },
+    {
+      "name": "x1-y1-south-away-negative",
+      "direction": -1,
+      "ball": [
+        -4.5,
+        -2.5
+      ],
+      "start": [
+        1.565,
+        -3.727
+      ],
+      "yaw": -1.451622,
+      "power": 1.5,
+      "ball_id": "x1-y1",
+      "start_id": "south-away"
+    },
+    {
+      "name": "x1-y1-central-oblique-positive",
+      "direction": 1,
+      "ball": [
+        -4.5,
+        -2.5
+      ],
+      "start": [
+        1.505,
+        0.905
+      ],
+      "yaw": -2.24286,
+      "power": 1.5,
+      "ball_id": "x1-y1",
+      "start_id": "central-oblique"
+    },
+    {
+      "name": "x1-y1-central-oblique-negative",
+      "direction": -1,
+      "ball": [
+        -4.5,
+        -2.5
+      ],
+      "start": [
+        1.505,
+        0.905
+      ],
+      "yaw": -2.24286,
+      "power": 1.5,
+      "ball_id": "x1-y1",
+      "start_id": "central-oblique"
+    },
+    {
+      "name": "x1-y2-west-away-positive",
+      "direction": 1,
+      "ball": [
+        -4.5,
+        0.0
+      ],
+      "start": [
+        -5.736,
+        -0.287
+      ],
+      "yaw": 3.266099,
+      "power": 1.5,
+      "ball_id": "x1-y2",
+      "start_id": "west-away"
+    },
+    {
+      "name": "x1-y2-west-away-negative",
+      "direction": -1,
+      "ball": [
+        -4.5,
+        0.0
+      ],
+      "start": [
+        -5.736,
+        -0.287
+      ],
+      "yaw": 3.266099,
+      "power": 1.5,
+      "ball_id": "x1-y2",
+      "start_id": "west-away"
+    },
+    {
+      "name": "x1-y2-east-away-positive",
+      "direction": 1,
+      "ball": [
+        -4.5,
+        0.0
+      ],
+      "start": [
+        5.548,
+        0.16
+      ],
+      "yaw": 0.123181,
+      "power": 1.5,
+      "ball_id": "x1-y2",
+      "start_id": "east-away"
+    },
+    {
+      "name": "x1-y2-east-away-negative",
+      "direction": -1,
+      "ball": [
+        -4.5,
+        0.0
+      ],
+      "start": [
+        5.548,
+        0.16
+      ],
+      "yaw": 0.123181,
+      "power": 1.5,
+      "ball_id": "x1-y2",
+      "start_id": "east-away"
+    },
+    {
+      "name": "x1-y2-north-away-positive",
+      "direction": 1,
+      "ball": [
+        -4.5,
+        0.0
+      ],
+      "start": [
+        -1.41,
+        3.8
+      ],
+      "yaw": 1.502417,
+      "power": 1.5,
+      "ball_id": "x1-y2",
+      "start_id": "north-away"
+    },
+    {
+      "name": "x1-y2-north-away-negative",
+      "direction": -1,
+      "ball": [
+        -4.5,
+        0.0
+      ],
+      "start": [
+        -1.41,
+        3.8
+      ],
+      "yaw": 1.502417,
+      "power": 1.5,
+      "ball_id": "x1-y2",
+      "start_id": "north-away"
+    },
+    {
+      "name": "x1-y2-south-away-positive",
+      "direction": 1,
+      "ball": [
+        -4.5,
+        0.0
+      ],
+      "start": [
+        1.565,
+        -3.727
+      ],
+      "yaw": -1.451622,
+      "power": 1.5,
+      "ball_id": "x1-y2",
+      "start_id": "south-away"
+    },
+    {
+      "name": "x1-y2-south-away-negative",
+      "direction": -1,
+      "ball": [
+        -4.5,
+        0.0
+      ],
+      "start": [
+        1.565,
+        -3.727
+      ],
+      "yaw": -1.451622,
+      "power": 1.5,
+      "ball_id": "x1-y2",
+      "start_id": "south-away"
+    },
+    {
+      "name": "x1-y2-central-oblique-positive",
+      "direction": 1,
+      "ball": [
+        -4.5,
+        0.0
+      ],
+      "start": [
+        1.505,
+        0.905
+      ],
+      "yaw": -2.24286,
+      "power": 1.5,
+      "ball_id": "x1-y2",
+      "start_id": "central-oblique"
+    },
+    {
+      "name": "x1-y2-central-oblique-negative",
+      "direction": -1,
+      "ball": [
+        -4.5,
+        0.0
+      ],
+      "start": [
+        1.505,
+        0.905
+      ],
+      "yaw": -2.24286,
+      "power": 1.5,
+      "ball_id": "x1-y2",
+      "start_id": "central-oblique"
+    },
+    {
+      "name": "x1-y3-west-away-positive",
+      "direction": 1,
+      "ball": [
+        -4.5,
+        2.5
+      ],
+      "start": [
+        -5.736,
+        -0.287
+      ],
+      "yaw": 3.266099,
+      "power": 1.5,
+      "ball_id": "x1-y3",
+      "start_id": "west-away"
+    },
+    {
+      "name": "x1-y3-west-away-negative",
+      "direction": -1,
+      "ball": [
+        -4.5,
+        2.5
+      ],
+      "start": [
+        -5.736,
+        -0.287
+      ],
+      "yaw": 3.266099,
+      "power": 1.5,
+      "ball_id": "x1-y3",
+      "start_id": "west-away"
+    },
+    {
+      "name": "x1-y3-east-away-positive",
+      "direction": 1,
+      "ball": [
+        -4.5,
+        2.5
+      ],
+      "start": [
+        5.548,
+        0.16
+      ],
+      "yaw": 0.123181,
+      "power": 1.5,
+      "ball_id": "x1-y3",
+      "start_id": "east-away"
+    },
+    {
+      "name": "x1-y3-east-away-negative",
+      "direction": -1,
+      "ball": [
+        -4.5,
+        2.5
+      ],
+      "start": [
+        5.548,
+        0.16
+      ],
+      "yaw": 0.123181,
+      "power": 1.5,
+      "ball_id": "x1-y3",
+      "start_id": "east-away"
+    },
+    {
+      "name": "x1-y3-north-away-positive",
+      "direction": 1,
+      "ball": [
+        -4.5,
+        2.5
+      ],
+      "start": [
+        -1.41,
+        3.8
+      ],
+      "yaw": 1.502417,
+      "power": 1.5,
+      "ball_id": "x1-y3",
+      "start_id": "north-away"
+    },
+    {
+      "name": "x1-y3-north-away-negative",
+      "direction": -1,
+      "ball": [
+        -4.5,
+        2.5
+      ],
+      "start": [
+        -1.41,
+        3.8
+      ],
+      "yaw": 1.502417,
+      "power": 1.5,
+      "ball_id": "x1-y3",
+      "start_id": "north-away"
+    },
+    {
+      "name": "x1-y3-south-away-positive",
+      "direction": 1,
+      "ball": [
+        -4.5,
+        2.5
+      ],
+      "start": [
+        1.565,
+        -3.727
+      ],
+      "yaw": -1.451622,
+      "power": 1.5,
+      "ball_id": "x1-y3",
+      "start_id": "south-away"
+    },
+    {
+      "name": "x1-y3-south-away-negative",
+      "direction": -1,
+      "ball": [
+        -4.5,
+        2.5
+      ],
+      "start": [
+        1.565,
+        -3.727
+      ],
+      "yaw": -1.451622,
+      "power": 1.5,
+      "ball_id": "x1-y3",
+      "start_id": "south-away"
+    },
+    {
+      "name": "x1-y3-central-oblique-positive",
+      "direction": 1,
+      "ball": [
+        -4.5,
+        2.5
+      ],
+      "start": [
+        1.505,
+        0.905
+      ],
+      "yaw": -2.24286,
+      "power": 1.5,
+      "ball_id": "x1-y3",
+      "start_id": "central-oblique"
+    },
+    {
+      "name": "x1-y3-central-oblique-negative",
+      "direction": -1,
+      "ball": [
+        -4.5,
+        2.5
+      ],
+      "start": [
+        1.505,
+        0.905
+      ],
+      "yaw": -2.24286,
+      "power": 1.5,
+      "ball_id": "x1-y3",
+      "start_id": "central-oblique"
+    },
+    {
+      "name": "x2-y1-west-away-positive",
+      "direction": 1,
+      "ball": [
+        0.0,
+        -2.5
+      ],
+      "start": [
+        -5.736,
+        -0.287
+      ],
+      "yaw": 3.266099,
+      "power": 1.5,
+      "ball_id": "x2-y1",
+      "start_id": "west-away"
+    },
+    {
+      "name": "x2-y1-west-away-negative",
+      "direction": -1,
+      "ball": [
+        0.0,
+        -2.5
+      ],
+      "start": [
+        -5.736,
+        -0.287
+      ],
+      "yaw": 3.266099,
+      "power": 1.5,
+      "ball_id": "x2-y1",
+      "start_id": "west-away"
+    },
+    {
+      "name": "x2-y1-east-away-positive",
+      "direction": 1,
+      "ball": [
+        0.0,
+        -2.5
+      ],
+      "start": [
+        5.548,
+        0.16
+      ],
+      "yaw": 0.123181,
+      "power": 1.5,
+      "ball_id": "x2-y1",
+      "start_id": "east-away"
+    },
+    {
+      "name": "x2-y1-east-away-negative",
+      "direction": -1,
+      "ball": [
+        0.0,
+        -2.5
+      ],
+      "start": [
+        5.548,
+        0.16
+      ],
+      "yaw": 0.123181,
+      "power": 1.5,
+      "ball_id": "x2-y1",
+      "start_id": "east-away"
+    },
+    {
+      "name": "x2-y1-north-away-positive",
+      "direction": 1,
+      "ball": [
+        0.0,
+        -2.5
+      ],
+      "start": [
+        -1.41,
+        3.8
+      ],
+      "yaw": 1.502417,
+      "power": 1.5,
+      "ball_id": "x2-y1",
+      "start_id": "north-away"
+    },
+    {
+      "name": "x2-y1-north-away-negative",
+      "direction": -1,
+      "ball": [
+        0.0,
+        -2.5
+      ],
+      "start": [
+        -1.41,
+        3.8
+      ],
+      "yaw": 1.502417,
+      "power": 1.5,
+      "ball_id": "x2-y1",
+      "start_id": "north-away"
+    },
+    {
+      "name": "x2-y1-south-away-positive",
+      "direction": 1,
+      "ball": [
+        0.0,
+        -2.5
+      ],
+      "start": [
+        1.565,
+        -3.727
+      ],
+      "yaw": -1.451622,
+      "power": 1.5,
+      "ball_id": "x2-y1",
+      "start_id": "south-away"
+    },
+    {
+      "name": "x2-y1-south-away-negative",
+      "direction": -1,
+      "ball": [
+        0.0,
+        -2.5
+      ],
+      "start": [
+        1.565,
+        -3.727
+      ],
+      "yaw": -1.451622,
+      "power": 1.5,
+      "ball_id": "x2-y1",
+      "start_id": "south-away"
+    },
+    {
+      "name": "x2-y1-central-oblique-positive",
+      "direction": 1,
+      "ball": [
+        0.0,
+        -2.5
+      ],
+      "start": [
+        1.505,
+        0.905
+      ],
+      "yaw": -2.24286,
+      "power": 1.5,
+      "ball_id": "x2-y1",
+      "start_id": "central-oblique"
+    },
+    {
+      "name": "x2-y1-central-oblique-negative",
+      "direction": -1,
+      "ball": [
+        0.0,
+        -2.5
+      ],
+      "start": [
+        1.505,
+        0.905
+      ],
+      "yaw": -2.24286,
+      "power": 1.5,
+      "ball_id": "x2-y1",
+      "start_id": "central-oblique"
+    },
+    {
+      "name": "x2-y2-west-away-positive",
+      "direction": 1,
+      "ball": [
+        0.0,
+        0.0
+      ],
+      "start": [
+        -5.736,
+        -0.287
+      ],
+      "yaw": 3.266099,
+      "power": 1.5,
+      "ball_id": "x2-y2",
+      "start_id": "west-away"
+    },
+    {
+      "name": "x2-y2-west-away-negative",
+      "direction": -1,
+      "ball": [
+        0.0,
+        0.0
+      ],
+      "start": [
+        -5.736,
+        -0.287
+      ],
+      "yaw": 3.266099,
+      "power": 1.5,
+      "ball_id": "x2-y2",
+      "start_id": "west-away"
+    },
+    {
+      "name": "x2-y2-east-away-positive",
+      "direction": 1,
+      "ball": [
+        0.0,
+        0.0
+      ],
+      "start": [
+        5.548,
+        0.16
+      ],
+      "yaw": 0.123181,
+      "power": 1.5,
+      "ball_id": "x2-y2",
+      "start_id": "east-away"
+    },
+    {
+      "name": "x2-y2-east-away-negative",
+      "direction": -1,
+      "ball": [
+        0.0,
+        0.0
+      ],
+      "start": [
+        5.548,
+        0.16
+      ],
+      "yaw": 0.123181,
+      "power": 1.5,
+      "ball_id": "x2-y2",
+      "start_id": "east-away"
+    },
+    {
+      "name": "x2-y2-north-away-positive",
+      "direction": 1,
+      "ball": [
+        0.0,
+        0.0
+      ],
+      "start": [
+        -1.41,
+        3.8
+      ],
+      "yaw": 1.502417,
+      "power": 1.5,
+      "ball_id": "x2-y2",
+      "start_id": "north-away"
+    },
+    {
+      "name": "x2-y2-north-away-negative",
+      "direction": -1,
+      "ball": [
+        0.0,
+        0.0
+      ],
+      "start": [
+        -1.41,
+        3.8
+      ],
+      "yaw": 1.502417,
+      "power": 1.5,
+      "ball_id": "x2-y2",
+      "start_id": "north-away"
+    },
+    {
+      "name": "x2-y2-south-away-positive",
+      "direction": 1,
+      "ball": [
+        0.0,
+        0.0
+      ],
+      "start": [
+        1.565,
+        -3.727
+      ],
+      "yaw": -1.451622,
+      "power": 1.5,
+      "ball_id": "x2-y2",
+      "start_id": "south-away"
+    },
+    {
+      "name": "x2-y2-south-away-negative",
+      "direction": -1,
+      "ball": [
+        0.0,
+        0.0
+      ],
+      "start": [
+        1.565,
+        -3.727
+      ],
+      "yaw": -1.451622,
+      "power": 1.5,
+      "ball_id": "x2-y2",
+      "start_id": "south-away"
+    },
+    {
+      "name": "x2-y2-central-oblique-positive",
+      "direction": 1,
+      "ball": [
+        0.0,
+        0.0
+      ],
+      "start": [
+        1.505,
+        0.905
+      ],
+      "yaw": -2.24286,
+      "power": 1.5,
+      "ball_id": "x2-y2",
+      "start_id": "central-oblique"
+    },
+    {
+      "name": "x2-y2-central-oblique-negative",
+      "direction": -1,
+      "ball": [
+        0.0,
+        0.0
+      ],
+      "start": [
+        1.505,
+        0.905
+      ],
+      "yaw": -2.24286,
+      "power": 1.5,
+      "ball_id": "x2-y2",
+      "start_id": "central-oblique"
+    },
+    {
+      "name": "x2-y3-west-away-positive",
+      "direction": 1,
+      "ball": [
+        0.0,
+        2.5
+      ],
+      "start": [
+        -5.736,
+        -0.287
+      ],
+      "yaw": 3.266099,
+      "power": 1.5,
+      "ball_id": "x2-y3",
+      "start_id": "west-away"
+    },
+    {
+      "name": "x2-y3-west-away-negative",
+      "direction": -1,
+      "ball": [
+        0.0,
+        2.5
+      ],
+      "start": [
+        -5.736,
+        -0.287
+      ],
+      "yaw": 3.266099,
+      "power": 1.5,
+      "ball_id": "x2-y3",
+      "start_id": "west-away"
+    },
+    {
+      "name": "x2-y3-east-away-positive",
+      "direction": 1,
+      "ball": [
+        0.0,
+        2.5
+      ],
+      "start": [
+        5.548,
+        0.16
+      ],
+      "yaw": 0.123181,
+      "power": 1.5,
+      "ball_id": "x2-y3",
+      "start_id": "east-away"
+    },
+    {
+      "name": "x2-y3-east-away-negative",
+      "direction": -1,
+      "ball": [
+        0.0,
+        2.5
+      ],
+      "start": [
+        5.548,
+        0.16
+      ],
+      "yaw": 0.123181,
+      "power": 1.5,
+      "ball_id": "x2-y3",
+      "start_id": "east-away"
+    },
+    {
+      "name": "x2-y3-north-away-positive",
+      "direction": 1,
+      "ball": [
+        0.0,
+        2.5
+      ],
+      "start": [
+        -1.41,
+        3.8
+      ],
+      "yaw": 1.502417,
+      "power": 1.5,
+      "ball_id": "x2-y3",
+      "start_id": "north-away"
+    },
+    {
+      "name": "x2-y3-north-away-negative",
+      "direction": -1,
+      "ball": [
+        0.0,
+        2.5
+      ],
+      "start": [
+        -1.41,
+        3.8
+      ],
+      "yaw": 1.502417,
+      "power": 1.5,
+      "ball_id": "x2-y3",
+      "start_id": "north-away"
+    },
+    {
+      "name": "x2-y3-south-away-positive",
+      "direction": 1,
+      "ball": [
+        0.0,
+        2.5
+      ],
+      "start": [
+        1.565,
+        -3.727
+      ],
+      "yaw": -1.451622,
+      "power": 1.5,
+      "ball_id": "x2-y3",
+      "start_id": "south-away"
+    },
+    {
+      "name": "x2-y3-south-away-negative",
+      "direction": -1,
+      "ball": [
+        0.0,
+        2.5
+      ],
+      "start": [
+        1.565,
+        -3.727
+      ],
+      "yaw": -1.451622,
+      "power": 1.5,
+      "ball_id": "x2-y3",
+      "start_id": "south-away"
+    },
+    {
+      "name": "x2-y3-central-oblique-positive",
+      "direction": 1,
+      "ball": [
+        0.0,
+        2.5
+      ],
+      "start": [
+        1.505,
+        0.905
+      ],
+      "yaw": -2.24286,
+      "power": 1.5,
+      "ball_id": "x2-y3",
+      "start_id": "central-oblique"
+    },
+    {
+      "name": "x2-y3-central-oblique-negative",
+      "direction": -1,
+      "ball": [
+        0.0,
+        2.5
+      ],
+      "start": [
+        1.505,
+        0.905
+      ],
+      "yaw": -2.24286,
+      "power": 1.5,
+      "ball_id": "x2-y3",
+      "start_id": "central-oblique"
+    },
+    {
+      "name": "x3-y1-west-away-positive",
+      "direction": 1,
+      "ball": [
+        4.5,
+        -2.5
+      ],
+      "start": [
+        -5.736,
+        -0.287
+      ],
+      "yaw": 3.266099,
+      "power": 1.5,
+      "ball_id": "x3-y1",
+      "start_id": "west-away"
+    },
+    {
+      "name": "x3-y1-west-away-negative",
+      "direction": -1,
+      "ball": [
+        4.5,
+        -2.5
+      ],
+      "start": [
+        -5.736,
+        -0.287
+      ],
+      "yaw": 3.266099,
+      "power": 1.5,
+      "ball_id": "x3-y1",
+      "start_id": "west-away"
+    },
+    {
+      "name": "x3-y1-east-away-positive",
+      "direction": 1,
+      "ball": [
+        4.5,
+        -2.5
+      ],
+      "start": [
+        5.548,
+        0.16
+      ],
+      "yaw": 0.123181,
+      "power": 1.5,
+      "ball_id": "x3-y1",
+      "start_id": "east-away"
+    },
+    {
+      "name": "x3-y1-east-away-negative",
+      "direction": -1,
+      "ball": [
+        4.5,
+        -2.5
+      ],
+      "start": [
+        5.548,
+        0.16
+      ],
+      "yaw": 0.123181,
+      "power": 1.5,
+      "ball_id": "x3-y1",
+      "start_id": "east-away"
+    },
+    {
+      "name": "x3-y1-north-away-positive",
+      "direction": 1,
+      "ball": [
+        4.5,
+        -2.5
+      ],
+      "start": [
+        -1.41,
+        3.8
+      ],
+      "yaw": 1.502417,
+      "power": 1.5,
+      "ball_id": "x3-y1",
+      "start_id": "north-away"
+    },
+    {
+      "name": "x3-y1-north-away-negative",
+      "direction": -1,
+      "ball": [
+        4.5,
+        -2.5
+      ],
+      "start": [
+        -1.41,
+        3.8
+      ],
+      "yaw": 1.502417,
+      "power": 1.5,
+      "ball_id": "x3-y1",
+      "start_id": "north-away"
+    },
+    {
+      "name": "x3-y1-south-away-positive",
+      "direction": 1,
+      "ball": [
+        4.5,
+        -2.5
+      ],
+      "start": [
+        1.565,
+        -3.727
+      ],
+      "yaw": -1.451622,
+      "power": 1.5,
+      "ball_id": "x3-y1",
+      "start_id": "south-away"
+    },
+    {
+      "name": "x3-y1-south-away-negative",
+      "direction": -1,
+      "ball": [
+        4.5,
+        -2.5
+      ],
+      "start": [
+        1.565,
+        -3.727
+      ],
+      "yaw": -1.451622,
+      "power": 1.5,
+      "ball_id": "x3-y1",
+      "start_id": "south-away"
+    },
+    {
+      "name": "x3-y1-central-oblique-positive",
+      "direction": 1,
+      "ball": [
+        4.5,
+        -2.5
+      ],
+      "start": [
+        1.505,
+        0.905
+      ],
+      "yaw": -2.24286,
+      "power": 1.5,
+      "ball_id": "x3-y1",
+      "start_id": "central-oblique"
+    },
+    {
+      "name": "x3-y1-central-oblique-negative",
+      "direction": -1,
+      "ball": [
+        4.5,
+        -2.5
+      ],
+      "start": [
+        1.505,
+        0.905
+      ],
+      "yaw": -2.24286,
+      "power": 1.5,
+      "ball_id": "x3-y1",
+      "start_id": "central-oblique"
+    },
+    {
+      "name": "x3-y2-west-away-positive",
+      "direction": 1,
+      "ball": [
+        4.5,
+        0.0
+      ],
+      "start": [
+        -5.736,
+        -0.287
+      ],
+      "yaw": 3.266099,
+      "power": 1.5,
+      "ball_id": "x3-y2",
+      "start_id": "west-away"
+    },
+    {
+      "name": "x3-y2-west-away-negative",
+      "direction": -1,
+      "ball": [
+        4.5,
+        0.0
+      ],
+      "start": [
+        -5.736,
+        -0.287
+      ],
+      "yaw": 3.266099,
+      "power": 1.5,
+      "ball_id": "x3-y2",
+      "start_id": "west-away"
+    },
+    {
+      "name": "x3-y2-east-away-positive",
+      "direction": 1,
+      "ball": [
+        4.5,
+        0.0
+      ],
+      "start": [
+        5.548,
+        0.16
+      ],
+      "yaw": 0.123181,
+      "power": 1.5,
+      "ball_id": "x3-y2",
+      "start_id": "east-away"
+    },
+    {
+      "name": "x3-y2-east-away-negative",
+      "direction": -1,
+      "ball": [
+        4.5,
+        0.0
+      ],
+      "start": [
+        5.548,
+        0.16
+      ],
+      "yaw": 0.123181,
+      "power": 1.5,
+      "ball_id": "x3-y2",
+      "start_id": "east-away"
+    },
+    {
+      "name": "x3-y2-north-away-positive",
+      "direction": 1,
+      "ball": [
+        4.5,
+        0.0
+      ],
+      "start": [
+        -1.41,
+        3.8
+      ],
+      "yaw": 1.502417,
+      "power": 1.5,
+      "ball_id": "x3-y2",
+      "start_id": "north-away"
+    },
+    {
+      "name": "x3-y2-north-away-negative",
+      "direction": -1,
+      "ball": [
+        4.5,
+        0.0
+      ],
+      "start": [
+        -1.41,
+        3.8
+      ],
+      "yaw": 1.502417,
+      "power": 1.5,
+      "ball_id": "x3-y2",
+      "start_id": "north-away"
+    },
+    {
+      "name": "x3-y2-south-away-positive",
+      "direction": 1,
+      "ball": [
+        4.5,
+        0.0
+      ],
+      "start": [
+        1.565,
+        -3.727
+      ],
+      "yaw": -1.451622,
+      "power": 1.5,
+      "ball_id": "x3-y2",
+      "start_id": "south-away"
+    },
+    {
+      "name": "x3-y2-south-away-negative",
+      "direction": -1,
+      "ball": [
+        4.5,
+        0.0
+      ],
+      "start": [
+        1.565,
+        -3.727
+      ],
+      "yaw": -1.451622,
+      "power": 1.5,
+      "ball_id": "x3-y2",
+      "start_id": "south-away"
+    },
+    {
+      "name": "x3-y2-central-oblique-positive",
+      "direction": 1,
+      "ball": [
+        4.5,
+        0.0
+      ],
+      "start": [
+        1.505,
+        0.905
+      ],
+      "yaw": -2.24286,
+      "power": 1.5,
+      "ball_id": "x3-y2",
+      "start_id": "central-oblique"
+    },
+    {
+      "name": "x3-y2-central-oblique-negative",
+      "direction": -1,
+      "ball": [
+        4.5,
+        0.0
+      ],
+      "start": [
+        1.505,
+        0.905
+      ],
+      "yaw": -2.24286,
+      "power": 1.5,
+      "ball_id": "x3-y2",
+      "start_id": "central-oblique"
+    },
+    {
+      "name": "x3-y3-west-away-positive",
+      "direction": 1,
+      "ball": [
+        4.5,
+        2.5
+      ],
+      "start": [
+        -5.736,
+        -0.287
+      ],
+      "yaw": 3.266099,
+      "power": 1.5,
+      "ball_id": "x3-y3",
+      "start_id": "west-away"
+    },
+    {
+      "name": "x3-y3-west-away-negative",
+      "direction": -1,
+      "ball": [
+        4.5,
+        2.5
+      ],
+      "start": [
+        -5.736,
+        -0.287
+      ],
+      "yaw": 3.266099,
+      "power": 1.5,
+      "ball_id": "x3-y3",
+      "start_id": "west-away"
+    },
+    {
+      "name": "x3-y3-east-away-positive",
+      "direction": 1,
+      "ball": [
+        4.5,
+        2.5
+      ],
+      "start": [
+        5.548,
+        0.16
+      ],
+      "yaw": 0.123181,
+      "power": 1.5,
+      "ball_id": "x3-y3",
+      "start_id": "east-away"
+    },
+    {
+      "name": "x3-y3-east-away-negative",
+      "direction": -1,
+      "ball": [
+        4.5,
+        2.5
+      ],
+      "start": [
+        5.548,
+        0.16
+      ],
+      "yaw": 0.123181,
+      "power": 1.5,
+      "ball_id": "x3-y3",
+      "start_id": "east-away"
+    },
+    {
+      "name": "x3-y3-north-away-positive",
+      "direction": 1,
+      "ball": [
+        4.5,
+        2.5
+      ],
+      "start": [
+        -1.41,
+        3.8
+      ],
+      "yaw": 1.502417,
+      "power": 1.5,
+      "ball_id": "x3-y3",
+      "start_id": "north-away"
+    },
+    {
+      "name": "x3-y3-north-away-negative",
+      "direction": -1,
+      "ball": [
+        4.5,
+        2.5
+      ],
+      "start": [
+        -1.41,
+        3.8
+      ],
+      "yaw": 1.502417,
+      "power": 1.5,
+      "ball_id": "x3-y3",
+      "start_id": "north-away"
+    },
+    {
+      "name": "x3-y3-south-away-positive",
+      "direction": 1,
+      "ball": [
+        4.5,
+        2.5
+      ],
+      "start": [
+        1.565,
+        -3.727
+      ],
+      "yaw": -1.451622,
+      "power": 1.5,
+      "ball_id": "x3-y3",
+      "start_id": "south-away"
+    },
+    {
+      "name": "x3-y3-south-away-negative",
+      "direction": -1,
+      "ball": [
+        4.5,
+        2.5
+      ],
+      "start": [
+        1.565,
+        -3.727
+      ],
+      "yaw": -1.451622,
+      "power": 1.5,
+      "ball_id": "x3-y3",
+      "start_id": "south-away"
+    },
+    {
+      "name": "x3-y3-central-oblique-positive",
+      "direction": 1,
+      "ball": [
+        4.5,
+        2.5
+      ],
+      "start": [
+        1.505,
+        0.905
+      ],
+      "yaw": -2.24286,
+      "power": 1.5,
+      "ball_id": "x3-y3",
+      "start_id": "central-oblique"
+    },
+    {
+      "name": "x3-y3-central-oblique-negative",
+      "direction": -1,
+      "ball": [
+        4.5,
+        2.5
+      ],
+      "start": [
+        1.505,
+        0.905
+      ],
+      "yaw": -2.24286,
+      "power": 1.5,
+      "ball_id": "x3-y3",
+      "start_id": "central-oblique"
+    }
+  ],
+  "policies": [
+    "peter"
+  ],
+  "ball_profiles": [
+    "light-small",
+    "heavy-large"
+  ],
+  "balls": {
+    "light-small": {
+      "radius_m": 0.08,
+      "mass_kg": 0.1
+    },
+    "heavy-large": {
+      "radius_m": 0.095,
+      "mass_kg": 0.29
+    }
+  },
+  "timeout_override_s": null,
+  "budgets_s": {
+    "x1-y1-west-away-positive": 55,
+    "x1-y1-west-away-negative": 55,
+    "x1-y1-east-away-positive": 113,
+    "x1-y1-east-away-negative": 113,
+    "x1-y1-north-away-positive": 88,
+    "x1-y1-north-away-negative": 88,
+    "x1-y1-south-away-positive": 82,
+    "x1-y1-south-away-negative": 82,
+    "x1-y1-central-oblique-positive": 87,
+    "x1-y1-central-oblique-negative": 87,
+    "x1-y2-west-away-positive": 45,
+    "x1-y2-west-away-negative": 45,
+    "x1-y2-east-away-positive": 111,
+    "x1-y2-east-away-negative": 111,
+    "x1-y2-north-away-positive": 72,
+    "x1-y2-north-away-negative": 72,
+    "x1-y2-south-away-positive": 89,
+    "x1-y2-south-away-negative": 89,
+    "x1-y2-central-oblique-positive": 81,
+    "x1-y2-central-oblique-negative": 81,
+    "x1-y3-west-away-positive": 58,
+    "x1-y3-west-away-negative": 58,
+    "x1-y3-east-away-positive": 113,
+    "x1-y3-east-away-negative": 113,
+    "x1-y3-north-away-positive": 61,
+    "x1-y3-north-away-negative": 61,
+    "x1-y3-south-away-positive": 101,
+    "x1-y3-south-away-negative": 101,
+    "x1-y3-central-oblique-positive": 82,
+    "x1-y3-central-oblique-negative": 82,
+    "x2-y1-west-away-positive": 82,
+    "x2-y1-west-away-negative": 82,
+    "x2-y1-east-away-positive": 82,
+    "x2-y1-east-away-negative": 82,
+    "x2-y1-north-away-positive": 84,
+    "x2-y1-north-away-negative": 84,
+    "x2-y1-south-away-positive": 50,
+    "x2-y1-south-away-negative": 50,
+    "x2-y1-central-oblique-positive": 63,
+    "x2-y1-central-oblique-negative": 63,
+    "x2-y2-west-away-positive": 79,
+    "x2-y2-west-away-negative": 79,
+    "x2-y2-east-away-positive": 77,
+    "x2-y2-east-away-negative": 77,
+    "x2-y2-north-away-positive": 66,
+    "x2-y2-north-away-negative": 66,
+    "x2-y2-south-away-positive": 66,
+    "x2-y2-south-away-negative": 66,
+    "x2-y2-central-oblique-positive": 49,
+    "x2-y2-central-oblique-negative": 49,
+    "x2-y3-west-away-positive": 83,
+    "x2-y3-west-away-negative": 83,
+    "x2-y3-east-away-positive": 81,
+    "x2-y3-east-away-negative": 81,
+    "x2-y3-north-away-positive": 50,
+    "x2-y3-north-away-negative": 50,
+    "x2-y3-south-away-positive": 84,
+    "x2-y3-south-away-negative": 84,
+    "x2-y3-central-oblique-positive": 52,
+    "x2-y3-central-oblique-negative": 52,
+    "x3-y1-west-away-positive": 114,
+    "x3-y1-west-away-negative": 114,
+    "x3-y1-east-away-positive": 57,
+    "x3-y1-east-away-negative": 57,
+    "x3-y1-north-away-positive": 100,
+    "x3-y1-north-away-negative": 100,
+    "x3-y1-south-away-positive": 59,
+    "x3-y1-south-away-negative": 59,
+    "x3-y1-central-oblique-positive": 70,
+    "x3-y1-central-oblique-negative": 70,
+    "x3-y2-west-away-positive": 112,
+    "x3-y2-west-away-negative": 112,
+    "x3-y2-east-away-positive": 45,
+    "x3-y2-east-away-negative": 45,
+    "x3-y2-north-away-positive": 88,
+    "x3-y2-north-away-negative": 88,
+    "x3-y2-south-away-positive": 71,
+    "x3-y2-south-away-negative": 71,
+    "x3-y2-central-oblique-positive": 59,
+    "x3-y2-central-oblique-negative": 59,
+    "x3-y3-west-away-positive": 115,
+    "x3-y3-west-away-negative": 115,
+    "x3-y3-east-away-positive": 55,
+    "x3-y3-east-away-negative": 55,
+    "x3-y3-north-away-positive": 81,
+    "x3-y3-north-away-negative": 81,
+    "x3-y3-south-away-positive": 87,
+    "x3-y3-south-away-negative": 87,
+    "x3-y3-central-oblique-positive": 61,
+    "x3-y3-central-oblique-negative": 61
+  },
+  "passive_tail_s": 8,
+  "grid_sha256": "e003cb21ed22bc3a355e4af9ee972da090cb8dccf04bc02d7f47566b3307ba09",
+  "evaluator_sha256": "5754147163bc4d174a5f92b072898dc897d421e89a2f397c92091fad9d7f2725",
+  "repositories": {
+    "bhuman": [
+      "bhuman/MachineLearning",
+      "5d54ac1441cd3270801782dfc90ee8bdfa752f1f",
+      [
+        "IsaacGymRL"
+      ]
+    ],
+    "peter-training": [
+      "Peter0452/runswift_mjlab",
+      "b3752d979c4e8df6ad25ab64491d9c73461ba116",
+      [
+        "logs/rsl_rl/k1_kick_stage3_amp/blends",
+        "src/mjlab",
+        "docs"
+      ]
+    ],
+    "peter-runner": [
+      "UNSWComputing/k1_policy_runner",
+      "01c849225ca107fc40dc60ef9947d7058c1e6a07",
+      [
+        "python-implementation",
+        "assets",
+        "kick_loop_models"
+      ]
+    ]
+  },
+  "models": {
+    "bhuman": [
+      "bhuman/IsaacGymRL/pre-trained/WalkAndKick/K1_kick_inner.onnx",
+      "7fb9ea33c36e14332861025f22e92f2f4a7ae7681f4532bdd6e1e78975fe3452"
+    ],
+    "peter": [
+      "peter-runner/kick_loop_models/k1_kick_loop_blend_x4_g004_70.onnx",
+      "a7a66944702746d62b936bb941eeb856ed6266d60afc541fed2dc591eaf8b0b9"
+    ],
+    "peter-checkpoint": [
+      "peter-training/logs/rsl_rl/k1_kick_stage3_amp/blends/x4_g004_70.pt",
+      "1cdc87cb16dcceaba081a076fc670473123cb43541ade882e0722660f55f8329"
+    ],
+    "bhuman-walk": [
+      "bhuman/IsaacGymRL/pre-trained/WalkAndKick/K1_walk.onnx",
+      "9d1ec18504cb9d05ec708b9430783a2331cabf5415fc0db81c6318472e948e8f"
+    ]
+  },
+  "source_hashes": {
+    "compare.py": "6b4de7a7cd9f2d251c16ffcebc5101161206bcc77cebac1e2f7debd6183a0604",
+    "metrics.py": "e37ca858bb054348786d5024c134f80c0aae84570bdc7865d6cf2aca4381f933",
+    "test_contracts.py": "5db46a14e4d5c55c412fe053667ac99c1853c8e3f4a1fd4d73de221e6b762788",
+    "plot_report.py": "547344223eebd32808f3ca175fbdb2a4a9a301aa418c062be637d5d3e64872ff",
+    "contracts.py": "11bc0cc6ebf33e71533701a4ef6bd3a4384c154870b4319fccd31a616ae75e61",
+    "audit_goal_grid.py": "ec9173b56bb8f013574fae81cccf72e8d6b2b5a95fca4197f4019ccdc488a9a9",
+    "goal_controller.py": "3ad171ef5d3bf333a05b054ffaaa1d08e109269f6141214f0b903df89659a9b1",
+    "audit_results.py": "594aebdff13e6bd2e07906a7b59c2e84065ff1929309ada0b8788c03028c6e28",
+    "plot_goal_report.py": "92c64d98b541a67c5d810e0c6471e5d9f34d1daaf644539bef3fec2a3e003dc9",
+    "audit_export.py": "77b2942257ecc197628dad7f2b6e82cfd219e75a2673cb08106d4eedc2b07508",
+    "test_goal_grid.py": "3851ab6180a245f96e43a820917510acd7b59a86085dc38408614c42b0e75317",
+    "goal_grid.py": "949aeee48cdedd7a4a3fee9e7802e727d5271ab7b648f703e607297619d3e2ee",
+    "prepare_assets.py": "d7a57e70435f4339ac50ab6897ec5f46183c98ae124e18cbd61c667030c7e172"
+  },
+  "runtime": {
+    "python": "3.13.15 (main, Sep  1 2026, 14:18:08) [Clang 22.1.3 ]",
+    "mujoco": "3.10.0",
+    "numpy": "2.3.4"
+  },
+  "upstream_source_hashes": {
+    "peter-runner/python-implementation/policy_runner/__init__.py": "3c1de1f84ae54dc7242ff838f202b68a42701ee3674b2d27d15d5102ea27dd86",
+    "peter-runner/python-implementation/policy_runner/obs_record.py": "4cbab4aade6cbf1fded872415f71d66498145e0ff4b0f091d8b65587b3fc99df",
+    "peter-runner/python-implementation/policy_runner/joint_index.py": "d057a9d4a643a13856e4c72261155d35fd44554d710e5cce08bf88403363440e",
+    "peter-runner/python-implementation/policy_runner/joint_gains.py": "bd1ec5a4d9c16cf9c4ec6f556a833276d609a80026fe30d90f31ce63132099b7",
+    "peter-runner/python-implementation/policy_runner/types.py": "3488cc518c428384aa34d81767531d617d07a2f99544eda131a1ac6e44c0c1d8",
+    "peter-runner/python-implementation/policy_runner/sim/__init__.py": "01694379be79f6866ed4cfe1f4887e7627d8a2090aa270324162e34a10052799",
+    "peter-runner/python-implementation/policy_runner/sim/mujoco_bridge.py": "217a4a86529efd3b51cbd6e5bfdf4de1db51352232a021faeb25c119f7ebf359",
+    "peter-runner/python-implementation/policy_runner/sim/recorder.py": "9fcdaf87da1f7a929a9a38aa791a828caa5d557715961f5ed244b8ae6f2f40c8",
+    "peter-runner/python-implementation/policy_runner/robot/__init__.py": "3546f1fee0539c6918869ef7b4dd984a99eee0a77e788fa6cad716a9329220e1",
+    "peter-runner/python-implementation/policy_runner/robot/robot_bridge.py": "b46b364bfa76f065043864f266768ee9d2838571f6f093d5f1771fbb155d82a4",
+    "peter-runner/python-implementation/policy_runner/policy/sine_ankle_policy.py": "7daa506912569b4f688558bca82c5fd60c9fba3ac6f4ffc01ffe0cb0c86885d5",
+    "peter-runner/python-implementation/policy_runner/policy/walk_policy_amp_v1.py": "78ded45e8edc108b94fd850e42c0f6192ff81146ca3370cf46aca6729e686a73",
+    "peter-runner/python-implementation/policy_runner/policy/__init__.py": "14eece0c0668826e351867bfeffd7945d4fdcb64d9544ce0d6e9f7fb16a39173",
+    "peter-runner/python-implementation/policy_runner/policy/walk_policy_nubots_v1.py": "16edd82acd9680d30a285911f8b563c01e3609968b1ea47b6c3838c4b48cd9e1",
+    "peter-runner/python-implementation/policy_runner/policy/kick_loop_policy.py": "6290abb89130136a6924ca38824ab511f133a5c82b4525ed5a4db6b6775e4005",
+    "peter-runner/python-implementation/policy_runner/policy/sine_knee_policy.py": "82e5d7905a5ea9104892dde2b7c202ef6553e2e8663454e75788d32b54cf88c1",
+    "peter-runner/python-implementation/policy_runner/policy/step_ankle_policy.py": "bb2805d57576612814689789f3386c384b351f860595ea7f2c773658a38c9620",
+    "peter-runner/python-implementation/policy_runner/policy/arm_demo_common.py": "59ef77cce7799f0d2b7bae802ae2bf43f3ec02052b98f8a4bfc226b40527f474",
+    "peter-runner/python-implementation/policy_runner/policy/hold_lower_body_policy.py": "4b506fc43826758728ae4069f6834194c0b450d6a452364eb792579f95c95355",
+    "peter-runner/python-implementation/policy_runner/policy/walk_policy_v5.py": "9cb0fb9c2cb0affff706b8a582ae21cc7d45f10826997205a5de4c469382bf63",
+    "peter-runner/python-implementation/policy_runner/policy/walk_policy_v2.py": "de6c4b9c5ec700ac39772a84a94d14eaa860833a764af0c8ae709391da11826c",
+    "peter-runner/python-implementation/policy_runner/policy/base.py": "e629cc10a3c8e142b1987ec9328373b9e2cdb489fc7a62154fa3f8bfdbbfa489",
+    "peter-runner/python-implementation/policy_runner/policy/walk_policy_v1.py": "e82a703ffa9fc23507ce3d16206aef47846554e9859503318c9c77de5bf51213",
+    "peter-runner/python-implementation/policy_runner/policy/sine_arm_policy.py": "ddaac22ada605460758af5800998cdf4ba1a60ebd1b3aa56ccf4a0c4cae3a04a",
+    "peter-runner/python-implementation/policy_runner/policy/sine_head_policy.py": "2d00075ba44b968fedf54232b53211dc7409753ff632853253f53fec365cdb4a",
+    "peter-runner/python-implementation/policy_runner/policy/walk_policy_v6.py": "b75d1532ab13f916fa78dc3da4fffe5dcc96ae8c8194d923eda28d2f9a3dcf45",
+    "peter-runner/python-implementation/policy_runner/policy/obs_history.py": "a06b5479f0fae7ac5df7801a94c0ec345b055c8dac987d2dc8ceb25369dac15a",
+    "peter-runner/python-implementation/policy_runner/policy/merge.py": "36c22060fd70f1c492f09aae5684f9affe1a4b8a07264cbdf98db7cc834cef66",
+    "peter-runner/python-implementation/policy_runner/policy/step_arm_policy.py": "abdc7ee0512d591a568aeeffd271ccc1a4b8bb6be4173ef6006db7193301871a",
+    "peter-runner/python-implementation/policy_runner/policy/walk_policy_v3.py": "fea0022e536066d573b2da57e277612d205725b9cb2034a6d0a358ea21424e46",
+    "peter-runner/python-implementation/policy_runner/policy/sine_hip_policy.py": "bce6b09f37ce8ecb9bdb14e619aa890e7190d91512a502eae4b0bc704947ae1e",
+    "peter-runner/python-implementation/policy_runner/policy/walk_policy_v4.py": "e6dfe7a900d3b4def4ed1cdcaa89e2dad9f8f2f00548377591637cac97cd274d",
+    "peter-runner/python-implementation/policy_runner/policy/kick_walkamp_policy.py": "3f216cd77d256a3095180c786f63351a8437e45bc5a1d7fc0f5c944873e90f96"
+  },
+  "scene_asset_hashes": {
+    "peter-runner/assets/k1_22dof_scene.xml": "2468bbff7bd6521a851f11a8df38e622c75f1ec89bd5772e9126977ed80fb7a6"
+  },
+  "inputs": "ideal truth; no camera; native homes and joint gains",
+  "scope": "Existing grid placements and evaluator in shared flat-floor K1 MuJoCo scene; B-Human competition-motion port with benchmark waypoint requests, not full C++ framework; Peter published kick loop; virtual goal boundaries, no physical posts or other robots."
+}

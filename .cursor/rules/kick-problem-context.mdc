@@ -1,0 +1,18 @@
+---
+description: Kick Stage-0 problem context — read/update PROBLEM.md; no greedy reward patches
+globs: src/mjlab/tasks/kick/**/*
+alwaysApply: false
+---
+
+# Kick problem context
+
+Before changing kick rewards, terminations, spawn, AMP, or train recipes:
+
+1. Read `src/mjlab/tasks/kick/PROBLEM.md`.
+2. Interpret the user request **inside that problem** (Stage 0 = strike + settle for Walk handoff). Mean reward is not the objective.
+3. Prefer **one intentional change** per run; resume from a **kicking** checkpoint in §5 when fixing power.
+4. Judge progress by north stars in §3 (`kick_ball_speed`, `strong_kick`, …). Abort if they stay dead while reward rises.
+5. After any material change or failed run: **update** `PROBLEM.md` (§6 hypothesis log, §7 snapshot, §8 next hypothesis, §9 changelog).
+
+Do not silently retarget to transition/residual/deploy FSM while Stage 0 is open.
+Do not implement multi-knob “fix everything” patches that conflict with §4.

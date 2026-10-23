@@ -1,0 +1,45 @@
+{
+  "complete": true,
+  "rows": [
+    {
+      "policy": "peter",
+      "ball_profile": "light-small",
+      "planned": 108,
+      "survived": 107,
+      "execution_errors": 0,
+      "robot_contact": 108,
+      "foot_launch": 108,
+      "on_direction_launch": 86,
+      "successful_trial": 86,
+      "target_plane_hit": 0,
+      "median_launch_speed_m_s": 1.1597380699362376,
+      "median_launch_s": 0.9790000000000006,
+      "median_absolute_heading_error_deg": 6.989132898024089,
+      "median_first_strike_forward_m": 0.1729716187050514,
+      "recontact_after_launch": 108,
+      "foot_launch_2mps": 108,
+      "median_strongest_foot_linked_speed_m_s": 3.168917319796739,
+      "median_strongest_absolute_heading_error_deg": 11.716611157028298
+    },
+    {
+      "policy": "peter",
+      "ball_profile": "heavy-large",
+      "planned": 108,
+      "survived": 108,
+      "execution_errors": 0,
+      "robot_contact": 108,
+      "foot_launch": 108,
+      "on_direction_launch": 98,
+      "successful_trial": 98,
+      "target_plane_hit": 0,
+      "median_launch_speed_m_s": 1.1101264382647278,
+      "median_launch_s": 0.9530000000000006,
+      "median_absolute_heading_error_deg": 4.399650065402735,
+      "median_first_strike_forward_m": 0.12948893475448522,
+      "recontact_after_launch": 108,
+      "foot_launch_2mps": 108,
+      "median_strongest_foot_linked_speed_m_s": 3.2782596205077263,
+      "median_strongest_absolute_heading_error_deg": 8.355699920625034
+    }
+  ]
+}

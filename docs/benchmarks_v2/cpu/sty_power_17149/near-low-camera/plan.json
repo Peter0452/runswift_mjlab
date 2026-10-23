@@ -1,0 +1,522 @@
+{
+  "schema": "runswift-kick-comparison/1",
+  "suite": "full",
+  "cases": [
+    {
+      "name": "near-x0.40-y-0.12-aim-15",
+      "ball_x": 0.4,
+      "ball_y": -0.12,
+      "heading_deg": -15,
+      "range_m": 3,
+      "ball_vx": 0,
+      "ball_vy": 0
+    },
+    {
+      "name": "near-x0.40-y-0.12-aim+0",
+      "ball_x": 0.4,
+      "ball_y": -0.12,
+      "heading_deg": 0,
+      "range_m": 3,
+      "ball_vx": 0,
+      "ball_vy": 0
+    },
+    {
+      "name": "near-x0.40-y-0.12-aim+15",
+      "ball_x": 0.4,
+      "ball_y": -0.12,
+      "heading_deg": 15,
+      "range_m": 3,
+      "ball_vx": 0,
+      "ball_vy": 0
+    },
+    {
+      "name": "near-x0.40-y+0.00-aim-15",
+      "ball_x": 0.4,
+      "ball_y": 0,
+      "heading_deg": -15,
+      "range_m": 3,
+      "ball_vx": 0,
+      "ball_vy": 0
+    },
+    {
+      "name": "near-x0.40-y+0.00-aim+0",
+      "ball_x": 0.4,
+      "ball_y": 0,
+      "heading_deg": 0,
+      "range_m": 3,
+      "ball_vx": 0,
+      "ball_vy": 0
+    },
+    {
+      "name": "near-x0.40-y+0.00-aim+15",
+      "ball_x": 0.4,
+      "ball_y": 0,
+      "heading_deg": 15,
+      "range_m": 3,
+      "ball_vx": 0,
+      "ball_vy": 0
+    },
+    {
+      "name": "near-x0.40-y+0.12-aim-15",
+      "ball_x": 0.4,
+      "ball_y": 0.12,
+      "heading_deg": -15,
+      "range_m": 3,
+      "ball_vx": 0,
+      "ball_vy": 0
+    },
+    {
+      "name": "near-x0.40-y+0.12-aim+0",
+      "ball_x": 0.4,
+      "ball_y": 0.12,
+      "heading_deg": 0,
+      "range_m": 3,
+      "ball_vx": 0,
+      "ball_vy": 0
+    },
+    {
+      "name": "near-x0.40-y+0.12-aim+15",
+      "ball_x": 0.4,
+      "ball_y": 0.12,
+      "heading_deg": 15,
+      "range_m": 3,
+      "ball_vx": 0,
+      "ball_vy": 0
+    },
+    {
+      "name": "near-x0.75-y-0.12-aim-15",
+      "ball_x": 0.75,
+      "ball_y": -0.12,
+      "heading_deg": -15,
+      "range_m": 3,
+      "ball_vx": 0,
+      "ball_vy": 0
+    },
+    {
+      "name": "near-x0.75-y-0.12-aim+0",
+      "ball_x": 0.75,
+      "ball_y": -0.12,
+      "heading_deg": 0,
+      "range_m": 3,
+      "ball_vx": 0,
+      "ball_vy": 0
+    },
+    {
+      "name": "near-x0.75-y-0.12-aim+15",
+      "ball_x": 0.75,
+      "ball_y": -0.12,
+      "heading_deg": 15,
+      "range_m": 3,
+      "ball_vx": 0,
+      "ball_vy": 0
+    },
+    {
+      "name": "near-x0.75-y+0.00-aim-15",
+      "ball_x": 0.75,
+      "ball_y": 0,
+      "heading_deg": -15,
+      "range_m": 3,
+      "ball_vx": 0,
+      "ball_vy": 0
+    },
+    {
+      "name": "near-x0.75-y+0.00-aim+0",
+      "ball_x": 0.75,
+      "ball_y": 0,
+      "heading_deg": 0,
+      "range_m": 3,
+      "ball_vx": 0,
+      "ball_vy": 0
+    },
+    {
+      "name": "near-x0.75-y+0.00-aim+15",
+      "ball_x": 0.75,
+      "ball_y": 0,
+      "heading_deg": 15,
+      "range_m": 3,
+      "ball_vx": 0,
+      "ball_vy": 0
+    },
+    {
+      "name": "near-x0.75-y+0.12-aim-15",
+      "ball_x": 0.75,
+      "ball_y": 0.12,
+      "heading_deg": -15,
+      "range_m": 3,
+      "ball_vx": 0,
+      "ball_vy": 0
+    },
+    {
+      "name": "near-x0.75-y+0.12-aim+0",
+      "ball_x": 0.75,
+      "ball_y": 0.12,
+      "heading_deg": 0,
+      "range_m": 3,
+      "ball_vx": 0,
+      "ball_vy": 0
+    },
+    {
+      "name": "near-x0.75-y+0.12-aim+15",
+      "ball_x": 0.75,
+      "ball_y": 0.12,
+      "heading_deg": 15,
+      "range_m": 3,
+      "ball_vx": 0,
+      "ball_vy": 0
+    },
+    {
+      "name": "near-x1.10-y-0.12-aim-15",
+      "ball_x": 1.1,
+      "ball_y": -0.12,
+      "heading_deg": -15,
+      "range_m": 3,
+      "ball_vx": 0,
+      "ball_vy": 0
+    },
+    {
+      "name": "near-x1.10-y-0.12-aim+0",
+      "ball_x": 1.1,
+      "ball_y": -0.12,
+      "heading_deg": 0,
+      "range_m": 3,
+      "ball_vx": 0,
+      "ball_vy": 0
+    },
+    {
+      "name": "near-x1.10-y-0.12-aim+15",
+      "ball_x": 1.1,
+      "ball_y": -0.12,
+      "heading_deg": 15,
+      "range_m": 3,
+      "ball_vx": 0,
+      "ball_vy": 0
+    },
+    {
+      "name": "near-x1.10-y+0.00-aim-15",
+      "ball_x": 1.1,
+      "ball_y": 0,
+      "heading_deg": -15,
+      "range_m": 3,
+      "ball_vx": 0,
+      "ball_vy": 0
+    },
+    {
+      "name": "near-x1.10-y+0.00-aim+0",
+      "ball_x": 1.1,
+      "ball_y": 0,
+      "heading_deg": 0,
+      "range_m": 3,
+      "ball_vx": 0,
+      "ball_vy": 0
+    },
+    {
+      "name": "near-x1.10-y+0.00-aim+15",
+      "ball_x": 1.1,
+      "ball_y": 0,
+      "heading_deg": 15,
+      "range_m": 3,
+      "ball_vx": 0,
+      "ball_vy": 0
+    },
+    {
+      "name": "near-x1.10-y+0.12-aim-15",
+      "ball_x": 1.1,
+      "ball_y": 0.12,
+      "heading_deg": -15,
+      "range_m": 3,
+      "ball_vx": 0,
+      "ball_vy": 0
+    },
+    {
+      "name": "near-x1.10-y+0.12-aim+0",
+      "ball_x": 1.1,
+      "ball_y": 0.12,
+      "heading_deg": 0,
+      "range_m": 3,
+      "ball_vx": 0,
+      "ball_vy": 0
+    },
+    {
+      "name": "near-x1.10-y+0.12-aim+15",
+      "ball_x": 1.1,
+      "ball_y": 0.12,
+      "heading_deg": 15,
+      "range_m": 3,
+      "ball_vx": 0,
+      "ball_vy": 0
+    },
+    {
+      "name": "range-6-y-0.12",
+      "ball_x": 0.75,
+      "ball_y": -0.12,
+      "heading_deg": 0,
+      "range_m": 6,
+      "ball_vx": 0,
+      "ball_vy": 0
+    },
+    {
+      "name": "range-6-y+0.00",
+      "ball_x": 0.75,
+      "ball_y": 0,
+      "heading_deg": 0,
+      "range_m": 6,
+      "ball_vx": 0,
+      "ball_vy": 0
+    },
+    {
+      "name": "range-6-y+0.12",
+      "ball_x": 0.75,
+      "ball_y": 0.12,
+      "heading_deg": 0,
+      "range_m": 6,
+      "ball_vx": 0,
+      "ball_vy": 0
+    },
+    {
+      "name": "range-9-y-0.12",
+      "ball_x": 0.75,
+      "ball_y": -0.12,
+      "heading_deg": 0,
+      "range_m": 9,
+      "ball_vx": 0,
+      "ball_vy": 0
+    },
+    {
+      "name": "range-9-y+0.00",
+      "ball_x": 0.75,
+      "ball_y": 0,
+      "heading_deg": 0,
+      "range_m": 9,
+      "ball_vx": 0,
+      "ball_vy": 0
+    },
+    {
+      "name": "range-9-y+0.12",
+      "ball_x": 0.75,
+      "ball_y": 0.12,
+      "heading_deg": 0,
+      "range_m": 9,
+      "ball_vx": 0,
+      "ball_vy": 0
+    },
+    {
+      "name": "incoming-y-0.12",
+      "ball_x": 0.9,
+      "ball_y": -0.12,
+      "heading_deg": 0,
+      "range_m": 3,
+      "ball_vx": -0.2,
+      "ball_vy": 0
+    },
+    {
+      "name": "incoming-y+0.00",
+      "ball_x": 0.9,
+      "ball_y": 0,
+      "heading_deg": 0,
+      "range_m": 3,
+      "ball_vx": -0.2,
+      "ball_vy": 0
+    },
+    {
+      "name": "incoming-y+0.12",
+      "ball_x": 0.9,
+      "ball_y": 0.12,
+      "heading_deg": 0,
+      "range_m": 3,
+      "ball_vx": -0.2,
+      "ball_vy": 0
+    }
+  ],
+  "repeats": 3,
+  "duration_s": 12,
+  "control_dt_s": 0.02,
+  "physics_dt_s": 0.002,
+  "settle_s": 0.4,
+  "ball_profiles": {
+    "light-small": {
+      "radius_m": 0.08,
+      "mass_kg": 0.1
+    },
+    "heavy-large": {
+      "radius_m": 0.095,
+      "mass_kg": 0.29
+    }
+  },
+  "truth_inputs": true,
+  "seed": 20261006,
+  "launch_speed_m_s": 0.5,
+  "launch_velocity_change_m_s": 0.3,
+  "contact_force_n": 0.2,
+  "contact_lease_s": 0.15,
+  "separate_contact_gap_s": 0.2,
+  "launch_window_s": 0.2,
+  "aim_tolerance_deg": 15,
+  "target_plane_m": 3,
+  "target_half_width_m": 0.5,
+  "secondary_fast_foot_launch_m_s": 2.0,
+  "fall": {
+    "height_m": 0.25,
+    "up_dot": 0.5
+  },
+  "initial_states": "Each policy's home posture, plus matched yaw/joint perturbations.",
+  "first_strike": "Stops measuring travel at a later separated robot contact; falls terminate the trial.",
+  "policies": [
+    "peter"
+  ],
+  "selected_ball_profiles": [
+    "light-small",
+    "heavy-large"
+  ],
+  "repositories": {
+    "bhuman": [
+      "bhuman/MachineLearning",
+      "5d54ac1441cd3270801782dfc90ee8bdfa752f1f",
+      [
+        "IsaacGymRL"
+      ]
+    ],
+    "peter-training": [
+      "Peter0452/runswift_mjlab",
+      "b3752d979c4e8df6ad25ab64491d9c73461ba116",
+      [
+        "logs/rsl_rl/k1_kick_stage3_amp/blends",
+        "src/mjlab",
+        "docs"
+      ]
+    ],
+    "peter-runner": [
+      "UNSWComputing/k1_policy_runner",
+      "01c849225ca107fc40dc60ef9947d7058c1e6a07",
+      [
+        "python-implementation",
+        "assets",
+        "kick_loop_models"
+      ]
+    ]
+  },
+  "models": {
+    "bhuman": [
+      "bhuman/IsaacGymRL/pre-trained/WalkAndKick/K1_kick_inner.onnx",
+      "7fb9ea33c36e14332861025f22e92f2f4a7ae7681f4532bdd6e1e78975fe3452"
+    ],
+    "peter": [
+      "/home/peter/Desktop/Project/RL/k1_policy_runner/kick_loop_models/k1_kick_loop_sty_power_17149.onnx",
+      "06f564de4a2c531f24d07c421a7cd64fcf2fe5427a7d83e1ed4a2a8017b07c43"
+    ],
+    "peter-checkpoint": [
+      "peter-training/logs/rsl_rl/k1_kick_stage3_amp/blends/x4_g004_70.pt",
+      "1cdc87cb16dcceaba081a076fc670473123cb43541ade882e0722660f55f8329"
+    ]
+  },
+  "asset_root": "/home/peter/Desktop/Project/RL/runswift_mjlab/.cache/bench2_assets",
+  "python": "3.13.15",
+  "mujoco": "3.10.0",
+  "onnxruntime": "1.24.3",
+  "numpy": "2.3.4",
+  "source_hashes": {
+    "compare.py": "268b7a1aaaabdf0b55cfa5026adb2ac7c4ed9975505915abc05fc93730f97e10",
+    "metrics.py": "e37ca858bb054348786d5024c134f80c0aae84570bdc7865d6cf2aca4381f933",
+    "test_contracts.py": "5db46a14e4d5c55c412fe053667ac99c1853c8e3f4a1fd4d73de221e6b762788",
+    "plot_report.py": "547344223eebd32808f3ca175fbdb2a4a9a301aa418c062be637d5d3e64872ff",
+    "contracts.py": "11bc0cc6ebf33e71533701a4ef6bd3a4384c154870b4319fccd31a616ae75e61",
+    "audit_goal_grid.py": "ec9173b56bb8f013574fae81cccf72e8d6b2b5a95fca4197f4019ccdc488a9a9",
+    "goal_controller.py": "3ad171ef5d3bf333a05b054ffaaa1d08e109269f6141214f0b903df89659a9b1",
+    "audit_results.py": "594aebdff13e6bd2e07906a7b59c2e84065ff1929309ada0b8788c03028c6e28",
+    "plot_goal_report.py": "92c64d98b541a67c5d810e0c6471e5d9f34d1daaf644539bef3fec2a3e003dc9",
+    "audit_export.py": "77b2942257ecc197628dad7f2b6e82cfd219e75a2673cb08106d4eedc2b07508",
+    "test_goal_grid.py": "3851ab6180a245f96e43a820917510acd7b59a86085dc38408614c42b0e75317",
+    "goal_grid.py": "949aeee48cdedd7a4a3fee9e7802e727d5271ab7b648f703e607297619d3e2ee",
+    "prepare_assets.py": "d7a57e70435f4339ac50ab6897ec5f46183c98ae124e18cbd61c667030c7e172"
+  },
+  "upstream_source_hashes": {
+    "peter-runner/python-implementation/policy_runner/__init__.py": "3c1de1f84ae54dc7242ff838f202b68a42701ee3674b2d27d15d5102ea27dd86",
+    "peter-runner/python-implementation/policy_runner/obs_record.py": "4cbab4aade6cbf1fded872415f71d66498145e0ff4b0f091d8b65587b3fc99df",
+    "peter-runner/python-implementation/policy_runner/joint_index.py": "d057a9d4a643a13856e4c72261155d35fd44554d710e5cce08bf88403363440e",
+    "peter-runner/python-implementation/policy_runner/joint_gains.py": "bd1ec5a4d9c16cf9c4ec6f556a833276d609a80026fe30d90f31ce63132099b7",
+    "peter-runner/python-implementation/policy_runner/types.py": "3488cc518c428384aa34d81767531d617d07a2f99544eda131a1ac6e44c0c1d8",
+    "peter-runner/python-implementation/policy_runner/sim/__init__.py": "01694379be79f6866ed4cfe1f4887e7627d8a2090aa270324162e34a10052799",
+    "peter-runner/python-implementation/policy_runner/sim/mujoco_bridge.py": "217a4a86529efd3b51cbd6e5bfdf4de1db51352232a021faeb25c119f7ebf359",
+    "peter-runner/python-implementation/policy_runner/sim/recorder.py": "9fcdaf87da1f7a929a9a38aa791a828caa5d557715961f5ed244b8ae6f2f40c8",
+    "peter-runner/python-implementation/policy_runner/robot/__init__.py": "3546f1fee0539c6918869ef7b4dd984a99eee0a77e788fa6cad716a9329220e1",
+    "peter-runner/python-implementation/policy_runner/robot/robot_bridge.py": "b46b364bfa76f065043864f266768ee9d2838571f6f093d5f1771fbb155d82a4",
+    "peter-runner/python-implementation/policy_runner/policy/sine_ankle_policy.py": "7daa506912569b4f688558bca82c5fd60c9fba3ac6f4ffc01ffe0cb0c86885d5",
+    "peter-runner/python-implementation/policy_runner/policy/walk_policy_amp_v1.py": "78ded45e8edc108b94fd850e42c0f6192ff81146ca3370cf46aca6729e686a73",
+    "peter-runner/python-implementation/policy_runner/policy/__init__.py": "14eece0c0668826e351867bfeffd7945d4fdcb64d9544ce0d6e9f7fb16a39173",
+    "peter-runner/python-implementation/policy_runner/policy/walk_policy_nubots_v1.py": "16edd82acd9680d30a285911f8b563c01e3609968b1ea47b6c3838c4b48cd9e1",
+    "peter-runner/python-implementation/policy_runner/policy/kick_loop_policy.py": "c21cb040a37beefca39b35e2aeeec8b5736316a8a25812e4995544d619b7a65e",
+    "peter-runner/python-implementation/policy_runner/policy/sine_knee_policy.py": "82e5d7905a5ea9104892dde2b7c202ef6553e2e8663454e75788d32b54cf88c1",
+    "peter-runner/python-implementation/policy_runner/policy/step_ankle_policy.py": "bb2805d57576612814689789f3386c384b351f860595ea7f2c773658a38c9620",
+    "peter-runner/python-implementation/policy_runner/policy/arm_demo_common.py": "59ef77cce7799f0d2b7bae802ae2bf43f3ec02052b98f8a4bfc226b40527f474",
+    "peter-runner/python-implementation/policy_runner/policy/hold_lower_body_policy.py": "4b506fc43826758728ae4069f6834194c0b450d6a452364eb792579f95c95355",
+    "peter-runner/python-implementation/policy_runner/policy/walk_policy_v5.py": "9cb0fb9c2cb0affff706b8a582ae21cc7d45f10826997205a5de4c469382bf63",
+    "peter-runner/python-implementation/policy_runner/policy/walk_policy_v2.py": "de6c4b9c5ec700ac39772a84a94d14eaa860833a764af0c8ae709391da11826c",
+    "peter-runner/python-implementation/policy_runner/policy/base.py": "e629cc10a3c8e142b1987ec9328373b9e2cdb489fc7a62154fa3f8bfdbbfa489",
+    "peter-runner/python-implementation/policy_runner/policy/walk_policy_v1.py": "e82a703ffa9fc23507ce3d16206aef47846554e9859503318c9c77de5bf51213",
+    "peter-runner/python-implementation/policy_runner/policy/sine_arm_policy.py": "ddaac22ada605460758af5800998cdf4ba1a60ebd1b3aa56ccf4a0c4cae3a04a",
+    "peter-runner/python-implementation/policy_runner/policy/sine_head_policy.py": "2d00075ba44b968fedf54232b53211dc7409753ff632853253f53fec365cdb4a",
+    "peter-runner/python-implementation/policy_runner/policy/walk_policy_v6.py": "b75d1532ab13f916fa78dc3da4fffe5dcc96ae8c8194d923eda28d2f9a3dcf45",
+    "peter-runner/python-implementation/policy_runner/policy/obs_history.py": "a06b5479f0fae7ac5df7801a94c0ec345b055c8dac987d2dc8ceb25369dac15a",
+    "peter-runner/python-implementation/policy_runner/policy/merge.py": "36c22060fd70f1c492f09aae5684f9affe1a4b8a07264cbdf98db7cc834cef66",
+    "peter-runner/python-implementation/policy_runner/policy/step_arm_policy.py": "abdc7ee0512d591a568aeeffd271ccc1a4b8bb6be4173ef6006db7193301871a",
+    "peter-runner/python-implementation/policy_runner/policy/walk_policy_v3.py": "fea0022e536066d573b2da57e277612d205725b9cb2034a6d0a358ea21424e46",
+    "peter-runner/python-implementation/policy_runner/policy/sine_hip_policy.py": "bce6b09f37ce8ecb9bdb14e619aa890e7190d91512a502eae4b0bc704947ae1e",
+    "peter-runner/python-implementation/policy_runner/policy/walk_policy_v4.py": "e6dfe7a900d3b4def4ed1cdcaa89e2dad9f8f2f00548377591637cac97cd274d",
+    "peter-runner/python-implementation/policy_runner/policy/kick_walkamp_policy.py": "3f216cd77d256a3095180c786f63351a8437e45bc5a1d7fc0f5c944873e90f96"
+  },
+  "scene_asset_hashes": {
+    "peter-runner/assets/k1_22dof_scene.xml": "e75747faace6808654c92430a33b8d078c72bd7ca5ef6438649f774818d4021e",
+    "peter-runner/assets/meshes/R2_XX_Ball.STL": "7baa5dc5f93dea8bfc8997ebf58abbf41907b6984b05db3ad9ebca3ea9fd58f6",
+    "peter-runner/assets/meshes/Left_Shank.STL": "0e99f5850ba752492a7d5fa0fb066efae03823cb4020e7e57a38e652a34be85c",
+    "peter-runner/assets/meshes/Left_Crank_Down.STL": "6029af63bb74aef9cdc6591d42d03820ed66c4229a8d71205cf787a00d18d2af",
+    "peter-runner/assets/meshes/R2_X_Ball.STL": "f3254f620659e20503e6b386a23b577fa3882409aa7ba819a786a441dba1e2a4",
+    "peter-runner/assets/meshes/R1_X_Ball.STL": "cc8889f243a7b3966b675961164cbbb50bb83d0ab832049f0d7d92335cbe43d2",
+    "peter-runner/assets/meshes/Left_Ankle_Cross.STL": "1798cb3b9721d82c913ce4b0080da9c0eaa69749445bc4a8d6f13dc6a69da232",
+    "peter-runner/assets/meshes/Trunk.STL": "6c2fc1adb1d3d23c081b6cebab1a4d1da57adbd726d6e72c143281ba696ddd5d",
+    "peter-runner/assets/meshes/Left_Arm_2.STL": "b5861bc9f6119baf50f131bbc4f6420867e63c7c1de31792d1e788cac70ad8ae",
+    "peter-runner/assets/meshes/R2_Y_Ball.STL": "f3254f620659e20503e6b386a23b577fa3882409aa7ba819a786a441dba1e2a4",
+    "peter-runner/assets/meshes/L2_Y_Ball.STL": "39c0db9c3689ac195efdc441ef1ec5ac7d481692e54d73f5f55ff0a623ee3685",
+    "peter-runner/assets/meshes/Left_Arm_1.STL": "e1a6de4b34f17260daa09b81aa3bc115d450787b808190aca286073b45540775",
+    "peter-runner/assets/meshes/Right_Hip_Roll.STL": "9655e49b0ae12366eb8dba28dcc9593d63d6ec7a8431d90dc692041c8bb74765",
+    "peter-runner/assets/meshes/Head_2_ZED.STL": "af0568dcba894d67b8fa3184569db0d64020e3bef7ab40b2684ffc6458e8c666",
+    "peter-runner/assets/meshes/Left_Foot_old.STL": "8dd6582601ad0679683b2c3cb4253adf630893ac43f3a131c62dd75c3d9d9a74",
+    "peter-runner/assets/meshes/Left_Hip_Roll.STL": "aa278205ca751295c3d073ca3ddf682762a66218e6e5f239a22109b1d8f5ecf9",
+    "peter-runner/assets/meshes/Head_2_Collision.STL": "267b252c5ea867910ec536fdbe47def43133b743a53af1a813277fa064395d52",
+    "peter-runner/assets/meshes/Left_Foot.STL": "1a391f4b3b87a27726e09f15f6d2ce7795c702c13c0d76307d4756d8aeaadde3",
+    "peter-runner/assets/meshes/Right_Arm_1.STL": "1dc1518437d0b2de09d7c559d13f620ee4910b985ca0b70cb387f29fad67a7d6",
+    "peter-runner/assets/meshes/Right_Arm_2.STL": "2f7f4bf14aac5fdb06974c2336be24b5f5577b069a6e0a36e98a443779bb15cc",
+    "peter-runner/assets/meshes/Left_Hip_Pitch.STL": "ca604e643aaf41ec4d05c8a13ff66ce39587f9d80be7268376c2a6368decd55f",
+    "peter-runner/assets/meshes/L2_X_Ball.STL": "39c0db9c3689ac195efdc441ef1ec5ac7d481692e54d73f5f55ff0a623ee3685",
+    "peter-runner/assets/meshes/Head_2.STL": "ae8f81b864fd0f16efaab6b0ee697a0fd80e54c2bd38f48526a326bc03085020",
+    "peter-runner/assets/meshes/Right_Link_Long.STL": "fd8474e54cc1738247b3ac7841f171fe1befe21918e5aa7e458c6a6cf9a2f151",
+    "peter-runner/assets/meshes/Right_Foot_Collision.STL": "93a9eb7405fe31e418fca46dbe242fe3820a2d4ae66011aa45bfaeb3d3dc900f",
+    "peter-runner/assets/meshes/Left_Link_Short.STL": "8b6dd6f8cc8a6c7cbb344390b5171ec21b878d4a929b0285864751898cff5e9d",
+    "peter-runner/assets/meshes/Right_Hip_Yaw.STL": "dd54f3cd1cdbaead210692a4cd4e131a1b696ceefd9715ab1eb6a8e9f44d88aa",
+    "peter-runner/assets/meshes/L1_X_Ball.STL": "48036910b576cc3536945fcad2963f0fb1e39c0a7749586ef2ed127217271eb1",
+    "peter-runner/assets/meshes/Right_Foot_old.STL": "09d148b13607357b9624087f97313ca7629113cc13ea8f31dd11f92aacabd5cb",
+    "peter-runner/assets/meshes/Right_Hip_Pitch.STL": "ab6052ca8f6a2ddf75ad536e3daf51024cbd8f6b9fa5ca36a8ac966347d850ac",
+    "peter-runner/assets/meshes/R1_Y_Ball.STL": "cc8889f243a7b3966b675961164cbbb50bb83d0ab832049f0d7d92335cbe43d2",
+    "peter-runner/assets/meshes/K1logo.STL": "93aab425a2e953fdd1c704ce9d9a4fb8d8431da9cc0cc4d2648838b11c47b487",
+    "peter-runner/assets/meshes/R1_XX_Ball.STL": "ec00f40d361b80aec85a24d5899424266ffd116f62426f1dbfbc6b29999525dc",
+    "peter-runner/assets/meshes/Right_Foot.STL": "059b969922a9a31eb40828206070731d3612453f3aa3c2559702c566abb4b0fd",
+    "peter-runner/assets/meshes/Right_Arm_3.STL": "e3ae9cbd20736f4c3b29b2a455b07d8a59e6c093258d467fc20ecd4dc4b7486d",
+    "peter-runner/assets/meshes/L1_XX_Ball.STL": "1e668ea0d7e1b42f83c2de6f2a01682d18c420bef56a334d6842e17226964deb",
+    "peter-runner/assets/meshes/Trunk_Collision.STL": "67f6c63d8e42cf610c94668531678f8413606b820667ac133aa12ac159ef2894",
+    "peter-runner/assets/meshes/K1_left_foot.STL": "cd848125142f37ac2f1513b01286057d270839912cac1e5525c66de527895ba8",
+    "peter-runner/assets/meshes/Head_1.STL": "9ab00ca2c2ae9b27cdd54cdbbe7d9e50b1873f5815163aef5d719beceb445c96",
+    "peter-runner/assets/meshes/Left_Arm_3.STL": "5424bdfedad4e70edc2dab6587bf0062c44489768c6e53ba4c2e58d700267f78",
+    "peter-runner/assets/meshes/Right_Crank_Down.STL": "f04e3b5badf9c5f84bfa386bae2852be80481ec56f8f97ce7bfb2f8d6d0c80aa",
+    "peter-runner/assets/meshes/Right_Ankle_Cross.STL": "fd59798e9b4b55661372b601db3dbec9ef5567256b631c3d679a2e3446638256",
+    "peter-runner/assets/meshes/Left_Crank_Up.STL": "8be37024b0668c6c6968845dda90d3b0ae463f0a1d78940ab796782c8b492903",
+    "peter-runner/assets/meshes/Left_Link_Long.STL": "df3ee938304e26bd752bb31a571896e08445a8e2232c8977e20c56f55d75bb92",
+    "peter-runner/assets/meshes/Right_Shank.STL": "6a7e831055148894ba623bf8d2eca27f2cef32e324819566c39e33cb12c0b4f9",
+    "peter-runner/assets/meshes/Left_Arm_4.STL": "e7de1dc79b85b23792eaf8d49688891876f46b4eab7234f2513ae9e241a72b14",
+    "peter-runner/assets/meshes/Left_Foot_Collision.STL": "1b61d43d5ab1f4ddc2c70cc099a8f3e419c97139759b184e5eb49ba8c3d22375",
+    "peter-runner/assets/meshes/Right_Arm_4.STL": "4a70e0006cc89bfeacb9b825821cdf715113b9cf7d267de6fe4b64ad3e5b9aad",
+    "peter-runner/assets/meshes/Right_Crank_Up.STL": "1fab2a0a32fc4395aa254482b51e8c18e3223b0d0d051b3abcabf0da78794c5d",
+    "peter-runner/assets/meshes/L2_XX_Ball.STL": "9008bd32fb3d396f00c5f6ae34def57c04ad4f0a65365389ac5cb0c3131a1e5e",
+    "peter-runner/assets/meshes/L1_Y_Ball.STL": "48036910b576cc3536945fcad2963f0fb1e39c0a7749586ef2ed127217271eb1",
+    "peter-runner/assets/meshes/Right_Link_Short.STL": "13fc390e6a225f057090b7185b9a1fc6cfb664bd159cadcdd8e041cb60e5650f",
+    "peter-runner/assets/meshes/Left_Hip_Yaw.STL": "2d8ed37c3a7c954937d5e3b462869f93292e4c4b76047fd4667380fedd3d66d2"
+  },
+  "scene_sha256": "e75747faace6808654c92430a33b8d078c72bd7ca5ef6438649f774818d4021e"
+}

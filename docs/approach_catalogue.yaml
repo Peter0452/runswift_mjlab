@@ -1,0 +1,178 @@
+# Approach catalogue (L5): method atoms from local sources, scored against our
+# gaps. One end-to-end kick policy, 83 inputs (user scope, 2026-10-06): atoms
+# only enter through data, scenarios, rewards / constraints, the training
+# algorithm, or distillation into that policy.
+# status: candidate | testing | adopted | parked | rejected; evidence: our results.
+
+gaps:  # current champion (x4_g004_70, two-seed) vs B-Human / targets
+  long_kick_3d: {ours: 6.90, bhuman: 8.27, unit: m/s}
+  first_kick_s: {ours: 3.54, bhuman: 2.94}
+  aim_close_pct: {ours: 91, bhuman: 98}
+  knee_torque_long_nm: {ours: 54, bhuman: 43}
+  support_planted_pct: {ours: 92, bhuman: 99}
+  short_pass_stop_m: {ours: 3.78, target: "< 1.5"}
+  cadence_steps_s: {ours: 6, bhuman: 4}
+  cap_use_fast_mps: {ours: 0.55, target: "~1.8 at a 2.0 cap"}
+  search_found_pct: {ours: 52.5}
+
+sources:
+  - id: bhuman_isaacgymrl
+    path: MachineLearning/IsaacGymRL
+    what: B-Human RoboCup 2026 K1 walk + kick (inner-foot) policies, Booster Gym fork
+    licence: Apache-2.0 (Booster Gym); check B-Human terms for weights
+    atoms:
+      - id: momentum_kick
+        idea: kick while walking into the ball; quality not tied to standstill
+        level: reward
+        status: adopted
+        evidence: "v57: long 3D 5.6 -> 8.0 m/s; body speed at contact 0.12 -> 0.56"
+      - id: planted_support
+        idea: support foot planted beside the ball at contact
+        level: reward
+        status: adopted
+        evidence: "support planted 72 -> 92 % (x4_g004_70), no regressions"
+      - id: side_foot_kick
+        idea: strike with the inside of the foot (sole yaw ~90 deg to kick direction)
+        level: reward + data (RSI / AMP clips)
+        status: testing
+        evidence: "AMP clips + RSI alone: 1-2 % side-foot (v59, v60); explicit side_foot_strike reward: Gaussian version had no gradient (lint VANISHING), ramp version 1 % side-foot at +250 (evo_g011) -> local shaping does not discover it; next: teacher imitation"
+      - id: continuous_range_and_strong_flag
+        idea: kick speed command from a continuous range + strong-kick flag, Gaussian speed reward
+        level: reward + obs semantics (slots 80-82, same dims, runner change)
+        status: candidate
+        targets: [short_pass_stop_m, long_kick_3d]
+      - id: torque_clip_sim2real
+        idea: clip / penalise torque at 50/50/30/60/30/30 Nm
+        level: reward / constraint
+        status: adopted
+        evidence: "knee p90 107 -> 54 Nm"
+      - id: bhuman_teacher_imitation
+        idea: imitate B-Human's near-ball actions (it runs in our sim) as an auxiliary loss / DAgger
+        level: algorithm (distillation into our single policy)
+        status: testing (implemented; queued 2026-10-06)
+        frame: {imitation_coef: 0.5, imitation_decay_updates: 300}
+        targets: [long_kick_3d, first_kick_s, knee_torque_long_nm, side_foot_kick]
+        plan: "auxiliary BC loss on B-Human actions within ~1.1 m of the ball (B-Human policy runs in our sim via play_bhuman_kick.BHumanKickPolicy), weight decayed to 0; outcome rewards + benchmark decide what stays"
+      - id: gait_clock
+        idea: gait phase input + frequency action (cadence control)
+        level: observation
+        status: parked
+        reason: changes the 83 inputs (needs user approval)
+
+  - id: humanoid_soccer
+    path: humanoid-soccer
+    what: ICRA 2026, Booster; 4-stage teacher-student striker from noisy sensing
+    licence: see repo LICENSE
+    atoms:
+      - id: privileged_teacher_dagger
+        idea: privileged teacher (true ball, no vision noise) distilled by DAgger into a noisy-input student
+        level: algorithm (student = our 83-input policy)
+        status: candidate
+        targets: [aim_close_pct, first_kick_s, search_found_pct]
+      - id: np3o_constrained
+        idea: constrained RL (N-P3O) refinement; heterogeneous credit assignment for smooth kicks
+        level: algorithm / constraints (= our L2 plan)
+        status: candidate
+        targets: [falls, torque, posture as constraints]
+
+  - id: robonaldo
+    path: RoboNaldo
+    what: G1 free-kick via motion-guided curriculum (track a reference kick, then task reward)
+    licence: see LICENCE
+    atoms:
+      - id: motion_guided_curriculum
+        idea: stage that tracks a reference kick motion, then relaxes to task rewards
+        level: algorithm / reward schedule
+        status: candidate
+        frame: {rsi_ours: 0.2, rsi_bhuman: 0.1}
+        targets: [long_kick_3d, side_foot_kick]
+      - id: g1_kick_reference
+        idea: right-foot push-kick motion (motions/right_kick.npz), retargetable to K1 with GMR
+        level: data
+        status: candidate
+
+  - id: gmr
+    path: GMR (+ data/GMR_CMU, data/retargeted/k1)
+    what: general motion retargeting, human mocap -> robot
+    licence: MIT
+    atoms:
+      - id: retarget_human_kicks
+        idea: retarget human soccer kicks (side-foot, instep drive) to K1 as AMP / RSI clips
+        level: data
+        status: candidate
+        targets: [side_foot_kick, long_kick_3d]
+      - id: retarget_slow_cadence_walks
+        idea: walking clips with longer steps / lower cadence for the AMP set
+        level: data
+        status: candidate
+        targets: [cadence_steps_s, cap_use_fast_mps]
+
+  - id: apex
+    path: APEX
+    what: IROS 2026, action priors for efficient exploration in motion tracking
+    licence: MIT
+    atoms:
+      - id: action_prior_exploration
+        idea: bias exploration with action priors from reference motions
+        level: algorithm
+        status: candidate
+        targets: [side_foot_kick discovery]
+
+  - id: htwk_gym
+    path: htwk-gym
+    what: HTWK K1/T1 parameterised walking + kicking (Booster Gym)
+    atoms:
+      - id: parameterised_gait
+        idea: step length / frequency terms for controllable cadence
+        level: reward
+        status: candidate
+        targets: [cadence_steps_s, cap_use_fast_mps]
+
+  - id: dribblemaster
+    path: DribbleMaster
+    what: agile humanoid dribbling
+    atoms:
+      - id: dribbling
+        idea: close ball control while moving
+        level: new capability
+        status: parked
+        reason: kick first; needs new benchmark metrics
+
+  - id: harbor_rl
+    path: harbor-rl
+    what: automated task / reward design and tuning agents
+    atoms:
+      - id: reward_tuning_engine
+        idea: host the reward-grammar / proposer loops
+        level: tooling
+        status: candidate
+
+  - id: booster_mjlab
+    path: booster_mjlab
+    what: our AMP / velocity base (mjlab)
+    atoms: []
+
+  - id: deployment_scenarios
+    path: runswift_mjlab (benchmark v2 findings, 2026-10-07)
+    what: training situations the deployed robot meets that training lacked
+    atoms:
+      - id: ball_behind_starts
+        idea: spawn the ball at any bearing and far (v2 approach falls with the ball behind 23-45 %)
+        level: scenario
+        status: candidate
+        frame: {s.spawn_any_prob: 0.3, s.far_spawn_prob: 0.3}
+      - id: world_model_ball
+        idea: episodes with a fresh ball at any bearing (team ball / localisation feed)
+        level: scenario
+        status: candidate
+        frame: {s.world_ball_prob: 0.2}
+      - id: low_speed_caps
+        idea: episodes at runswift's low caps 0.5 / 0.3 / 0.6
+        level: scenario
+        status: candidate
+        frame: {s.cap_low_prob: 0.3}
+      - id: fall_constraint
+        idea: falls as an adaptive constraint instead of a fixed penalty (PPO-Lagrangian style)
+        level: composition
+        status: candidate
+        frame: {c.fall: 0.6, c.kick_fall: 0.6}

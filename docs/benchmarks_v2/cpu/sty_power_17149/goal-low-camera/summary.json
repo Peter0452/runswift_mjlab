@@ -1,0 +1,45 @@
+{
+  "complete": true,
+  "rows": [
+    {
+      "policy": "peter",
+      "ball_profile": "light-small",
+      "planned": 90,
+      "execution_errors": 0,
+      "valid_evaluations": 90,
+      "goals": 5,
+      "goals_before_fall": 5,
+      "falls_during_attempt": 10,
+      "falls_during_passive_tail": 78,
+      "robot_contact": 10,
+      "foot_contact": 10,
+      "outcomes": {
+        "scored": 5,
+        "own_goal": 0,
+        "out": 2,
+        "short_or_wide": 83,
+        "unresolved": 0
+      }
+    },
+    {
+      "policy": "peter",
+      "ball_profile": "heavy-large",
+      "planned": 90,
+      "execution_errors": 0,
+      "valid_evaluations": 90,
+      "goals": 9,
+      "goals_before_fall": 9,
+      "falls_during_attempt": 10,
+      "falls_during_passive_tail": 78,
+      "robot_contact": 10,
+      "foot_contact": 10,
+      "outcomes": {
+        "scored": 9,
+        "own_goal": 0,
+        "out": 1,
+        "short_or_wide": 80,
+        "unresolved": 0
+      }
+    }
+  ]
+}

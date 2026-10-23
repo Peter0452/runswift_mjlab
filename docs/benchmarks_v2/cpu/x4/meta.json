@@ -1,0 +1,9 @@
+{
+ "policy": "../k1_policy_runner/kick_loop_models/k1_kick_loop_blend_x4_g004_70.onnx",
+ "caps": [
+  2.0,
+  1.5,
+  1.5
+ ],
+ "perception": "world"
+}

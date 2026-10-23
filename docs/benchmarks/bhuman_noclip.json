@@ -1,0 +1,21 @@
+{
+  "h2h_true_first_kick_s": 3.0,
+  "h2h_true_first_kick_pct": 99.0,
+  "h2h_true_first_on_target_pct": 96.0,
+  "h2h_true_aim_pct": 98.0,
+  "h2h_true_long_3d": 8.23,
+  "h2h_true_long_aim_pct": 98.0,
+  "h2h_first_kick_s": 4.49,
+  "h2h_first_kick_pct": 81.0,
+  "h2h_first_on_target_pct": 82.0,
+  "h2h_aim_pct": 84.0,
+  "h2h_long_3d": 7.2,
+  "h2h_long_aim_pct": 85.0,
+  "h2h_long_knee_p90": 40.0,
+  "h2h_long_hip_p90": 52.0,
+  "h2h_support_planted_pct": 99.0,
+  "h2h_support_planted_short_pct": 100.0,
+  "style_inside_short_pct": 92.0,
+  "style_hop_long_pct": 7.0,
+  "hop_fall_pct": 0.0
+}

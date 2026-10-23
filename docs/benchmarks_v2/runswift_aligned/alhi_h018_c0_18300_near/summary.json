@@ -1,0 +1,45 @@
+{
+  "complete": true,
+  "rows": [
+    {
+      "policy": "peter",
+      "ball_profile": "light-small",
+      "planned": 108,
+      "survived": 0,
+      "execution_errors": 0,
+      "robot_contact": 27,
+      "foot_launch": 0,
+      "on_direction_launch": 0,
+      "successful_trial": 0,
+      "target_plane_hit": 0,
+      "median_launch_speed_m_s": null,
+      "median_launch_s": null,
+      "median_absolute_heading_error_deg": null,
+      "median_first_strike_forward_m": null,
+      "recontact_after_launch": 0,
+      "foot_launch_2mps": 0,
+      "median_strongest_foot_linked_speed_m_s": null,
+      "median_strongest_absolute_heading_error_deg": null
+    },
+    {
+      "policy": "peter",
+      "ball_profile": "heavy-large",
+      "planned": 108,
+      "survived": 0,
+      "execution_errors": 0,
+      "robot_contact": 27,
+      "foot_launch": 0,
+      "on_direction_launch": 0,
+      "successful_trial": 0,
+      "target_plane_hit": 0,
+      "median_launch_speed_m_s": null,
+      "median_launch_s": null,
+      "median_absolute_heading_error_deg": null,
+      "median_first_strike_forward_m": null,
+      "recontact_after_launch": 0,
+      "foot_launch_2mps": 0,
+      "median_strongest_foot_linked_speed_m_s": null,
+      "median_strongest_absolute_heading_error_deg": null
+    }
+  ]
+}
