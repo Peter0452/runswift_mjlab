@@ -981,9 +981,10 @@ def booster_k1_kick_stage3_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     "kick_direction": (mdp.kick_direction, 900.0),
     "kick_vel": (mdp.kick_vel, 900.0),
     "kick_vel_accurate": (mdp.kick_vel_accurate, 300.0),
-    # Off for the kick-retarget prior: the ball is placed where the foot
-    # meets it, so the strike itself must not be charged as a touch.
-    "ball_avoidance": (mdp.ball_avoidance, 0.0),
+    # The champion's value. Tasks that run the kick-retarget prior turn it
+    # off (k1_amp/__init__.py): the ball is placed where the foot meets it,
+    # so the strike itself must not be charged as a touch.
+    "ball_avoidance": (mdp.ball_avoidance, -5.0),
     "single_feet_avoidance": (mdp.single_feet_avoidance, -5.0),
     "kick_goal": (mdp.kick_goal, 1500.0),
     "kick_lined_up": (mdp.kick_lined_up, 200.0),

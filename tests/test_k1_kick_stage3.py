@@ -8,6 +8,7 @@ import torch
 
 import mjlab.tasks  # noqa: F401
 from mjlab.tasks.registry import load_env_cfg, load_rl_cfg
+from mjlab.tasks.velocity.config.k1_amp.env_cfgs import booster_k1_kick_stage3_env_cfg
 from mjlab.tasks.velocity.mdp.amp_symmetry import (
   KICK_LOOP_AGE_SLOT,
   augment_symmetries,
@@ -121,16 +122,20 @@ def test_stage3_cfg_wiring() -> None:
     "kick_direction",
     "kick_vel",
     "kick_vel_accurate",
-    "ball_avoidance",
     "single_feet_avoidance",
   ):
     assert cfg.rewards[name].weight != 0.0, name
+  # The kick-retarget prior places the ball at the foot, so the task drops the
+  # touch cost; without the prior it keeps the champion's -5.
+  assert cfg.rewards["ball_avoidance"].weight == 0.0
+  assert booster_k1_kick_stage3_env_cfg().rewards["ball_avoidance"].weight == -5.0
   for name in ("approach_stand", "approach_heading", "approach_speed_limit"):
     assert cfg.rewards[name].weight == 0.0
   # Zone-tied time cost fenced the ball off in stage3_v1; a global one replaces it.
   assert "kick_near_ball_time" not in cfg.rewards
   # A global time cost drove the per-step reward negative in stage3_v2.
-  assert "kick_time_cost" not in cfg.rewards
+  # It is now a gene (w.kick_time_cost), off unless a run sets it.
+  assert cfg.rewards["kick_time_cost"].weight == 0.0
   assert cfg.rewards["action_rate_l2"].weight == -0.1
   assert cfg.rewards["dof_pos_limits"].weight == -10.0
   assert cfg.rewards["fall"].weight < 0.0
@@ -731,7 +736,6 @@ def test_reward_program_wiring(tmp_path) -> None:
   ]
   p = tmp_path / "prog.json"
   p.write_text(json.dumps(prog))
-  from mjlab.tasks.velocity.config.k1_amp.env_cfgs import booster_k1_kick_stage3_env_cfg
 
   # Registered cfgs are built at import; training processes get the variable
   # before import, so build directly here.

@@ -97,14 +97,29 @@ def _with_kick_style(env_cfg):
   return env_cfg
 
 
+def _with_kick_prior_contact(env_cfg, rl_cfg):
+  """No ball-touch cost when the kick-retarget prior places the ball."""
+  if rl_cfg.decap and rl_cfg.decap_source == "kick":
+    env_cfg.rewards["ball_avoidance"].weight = 0.0
+  return env_cfg
+
+
 _stage3_rl = booster_k1_kick_stage3_runner_cfg()
 register_mjlab_task(
   task_id="Mjlab-Velocity-Kick-Stage3-Amp-DA-Muon-Booster-K1",
   env_cfg=with_stand_start(
-    _with_kick_style(_with_amp_reset_cfg(booster_k1_kick_stage3_env_cfg(), _stage3_rl))
+    _with_kick_prior_contact(
+      _with_kick_style(
+        _with_amp_reset_cfg(booster_k1_kick_stage3_env_cfg(), _stage3_rl)
+      ),
+      _stage3_rl,
+    )
   ),
-  play_env_cfg=_with_kick_style(
-    _with_amp_reset_cfg(booster_k1_kick_stage3_env_cfg(play=True), _stage3_rl)
+  play_env_cfg=_with_kick_prior_contact(
+    _with_kick_style(
+      _with_amp_reset_cfg(booster_k1_kick_stage3_env_cfg(play=True), _stage3_rl)
+    ),
+    _stage3_rl,
   ),
   rl_cfg=_stage3_rl,
   runner_cls=VelocityAmpOnPolicyRunner,
