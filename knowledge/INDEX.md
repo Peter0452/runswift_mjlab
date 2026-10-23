@@ -59,7 +59,8 @@ Tasks removed on 2026-10-23 (upstream demos, unused variants) are on branch
 | Robot model, ball, deploy layouts | `src/k1/robot/`, `src/k1/common/ball.py`, `src/k1/deploy/obs_layout.py` |
 | Old module paths | `mjlab.tasks.velocity.*`, `mjlab.tasks.kick.*` etc. still import (served by `src/k1/compat.py`); patch family modules, not the re-export shims |
 | AMP, multi-critic, kick teacher | `src/mjlab/amp/` |
-| Training runs | `logs/rsl_rl/<experiment>/<run>/` (latest, best and referenced checkpoints kept; configs in `params/`) |
+| Methods, recipes, CLI | `src/k1/methods/` (registry + `METHOD.md` cards), `experiments/recipes/<family>/*.yaml` (run definitions, checked against the code), `rsw` (`rsw --help`; `src/k1/cli.py`) |
+| Training runs | `logs/rsl_rl/<experiment>/<run>/` (latest, best and referenced checkpoints kept; configs in `params/`; `run.json` for runs started with `rsw train`) |
 | Eval and bench tools | `scripts/tools/` (catalog: `scripts/tools/README.md`) |
 | Benchmark results | `docs/benchmarks*/` (JSON) |
 | Kick evolution loop state | `docs/evolution/` (`HANDOFF.md` first) |

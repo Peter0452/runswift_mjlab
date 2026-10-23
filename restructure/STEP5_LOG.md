@@ -8,11 +8,11 @@ made without asking.
 
 | Commit | What | Checked by |
 |---|---|---|
-| (this) | `k1/methods/`: registry (13 methods: extension points, deployment impact, status, parameter fields, `detect`) + one `METHOD.md` card each | `tests/test_k1_methods.py`; detection on all 34 tasks reviewed |
-| (this) | `k1/recipes.py` + `experiments/recipes/<family>/*.yaml`: one default recipe per AMP task, and `kick_stage3_h022` (the deployed champion's training) | every recipe checks clean; h022 recipe vs the champion run: identical except the speed caps |
-| (this) | `k1/runs.py`: `run.json` in each run directory (recipe, env vars, methods actually on, git, label `research`, verdicts later) | written by a real 2-iteration `rsw train` smoke run (run deleted afterwards) |
-| (this) | `rsw` CLI (`k1/cli.py`, `pyproject` script): `tasks`, `methods`, `recipe check|diff`, `train` (dry run unless `--go`), `run show`, `check [--bench]` | used for all of the above |
-| (this) | `mjlab/scripts/train.py`: `launch_training(..., log_dir=None)` and `run_log_dir()` so `rsw train` can write `run.json` first (backward compatible) | full test suite |
+| 6138b66 | `k1/methods/`: registry (13 methods: extension points, deployment impact, status, parameter fields, `detect`) + one `METHOD.md` card each | `tests/test_k1_methods.py`; detection on all 34 tasks reviewed |
+| 6138b66 | `k1/recipes.py` + `experiments/recipes/<family>/*.yaml`: one default recipe per AMP task, and `kick_stage3_h022` (the deployed champion's training) | every recipe checks clean; h022 recipe vs the champion run: identical except the speed caps |
+| 6138b66 | `k1/runs.py`: `run.json` in each run directory (recipe, env vars, methods actually on, git, label `research`, verdicts later) | written by a real 2-iteration `rsw train` smoke run (run deleted afterwards) |
+| 6138b66 | `rsw` CLI (`k1/cli.py`, `pyproject` script): `tasks`, `methods`, `recipe check|diff`, `train` (dry run unless `--go`), `run show`, `check [--bench]` | used for all of the above |
+| 6138b66 | `mjlab/scripts/train.py`: `launch_training(..., log_dir=None)` and `run_log_dir()` so `rsw train` can write `run.json` first (backward compatible) | full test suite |
 
 ## What the checks found
 
