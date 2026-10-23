@@ -17,9 +17,9 @@ from k1.tasks.selfplay.mdp.self_play import (
   frozen_policy_from_state_dict,
   race_time,
 )
+from k1.tasks.selfplay.runner import clamp_action_std
 from k1.tasks.striker.mdp import striker_skills as skills
-from k1.tasks.velocity.rl.selfplay_runner import clamp_action_std
-from k1.tasks.velocity.rl.striker_runner import (
+from k1.tasks.striker.runner import (
   MemoryResetPPO,
   StrikerControllerRunner,
   StrikerControllerVecEnv,

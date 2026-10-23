@@ -1,7 +1,13 @@
+from k1.tasks.selfplay.config import (
+  booster_k1_kick_selfplay_env_cfg,
+  booster_k1_kick_selfplay_runner_cfg,
+  booster_k1_striker_controller_env_cfg,
+  booster_k1_striker_controller_runner_cfg,
+)
+from k1.tasks.selfplay.runner import SelfPlayAmpOnPolicyRunner
+from k1.tasks.striker.runner import StrikerControllerRunner
 from k1.tasks.velocity.config.k1_amp.amp_wrapper import with_amp_obs_group
 from k1.tasks.velocity.rl.amp_runner import VelocityAmpOnPolicyRunner
-from k1.tasks.velocity.rl.selfplay_runner import SelfPlayAmpOnPolicyRunner
-from k1.tasks.velocity.rl.striker_runner import StrikerControllerRunner
 from mjlab.tasks.registry import register_mjlab_task
 
 from .env_cfgs import (
@@ -22,12 +28,6 @@ from .rl_cfg import (
   booster_k1_kick_approach_runner_cfg,
   booster_k1_kick_stage1_runner_cfg,
   booster_k1_kick_stage3_runner_cfg,
-)
-from .selfplay_cfgs import (
-  booster_k1_kick_selfplay_env_cfg,
-  booster_k1_kick_selfplay_runner_cfg,
-  booster_k1_striker_controller_env_cfg,
-  booster_k1_striker_controller_runner_cfg,
 )
 
 

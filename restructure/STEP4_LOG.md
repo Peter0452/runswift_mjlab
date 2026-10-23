@@ -35,7 +35,8 @@ when kick-loop code is touched.
 | e9587e3 | K1 tracking kick tasks (`Mjlab-Tracking-Flat-Booster-K1-Kick*`) → `k1/tasks/legacy/tracking/` | 1273 pass, golden ok |
 | 3356ca6 | Getup (`Mjlab-Getup-Flat-Booster-K1`) → `k1/tasks/getup/` | 1273 pass, golden ok |
 | ab41a60 | Whole `mjlab.tasks.velocity` (walk, kick, dribble, self-play, striker, AMP configs and runners; all K1 now) → `k1/tasks/velocity/` | 1273 pass, golden ok, bench ok (2 separated) |
-| (this) | Family mdp modules out of `velocity/mdp`: approach, kick_loop, kick_handoff, kick_prior → `kick/mdp/`; dribble, dribble_rewards → `dribble/mdp/`; self_play → `selfplay/mdp/`; striker_skills → `striker/mdp/`; walk_params → `walk/mdp/`. `velocity.mdp` re-exports them; namespace verified identical (482 names, 0 differences vs the previous commit) | 1273 pass, golden ok (one intermittent fail, see note 7), bench ok (2 separated) |
+| 23fe941 | Family mdp modules out of `velocity/mdp`: approach, kick_loop, kick_handoff, kick_prior → `kick/mdp/`; dribble, dribble_rewards → `dribble/mdp/`; self_play → `selfplay/mdp/`; striker_skills → `striker/mdp/`; walk_params → `walk/mdp/`. `velocity.mdp` re-exports them; namespace verified identical (482 names, 0 differences vs the previous commit) | 1273 pass, golden ok (one intermittent fail, see note 7), bench ok (2 separated) |
+| (this) | Configs split by family: `k1_amp/env_cfgs.py` → `walk/`, `kick/`, `dribble/env_cfg.py`; `k1_amp/rl_cfg.py` → `walk/`, `kick/`, `dribble/rl_cfg.py` (old files are re-export shims); `selfplay_cfgs.py` → `selfplay/config.py`; `selfplay_runner.py` → `selfplay/runner.py`; `striker_runner.py` → `striker/runner.py`. All 34 tasks' train/play/RL configs compared with the previous commit: identical except the `MemoryResetPPO` class_name string, which now names its new module (same class) | 1273 pass, golden ok, bench ok (2 separated) |
 
 ## Best guesses (review these)
 
@@ -64,6 +65,16 @@ when kick-loop code is touched.
    marked `# ruff: noqa: I001`. Family `mdp/__init__` files import the aggregate first so
    direct imports load in the old order. Transitional; goes away when configs import
    family modules directly.
+9. **Family config files are `env_cfg.py` + `rl_cfg.py`** (the repo's existing split, as in
+   the B-Human port), not one `config.py` as the architecture sketch says. Self-play keeps
+   one `config.py` (it was one module) that also holds the striker controller's configs:
+   the controller is trained by self-play and its env builds on it.
+10. **Deployment-match helpers stay in `kick/env_cfg.py`** (`LEG_TORQUE_CLIP`,
+   `DEPLOY_Q_LIMITS`, `_deployment_match`, `_clip_leg_torque`; dribble imports them).
+   `_deployment_match` reads `KICK_GENES`, so it is not contract-only yet; the tables move
+   to `k1/deploy/contract.py` in Step 5.
+11. **Config refactors are checked by dumping every task's configs** (repr, addresses
+   stripped, worktree paths normalised) before and after, in addition to golden.
 
 ## Our edits inside the framework (left in `src/mjlab/`, to list or move later)
 

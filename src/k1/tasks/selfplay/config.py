@@ -4,19 +4,21 @@ from __future__ import annotations
 
 import dataclasses
 
+from k1.tasks.kick.env_cfg import booster_k1_kick_stage3_env_cfg
 from k1.tasks.kick.mdp.kick_loop import (
   HEAD_FULL_SEARCH_PITCH,
   HEAD_FULL_SEARCH_YAW,
 )
+from k1.tasks.kick.rl_cfg import booster_k1_kick_stage3_runner_cfg
 from k1.tasks.selfplay.mdp.self_play import (
   SELFPLAY_KICK_CKPT,
   OpponentPolicyActionCfg,
   SelfPlayKickCommandCfg,
 )
+from k1.tasks.selfplay.runner import SelfPlayAmpRunnerCfg
+from k1.tasks.striker.runner import StrikerControllerRunnerCfg
 from k1.tasks.velocity import mdp
 from k1.tasks.velocity.rl.anchor import with_anchor
-from k1.tasks.velocity.rl.selfplay_runner import SelfPlayAmpRunnerCfg
-from k1.tasks.velocity.rl.striker_runner import StrikerControllerRunnerCfg
 from mjlab.envs import ManagerBasedRlEnvCfg
 from mjlab.envs.mdp.actions import JointPositionActionCfg
 from mjlab.managers.curriculum_manager import CurriculumTermCfg
@@ -25,9 +27,6 @@ from mjlab.managers.reward_manager import RewardTermCfg
 from mjlab.managers.scene_entity_config import SceneEntityCfg
 from mjlab.rl import RslRlModelCfg, RslRlPpoAlgorithmCfg
 from mjlab.sensor import ContactMatch, ContactSensorCfg
-
-from .env_cfgs import booster_k1_kick_stage3_env_cfg
-from .rl_cfg import booster_k1_kick_stage3_runner_cfg
 
 # Learner events the opponent gets a copy of (pushes and startup DR).
 OPPONENT_DR_EVENTS = (
@@ -446,7 +445,7 @@ def booster_k1_striker_controller_runner_cfg() -> StrikerControllerRunnerCfg:
       hidden_dims=(256, 128), activation="elu", obs_normalization=True
     ),
     algorithm=RslRlPpoAlgorithmCfg(
-      class_name="k1.tasks.velocity.rl.striker_runner:MemoryResetPPO",
+      class_name="k1.tasks.striker.runner:MemoryResetPPO",
       learning_rate=3.0e-4,
       gamma=0.99,
       lam=0.95,

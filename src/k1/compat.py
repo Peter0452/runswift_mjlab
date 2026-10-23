@@ -30,6 +30,9 @@ ALIASES = {
   "k1.tasks.velocity.mdp.self_play": "k1.tasks.selfplay.mdp.self_play",
   "k1.tasks.velocity.mdp.striker_skills": "k1.tasks.striker.mdp.striker_skills",
   "k1.tasks.velocity.mdp.walk_params": "k1.tasks.walk.mdp.walk_params",
+  "k1.tasks.velocity.config.k1_amp.selfplay_cfgs": "k1.tasks.selfplay.config",
+  "k1.tasks.velocity.rl.selfplay_runner": "k1.tasks.selfplay.runner",
+  "k1.tasks.velocity.rl.striker_runner": "k1.tasks.striker.runner",
   "mjlab.tasks.tracking.config.k1": "k1.tasks.legacy.tracking",
 }
 

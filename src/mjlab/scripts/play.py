@@ -12,7 +12,7 @@ from typing import Literal
 import torch
 import tyro
 
-from k1.tasks.velocity.rl.striker_runner import (
+from k1.tasks.striker.runner import (
   StrikerControllerPlayEnv,
   StrikerControllerVecEnv,
 )

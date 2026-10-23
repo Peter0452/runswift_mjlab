@@ -22,7 +22,7 @@ from k1.tasks.selfplay.mdp.self_play import (
   place_upright,
   resolve_checkpoint,
 )
-from k1.tasks.velocity.rl.selfplay_runner import (
+from k1.tasks.selfplay.runner import (
   SelfPlayAmpOnPolicyRunner,
   SelfPlayAmpRunnerCfg,
 )

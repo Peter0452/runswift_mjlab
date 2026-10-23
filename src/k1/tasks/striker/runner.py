@@ -27,8 +27,8 @@ from k1.tasks.selfplay.mdp.self_play import (
   OpponentPolicyAction,
   SelfPlayKickCommand,
 )
+from k1.tasks.selfplay.runner import actor_std_range, sync_opponent
 from k1.tasks.striker.mdp import striker_skills as skills
-from k1.tasks.velocity.rl.selfplay_runner import actor_std_range, sync_opponent
 from mjlab.rl import MjlabOnPolicyRunner, RslRlOnPolicyRunnerCfg, RslRlVecEnvWrapper
 
 
