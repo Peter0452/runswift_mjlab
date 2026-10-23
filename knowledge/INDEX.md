@@ -54,8 +54,8 @@ Tasks removed on 2026-10-23 (upstream demos, unused variants) are on branch
 
 | Thing | Place |
 |---|---|
-| Task configs and rewards | `src/k1/tasks/` (moved families; registered via the `mjlab.tasks` entry point), `src/mjlab/tasks/velocity/{config/k1_amp,mdp,rl}/` (not yet moved). Old module paths stay as aliases |
-| AMP, multi-critic, kick teacher, anchor | `src/mjlab/amp/`, `src/mjlab/tasks/velocity/rl/anchor.py` |
+| Task configs and rewards | `src/k1/tasks/` (all K1 tasks, registered via the `mjlab.tasks` entry point; walk/kick/dribble/self-play still under `velocity/{config/k1_amp,mdp,rl}/` until the family split). Old `mjlab.tasks.*` module paths are served by `k1.compat` |
+| AMP, multi-critic, kick teacher, anchor | `src/mjlab/amp/`, `src/k1/tasks/velocity/rl/anchor.py` |
 | Training runs | `logs/rsl_rl/<experiment>/<run>/` (latest, best and referenced checkpoints kept; configs in `params/`) |
 | Eval and bench tools | `scripts/tools/` (see each skill page) |
 | Benchmark results | `docs/benchmarks*/` (JSON) |

@@ -19,6 +19,7 @@ ALIASES = {
   "mjlab.asset_zoo.robots.booster_k1": "k1.robot",
   "mjlab.tasks.kick": "k1.tasks.legacy.kick",
   "mjlab.tasks.getup": "k1.tasks.getup",
+  "mjlab.tasks.velocity": "k1.tasks.velocity",
   "mjlab.tasks.tracking.config.k1": "k1.tasks.legacy.tracking",
 }
 

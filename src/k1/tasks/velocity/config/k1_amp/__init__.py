@@ -1,8 +1,8 @@
+from k1.tasks.velocity.config.k1_amp.amp_wrapper import with_amp_obs_group
+from k1.tasks.velocity.rl.amp_runner import VelocityAmpOnPolicyRunner
+from k1.tasks.velocity.rl.selfplay_runner import SelfPlayAmpOnPolicyRunner
+from k1.tasks.velocity.rl.striker_runner import StrikerControllerRunner
 from mjlab.tasks.registry import register_mjlab_task
-from mjlab.tasks.velocity.config.k1_amp.amp_wrapper import with_amp_obs_group
-from mjlab.tasks.velocity.rl.amp_runner import VelocityAmpOnPolicyRunner
-from mjlab.tasks.velocity.rl.selfplay_runner import SelfPlayAmpOnPolicyRunner
-from mjlab.tasks.velocity.rl.striker_runner import StrikerControllerRunner
 
 from .env_cfgs import (
   KICK_STYLE_WEIGHT,

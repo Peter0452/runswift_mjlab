@@ -15,6 +15,9 @@ from k1.robot.whirlwind_sensors import (
   FootClearanceSensorCfg,
   FootSoleGridPatternCfg,
 )
+from k1.tasks.velocity import mdp
+from k1.tasks.velocity.mdp import approach as approach_mdp
+from k1.tasks.velocity.velocity_amp_env_cfg import make_velocity_env_cfg
 from mjlab.asset_zoo.props.ball import BALL_XML, get_ball_radius
 from mjlab.entity import EntityCfg
 from mjlab.envs import ManagerBasedRlEnvCfg
@@ -30,9 +33,6 @@ from mjlab.sensor import (
   ContactSensorCfg,
   ObjRef,
 )
-from mjlab.tasks.velocity import mdp
-from mjlab.tasks.velocity.mdp import approach as approach_mdp
-from mjlab.tasks.velocity.velocity_amp_env_cfg import make_velocity_env_cfg
 from mjlab.terrains.config import flat, random_rough, wave_terrain
 from mjlab.terrains.terrain_generator import TerrainGeneratorCfg
 
@@ -1120,7 +1120,7 @@ def booster_k1_kick_stage3_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   # replace or remove terms; expression terms are built from the grammar.
   prog_path = os.environ.get("KICK_REWARD_PROGRAM")
   if prog_path:
-    from mjlab.tasks.velocity.mdp import reward_grammar as rg
+    from k1.tasks.velocity.mdp import reward_grammar as rg
 
     for entry in rg.load_program(prog_path):
       name = entry["name"]
@@ -1163,7 +1163,7 @@ def booster_k1_kick_stage3_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
       cfg.rewards[name].weight = float(KICK_GENES[f"w.{name}"])
   # L2 (constraints): "c.<term>": r holds that penalty's cost at r x its
   # warm-up level with an adaptive multiplier (mdp/constraints.py).
-  from mjlab.tasks.velocity.mdp.constraints import constraint_term
+  from k1.tasks.velocity.mdp.constraints import constraint_term
 
   for name in list(cfg.rewards):
     ratio = KICK_GENES.get(f"c.{name}")

@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
+from k1.tasks.velocity import mdp
 from mjlab.amp.curriculums import anneal_style_reward
 from mjlab.managers import ObservationGroupCfg, ObservationTermCfg
 from mjlab.managers.curriculum_manager import CurriculumTermCfg
 from mjlab.managers.scene_entity_config import SceneEntityCfg
-from mjlab.tasks.velocity import mdp
 
 
 def with_kick_amp_obs_group(cfg, *, style_weight: float = 0.3):

@@ -38,7 +38,7 @@ if TYPE_CHECKING:
 
 
 def _cmd(env):
-  from mjlab.tasks.velocity.mdp.kick_loop import _kick_command
+  from k1.tasks.velocity.mdp.kick_loop import _kick_command
 
   return _kick_command(env)
 

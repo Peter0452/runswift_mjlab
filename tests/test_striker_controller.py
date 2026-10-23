@@ -10,22 +10,22 @@ from rsl_rl.models import MLPModel, RNNModel
 from rsl_rl.storage import RolloutStorage
 from tensordict import TensorDict
 
-from mjlab.envs import ManagerBasedRlEnv
-from mjlab.tasks.registry import load_env_cfg
-from mjlab.tasks.velocity.mdp import striker_skills as skills
-from mjlab.tasks.velocity.mdp.self_play import (
+from k1.tasks.velocity.mdp import striker_skills as skills
+from k1.tasks.velocity.mdp.self_play import (
   OpponentPolicyAction,
   OpponentPolicyActionCfg,
   OpponentSeedCfg,
   frozen_policy_from_state_dict,
   race_time,
 )
-from mjlab.tasks.velocity.rl.selfplay_runner import clamp_action_std
-from mjlab.tasks.velocity.rl.striker_runner import (
+from k1.tasks.velocity.rl.selfplay_runner import clamp_action_std
+from k1.tasks.velocity.rl.striker_runner import (
   MemoryResetPPO,
   StrikerControllerRunner,
   StrikerControllerVecEnv,
 )
+from mjlab.envs import ManagerBasedRlEnv
+from mjlab.tasks.registry import load_env_cfg
 
 TASK = "Mjlab-Velocity-Striker-Controller-Booster-K1"
 KICK_CKPT = "logs/rsl_rl/k1_kick_stage3_amp/blends/x4_g004_70.pt"

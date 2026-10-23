@@ -42,12 +42,9 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-from mjlab.entity import Entity
-from mjlab.envs.mdp.actions import JointPositionAction, JointPositionActionCfg
-from mjlab.managers.action_manager import ActionTerm, ActionTermCfg
-from mjlab.tasks.velocity.mdp import striker_skills as skills
-from mjlab.tasks.velocity.mdp.amp_symmetry import augment_symmetries_kick_loop
-from mjlab.tasks.velocity.mdp.approach import (
+from k1.tasks.velocity.mdp import striker_skills as skills
+from k1.tasks.velocity.mdp.amp_symmetry import augment_symmetries_kick_loop
+from k1.tasks.velocity.mdp.approach import (
   NOMINAL_ROOT_HEIGHT,
   ApproachYawCommandCfg,
   _root_pose,
@@ -58,7 +55,7 @@ from mjlab.tasks.velocity.mdp.approach import (
   kick_direction_b,
   range_one_hot,
 )
-from mjlab.tasks.velocity.mdp.kick_loop import (
+from k1.tasks.velocity.mdp.kick_loop import (
   HEAD_DEFAULT,
   HEAD_SCAN_PERIOD,
   HEAD_SCAN_YAW,
@@ -75,6 +72,9 @@ from mjlab.tasks.velocity.mdp.kick_loop import (
   head_goal,
   head_step,
 )
+from mjlab.entity import Entity
+from mjlab.envs.mdp.actions import JointPositionAction, JointPositionActionCfg
+from mjlab.managers.action_manager import ActionTerm, ActionTermCfg
 from mjlab.utils.lab_api.math import (
   quat_apply,
   quat_apply_inverse,

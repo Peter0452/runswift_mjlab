@@ -20,6 +20,7 @@ from k1.tasks.legacy.kick.mdp.terminations import (
   target_hit,
   target_missed,
 )
+from k1.tasks.velocity import mdp as velocity_mdp
 from mjlab.asset_zoo.props.ball import get_ball_radius, get_ball_spec
 from mjlab.entity import EntityCfg
 from mjlab.envs import ManagerBasedRlEnvCfg
@@ -28,7 +29,6 @@ from mjlab.managers.event_manager import EventTermCfg
 from mjlab.managers.reward_manager import RewardTermCfg
 from mjlab.managers.scene_entity_config import SceneEntityCfg
 from mjlab.managers.termination_manager import TerminationTermCfg
-from mjlab.tasks.velocity import mdp as velocity_mdp
 from mjlab.utils.spec_config import CollisionCfg
 
 # Shared 3-phase geometry knobs (reward params).

@@ -108,7 +108,7 @@ def test_foot_height_stepped_terrain(device):
 
 def test_foot_height_observation(device):
   """foot_height observation delegates to sensor.data.heights."""
-  from mjlab.tasks.velocity.mdp.observations import foot_height
+  from k1.tasks.velocity.mdp.observations import foot_height
 
   cfg = _foot_sensor_cfg()
   scene, sim = make_scene_and_sim(device, TWO_FEET_ABOVE_PLATFORM_XML, (cfg,))

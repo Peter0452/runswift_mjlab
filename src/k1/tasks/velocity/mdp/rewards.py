@@ -5,13 +5,13 @@ from typing import TYPE_CHECKING
 import numpy as np
 import torch
 
+from k1.tasks.velocity.mdp.observations import advance_gait_phase, gait_scale
+from k1.tasks.velocity.mdp.terrain_utils import terrain_normal_from_sensors
 from mjlab.entity import Entity
 from mjlab.managers.reward_manager import RewardTermCfg
 from mjlab.managers.scene_entity_config import SceneEntityCfg
 from mjlab.sensor import BuiltinSensor, ContactSensor
 from mjlab.sensor.terrain_height_sensor import TerrainHeightSensor
-from mjlab.tasks.velocity.mdp.observations import advance_gait_phase, gait_scale
-from mjlab.tasks.velocity.mdp.terrain_utils import terrain_normal_from_sensors
 from mjlab.utils.lab_api.math import (
   euler_xyz_from_quat,
   quat_apply,
@@ -1567,7 +1567,7 @@ def base_height_target_l2(
   ``1 + ‖v_xy_cmd‖ / speed_ref`` so crouch is taxed harder when speed is
   commanded (Mode A at ≥1 m/s) without changing the still/stand baseline.
   """
-  from mjlab.tasks.velocity.mdp.terrain_utils import base_terrain_clearance
+  from k1.tasks.velocity.mdp.terrain_utils import base_terrain_clearance
 
   clearance = base_terrain_clearance(env, sensor_name, asset_cfg.name)
   cost = torch.square(clearance - target_height)
@@ -1584,7 +1584,7 @@ def base_clearance_range_l2(
   asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
 ) -> torch.Tensor:
   """Penalize terrain clearance outside ``[minimum_height, maximum_height]``."""
-  from mjlab.tasks.velocity.mdp.terrain_utils import base_terrain_clearance
+  from k1.tasks.velocity.mdp.terrain_utils import base_terrain_clearance
 
   clearance = base_terrain_clearance(env, sensor_name, asset_cfg.name)
   below = torch.clamp(minimum_height - clearance, min=0.0)

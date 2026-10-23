@@ -130,7 +130,7 @@ def root_clearance_below_minimum(
   Booster-style: uses ``base_z - terrain_z`` from ``terrain_scan``, not absolute
   world Z. Falls back to absolute ``root_z`` on flat / missing sensor.
   """
-  from mjlab.tasks.velocity.mdp.terrain_utils import base_terrain_clearance
+  from k1.tasks.velocity.mdp.terrain_utils import base_terrain_clearance
 
   clearance = base_terrain_clearance(env, sensor_name, asset_cfg.name)
   return clearance < minimum_height

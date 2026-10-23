@@ -13,13 +13,13 @@ from dataclasses import dataclass
 
 import torch
 
-from mjlab.amp.runners import AmpOnPolicyRunnerCfg
-from mjlab.tasks.velocity.mdp.self_play import (
+from k1.tasks.velocity.mdp.self_play import (
   OpponentPolicyAction,
   pad_input_columns,
   resolve_checkpoint,
 )
-from mjlab.tasks.velocity.rl.amp_runner import VelocityAmpOnPolicyRunner
+from k1.tasks.velocity.rl.amp_runner import VelocityAmpOnPolicyRunner
+from mjlab.amp.runners import AmpOnPolicyRunnerCfg
 
 
 @dataclass

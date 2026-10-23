@@ -183,7 +183,7 @@ def propose_l5(h: dict) -> list[dict]:
 
 
 def _valid_expr(e) -> bool:
-  from mjlab.tasks.velocity.mdp import reward_grammar as rg  # noqa: PLC0415
+  from k1.tasks.velocity.mdp import reward_grammar as rg  # noqa: PLC0415
 
   ops = {"sig", "const", "mul", "add", "neg", "abs", "div", "ramp", "linear_match",
          "gauss", "band", "exp_decay", "clip", "gt", "lt"}  # fmt: skip
@@ -233,7 +233,7 @@ def validate(frame: dict) -> dict | None:
 
 def propose_l4(h: dict, champ: dict) -> list[dict]:
   """claude -p as the designer: digest in, frames (JSON) out."""
-  from mjlab.tasks.velocity.mdp import reward_grammar as rg  # noqa: PLC0415
+  from k1.tasks.velocity.mdp import reward_grammar as rg  # noqa: PLC0415
 
   p = ek.BENCH / f"{champ['name']}.json"
   m = json.loads(p.read_text()) if p.exists() else {}

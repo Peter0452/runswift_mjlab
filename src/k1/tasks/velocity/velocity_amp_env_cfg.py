@@ -3,6 +3,19 @@
 import math
 from dataclasses import replace
 
+from k1.tasks.velocity import mdp
+from k1.tasks.velocity.mdp.amp_rewards import (
+  standing_pose_deviation_l1,
+  upper_body_posture_penalty,
+  variable_upright,
+)
+from k1.tasks.velocity.mdp.amp_rewards import (
+  track_linear_velocity as booster_mjlab_track_linear_velocity,
+)
+from k1.tasks.velocity.mdp.amp_terrain import terrain_collisions
+from k1.tasks.velocity.mdp.amp_terrain_dr import randomize_terrain_contact
+from k1.tasks.velocity.mdp.terminations import stochastic_bad_orientation
+from k1.tasks.velocity.mdp.velocity_command import UniformVelocityCommandCfg
 from mjlab.envs import ManagerBasedRlEnvCfg
 from mjlab.envs.mdp.actions import JointPositionActionCfg
 from mjlab.managers.action_manager import ActionTermCfg
@@ -17,19 +30,6 @@ from mjlab.managers.termination_manager import TerminationTermCfg
 from mjlab.scene import SceneCfg
 from mjlab.sensor import TerrainHeightSensorCfg
 from mjlab.sim import MujocoCfg, SimulationCfg
-from mjlab.tasks.velocity import mdp
-from mjlab.tasks.velocity.mdp.amp_rewards import (
-  standing_pose_deviation_l1,
-  upper_body_posture_penalty,
-  variable_upright,
-)
-from mjlab.tasks.velocity.mdp.amp_rewards import (
-  track_linear_velocity as booster_mjlab_track_linear_velocity,
-)
-from mjlab.tasks.velocity.mdp.amp_terrain import terrain_collisions
-from mjlab.tasks.velocity.mdp.amp_terrain_dr import randomize_terrain_contact
-from mjlab.tasks.velocity.mdp.terminations import stochastic_bad_orientation
-from mjlab.tasks.velocity.mdp.velocity_command import UniformVelocityCommandCfg
 from mjlab.terrains import TerrainEntityCfg
 from mjlab.terrains.config import flat, hf_pyramid_slope, perlin_noise, random_rough
 from mjlab.terrains.terrain_generator import TerrainGeneratorCfg

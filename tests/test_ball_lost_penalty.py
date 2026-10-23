@@ -4,7 +4,7 @@ from types import SimpleNamespace
 
 import torch
 
-from mjlab.tasks.velocity.mdp import kick_loop
+from k1.tasks.velocity.mdp import kick_loop
 
 
 def test_lost_always_costs_and_scan_episodes_are_exempt(monkeypatch):

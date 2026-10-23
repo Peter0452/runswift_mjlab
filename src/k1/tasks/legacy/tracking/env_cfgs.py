@@ -24,6 +24,7 @@ from k1.robot.k1_whirlwind_constants import (
 )
 from k1.tasks.legacy.kick.mdp.commands import UniformGoalPositionCommandCfg
 from k1.tasks.legacy.tracking.kick_motion import KICK_TRACKING_NPZ
+from k1.tasks.velocity.mdp.amp_terrain_dr import randomize_terrain_contact
 from mjlab.asset_zoo.props.ball import get_ball_radius, get_ball_spec
 from mjlab.asset_zoo.props.goal import get_goal_spec
 from mjlab.entity import EntityArticulationInfoCfg, EntityCfg
@@ -67,7 +68,6 @@ from mjlab.tasks.tracking.mdp.shot_rewards import (
   robot_torso_ball_distance,
 )
 from mjlab.tasks.tracking.tracking_env_cfg import make_tracking_env_cfg
-from mjlab.tasks.velocity.mdp.amp_terrain_dr import randomize_terrain_contact
 from mjlab.utils.noise import UniformNoiseCfg as Unoise
 
 K1_TRACKED_BODY_NAMES = (

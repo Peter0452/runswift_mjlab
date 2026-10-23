@@ -2,7 +2,7 @@
 
 from types import SimpleNamespace
 
-from mjlab.tasks.velocity.mdp.curriculums import anneal_rewards
+from k1.tasks.velocity.mdp.curriculums import anneal_rewards
 
 
 def _setup():

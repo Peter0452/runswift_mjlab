@@ -4,11 +4,11 @@ from unittest.mock import MagicMock, PropertyMock
 
 import torch
 
-from mjlab.sensor import RayCastData, RayCastSensor
-from mjlab.tasks.velocity.mdp.terrain_utils import (
+from k1.tasks.velocity.mdp.terrain_utils import (
   fit_terrain_normal,
   terrain_normal_from_sensors,
 )
+from mjlab.sensor import RayCastData, RayCastSensor
 
 
 def test_flat_ground():

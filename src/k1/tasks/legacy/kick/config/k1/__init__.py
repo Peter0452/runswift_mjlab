@@ -1,6 +1,6 @@
+from k1.tasks.velocity.rl.amp_runner import VelocityAmpOnPolicyRunner
 from mjlab.rl.runner import MjlabOnPolicyRunner
 from mjlab.tasks.registry import register_mjlab_task
-from mjlab.tasks.velocity.rl.amp_runner import VelocityAmpOnPolicyRunner
 
 from .env_cfgs import (
   k1_kick_approach_env_cfg,

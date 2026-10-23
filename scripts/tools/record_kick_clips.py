@@ -21,10 +21,10 @@ import numpy as np
 import torch
 
 import mjlab.tasks  # noqa: F401
+from k1.tasks.velocity.mdp.kick_loop import required_kick_speed
 from mjlab.envs import ManagerBasedRlEnv
 from mjlab.rl import RslRlVecEnvWrapper
 from mjlab.tasks.registry import load_env_cfg, load_rl_cfg, load_runner_cls
-from mjlab.tasks.velocity.mdp.kick_loop import required_kick_speed
 from mjlab.utils.lab_api.math import quat_apply_inverse
 
 TASK = "Mjlab-Velocity-Kick-Stage3-Amp-DA-Muon-Booster-K1"

@@ -12,6 +12,10 @@ from typing import Literal
 import torch
 import tyro
 
+from k1.tasks.velocity.rl.striker_runner import (
+  StrikerControllerPlayEnv,
+  StrikerControllerVecEnv,
+)
 from mjlab.envs import ManagerBasedRlEnv
 from mjlab.rl import (
   FastSacRunnerCfg,
@@ -22,10 +26,6 @@ from mjlab.rl import (
 from mjlab.scripts._cli import maybe_print_top_level_help
 from mjlab.tasks.registry import list_tasks, load_env_cfg, load_rl_cfg, load_runner_cls
 from mjlab.tasks.tracking.mdp import MotionCommandCfg
-from mjlab.tasks.velocity.rl.striker_runner import (
-  StrikerControllerPlayEnv,
-  StrikerControllerVecEnv,
-)
 from mjlab.utils.os import get_wandb_checkpoint_path
 from mjlab.utils.torch import configure_torch_backends
 from mjlab.utils.wrappers import VideoRecorder
@@ -148,7 +148,7 @@ def run_play(task_id: str, cfg: PlayConfig):
       twist.spawn_view_half_angle = 0.5 * (hi - lo)
       twist.side_drill_prob = 0.0
     if cfg.kick_range is not None:
-      from mjlab.tasks.velocity.mdp.approach import KICK_RANGE_NAMES, range_bin
+      from k1.tasks.velocity.mdp.approach import KICK_RANGE_NAMES, range_bin
 
       twist.kick_range = KICK_RANGE_NAMES.index(cfg.kick_range)
       band = range_bin(twist.target_distance_bins, twist.range_edges, twist.kick_range)

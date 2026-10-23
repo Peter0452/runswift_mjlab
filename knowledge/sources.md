@@ -88,18 +88,18 @@ result; true for its time), **superseded** (replaced; see the pointer),
 Several files carry measured results in docstrings and comments; keep them
 when refactoring (move files, don't rewrite them):
 
-- `src/mjlab/tasks/velocity/rl/anchor.py`: why self-play needs the KL anchor
+- `src/k1/tasks/velocity/rl/anchor.py`: why self-play needs the KL anchor
   (drift vs goal share numbers).
-- `src/mjlab/tasks/velocity/config/k1_amp/__init__.py`: style weight 0.2
+- `src/k1/tasks/velocity/config/k1_amp/__init__.py`: style weight 0.2
   rationale.
-- `src/mjlab/tasks/velocity/config/k1_amp/selfplay_cfgs.py`: self-play
+- `src/k1/tasks/velocity/config/k1_amp/selfplay_cfgs.py`: self-play
   fine-tune settings and why.
-- `src/mjlab/tasks/velocity/mdp/kick_loop.py`, `dribble.py`,
+- `src/k1/tasks/velocity/mdp/kick_loop.py`, `dribble.py`,
   `dribble_rewards.py`: per-version comments (v24, v32, v50, ...) explaining
   each term.
 - `src/mjlab/amp/modules/kick_teacher.py`: why the kick loop can teach the
   dribble.
-- `src/mjlab/tasks/velocity/mdp/decap.py`: the DecAP law.
+- `src/k1/tasks/velocity/mdp/decap.py`: the DecAP law.
 
 ## Restructure records
 

@@ -5,14 +5,14 @@ from __future__ import annotations
 import torch
 
 import mjlab.tasks  # noqa: F401  (registers tasks)
-from mjlab.tasks.registry import load_env_cfg, load_rl_cfg
-from mjlab.tasks.velocity.mdp.amp_symmetry import (
+from k1.tasks.velocity.mdp.amp_symmetry import (
   CRITIC_EXTRA_DIM_WALK,
   POLICY_DIM_KICK_STAGE1,
   flip_k1_critic_obs_left_right,
   flip_k1_policy_obs_left_right,
 )
-from mjlab.tasks.velocity.mdp.observations import constant_zeros
+from k1.tasks.velocity.mdp.observations import constant_zeros
+from mjlab.tasks.registry import load_env_cfg, load_rl_cfg
 
 TASK = "Mjlab-Velocity-Kick-Stage1-Amp-DA-Muon-Booster-K1"
 

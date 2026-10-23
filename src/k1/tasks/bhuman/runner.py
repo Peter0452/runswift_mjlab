@@ -32,9 +32,9 @@ from torch.utils.tensorboard import SummaryWriter
 from k1.tasks.bhuman.amp_style import AmpStyle
 from k1.tasks.bhuman.kick_command import BHumanKickCommand
 from k1.tasks.bhuman.robot import LEG_JOINTS
+from k1.tasks.velocity.mdp.decap import from_kick_clips
 from mjlab.envs import ManagerBasedRlEnv
 from mjlab.rl import RslRlBaseRunnerCfg
-from mjlab.tasks.velocity.mdp.decap import from_kick_clips
 
 
 @dataclass

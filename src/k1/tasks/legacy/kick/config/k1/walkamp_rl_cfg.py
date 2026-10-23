@@ -20,7 +20,7 @@ _KICK_AMP_DIR = (
 _AMP_SYMMETRY_CFG = {
   "use_data_augmentation": True,
   "use_mirror_loss": False,
-  "data_augmentation_func": "mjlab.tasks.velocity.mdp.amp_symmetry:augment_symmetries",
+  "data_augmentation_func": "k1.tasks.velocity.mdp.amp_symmetry:augment_symmetries",
 }
 
 

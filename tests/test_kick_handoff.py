@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import torch
 
-from mjlab.tasks.registry import load_env_cfg, load_rl_cfg
-from mjlab.tasks.velocity.mdp.kick_handoff import (
+from k1.tasks.velocity.mdp.kick_handoff import (
   DEFAULT_KICK_CKPTS,
   sample_handoff_command,
   select_handoff_ids,
 )
+from mjlab.tasks.registry import load_env_cfg, load_rl_cfg
 
 TASK = "Mjlab-Velocity-Rough-Amp-DA-Muon-Booster-K1-KickHandoff"
 

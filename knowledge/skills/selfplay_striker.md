@@ -7,7 +7,7 @@ GRU controller choosing between frozen kick and walk skills every 0.2 s).
 
 Sources: `docs/STRIKER_SELF_PLAY_PLAN.md` (living plan: I/O, rewards, phases,
 integration), session memory `k1-striker-selfplay` (the v1–v16 and
-controller v2–v7 log), code `src/mjlab/tasks/velocity/mdp/self_play.py`,
+controller v2–v7 log), code `src/k1/tasks/velocity/mdp/self_play.py`,
 `rl/selfplay_runner.py`, `rl/striker_runner.py`, `rl/anchor.py`,
 `config/k1_amp/selfplay_cfgs.py`.
 

@@ -13,6 +13,8 @@ from k1.tasks.legacy.kick.mdp.events import (
   reset_walkamp_kick_episode,
   update_ball_phase_buffers,
 )
+from k1.tasks.velocity import mdp as velocity_mdp
+from k1.tasks.velocity.config.k1_amp.env_cfgs import booster_k1_amp_flat_env_cfg
 from mjlab.asset_zoo.props.ball import BALL_XML, get_ball_radius
 from mjlab.entity import EntityCfg
 from mjlab.envs import ManagerBasedRlEnvCfg
@@ -24,8 +26,6 @@ from mjlab.managers.reward_manager import RewardTermCfg
 from mjlab.managers.scene_entity_config import SceneEntityCfg
 from mjlab.managers.termination_manager import TerminationTermCfg
 from mjlab.sensor import ContactMatch, ContactSensorCfg
-from mjlab.tasks.velocity import mdp as velocity_mdp
-from mjlab.tasks.velocity.config.k1_amp.env_cfgs import booster_k1_amp_flat_env_cfg
 from mjlab.utils.noise import UniformNoiseCfg as Unoise
 from mjlab.utils.spec_config import CollisionCfg
 

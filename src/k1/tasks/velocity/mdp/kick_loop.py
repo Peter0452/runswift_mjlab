@@ -18,13 +18,7 @@ from typing import TYPE_CHECKING
 
 import torch
 
-from mjlab.entity import Entity
-from mjlab.envs.mdp.actions import JointPositionAction, JointPositionActionCfg
-from mjlab.envs.mdp.dr._core import _get_entity_indices
-from mjlab.envs.mdp.events import push_by_setting_velocity
-from mjlab.managers.event_manager import RecomputeLevel, requires_model_fields
-from mjlab.managers.scene_entity_config import SceneEntityCfg
-from mjlab.tasks.velocity.mdp.approach import (
+from k1.tasks.velocity.mdp.approach import (
   BALL_ALPHA_RANGE,
   BALL_MASS,
   BALL_RADIUS,
@@ -42,6 +36,12 @@ from mjlab.tasks.velocity.mdp.approach import (
   _yaw_angle,
   ball_radius,
 )
+from mjlab.entity import Entity
+from mjlab.envs.mdp.actions import JointPositionAction, JointPositionActionCfg
+from mjlab.envs.mdp.dr._core import _get_entity_indices
+from mjlab.envs.mdp.events import push_by_setting_velocity
+from mjlab.managers.event_manager import RecomputeLevel, requires_model_fields
+from mjlab.managers.scene_entity_config import SceneEntityCfg
 from mjlab.utils.lab_api.math import quat_apply_inverse, quat_mul, yaw_quat
 
 if TYPE_CHECKING:

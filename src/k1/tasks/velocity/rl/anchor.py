@@ -16,7 +16,7 @@ sample summed over action dims) and ``Loss/anchor_coef`` (β).
 
 Wiring (runner cfg ``cfg``, e.g. in ``booster_k1_kick_selfplay_runner_cfg``)::
 
-  from mjlab.tasks.velocity.rl.anchor import with_anchor
+  from k1.tasks.velocity.rl.anchor import with_anchor
   cfg.algorithm = with_anchor(
     cfg.algorithm, SELFPLAY_KICK_CKPT, coef=0.5, coef_final=0.1,
     decay_updates=5000,
@@ -36,9 +36,9 @@ from typing import Any, cast
 import torch
 from tensordict import TensorDict
 
+from k1.tasks.velocity.mdp.self_play import pad_input_columns, resolve_checkpoint
 from mjlab.amp.algorithms.amp_ppo import AmpPPO
 from mjlab.amp.runners.amp_on_policy_runner import AmpRslRlMuonPpoAlgorithmCfg
-from mjlab.tasks.velocity.mdp.self_play import pad_input_columns, resolve_checkpoint
 
 ANCHOR_KEYS = (
   "anchor_checkpoint",
@@ -192,7 +192,7 @@ class AnchoredAmpPPO(AmpPPO):
 class AnchoredAmpMuonPpoAlgorithmCfg(AmpRslRlMuonPpoAlgorithmCfg):
   """``AmpRslRlMuonPpoAlgorithmCfg`` with the anchor's settings."""
 
-  class_name: str = "mjlab.tasks.velocity.rl.anchor:AnchoredAmpPPO"
+  class_name: str = "k1.tasks.velocity.rl.anchor:AnchoredAmpPPO"
   anchor_checkpoint: str | None = None
   anchor_coef: float = 0.0
   anchor_coef_final: float | None = None

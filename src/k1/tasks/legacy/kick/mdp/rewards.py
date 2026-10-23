@@ -1014,7 +1014,7 @@ def track_lin_vel_axis_for_kick(
   """Lin-vel tracking vs robot→ball / orbit twist targets × plant-proximity scale."""
   del loiter_ball_distance, loiter_scale
   from k1.tasks.legacy.kick.mdp.events import ensure_robot_ball_twist_command
-  from mjlab.tasks.velocity import mdp as velocity_mdp
+  from k1.tasks.velocity import mdp as velocity_mdp
 
   robot = robot_cfg if robot_cfg is not None else asset_cfg
   if align_robot_ball:
@@ -1164,7 +1164,7 @@ def track_ang_vel_z_for_kick(
   """Yaw tracking vs robot→ball / orbit twist targets × plant-proximity scale."""
   del loiter_ball_distance, loiter_scale
   from k1.tasks.legacy.kick.mdp.events import ensure_robot_ball_twist_command
-  from mjlab.tasks.velocity import mdp as velocity_mdp
+  from k1.tasks.velocity import mdp as velocity_mdp
 
   robot = robot_cfg if robot_cfg is not None else asset_cfg
   if align_robot_ball:
@@ -3827,7 +3827,7 @@ def collision_except_strike_phase(
 ) -> torch.Tensor:
   """Self-collision penalty gated off during Phase C (CoM through ball)."""
   from k1.tasks.legacy.kick.mdp.pref_pose import PHASE_STRIKE, compute_reference_pose_xy
-  from mjlab.tasks.velocity import mdp as velocity_mdp
+  from k1.tasks.velocity import mdp as velocity_mdp
 
   _pref, phase = compute_reference_pose_xy(
     env,
@@ -4159,7 +4159,7 @@ class feet_swing_for_kick:
   """``feet_swing`` gated by kick phase (off in Setup/Strike by default)."""
 
   def __init__(self, cfg: object, env: ManagerBasedRlEnv):
-    from mjlab.tasks.velocity.mdp.rewards import feet_swing
+    from k1.tasks.velocity.mdp.rewards import feet_swing
 
     self._inner = feet_swing(cfg, env)  # type: ignore[arg-type]
 
@@ -4287,7 +4287,7 @@ def feet_offset_x_for_kick(
   disable_when_planted: bool = False,
 ) -> torch.Tensor:
   """Walk sagittal foot stagger; attenuated in Setup, off in Strike."""
-  from mjlab.tasks.velocity import mdp as velocity_mdp
+  from k1.tasks.velocity import mdp as velocity_mdp
 
   raw = velocity_mdp.feet_offset_x_fixed(
     env,
@@ -4374,7 +4374,7 @@ def feet_offset_y_for_kick(
   disable_when_planted: bool = False,
 ) -> torch.Tensor:
   """Walk stance-width regularizer; attenuated in Setup, off in Strike."""
-  from mjlab.tasks.velocity import mdp as velocity_mdp
+  from k1.tasks.velocity import mdp as velocity_mdp
 
   raw = velocity_mdp.feet_offset_y_fixed(
     env,
@@ -4461,7 +4461,7 @@ def feet_distance_for_kick(
   settle_time_s: float = 1.0,
 ) -> torch.Tensor:
   """Lateral foot spacing band; attenuated in Setup, off in Strike."""
-  from mjlab.tasks.velocity import mdp as velocity_mdp
+  from k1.tasks.velocity import mdp as velocity_mdp
 
   raw = velocity_mdp.feet_distance_lateral(
     env,
@@ -4532,7 +4532,7 @@ def feet_yaw_diff_for_kick(
   settle_time_s: float = 1.0,
 ) -> torch.Tensor:
   """Feet yaw gap; attenuated in Setup, off in Strike."""
-  from mjlab.tasks.velocity import mdp as velocity_mdp
+  from k1.tasks.velocity import mdp as velocity_mdp
 
   raw = velocity_mdp.feet_yaw_diff_l2(env, asset_cfg=asset_cfg)
   scale = _kick_phase_walk_scale(
@@ -4594,7 +4594,7 @@ def feet_yaw_mean_for_kick(
   settle_time_s: float = 1.0,
 ) -> torch.Tensor:
   """Mean foot yaw vs base; attenuated in Setup, off in Strike."""
-  from mjlab.tasks.velocity import mdp as velocity_mdp
+  from k1.tasks.velocity import mdp as velocity_mdp
 
   raw = velocity_mdp.feet_yaw_mean_l2(env, asset_cfg=asset_cfg)
   scale = _kick_phase_walk_scale(
@@ -4662,7 +4662,7 @@ def knee_flex_cmd_excess_for_kick(
   disable_when_planted: bool = False,
 ) -> torch.Tensor:
   """Knee crouch-cmd tax; soft in Setup, off in Strike so the swing leg can flex."""
-  from mjlab.tasks.velocity import mdp as velocity_mdp
+  from k1.tasks.velocity import mdp as velocity_mdp
 
   raw = velocity_mdp.knee_flex_cmd_excess(
     env,

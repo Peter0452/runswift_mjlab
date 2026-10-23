@@ -7,9 +7,9 @@ from unittest.mock import MagicMock, patch
 import pytest
 import torch
 
-from mjlab.tasks.velocity.config.k1_amp.env_cfgs import booster_k1_dribble_env_cfg
-from mjlab.tasks.velocity.mdp.dribble import classify_alternate_tap
-from mjlab.tasks.velocity.mdp.dribble_rewards import alternate_leg_dribble
+from k1.tasks.velocity.config.k1_amp.env_cfgs import booster_k1_dribble_env_cfg
+from k1.tasks.velocity.mdp.dribble import classify_alternate_tap
+from k1.tasks.velocity.mdp.dribble_rewards import alternate_leg_dribble
 from mjlab.utils.lab_api.math import quat_from_euler_xyz
 
 
@@ -155,7 +155,7 @@ def _forward_env(
 
 def _reward(env: MagicMock, cmd: MagicMock) -> torch.Tensor:
   with patch(
-    "mjlab.tasks.velocity.mdp.dribble_rewards._dribble", return_value=cmd
+    "k1.tasks.velocity.mdp.dribble_rewards._dribble", return_value=cmd
   ):
     return alternate_leg_dribble(env)
 

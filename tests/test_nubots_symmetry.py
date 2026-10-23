@@ -5,7 +5,7 @@ from __future__ import annotations
 import torch
 from tensordict import TensorDict
 
-from mjlab.tasks.velocity.mdp.symmetry import (
+from k1.tasks.velocity.mdp.symmetry import (
   ACTOR_DIM,
   CRITIC_DIM,
   _mirror_actor_obs,

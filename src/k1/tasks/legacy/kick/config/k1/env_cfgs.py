@@ -4,8 +4,8 @@ from k1.tasks.legacy.kick.arc_kick_env_cfg import (
   make_approach_only_env_cfg,
   make_near_kick_env_cfg,
 )
+from k1.tasks.velocity.config.k1.env_cfgs import booster_k1_base_walk_env_cfg
 from mjlab.envs import ManagerBasedRlEnvCfg
-from mjlab.tasks.velocity.config.k1.env_cfgs import booster_k1_base_walk_env_cfg
 
 
 def k1_kick_approach_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:

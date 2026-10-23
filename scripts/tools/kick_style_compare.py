@@ -16,10 +16,10 @@ import torch
 os.environ["KICK_EVAL"] = "1"  # no mid-kick starts in evaluation
 
 import mjlab.tasks  # noqa: F401  # isort: skip
+from k1.tasks.velocity.config.k1_amp import env_cfgs as ec
 from mjlab.envs import ManagerBasedRlEnv
 from mjlab.rl import RslRlVecEnvWrapper
 from mjlab.tasks.registry import load_env_cfg, load_rl_cfg, load_runner_cls
-from mjlab.tasks.velocity.config.k1_amp import env_cfgs as ec
 from mjlab.utils.lab_api.math import wrap_to_pi
 
 TASK = "Mjlab-Velocity-Kick-Stage3-Amp-DA-Muon-Booster-K1"

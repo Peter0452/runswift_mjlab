@@ -4,8 +4,8 @@ import pytest
 import torch
 from conftest import get_test_device
 
+from k1.tasks.velocity.config.k1.env_cfgs import booster_k1_flat_env_cfg
 from mjlab.envs import ManagerBasedRlEnv
-from mjlab.tasks.velocity.config.k1.env_cfgs import booster_k1_flat_env_cfg
 
 
 @pytest.fixture(scope="module")

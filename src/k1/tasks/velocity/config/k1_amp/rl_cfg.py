@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 
+from k1.tasks.velocity.mdp.dribble_rewards import KICK_GROUP_TERMS
 from mjlab.amp.runners import (
   AmpDiscriminatorCfg,
   AmpOnPolicyRunnerCfg,
@@ -13,12 +14,11 @@ from mjlab.amp.runners import (
   AmpRslRlPpoAlgorithmCfg,
 )
 from mjlab.rl import RslRlModelCfg
-from mjlab.tasks.velocity.mdp.dribble_rewards import KICK_GROUP_TERMS
 
 _AMP_SYMMETRY_CFG = {
   "use_data_augmentation": True,
   "use_mirror_loss": False,
-  "data_augmentation_func": "mjlab.tasks.velocity.mdp.amp_symmetry:augment_symmetries",
+  "data_augmentation_func": "k1.tasks.velocity.mdp.amp_symmetry:augment_symmetries",
 }
 
 # Whirlwind LAFAN + CMU-09 K1 retargets.
@@ -150,7 +150,7 @@ def booster_k1_dribble_runner_cfg() -> AmpOnPolicyRunnerCfg:
   cfg.algorithm.symmetry_cfg = dict(
     _AMP_SYMMETRY_CFG,
     data_augmentation_func=(
-      "mjlab.tasks.velocity.mdp.dribble:augment_symmetries_dribble"
+      "k1.tasks.velocity.mdp.dribble:augment_symmetries_dribble"
     ),
   )
   # v19 (2026-10-20): DRIBBLE_GENES {"amp_mix": "fast"} swaps in the fast weights
@@ -269,7 +269,7 @@ def booster_k1_kick_stage3_runner_cfg() -> AmpOnPolicyRunnerCfg:
   cfg.algorithm.symmetry_cfg = dict(
     _AMP_SYMMETRY_CFG,
     data_augmentation_func=(
-      "mjlab.tasks.velocity.mdp.amp_symmetry:augment_symmetries_kick_loop"
+      "k1.tasks.velocity.mdp.amp_symmetry:augment_symmetries_kick_loop"
     ),
   )
   # K4 (v59): walk data plus kick clips recorded in our sim — B-Human's

@@ -6,8 +6,8 @@ import torch
 from rsl_rl.models import MLPModel
 from tensordict import TensorDict
 
+from k1.tasks.velocity.rl import anchor as anc
 from mjlab.amp.runners.amp_on_policy_runner import AmpRslRlMuonPpoAlgorithmCfg
-from mjlab.tasks.velocity.rl import anchor as anc
 
 DIST = {
   "class_name": "rsl_rl.modules.distribution:GaussianDistribution",
@@ -100,7 +100,7 @@ def test_off_without_checkpoint_or_coef_and_cfg_round_trip():
   assert alg._imitation_loss(8) is None
   base = AmpRslRlMuonPpoAlgorithmCfg()
   cfg = anc.with_anchor(base, "x.pt", coef=0.5, coef_final=0.1, decay_updates=10)
-  assert cfg.class_name == "mjlab.tasks.velocity.rl.anchor:AnchoredAmpPPO"
+  assert cfg.class_name == "k1.tasks.velocity.rl.anchor:AnchoredAmpPPO"
   assert (cfg.anchor_coef, cfg.anchor_coef_final, cfg.anchor_decay_updates) == (
     0.5,
     0.1,

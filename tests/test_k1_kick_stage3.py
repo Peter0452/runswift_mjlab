@@ -7,20 +7,19 @@ import math
 import torch
 
 import mjlab.tasks  # noqa: F401
-from mjlab.tasks.registry import load_env_cfg, load_rl_cfg
-from mjlab.tasks.velocity.config.k1_amp.env_cfgs import booster_k1_kick_stage3_env_cfg
-from mjlab.tasks.velocity.mdp.amp_symmetry import (
+from k1.tasks.velocity.config.k1_amp.env_cfgs import booster_k1_kick_stage3_env_cfg
+from k1.tasks.velocity.mdp.amp_symmetry import (
   KICK_LOOP_AGE_SLOT,
   augment_symmetries,
   augment_symmetries_kick_loop,
 )
-from mjlab.tasks.velocity.mdp.approach import (
+from k1.tasks.velocity.mdp.approach import (
   SIDE_KICK_COST,
   range_one_hot,
   sample_binned,
   side_aware_angle,
 )
-from mjlab.tasks.velocity.mdp.kick_loop import (
+from k1.tasks.velocity.mdp.kick_loop import (
   RANGE_EDGES,
   TARGET_BINS,
   classify_touch,
@@ -29,6 +28,7 @@ from mjlab.tasks.velocity.mdp.kick_loop import (
   kick_quality_score,
   required_kick_speed,
 )
+from mjlab.tasks.registry import load_env_cfg, load_rl_cfg
 
 TASK = "Mjlab-Velocity-Kick-Stage3-Amp-DA-Muon-Booster-K1"
 
@@ -198,7 +198,7 @@ def test_kick_quality_pays_planted_swings_not_running_pushes() -> None:
 
 
 def test_head_tracker_points_at_the_ball_and_is_rate_limited() -> None:
-  from mjlab.tasks.velocity.mdp.kick_loop import (
+  from k1.tasks.velocity.mdp.kick_loop import (
     HEAD_MAX_STEP,
     HEAD_PITCH_LIMITS,
     head_step,
@@ -233,7 +233,7 @@ def test_stage3_v21_head_fov_and_posture_wiring() -> None:
 
 
 def test_head_looks_down_when_a_near_ball_is_lost() -> None:
-  from mjlab.tasks.velocity.mdp.kick_loop import HEAD_PITCH_LIMITS, head_goal
+  from k1.tasks.velocity.mdp.kick_loop import HEAD_PITCH_LIMITS, head_goal
 
   ball = torch.tensor([[1.3, 0.1], [1.3, 0.1], [3.0, 0.0], [3.0, 0.0]])
   lost = torch.tensor([0.0, 0.3, 0.3, 1.0])
@@ -247,7 +247,7 @@ def test_head_looks_down_when_a_near_ball_is_lost() -> None:
 def test_long_kicks_reward_speed_and_swing() -> None:
   from types import SimpleNamespace
 
-  from mjlab.tasks.velocity.mdp import kick_loop as kl
+  from k1.tasks.velocity.mdp import kick_loop as kl
 
   speeds = torch.tensor([3.3, 7.5, 9.5, 3.3])
   long = torch.tensor([True, True, True, False])
@@ -289,7 +289,7 @@ def test_long_kicks_reward_speed_and_swing() -> None:
 def test_v34_posture_bands_and_speed_caps() -> None:
   from types import SimpleNamespace
 
-  from mjlab.tasks.velocity.mdp import kick_loop as kl
+  from k1.tasks.velocity.mdp import kick_loop as kl
 
   walking = torch.ones(3)
   robot = SimpleNamespace(
@@ -348,7 +348,7 @@ def test_v34_posture_bands_and_speed_caps() -> None:
 def test_walk_speed_pays_low_caps_fully_and_high_caps_more() -> None:
   from types import SimpleNamespace
 
-  from mjlab.tasks.velocity.mdp import kick_loop as kl
+  from k1.tasks.velocity.mdp import kick_loop as kl
 
   caps = torch.tensor([0.4, 0.4, 2.0, 2.0])
   toward = torch.tensor([0.4, 0.2, 1.0, 2.0])
@@ -387,7 +387,7 @@ def test_walk_speed_pays_low_caps_fully_and_high_caps_more() -> None:
 def test_walk_speed_track_peaks_at_the_cap() -> None:
   from types import SimpleNamespace
 
-  from mjlab.tasks.velocity.mdp import kick_loop as kl
+  from k1.tasks.velocity.mdp import kick_loop as kl
 
   caps = torch.tensor([2.0, 2.0, 0.45, 0.45, 2.0])
   toward = torch.tensor([2.0, 1.0, 0.45, 0.65, 2.0])
@@ -420,7 +420,7 @@ def test_walk_speed_track_peaks_at_the_cap() -> None:
 def test_kick_direction_needs_power() -> None:
   from types import SimpleNamespace
 
-  from mjlab.tasks.velocity.mdp import kick_loop as kl
+  from k1.tasks.velocity.mdp import kick_loop as kl
 
   # Target needs 4.0 m/s: a 1.4 m/s tap earns half the aim reward of a kick at
   # 2.8 m/s (= 0.7 x 4.0) or faster.
@@ -448,7 +448,7 @@ def test_kick_direction_needs_power() -> None:
 def test_long_kick_power_needs_transfer() -> None:
   from types import SimpleNamespace
 
-  from mjlab.tasks.velocity.mdp import kick_loop as kl
+  from k1.tasks.velocity.mdp import kick_loop as kl
 
   # Same 5 m/s swing: a clean strike (ball 6 m/s) pays in full, a glancing one
   # (ball 1.75 m/s = half of 0.7 x 5) half.
@@ -506,7 +506,7 @@ def test_stage3_side_kicks_wired() -> None:
 def test_short_kick_vel_full_at_needed_speed() -> None:
   from types import SimpleNamespace
 
-  from mjlab.tasks.velocity.mdp import kick_loop as kl
+  from k1.tasks.velocity.mdp import kick_loop as kl
 
   # Short target needing 2.2 m/s: 2.2 and 4.4 m/s both pay 1 (no extra for a
   # blast); a long kick still pays speed / 7.5.
@@ -535,7 +535,7 @@ def test_short_kick_vel_full_at_needed_speed() -> None:
 def test_kick_rest_accuracy_wired() -> None:
   from types import SimpleNamespace
 
-  from mjlab.tasks.velocity.mdp import kick_loop as kl
+  from k1.tasks.velocity.mdp import kick_loop as kl
 
   cmd = SimpleNamespace(
     rest_event=torch.tensor([True, True, False]),
@@ -556,7 +556,7 @@ def test_kick_rest_accuracy_wired() -> None:
 def test_short_speed_match_is_linear() -> None:
   from types import SimpleNamespace
 
-  from mjlab.tasks.velocity.mdp import kick_loop as kl
+  from k1.tasks.velocity.mdp import kick_loop as kl
 
   cmd = SimpleNamespace(
     kick_event=torch.ones(3, dtype=torch.bool),
@@ -580,7 +580,7 @@ def test_short_speed_match_is_linear() -> None:
 def test_long_kick_underpower() -> None:
   from types import SimpleNamespace
 
-  from mjlab.tasks.velocity.mdp import kick_loop as kl
+  from k1.tasks.velocity.mdp import kick_loop as kl
 
   cmd = SimpleNamespace(
     kick_event=torch.ones(4, dtype=torch.bool),
@@ -599,7 +599,7 @@ def test_long_kick_underpower() -> None:
 
 
 def test_loft_factor() -> None:
-  from mjlab.tasks.velocity.mdp import kick_loop as kl
+  from k1.tasks.velocity.mdp import kick_loop as kl
 
   lo, hi = kl.LOFT_FREE_DEG, kl.LOFT_ZERO_DEG
   a = torch.deg2rad(torch.tensor([0.0, lo, (lo + hi) / 2, hi, hi + 20.0, -10.0]))
@@ -621,7 +621,7 @@ def test_stage3_search_wired() -> None:
 def test_search_turn_is_signed() -> None:
   from types import SimpleNamespace
 
-  from mjlab.tasks.velocity.mdp import kick_loop as kl
+  from k1.tasks.velocity.mdp import kick_loop as kl
 
   wz = torch.tensor([1.0, -1.0, 0.5, 2.0])
   robot = SimpleNamespace(
@@ -643,7 +643,7 @@ def test_search_turn_is_signed() -> None:
 
 
 def test_momentum_kick_constants() -> None:
-  from mjlab.tasks.velocity.mdp import kick_loop as kl
+  from k1.tasks.velocity.mdp import kick_loop as kl
 
   # K2: walking into the ball at B-Human's ~0.8 m/s must not be "off-axis".
   assert kl.MOMENTUM_KICKS and kl.MOMENTUM_KICK_MAX_SPEED >= 0.8
@@ -655,8 +655,8 @@ def test_reward_grammar_matches_hand_written_terms() -> None:
   """Grammar re-expressions of existing terms give identical values."""
   from types import SimpleNamespace
 
-  from mjlab.tasks.velocity.mdp import kick_loop as kl
-  from mjlab.tasks.velocity.mdp import reward_grammar as rg
+  from k1.tasks.velocity.mdp import kick_loop as kl
+  from k1.tasks.velocity.mdp import reward_grammar as rg
 
   n = 6
   g = torch.Generator().manual_seed(0)
@@ -752,7 +752,7 @@ def test_reward_program_wiring(tmp_path) -> None:
 def test_goal_mouth_pays_inside_the_posts_and_ramps_outside() -> None:
   from types import SimpleNamespace
 
-  from mjlab.tasks.velocity.mdp import kick_loop as kl
+  from k1.tasks.velocity.mdp import kick_loop as kl
 
   # Ball at the origin, target 8 m ahead. A centred shot is a goal; 2 m of
   # lateral miss is past the post and part-way down the ramp; heading away pays 0.

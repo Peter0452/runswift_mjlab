@@ -186,7 +186,7 @@ class AmpOnPolicyRunner(AmpRunner, MjlabOnPolicyRunner):
     """Point the kick action at AMP-clip joint targets, if DecAP is enabled."""
     if not self.cfg.get("decap", False):
       return
-    from mjlab.tasks.velocity.mdp.decap import DecapReference, from_kick_clips
+    from k1.tasks.velocity.mdp.decap import DecapReference, from_kick_clips
 
     action = self.env.unwrapped.action_manager.get_term("joint_pos")
     gamma = float(self.cfg.get("decap_gamma", 0.99))

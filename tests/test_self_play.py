@@ -9,9 +9,7 @@ from conftest import get_test_device
 from rsl_rl.models import MLPModel
 from tensordict import TensorDict
 
-from mjlab.envs import ManagerBasedRlEnv
-from mjlab.tasks.registry import load_env_cfg, load_rl_cfg
-from mjlab.tasks.velocity.mdp.self_play import (
+from k1.tasks.velocity.mdp.self_play import (
   OpponentPolicyAction,
   OpponentPolicyActionCfg,
   OpponentSeedCfg,
@@ -24,10 +22,12 @@ from mjlab.tasks.velocity.mdp.self_play import (
   place_upright,
   resolve_checkpoint,
 )
-from mjlab.tasks.velocity.rl.selfplay_runner import (
+from k1.tasks.velocity.rl.selfplay_runner import (
   SelfPlayAmpOnPolicyRunner,
   SelfPlayAmpRunnerCfg,
 )
+from mjlab.envs import ManagerBasedRlEnv
+from mjlab.tasks.registry import load_env_cfg, load_rl_cfg
 
 TASK = "Mjlab-Velocity-Kick-SelfPlay-Amp-DA-Muon-Booster-K1"
 # Tracked checkpoints with the same layouts as the defaults.

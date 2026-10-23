@@ -33,7 +33,8 @@ when kick-loop code is touched.
 | ea8abe5 | `k1.compat` import finder replaces alias folders | 1272 pass, golden ok |
 | 311ad64 | Legacy kick (`Mjlab-Kick-*`, arc kick, walk-AMP kick) → `k1/tasks/legacy/kick/`; alias `mjlab.tasks.kick` | 1273 pass, golden ok |
 | e9587e3 | K1 tracking kick tasks (`Mjlab-Tracking-Flat-Booster-K1-Kick*`) → `k1/tasks/legacy/tracking/` | 1273 pass, golden ok |
-| (this) | Getup (`Mjlab-Getup-Flat-Booster-K1`) → `k1/tasks/getup/` | 1273 pass, golden ok |
+| 3356ca6 | Getup (`Mjlab-Getup-Flat-Booster-K1`) → `k1/tasks/getup/` | 1273 pass, golden ok |
+| (this) | Whole `mjlab.tasks.velocity` (walk, kick, dribble, self-play, striker, AMP configs and runners; all K1 now) → `k1/tasks/velocity/` | 1273 pass, golden ok, bench ok (2 separated) |
 
 ## Best guesses (review these)
 
@@ -56,3 +57,10 @@ when kick-loop code is touched.
 ## Our edits inside the framework (left in `src/mjlab/`, to list or move later)
 
 - `tasks/tracking/mdp/{shot,shot_rewards,stand_blend}.py` + hooks in `commands.py`, `rewards.py`.
+5. **`mjlab.tasks.velocity` moved whole first**, then split by family in later commits
+   (keeps each commit checkable). Its generic pieces (upstream-derived rewards,
+   observations, terminations, velocity command) came along: no non-K1 velocity task
+   remains, so the velocity task is K1 territory.
+6. **Never run tools with `--help` to smoke-test them:** `kick_style_gallery.py` ran
+   for real and `evolve_hier.py` would have started a 12 h loop (stopped before it
+   reached it). Tools are import-checked by executing only their import lines.

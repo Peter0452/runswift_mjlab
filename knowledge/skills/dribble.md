@@ -3,7 +3,7 @@
 Move the ball at a commanded velocity, with a kick mode (slot 82), search for
 a lost ball, and approach from far. Task
 `Mjlab-Velocity-Dribble-Amp-DA-Muon-Booster-K1`, experiment
-`k1_dribble_amp`, code `src/mjlab/tasks/velocity/mdp/dribble.py` and
+`k1_dribble_amp`, code `src/k1/tasks/velocity/mdp/dribble.py` and
 `dribble_rewards.py`.
 
 Sources: session memory `k1-dribble-speed` (the full v13–v53 log),

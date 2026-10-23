@@ -4,7 +4,7 @@ from types import SimpleNamespace
 
 import torch
 
-from mjlab.tasks.velocity.mdp import self_play
+from k1.tasks.velocity.mdp import self_play
 
 
 def _env(robot_v, ball_v, dist=3.0, cap=1.0, since_kick=10.0, lost=False):

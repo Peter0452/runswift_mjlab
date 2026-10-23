@@ -1,3 +1,5 @@
+from k1.tasks.velocity import mdp
+from k1.tasks.velocity.mdp.amp_events import reset_from_pose_pool
 from mjlab.amp.config import DEFAULT_AMP_DATASET
 from mjlab.amp.curriculums import anneal_style_reward
 from mjlab.managers import (
@@ -7,8 +9,6 @@ from mjlab.managers import (
 )
 from mjlab.managers.curriculum_manager import CurriculumTermCfg
 from mjlab.managers.scene_entity_config import SceneEntityCfg
-from mjlab.tasks.velocity import mdp
-from mjlab.tasks.velocity.mdp.amp_events import reset_from_pose_pool
 
 
 def with_amp_obs_group(

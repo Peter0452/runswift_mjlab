@@ -1,5 +1,5 @@
+from k1.tasks.velocity.rl import VelocityOnPolicyRunner
 from mjlab.tasks.registry import register_mjlab_task
-from mjlab.tasks.velocity.rl import VelocityOnPolicyRunner
 
 from .env_cfgs import (
   booster_k1_base_walk_env_cfg,

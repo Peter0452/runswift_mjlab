@@ -8,10 +8,10 @@ from unittest.mock import MagicMock, PropertyMock
 import pytest
 import torch
 
+from k1.tasks.velocity.mdp.rewards import upright
 from mjlab.managers.reward_manager import RewardTermCfg
 from mjlab.managers.scene_entity_config import SceneEntityCfg
 from mjlab.sensor import RayCastData, RayCastSensor
-from mjlab.tasks.velocity.mdp.rewards import upright
 from mjlab.utils.lab_api.math import quat_from_euler_xyz
 
 
@@ -201,8 +201,8 @@ def _make_feet_swing(phase: torch.Tensor, in_air: torch.Tensor, moving: torch.Te
   """
   from unittest.mock import patch
 
+  from k1.tasks.velocity.mdp.rewards import feet_swing
   from mjlab.sensor import ContactSensor
-  from mjlab.tasks.velocity.mdp.rewards import feet_swing
 
   B = phase.shape[0]
   contact = MagicMock(spec=ContactSensor)
@@ -228,7 +228,7 @@ def _make_feet_swing(phase: torch.Tensor, in_air: torch.Tensor, moving: torch.Te
 
   def _call():
     with patch(
-      "mjlab.tasks.velocity.mdp.rewards.advance_gait_phase",
+      "k1.tasks.velocity.mdp.rewards.advance_gait_phase",
       return_value=(phase, moving),
     ):
       return reward_fn(
@@ -269,7 +269,7 @@ def test_feet_swing_zero_when_standing_or_planted():
 
 
 def test_body_ang_vel_penalty_scales_with_command_speed():
-  from mjlab.tasks.velocity.mdp.rewards import body_angular_velocity_penalty
+  from k1.tasks.velocity.mdp.rewards import body_angular_velocity_penalty
 
   env = MagicMock()
   asset = MagicMock()
@@ -288,10 +288,10 @@ def test_body_ang_vel_penalty_scales_with_command_speed():
 
 
 def test_nubots_quality_torso_swing_penalties():
-  from mjlab.tasks.velocity.config.k1.env_cfgs import (
+  from k1.tasks.velocity.config.k1.env_cfgs import (
     booster_k1_nubots_quality_env_cfg,
   )
-  from mjlab.tasks.velocity.mdp.rewards import angular_momentum_penalty
+  from k1.tasks.velocity.mdp.rewards import angular_momentum_penalty
 
   cfg = booster_k1_nubots_quality_env_cfg(play=False)
   assert cfg.rewards["ang_vel_xy"].weight == -0.6
@@ -306,7 +306,7 @@ def test_nubots_quality_torso_swing_penalties():
 
 def test_nubots_quality_unlocks_arm_swing():
   """The momentum penalty needs shoulder authority to act through."""
-  from mjlab.tasks.velocity.config.k1.env_cfgs import (
+  from k1.tasks.velocity.config.k1.env_cfgs import (
     booster_k1_nubots_quality_env_cfg,
     booster_k1_nubots_rough_env_cfg,
   )
@@ -347,8 +347,8 @@ def _make_feet_gait(
   """
   from unittest.mock import patch
 
+  from k1.tasks.velocity.mdp.rewards import feet_gait
   from mjlab.sensor import ContactSensor
-  from mjlab.tasks.velocity.mdp.rewards import feet_gait
 
   sensor = MagicMock(spec=ContactSensor)
   sensor.primary_names = ("left_foot_link", "right_foot_link")
@@ -373,7 +373,7 @@ def _make_feet_gait(
 
   def _call():
     with patch(
-      "mjlab.tasks.velocity.mdp.rewards.advance_gait_phase",
+      "k1.tasks.velocity.mdp.rewards.advance_gait_phase",
       return_value=(phase, moving),
     ):
       return reward_fn(
@@ -450,7 +450,7 @@ def test_tracking_reward_scales_with_commanded_speed():
   """
   from unittest.mock import patch
 
-  from mjlab.tasks.velocity.mdp.rewards import track_lin_vel_axis
+  from k1.tasks.velocity.mdp.rewards import track_lin_vel_axis
 
   env = MagicMock()
   asset = MagicMock()
@@ -462,7 +462,7 @@ def test_tracking_reward_scales_with_commanded_speed():
 
   def _call(speed_ref: float):
     with patch(
-      "mjlab.tasks.velocity.mdp.rewards._ema_filtered_base_vel",
+      "k1.tasks.velocity.mdp.rewards._ema_filtered_base_vel",
       return_value=(measured, torch.zeros_like(measured)),
     ):
       return track_lin_vel_axis(env, axis=0, command_name="twist", speed_ref=speed_ref)
@@ -474,10 +474,10 @@ def test_tracking_reward_scales_with_commanded_speed():
 
 
 def test_nubots_speed_cfg_restores_gradient_and_cadence():
-  from mjlab.tasks.velocity.config.k1.env_cfgs import (
+  from k1.tasks.velocity.config.k1.env_cfgs import (
     booster_k1_nubots_speed_env_cfg,
   )
-  from mjlab.tasks.velocity.mdp.rewards import feet_gait
+  from k1.tasks.velocity.mdp.rewards import feet_gait
 
   cfg = booster_k1_nubots_speed_env_cfg(play=False)
 
@@ -509,7 +509,7 @@ def test_nubots_speed_cfg_restores_gradient_and_cadence():
 
 
 def test_nubots_speed_runner_is_configured_for_scratch():
-  from mjlab.tasks.velocity.config.k1.rl_cfg import (
+  from k1.tasks.velocity.config.k1.rl_cfg import (
     booster_k1_nubots_speed_ppo_runner_cfg,
   )
 
@@ -523,9 +523,9 @@ def test_nubots_speed_runner_is_configured_for_scratch():
 
 
 def test_k1_env_cfg_includes_feet_swing():
-  from mjlab.tasks.velocity.config.k1.env_cfgs import booster_k1_flat_env_cfg
-  from mjlab.tasks.velocity.mdp import walk_params
-  from mjlab.tasks.velocity.mdp.rewards import feet_swing
+  from k1.tasks.velocity.config.k1.env_cfgs import booster_k1_flat_env_cfg
+  from k1.tasks.velocity.mdp import walk_params
+  from k1.tasks.velocity.mdp.rewards import feet_swing
 
   cfg = booster_k1_flat_env_cfg(play=False)
   term = cfg.rewards["feet_swing"]
@@ -537,10 +537,10 @@ def test_k1_env_cfg_includes_feet_swing():
 
 
 def test_htwk_nubots_reward_setup_matches_teacher():
-  from mjlab.tasks.velocity.config.k1.env_cfgs import (
+  from k1.tasks.velocity.config.k1.env_cfgs import (
     booster_k1_nubots_htwk_env_cfg,
   )
-  from mjlab.tasks.velocity.mdp import rewards
+  from k1.tasks.velocity.mdp import rewards
 
   cfg = booster_k1_nubots_htwk_env_cfg(play=False)
   expected = {
@@ -609,7 +609,7 @@ def test_htwk_nubots_reward_setup_matches_teacher():
 
 
 def test_htwk_orientation_uses_commanded_pitch_and_roll():
-  from mjlab.tasks.velocity.mdp.rewards import htwk_orientation_target
+  from k1.tasks.velocity.mdp.rewards import htwk_orientation_target
 
   env = MagicMock()
   asset = MagicMock()
@@ -627,7 +627,7 @@ def test_htwk_orientation_uses_commanded_pitch_and_roll():
 
 
 def test_htwk_parameter_walk_rewards_reject_legacy_command():
-  from mjlab.tasks.velocity.mdp.rewards import htwk_orientation_target
+  from k1.tasks.velocity.mdp.rewards import htwk_orientation_target
 
   env = MagicMock()
   env.command_manager.get_command.return_value = torch.zeros(1, 4)
@@ -636,7 +636,7 @@ def test_htwk_parameter_walk_rewards_reject_legacy_command():
 
 
 def test_htwk_foot_offset_uses_command_target_and_velocity_gate():
-  from mjlab.tasks.velocity.mdp.rewards import htwk_feet_offset_x
+  from k1.tasks.velocity.mdp.rewards import htwk_feet_offset_x
 
   env = MagicMock()
   asset = MagicMock()
@@ -654,7 +654,7 @@ def test_htwk_foot_offset_uses_command_target_and_velocity_gate():
 
 
 def test_htwk_y_offset_is_relative_to_nominal_foot_distance():
-  from mjlab.tasks.velocity.mdp.rewards import htwk_feet_offset_y
+  from k1.tasks.velocity.mdp.rewards import htwk_feet_offset_y
 
   env = MagicMock()
   asset = MagicMock()
@@ -677,7 +677,7 @@ def test_htwk_y_offset_is_relative_to_nominal_foot_distance():
 
 
 def test_htwk_feet_offset_x_keeps_min_velocity_scale_at_high_speed():
-  from mjlab.tasks.velocity.mdp.rewards import htwk_feet_offset_x
+  from k1.tasks.velocity.mdp.rewards import htwk_feet_offset_x
 
   env = MagicMock()
   asset = MagicMock()
@@ -704,7 +704,7 @@ def test_htwk_feet_offset_x_keeps_min_velocity_scale_at_high_speed():
 
 
 def test_htwk_feet_site_xy_separation_penalizes_close_sites():
-  from mjlab.tasks.velocity.mdp.rewards import htwk_feet_site_xy_separation
+  from k1.tasks.velocity.mdp.rewards import htwk_feet_site_xy_separation
 
   env = MagicMock()
   asset = MagicMock()
@@ -719,7 +719,7 @@ def test_htwk_feet_site_xy_separation_penalizes_close_sites():
 
 
 def test_htwk_minimum_feet_separation_is_a_smooth_squared_hinge():
-  from mjlab.tasks.velocity.mdp.rewards import htwk_feet_minimum_separation
+  from k1.tasks.velocity.mdp.rewards import htwk_feet_minimum_separation
 
   env = MagicMock()
   asset = MagicMock()
@@ -734,7 +734,7 @@ def test_htwk_minimum_feet_separation_is_a_smooth_squared_hinge():
 
 
 def test_htwk_knee_separation_increases_below_safe_distance():
-  from mjlab.tasks.velocity.mdp.rewards import htwk_knee_separation
+  from k1.tasks.velocity.mdp.rewards import htwk_knee_separation
 
   env = MagicMock()
   asset = MagicMock()
@@ -754,7 +754,7 @@ def test_htwk_knee_separation_increases_below_safe_distance():
 
 
 def test_htwk_hip_roll_barrier_has_deadband():
-  from mjlab.tasks.velocity.mdp.rewards import htwk_hip_roll_barrier
+  from k1.tasks.velocity.mdp.rewards import htwk_hip_roll_barrier
 
   env = MagicMock()
   asset = MagicMock()
@@ -775,7 +775,7 @@ def test_htwk_hip_roll_barrier_has_deadband():
 
 
 def test_htwk_feet_orientation_contact_gated_zeros_in_swing():
-  from mjlab.tasks.velocity.mdp.rewards import htwk_feet_orientation_contact_gated
+  from k1.tasks.velocity.mdp.rewards import htwk_feet_orientation_contact_gated
 
   env = MagicMock()
   asset = MagicMock()
@@ -795,7 +795,7 @@ def test_htwk_feet_orientation_contact_gated_zeros_in_swing():
 
 
 def test_htwk_swing_sole_clearance_penalizes_toe_drag():
-  from mjlab.tasks.velocity.mdp.rewards import htwk_swing_sole_clearance
+  from k1.tasks.velocity.mdp.rewards import htwk_swing_sole_clearance
 
   env = MagicMock()
   env.num_envs = 1
@@ -821,7 +821,7 @@ def test_htwk_swing_sole_clearance_penalizes_toe_drag():
 
 
 def test_htwk_swing_sole_clearance_rewards_full_lift():
-  from mjlab.tasks.velocity.mdp.rewards import htwk_swing_sole_clearance
+  from k1.tasks.velocity.mdp.rewards import htwk_swing_sole_clearance
 
   env = MagicMock()
   env.num_envs = 1

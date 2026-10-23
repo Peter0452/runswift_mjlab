@@ -31,13 +31,13 @@ from typing import TYPE_CHECKING
 
 import torch
 
-from mjlab.managers.reward_manager import RewardTermCfg
-from mjlab.tasks.velocity.mdp.approach import (
+from k1.tasks.velocity.mdp.approach import (
   _yaw_angle,
   approach_view,
   speed_limit_excess,
 )
-from mjlab.tasks.velocity.mdp.dribble import _dribble, dribble_window_success
+from k1.tasks.velocity.mdp.dribble import _dribble, dribble_window_success
+from mjlab.managers.reward_manager import RewardTermCfg
 from mjlab.utils.lab_api.math import wrap_to_pi
 
 if TYPE_CHECKING:

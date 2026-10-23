@@ -29,8 +29,7 @@ from typing import TYPE_CHECKING, Any, Callable
 
 import torch
 
-from mjlab.motion.motion_loader import COND_SPEED_SCALE
-from mjlab.tasks.velocity.mdp.approach import (
+from k1.tasks.velocity.mdp.approach import (
   WALK_COMMAND_SPEED,
   ApproachYawCommand,
   ApproachYawCommandCfg,
@@ -38,7 +37,8 @@ from mjlab.tasks.velocity.mdp.approach import (
   _yaw_angle,
   ball_radius,
 )
-from mjlab.tasks.velocity.mdp.kick_loop import classify_touch, loft_factor
+from k1.tasks.velocity.mdp.kick_loop import classify_touch, loft_factor
+from mjlab.motion.motion_loader import COND_SPEED_SCALE
 
 if TYPE_CHECKING:
   import viser
@@ -1268,7 +1268,7 @@ DRIBBLE_CRITIC_FORCE_Y = (93, 96)
 
 
 def _mirror_joint_blocks(obs: torch.Tensor) -> None:
-  from mjlab.tasks.velocity.mdp.amp_symmetry import (
+  from k1.tasks.velocity.mdp.amp_symmetry import (
     K1_INVERTED_JOINT_INDICES,
     _switch_k1_joints_left_right,
   )
@@ -1304,7 +1304,7 @@ def flip_dribble_critic_obs(obs: torch.Tensor) -> torch.Tensor:
 
 
 def flip_dribble_actions(actions: torch.Tensor) -> torch.Tensor:
-  from mjlab.tasks.velocity.mdp.amp_symmetry import (
+  from k1.tasks.velocity.mdp.amp_symmetry import (
     K1_ACTION_DIM,
     K1_INVERTED_JOINT_INDICES,
     _switch_k1_joints_left_right,

@@ -4,8 +4,8 @@ from types import SimpleNamespace
 
 import torch
 
-from mjlab.tasks.velocity.mdp import self_play
-from mjlab.tasks.velocity.mdp.self_play import OpponentPolicyAction
+from k1.tasks.velocity.mdp import self_play
+from k1.tasks.velocity.mdp.self_play import OpponentPolicyAction
 
 
 def test_full_pool_drop_after_rollout_in_inference_mode(monkeypatch):

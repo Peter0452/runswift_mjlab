@@ -39,12 +39,12 @@ import torch
 os.environ["KICK_EVAL"] = "1"  # no mid-kick starts in evaluation
 
 import mjlab.tasks  # noqa: F401  # isort: skip
+from k1.tasks.velocity import mdp as vmdp
+from k1.tasks.velocity.config.k1_amp.env_cfgs import DEPLOY_Q_LIMITS
 from mjlab.envs import ManagerBasedRlEnv
 from mjlab.managers.event_manager import EventTermCfg
 from mjlab.rl import RslRlVecEnvWrapper
 from mjlab.tasks.registry import load_env_cfg, load_rl_cfg, load_runner_cls
-from mjlab.tasks.velocity import mdp as vmdp
-from mjlab.tasks.velocity.config.k1_amp.env_cfgs import DEPLOY_Q_LIMITS
 from mjlab.utils.lab_api.math import quat_apply_inverse, yaw_quat
 
 TASK = "Mjlab-Velocity-Kick-Stage3-Amp-DA-Muon-Booster-K1"
@@ -178,7 +178,7 @@ def plan(size: str, bhuman: bool) -> list[Run]:
 def make_env(run: Run, policy: str):
   import dataclasses
 
-  from mjlab.tasks.velocity.config.k1_amp import env_cfgs as ec
+  from k1.tasks.velocity.config.k1_amp import env_cfgs as ec
 
   heavy = run.extra.get("heavy", False)
   mass, radius = BALLS.get(
@@ -296,7 +296,7 @@ def make_env(run: Run, policy: str):
   return env, u, obs, pol
 
 
-from mjlab.tasks.velocity.config.k1_amp import env_cfgs as _ec  # noqa: E402
+from k1.tasks.velocity.config.k1_amp import env_cfgs as _ec  # noqa: E402
 
 ec_defaults = {
   "mass": getattr(_ec, "_APPROACH_BALL_MASS", 0.1),

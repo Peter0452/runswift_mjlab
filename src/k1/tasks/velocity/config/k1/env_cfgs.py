@@ -8,6 +8,13 @@ from k1.robot.k1_constants import (
   NUBOTS_KEYFRAME,
   get_k1_nubots_robot_cfg,
 )
+from k1.tasks.velocity import mdp
+from k1.tasks.velocity.mdp import (
+  ParameterWalkCommandCfg,
+  UniformVelocityCommandCfg,
+  walk_params,
+)
+from k1.tasks.velocity.velocity_env_cfg import make_velocity_env_cfg
 from mjlab.asset_zoo.robots import (
   K1_ACTION_SCALE,
   get_k1_robot_cfg,
@@ -30,13 +37,6 @@ from mjlab.sensor import (
   RingPatternCfg,
   TerrainHeightSensorCfg,
 )
-from mjlab.tasks.velocity import mdp
-from mjlab.tasks.velocity.mdp import (
-  ParameterWalkCommandCfg,
-  UniformVelocityCommandCfg,
-  walk_params,
-)
-from mjlab.tasks.velocity.velocity_env_cfg import make_velocity_env_cfg
 from mjlab.terrains.config import flat, random_rough, wave_terrain
 
 # Legs + arms: head stays at default via PD. Arms get a small action scale

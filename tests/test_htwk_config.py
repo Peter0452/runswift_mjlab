@@ -6,8 +6,8 @@ import math
 
 import pytest
 
+from k1.tasks.velocity.config.k1 import env_cfgs as k1_env_cfgs
 from mjlab.tasks.registry import load_env_cfg, load_rl_cfg
-from mjlab.tasks.velocity.config.k1 import env_cfgs as k1_env_cfgs
 
 TASK = "Mjlab-Velocity-HTWK-Booster-K1-Nubots"
 UNCLIPPED_TASK = "Mjlab-Velocity-HTWK-Unclipped-Booster-K1-Nubots"

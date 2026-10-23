@@ -5,8 +5,8 @@ from unittest.mock import Mock
 
 import torch
 
+from k1.tasks.velocity.mdp.curriculums import terrain_levels_vel
 from mjlab.managers.scene_entity_config import SceneEntityCfg
-from mjlab.tasks.velocity.mdp.curriculums import terrain_levels_vel
 
 
 class _FakeTerrain:

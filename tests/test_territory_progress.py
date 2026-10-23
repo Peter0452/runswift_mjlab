@@ -4,7 +4,7 @@ from types import SimpleNamespace
 
 import torch
 
-from mjlab.tasks.velocity.mdp import self_play
+from k1.tasks.velocity.mdp import self_play
 
 
 def test_pays_progress_along_axis_clipped_and_inside_field_only(monkeypatch):

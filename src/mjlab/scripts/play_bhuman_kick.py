@@ -35,12 +35,12 @@ import torch
 import tyro
 from onnx import numpy_helper
 
+from k1.tasks.velocity.mdp.dribble import DribbleCommand
+from k1.tasks.velocity.mdp.kick_loop import KickLoopCommand
 from mjlab.envs import ManagerBasedRlEnv
 from mjlab.envs.mdp.actions import JointPositionAction
 from mjlab.rl import RslRlVecEnvWrapper
 from mjlab.tasks.registry import load_env_cfg
-from mjlab.tasks.velocity.mdp.dribble import DribbleCommand
-from mjlab.tasks.velocity.mdp.kick_loop import KickLoopCommand
 from mjlab.utils.lab_api.math import (
   quat_apply,
   quat_apply_inverse,

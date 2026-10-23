@@ -14,8 +14,8 @@ except ModuleNotFoundError:
 @pytest.mark.slow if pytest else lambda f: f
 def test_basic_functionality() -> None:
   """Test that mjlab can create and close an environment."""
+  from k1.tasks.velocity.config.k1.env_cfgs import booster_k1_flat_env_cfg
   from mjlab.envs.manager_based_rl_env import ManagerBasedRlEnv
-  from mjlab.tasks.velocity.config.k1.env_cfgs import booster_k1_flat_env_cfg
 
   # Suppress env spam.
   with warnings.catch_warnings():

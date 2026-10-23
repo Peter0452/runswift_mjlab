@@ -83,7 +83,7 @@ def base_clearance(
   asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
 ) -> torch.Tensor:
   """Booster privileged height: trunk clearance above terrain."""
-  from mjlab.tasks.velocity.mdp.terrain_utils import base_terrain_clearance
+  from k1.tasks.velocity.mdp.terrain_utils import base_terrain_clearance
 
   return base_terrain_clearance(env, sensor_name, asset_cfg.name).unsqueeze(-1)
 

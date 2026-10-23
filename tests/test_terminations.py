@@ -7,13 +7,13 @@ import pytest
 import torch
 from conftest import get_test_device
 
-from mjlab.envs.mdp.terminations import nan_detection, physics_blowup
-from mjlab.managers.termination_manager import TerminationManager, TerminationTermCfg
-from mjlab.sim.sim import Simulation, SimulationCfg
-from mjlab.tasks.velocity.mdp.terminations import (
+from k1.tasks.velocity.mdp.terminations import (
   out_of_terrain_bounds,
   terrain_edge_reached,
 )
+from mjlab.envs.mdp.terminations import nan_detection, physics_blowup
+from mjlab.managers.termination_manager import TerminationManager, TerminationTermCfg
+from mjlab.sim.sim import Simulation, SimulationCfg
 
 
 @pytest.fixture

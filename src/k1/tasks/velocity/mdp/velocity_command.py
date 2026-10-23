@@ -228,7 +228,7 @@ class UniformVelocityCommand(CommandTerm):
     decap = getattr(self._env, "decap", None)
     if decap is None or not bool(self.follow_clip.any()):
       return
-    from mjlab.tasks.velocity.mdp.decap import apply_clip_velocity_command
+    from k1.tasks.velocity.mdp.decap import apply_clip_velocity_command
 
     apply_clip_velocity_command(self.vel_command_b, decap, self.follow_clip)
 

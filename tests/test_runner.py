@@ -527,7 +527,7 @@ def test_onnx_motion_model_clamps_out_of_bounds_time_step():
 @pytest.mark.parametrize(
   ("runner_module", "runner_class"),
   [
-    ("mjlab.tasks.velocity.rl.runner", "VelocityOnPolicyRunner"),
+    ("k1.tasks.velocity.rl.runner", "VelocityOnPolicyRunner"),
   ],
 )
 @pytest.mark.parametrize("logger_type", ["wandb", "WandbLogWriter"])

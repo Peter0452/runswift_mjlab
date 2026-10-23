@@ -366,7 +366,7 @@ def update_approach_twist_command(
   targets so the orientation reward does not command a deep crouch under push
   disturbances.
   """
-  from mjlab.tasks.velocity.mdp.velocity_command import UniformVelocityCommand
+  from k1.tasks.velocity.mdp.velocity_command import UniformVelocityCommand
 
   twist_term = env.command_manager.get_term(command_name)
   assert isinstance(twist_term, UniformVelocityCommand)
@@ -632,7 +632,7 @@ def ensure_robot_ball_twist_command(
 
   from k1.tasks.legacy.kick.mdp.geometry import ball_to_goal_direction_xy
   from k1.tasks.legacy.kick.mdp.pref_pose import setup_offset_xy
-  from mjlab.tasks.velocity.mdp.velocity_command import UniformVelocityCommand
+  from k1.tasks.velocity.mdp.velocity_command import UniformVelocityCommand
   from mjlab.utils.lab_api.math import wrap_to_pi
 
   twist_term = env.command_manager.get_term(command_name)
@@ -1077,7 +1077,7 @@ def update_kick_twist_command(
   feet_offset_y_target: float = 0.0,
 ) -> None:
   """Pin the HTWK twist command to standing for stationary kick training."""
-  from mjlab.tasks.velocity.mdp.velocity_command import UniformVelocityCommand
+  from k1.tasks.velocity.mdp.velocity_command import UniformVelocityCommand
 
   twist_term = env.command_manager.get_term(command_name)
   assert isinstance(twist_term, UniformVelocityCommand)

@@ -29,10 +29,10 @@ from typing import TYPE_CHECKING
 
 import torch
 
+from k1.tasks.velocity.mdp.observations import advance_gait_phase, gait_scale
 from mjlab.entity import Entity
 from mjlab.managers.reward_manager import RewardTermCfg
 from mjlab.managers.scene_entity_config import SceneEntityCfg
-from mjlab.tasks.velocity.mdp.observations import advance_gait_phase, gait_scale
 
 if TYPE_CHECKING:
   from mjlab.envs import ManagerBasedRlEnv
