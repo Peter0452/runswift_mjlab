@@ -36,7 +36,8 @@ when kick-loop code is touched.
 | 3356ca6 | Getup (`Mjlab-Getup-Flat-Booster-K1`) → `k1/tasks/getup/` | 1273 pass, golden ok |
 | ab41a60 | Whole `mjlab.tasks.velocity` (walk, kick, dribble, self-play, striker, AMP configs and runners; all K1 now) → `k1/tasks/velocity/` | 1273 pass, golden ok, bench ok (2 separated) |
 | 23fe941 | Family mdp modules out of `velocity/mdp`: approach, kick_loop, kick_handoff, kick_prior → `kick/mdp/`; dribble, dribble_rewards → `dribble/mdp/`; self_play → `selfplay/mdp/`; striker_skills → `striker/mdp/`; walk_params → `walk/mdp/`. `velocity.mdp` re-exports them; namespace verified identical (482 names, 0 differences vs the previous commit) | 1273 pass, golden ok (one intermittent fail, see note 7), bench ok (2 separated) |
-| (this) | Configs split by family: `k1_amp/env_cfgs.py` → `walk/`, `kick/`, `dribble/env_cfg.py`; `k1_amp/rl_cfg.py` → `walk/`, `kick/`, `dribble/rl_cfg.py` (old files are re-export shims); `selfplay_cfgs.py` → `selfplay/config.py`; `selfplay_runner.py` → `selfplay/runner.py`; `striker_runner.py` → `striker/runner.py`. All 34 tasks' train/play/RL configs compared with the previous commit: identical except the `MemoryResetPPO` class_name string, which now names its new module (same class) | 1273 pass, golden ok, bench ok (2 separated) |
+| ec1f0c7 | Configs split by family: `k1_amp/env_cfgs.py` → `walk/`, `kick/`, `dribble/env_cfg.py`; `k1_amp/rl_cfg.py` → `walk/`, `kick/`, `dribble/rl_cfg.py` (old files are re-export shims); `selfplay_cfgs.py` → `selfplay/config.py`; `selfplay_runner.py` → `selfplay/runner.py`; `striker_runner.py` → `striker/runner.py`. All 34 tasks' train/play/RL configs compared with the previous commit: identical except the `MemoryResetPPO` class_name string, which now names its new module (same class) | 1273 pass, golden ok, bench ok (2 separated) |
+| (this) | Tasks register per family (`k1/tasks/{walk,kick,dribble,selfplay,striker}/tasks.py`); `k1_amp/__init__` no longer registers. **Fixes a bug from ec1f0c7:** `kick_bench2.py` (`--heavy` / ball overrides) and `kick_style_compare.py` patched `_APPROACH_BALL_*` on `env_cfgs`, which became a shim, so the patch no longer reached the ball; they now patch `k1.tasks.kick.env_cfg` (verified 0.1→0.29 kg, 0.08→0.095 m), and dribble reads the mass at call time again. Configs identical to before the split | 1273 pass, golden ok, bench ok (2 separated) |
 
 ## Best guesses (review these)
 
@@ -75,6 +76,10 @@ when kick-loop code is touched.
    to `k1/deploy/contract.py` in Step 5.
 11. **Config refactors are checked by dumping every task's configs** (repr, addresses
    stripped, worktree paths normalised) before and after, in addition to golden.
+12. **Shims are read-only.** Writing a module attribute on a re-export shim
+   (`env_cfgs.X = ...`, `rl_cfg.X = ...`) no longer affects the configs; patch the family
+   module (`k1.tasks.kick.env_cfg`) instead. All in-repo writers were found and moved;
+   outside scripts that patch the shim would silently do nothing.
 
 ## Our edits inside the framework (left in `src/mjlab/`, to list or move later)
 

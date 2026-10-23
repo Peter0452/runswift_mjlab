@@ -92,3 +92,15 @@ def with_amp_obs_group(
   )
 
   return cfg
+
+
+def with_amp_reset_cfg(env_cfg, runner_cfg):
+  """AMP observation group and pose-pool reset from the runner's motion dataset."""
+  return with_amp_obs_group(
+    env_cfg,
+    dataset_root=runner_cfg.dataset_root,
+    speed_factor=runner_cfg.speed_factor,
+    dataset_weights=runner_cfg.dataset_weights,
+    augmentations=runner_cfg.dataset_augmentations,
+    include_base_lin_vel=True,
+  )

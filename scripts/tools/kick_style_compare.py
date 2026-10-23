@@ -16,7 +16,7 @@ import torch
 os.environ["KICK_EVAL"] = "1"  # no mid-kick starts in evaluation
 
 import mjlab.tasks  # noqa: F401  # isort: skip
-from k1.tasks.velocity.config.k1_amp import env_cfgs as ec
+from k1.tasks.kick import env_cfg as ec
 from mjlab.envs import ManagerBasedRlEnv
 from mjlab.rl import RslRlVecEnvWrapper
 from mjlab.tasks.registry import load_env_cfg, load_rl_cfg, load_runner_cls

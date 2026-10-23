@@ -877,3 +877,17 @@ def with_stand_start(cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvCfg:
     params={"prob": 0.0},
   )
   return cfg
+
+
+def with_kick_style(env_cfg):
+  """The AMP wrapper sets style weight 0.3; the kick stage sets its own."""
+  style = env_cfg.curriculum["amp_style_weight"].params
+  style["start_weight"] = style["end_weight"] = KICK_STYLE_WEIGHT
+  return env_cfg
+
+
+def with_kick_prior_contact(env_cfg, rl_cfg):
+  """No ball-touch cost when the kick-retarget prior places the ball."""
+  if rl_cfg.decap and rl_cfg.decap_source == "kick":
+    env_cfg.rewards["ball_avoidance"].weight = 0.0
+  return env_cfg

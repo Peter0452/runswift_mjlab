@@ -3,8 +3,8 @@
 import math
 import os
 
+from k1.tasks.kick import env_cfg as kick_env_cfg
 from k1.tasks.kick.env_cfg import (
-  _APPROACH_BALL_MASS,
   K1_CAMERA_HALF_FOV,
   _clip_leg_torque,
   _deployment_match,
@@ -184,7 +184,8 @@ def _dribble_deploy_match(cfg: ManagerBasedRlEnvCfg, play: bool) -> None:
     params={
       "radius_range": approach_mdp.BALL_RADIUS_RANGE,
       "alpha_range": approach_mdp.BALL_ALPHA_RANGE,
-      "nominal_mass": _APPROACH_BALL_MASS,
+      # Read at call time: tools patch the approach ball on the kick module.
+      "nominal_mass": kick_env_cfg._APPROACH_BALL_MASS,
       "geom_cfg": SceneEntityCfg("ball", geom_names=("ball_collision",)),
       "body_cfg": SceneEntityCfg("ball", body_names=("ball",)),
     },

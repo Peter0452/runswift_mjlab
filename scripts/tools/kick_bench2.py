@@ -178,7 +178,7 @@ def plan(size: str, bhuman: bool) -> list[Run]:
 def make_env(run: Run, policy: str):
   import dataclasses
 
-  from k1.tasks.velocity.config.k1_amp import env_cfgs as ec
+  from k1.tasks.kick import env_cfg as ec
 
   heavy = run.extra.get("heavy", False)
   mass, radius = BALLS.get(
@@ -296,7 +296,7 @@ def make_env(run: Run, policy: str):
   return env, u, obs, pol
 
 
-from k1.tasks.velocity.config.k1_amp import env_cfgs as _ec  # noqa: E402
+from k1.tasks.kick import env_cfg as _ec  # noqa: E402
 
 ec_defaults = {
   "mass": getattr(_ec, "_APPROACH_BALL_MASS", 0.1),

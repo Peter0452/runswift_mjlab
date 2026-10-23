@@ -23,7 +23,7 @@ from dataclasses import asdict
 import torch
 
 import mjlab.tasks  # noqa: F401
-from k1.tasks.velocity.config.k1_amp import env_cfgs as k1_env_cfgs
+from k1.tasks.kick import env_cfg as k1_env_cfgs
 from mjlab.envs import ManagerBasedRlEnv
 from mjlab.rl import RslRlVecEnvWrapper
 from mjlab.tasks.registry import load_env_cfg, load_rl_cfg, load_runner_cls
