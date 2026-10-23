@@ -1,6 +1,6 @@
 ---
 description: Kick Stage-0 problem context — read/update PROBLEM.md; no greedy reward patches
-globs: src/mjlab/tasks/kick/**/*
+globs: src/k1/tasks/legacy/kick/**/*
 alwaysApply: false
 ---
 
@@ -8,7 +8,7 @@ alwaysApply: false
 
 Before changing kick rewards, terminations, spawn, AMP, or train recipes:
 
-1. Read `src/mjlab/tasks/kick/PROBLEM.md`.
+1. Read `src/k1/tasks/legacy/kick/PROBLEM.md`.
 2. Interpret the user request **inside that problem** (Stage 0 = strike + settle for Walk handoff). Mean reward is not the objective.
 3. Prefer **one intentional change** per run; resume from a **kicking** checkpoint in §5 when fixing power.
 4. Judge progress by north stars in §3 (`kick_ball_speed`, `strong_kick`, …). Abort if they stay dead while reward rises.
