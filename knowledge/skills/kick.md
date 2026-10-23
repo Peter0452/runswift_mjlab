@@ -30,7 +30,7 @@ Three stages share one 83-input actor layout, then optional self-play:
    the ball and line up on the ball→target line, ball only from the camera.
    Notes: `docs/K1_KICK_APPROACH_NOTES.md`.
 3. **Stage 3** `Mjlab-Velocity-Kick-Stage3-Amp-DA-Muon-Booster-K1`: the kick
-   loop. Code `src/k1/tasks/velocity/mdp/kick_loop.py`.
+   loop. Code `src/k1/tasks/kick/mdp/kick_loop.py`.
 4. Self-play fine-tune (86 inputs): [selfplay_striker.md](selfplay_striker.md).
 
 **Stage handoff (must do):** slots a stage held constant have normaliser

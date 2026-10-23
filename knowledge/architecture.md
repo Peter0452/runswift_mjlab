@@ -3,9 +3,9 @@
 The structure the restructure moves toward, and the design of the evolution
 loop that follows it. Decisions: package `k1`; per-task folders; methods with
 cards; YAML recipes; deploy contract as code; our own evolution loop (no
-harbor dependency); hybrid promotion rule. Status: Steps 1–3 done (keep-list,
-knowledge base, safety net); Step 4 (code move) in progress: B-Human pilot moved to `src/k1/tasks/bhuman/`
-(2026-10-23; `mjlab.tasks.bhuman_kick` kept as an alias), then the evolution loop.
+harbor dependency); hybrid promotion rule. Status: Steps 1–3 done (keep-list, knowledge base, safety net); Step 4 (code
+move) done 2026-10-24 except the big-file splits, deferred to Step 5 (see "As built"
+below and `restructure/STEP4_LOG.md`); next: the evolution loop.
 
 ## Layout
 
@@ -47,6 +47,31 @@ runswift_mjlab/
 Guarantees during the move: the 34 task IDs, `uv run train/play`, checkpoint
 formats and old module paths (kept as aliases) all keep working; the golden
 safety net runs after every step.
+
+## As built (Step 4, 2026-10-24)
+
+Differences from the sketch above, all logged with reasons in
+`restructure/STEP4_LOG.md`:
+
+- Families: `k1/tasks/{walk,kick,dribble,selfplay,striker}/` hold `mdp/` and
+  `tasks.py` (registration); configs are `env_cfg.py` + `rl_cfg.py` (self-play:
+  one `config.py`, which also holds the striker controller's configs). Walk
+  baselines (PPO, HTWK) in `walk/baselines/`; `getup/`, `bhuman/`, `legacy/{kick,tracking}/`.
+- `k1/tasks/velocity/` stays as the shared layer: generic mdp terms and the one
+  `mdp` namespace that re-exports the family modules (its import order is
+  load-bearing), base env configs, AMP wrapper, runners (AMP runner, anchor). Its
+  pieces move to `common/` and `methods/` in Step 5.
+- Old module paths resolve through `k1/compat.py` (an import finder; one line per
+  moved package). Re-export shims (`k1_amp/env_cfgs.py`, `rl_cfg.py`) are
+  read-only: patch the family module.
+- Not split yet: `kick/mdp/kick_loop.py` (its module constants are overridden by
+  `KICK_GENES` through `globals()`, and tests patch its helpers, so a split would
+  silently disconnect genes), and the other large modules. Splitting follows the
+  recipes in Step 5, when genes become explicit parameters.
+- `scripts/tools/` not moved (live evolution loop, cross-imports); catalogued in
+  `scripts/tools/README.md`. `k1/eval` and `k1/evolve` are built in Step 5.
+- Our edits inside the framework that stay in `src/mjlab/`: `amp/`, tracking
+  `mdp/{shot,shot_rewards,stand_blend}.py`, scripts (`train.py`, `play.py`, …).
 
 ## Contracts
 
@@ -128,9 +153,8 @@ state. New-task authoring becomes `rsw task new` (section-by-section with smokes
 
 ## Build order
 
-1. **Step 4: move the code** into `src/k1/` (B-Human pilot; then robot, common,
-   deploy/obs_layout; legacy, walk, kick, dribble, self-play/striker; split the big
-   files; eval). Safety net after every commit.
+1. **Step 4: move the code** into `src/k1/`: done 2026-10-24 (big-file splits and
+   eval deferred to Step 5).
 2. **Evolution loop**: methods + registry, recipes reproducing today's configs
    (verified by golden), `run.json`, `rsw`, deploy parity gate and labels,
    outer + inner loop, designers, verdicts; loop state to `experiments/evolution/`.

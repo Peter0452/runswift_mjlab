@@ -54,10 +54,13 @@ Tasks removed on 2026-10-23 (upstream demos, unused variants) are on branch
 
 | Thing | Place |
 |---|---|
-| Task configs and rewards | `src/k1/tasks/` (all K1 tasks, registered via the `mjlab.tasks` entry point; walk/kick/dribble/self-play still under `velocity/{config/k1_amp,mdp,rl}/` until the family split). Old `mjlab.tasks.*` module paths are served by `k1.compat` |
-| AMP, multi-critic, kick teacher, anchor | `src/mjlab/amp/`, `src/k1/tasks/velocity/rl/anchor.py` |
+| Task code, per family | `src/k1/tasks/<family>/`: `walk/`, `kick/`, `dribble/`, `selfplay/`, `striker/` (each `env_cfg.py` + `rl_cfg.py` or `config.py`, `mdp/`, `tasks.py` registers), `bhuman/`, `getup/`, `legacy/` (old kick + tracking), `walk/baselines/` (PPO / HTWK walks) |
+| Shared task code | `src/k1/tasks/velocity/`: shared mdp terms (`mdp/`, one namespace re-exporting the families), AMP wrapper, runners (`rl/`: AMP runner, anchor), base env configs |
+| Robot model, ball, deploy layouts | `src/k1/robot/`, `src/k1/common/ball.py`, `src/k1/deploy/obs_layout.py` |
+| Old module paths | `mjlab.tasks.velocity.*`, `mjlab.tasks.kick.*` etc. still import (served by `src/k1/compat.py`); patch family modules, not the re-export shims |
+| AMP, multi-critic, kick teacher | `src/mjlab/amp/` |
 | Training runs | `logs/rsl_rl/<experiment>/<run>/` (latest, best and referenced checkpoints kept; configs in `params/`) |
-| Eval and bench tools | `scripts/tools/` (see each skill page) |
+| Eval and bench tools | `scripts/tools/` (catalog: `scripts/tools/README.md`) |
 | Benchmark results | `docs/benchmarks*/` (JSON) |
 | Kick evolution loop state | `docs/evolution/` (`HANDOFF.md` first) |
 | Experience records | `docs/experience/` |

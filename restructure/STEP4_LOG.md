@@ -38,7 +38,8 @@ when kick-loop code is touched.
 | 23fe941 | Family mdp modules out of `velocity/mdp`: approach, kick_loop, kick_handoff, kick_prior → `kick/mdp/`; dribble, dribble_rewards → `dribble/mdp/`; self_play → `selfplay/mdp/`; striker_skills → `striker/mdp/`; walk_params → `walk/mdp/`. `velocity.mdp` re-exports them; namespace verified identical (482 names, 0 differences vs the previous commit) | 1273 pass, golden ok (one intermittent fail, see note 7), bench ok (2 separated) |
 | ec1f0c7 | Configs split by family: `k1_amp/env_cfgs.py` → `walk/`, `kick/`, `dribble/env_cfg.py`; `k1_amp/rl_cfg.py` → `walk/`, `kick/`, `dribble/rl_cfg.py` (old files are re-export shims); `selfplay_cfgs.py` → `selfplay/config.py`; `selfplay_runner.py` → `selfplay/runner.py`; `striker_runner.py` → `striker/runner.py`. All 34 tasks' train/play/RL configs compared with the previous commit: identical except the `MemoryResetPPO` class_name string, which now names its new module (same class) | 1273 pass, golden ok, bench ok (2 separated) |
 | 32416f4 | Tasks register per family (`k1/tasks/{walk,kick,dribble,selfplay,striker}/tasks.py`); `k1_amp/__init__` no longer registers. **Fixes a bug from ec1f0c7:** `kick_bench2.py` (`--heavy` / ball overrides) and `kick_style_compare.py` patched `_APPROACH_BALL_*` on `env_cfgs`, which became a shim, so the patch no longer reached the ball; they now patch `k1.tasks.kick.env_cfg` (verified 0.1→0.29 kg, 0.08→0.095 m), and dribble reads the mass at call time again. Configs identical to before the split | 1273 pass, golden ok, bench ok (2 separated) |
-| (this) | Walk baselines + HTWK (`velocity/config/k1`) → `k1/tasks/walk/baselines/` (registration in `tasks.py`) | 1273 pass, golden ok, configs identical |
+| 05de3aa | Walk baselines + HTWK (`velocity/config/k1`) → `k1/tasks/walk/baselines/` (registration in `tasks.py`) | 1273 pass, golden ok, configs identical |
+| (this) | Docs: `scripts/tools/README.md` catalog; knowledge INDEX / architecture ("As built") / skill pages point at the new paths | docs only |
 
 ## Best guesses (review these)
 
@@ -81,6 +82,13 @@ when kick-loop code is touched.
    (`env_cfgs.X = ...`, `rl_cfg.X = ...`) no longer affects the configs; patch the family
    module (`k1.tasks.kick.env_cfg`) instead. All in-repo writers were found and moved;
    outside scripts that patch the shim would silently do nothing.
+13. **Big-file splits deferred to Step 5.** `kick_loop.py`'s constants are overridden by
+   `KICK_GENES` via `globals()` (`_apply_kick_genes`) and tests patch its helpers; a split
+   would leave genes changing only one module's copy, so evolution runs would silently
+   ignore them. Split once genes are explicit recipe parameters.
+14. **`scripts/tools/` not moved into `k1/eval`.** The live evolution loop chains them
+   (`evolve_hier` imports `experience` / `fitness_v2` via `sys.path`, spawns
+   `blend_checkpoints.py` by path), and Step 5 replaces that layer. Catalogued instead.
 
 ## Our edits inside the framework (left in `src/mjlab/`, to list or move later)
 
