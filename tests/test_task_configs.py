@@ -149,6 +149,10 @@ def test_play_mode_disables_push_robot(all_task_ids: list[str]) -> None:
   """Play mode tasks should disable push_robot event."""
   for task_id in all_task_ids:
     cfg = load_env_cfg(task_id, play=True)
+    # The K1 AMP family (walk, kick stages, dribble) keeps pushes in play on
+    # purpose (user, 2026-10-23), so viewing shows robustness.
+    if task_id.startswith("Mjlab-Velocity-") and "-Amp-DA-Muon-Booster-K1" in task_id:
+      continue
     assert "push_robot" not in cfg.events, (
       f"Play mode task {task_id} has push_robot event, expected it to be removed"
     )
