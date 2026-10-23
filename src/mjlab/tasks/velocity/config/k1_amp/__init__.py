@@ -10,6 +10,7 @@ from .env_cfgs import (
   booster_k1_amp_kick_handoff_env_cfg,
   booster_k1_amp_rough_env_cfg,
   booster_k1_amp_rough_ft_env_cfg,
+  booster_k1_dribble_env_cfg,
   booster_k1_kick_approach_env_cfg,
   booster_k1_kick_stage1_env_cfg,
   booster_k1_kick_stage3_env_cfg,
@@ -19,6 +20,7 @@ from .rl_cfg import (
   booster_k1_amp_kick_handoff_runner_cfg,
   booster_k1_amp_ppo_runner_cfg,
   booster_k1_amp_ppo_symmetric_runner_cfg,
+  booster_k1_dribble_runner_cfg,
   booster_k1_kick_approach_runner_cfg,
   booster_k1_kick_stage1_runner_cfg,
   booster_k1_kick_stage3_runner_cfg,
@@ -84,6 +86,15 @@ register_mjlab_task(
   runner_cls=VelocityAmpOnPolicyRunner,
 )
 
+_dribble_rl = booster_k1_dribble_runner_cfg()
+register_mjlab_task(
+  task_id="Mjlab-Velocity-Dribble-Amp-DA-Muon-Booster-K1",
+  env_cfg=_with_amp_reset_cfg(booster_k1_dribble_env_cfg(), _dribble_rl),
+  play_env_cfg=_with_amp_reset_cfg(booster_k1_dribble_env_cfg(play=True), _dribble_rl),
+  rl_cfg=_dribble_rl,
+  runner_cls=VelocityAmpOnPolicyRunner,
+)
+
 
 def _with_kick_style(env_cfg):
   """The AMP wrapper sets style weight 0.3; the kick stage sets its own."""
@@ -134,6 +145,9 @@ register_mjlab_task(
 )
 
 _stage1_rl = booster_k1_kick_stage1_runner_cfg()
+_stage1_rl.decap = True
+_stage1_rl.decap_source = "loader"
+_stage1_rl.algorithm.multi_critic_alphas = (0.2, 0.8)
 register_mjlab_task(
   task_id="Mjlab-Velocity-Kick-Stage1-Amp-DA-Muon-Booster-K1",
   env_cfg=_with_amp_reset_cfg(booster_k1_kick_stage1_env_cfg(), _stage1_rl),

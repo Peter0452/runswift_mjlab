@@ -39,6 +39,7 @@ from mjlab.envs import ManagerBasedRlEnv
 from mjlab.envs.mdp.actions import JointPositionAction
 from mjlab.rl import RslRlVecEnvWrapper
 from mjlab.tasks.registry import load_env_cfg
+from mjlab.tasks.velocity.mdp.dribble import DribbleCommand
 from mjlab.tasks.velocity.mdp.kick_loop import KickLoopCommand
 from mjlab.utils.lab_api.math import (
   quat_apply,
@@ -169,7 +170,10 @@ class BHumanKickPolicy:
     self.ball = env.scene["ball"]
     cmd = env.command_manager.get_term("twist")
     term = env.action_manager.get_term("joint_pos")
-    assert isinstance(cmd, KickLoopCommand)
+    # Kick loop (play) or the dribble's kick windows (v41 side-kick teacher:
+    # the window's kick direction, strong kick per cfg.strong_kick).
+    assert isinstance(cmd, (KickLoopCommand, DribbleCommand))
+    self.dribble = isinstance(cmd, DribbleCommand)
     assert isinstance(term, JointPositionAction)
     assert torch.is_tensor(term._offset) and torch.is_tensor(term._scale)
     self.cmd = cmd
@@ -256,6 +260,8 @@ class BHumanKickPolicy:
     return ball_b, vel_b, yaw
 
   def _report_kicks(self) -> None:
+    if self.dribble:
+      return
     kicks = self.cmd._kicks
     if self.cfg.print_kicks and bool(kicks[0] > self.prev_kicks[0]):
       cos = float(self.cmd.kick_cos[0].clamp(-1.0, 1.0))
@@ -279,15 +285,21 @@ class BHumanKickPolicy:
     self.last_act[fresh] = 0.0
     self.freq_act[fresh] = 0.0
     self.last_ball[fresh] = ball_b[fresh]
-    self.prev_kicks[fresh] = self.cmd._kicks[fresh]
+    if not self.dribble:
+      self.prev_kicks[fresh] = self.cmd._kicks[fresh]
     self.started[:] = True
     self._report_kicks()
 
     # Kick direction (relative to the robot's yaw) and requested ball speed.
-    ball_w = self.ball.data.root_link_pos_w[:, :2]
-    to_target = self.cmd.target_w - ball_w
-    direction = wrap_to_pi(torch.atan2(to_target[:, 1], to_target[:, 0]) - yaw)
-    dist = to_target.norm(dim=-1)
+    if self.dribble:
+      d = self.cmd.ball_cmd_dir_w
+      direction = wrap_to_pi(torch.atan2(d[:, 1], d[:, 0]) - yaw)
+      dist = torch.full_like(direction, _LONG_RANGE)
+    else:
+      ball_w = self.ball.data.root_link_pos_w[:, :2]
+      to_target = self.cmd.target_w - ball_w
+      direction = wrap_to_pi(torch.atan2(to_target[:, 1], to_target[:, 0]) - yaw)
+      dist = to_target.norm(dim=-1)
     if self.cfg.strong_kick == "always":
       strong = torch.ones_like(dist, dtype=torch.bool)
     elif self.cfg.strong_kick == "never":

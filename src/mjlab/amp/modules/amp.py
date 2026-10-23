@@ -158,6 +158,7 @@ class AMP:
     amp_replay_buffer_size: int = 200_000,
     amp_replay_insert_size: int = 1_000,
     device: torch.device | str = "cpu",
+    cond_dim: int = 0,
   ) -> None:
     self.device = torch.device(device)
     self.discriminator = discriminator
@@ -165,8 +166,11 @@ class AMP:
     self.amp_obs_dim = amp_obs_dim
     self.num_amp_obs_steps = num_amp_obs_steps
     self.amp_history_dim = amp_obs_dim * num_amp_obs_steps
+    # Conditioned AMP: a per-sample condition (e.g. the commanded velocity) is
+    # appended once to each flattened history, for policy and expert alike.
+    self.cond_dim = cond_dim
     self.amp_storage = AmpReplayBuffer(
-      self.amp_history_dim, amp_replay_buffer_size, self.device
+      self.amp_history_dim + cond_dim, amp_replay_buffer_size, self.device
     )
     if amp_replay_insert_size < 1:
       raise ValueError(
@@ -189,9 +193,20 @@ class AMP:
       self.reset_history(amp_obs)
 
   def process_step(
-    self, next_amp_obs: torch.Tensor, dones: torch.Tensor | None = None
+    self,
+    next_amp_obs: torch.Tensor,
+    dones: torch.Tensor | None = None,
+    cond: torch.Tensor | None = None,
   ) -> torch.Tensor:
-    """Append a frame, store its K-frame history, and return that history."""
+    """Append a frame, store its K-frame history (plus ``cond`` when the
+    discriminator is conditioned), and return that sample."""
+    if (cond is None) != (self.cond_dim == 0) or (
+      cond is not None and cond.shape[-1] != self.cond_dim
+    ):
+      raise ValueError(
+        f"AMP condition of width {self.cond_dim} expected, got "
+        f"{None if cond is None else tuple(cond.shape)}"
+      )
     self._validate_amp_obs(next_amp_obs)
     if self._history is None:
       raise RuntimeError("call act(...) or reset_history(...) before process_step(...)")
@@ -213,6 +228,8 @@ class AMP:
         self._history[done_mask] = next_amp_obs[done_mask].unsqueeze(1)
 
     history = self._flatten_history()
+    if cond is not None:
+      history = torch.cat((history, cond), dim=-1)
     # Keep the current rollout separate from long-term replay. The clone is
     # required because a flattened history may alias the circular history.
     self._current_policy_batches.append(history.detach().clone())
@@ -383,11 +400,12 @@ def construct_amp(
   if num_amp_obs_steps < 1:
     raise ValueError(f"num_amp_obs_steps must be at least 1, got {num_amp_obs_steps}")
   amp_history_dim = amp_obs_dim * num_amp_obs_steps
+  cond_dim = obs["amp_cond"].shape[-1] if "amp_cond" in obs.keys() else 0
   discriminator_cfg = cfg["discriminator"]
   loss_fn_kwargs = discriminator_cfg.get("loss_fn_kwargs", {})
 
   discriminator = Discriminator(
-    input_dim=amp_history_dim,
+    input_dim=amp_history_dim + cond_dim,
     hidden_layer_sizes=list(discriminator_cfg["hidden_layer_sizes"]),
     reward_scale=float(discriminator_cfg["reward_scale"]),
     reward_clamp_epsilon=float(discriminator_cfg["reward_clamp_epsilon"]),
@@ -421,6 +439,9 @@ def construct_amp(
     include_base_ang_vel=include_base_ang_vel,
     include_projected_gravity=include_projected_gravity,
     device=device,
+    cond_dim=cond_dim,
+    cond_free_prob=float(cfg.get("amp_cond_free_prob", 0.25)),
+    speed_mass=cfg.get("amp_speed_mass") if cond_dim else None,
   )
 
   amp_runner = AMP(
@@ -431,5 +452,6 @@ def construct_amp(
     amp_replay_buffer_size=int(cfg["amp_replay_buffer_size"]),
     amp_replay_insert_size=int(cfg.get("amp_replay_insert_size", 1_000)),
     device=device,
+    cond_dim=cond_dim,
   )
   return amp_runner, amp_obs_dim

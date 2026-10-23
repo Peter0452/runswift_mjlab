@@ -141,6 +141,24 @@ def run_train(task_id: str, cfg: TrainConfig, log_dir: Path) -> None:
       raise ValueError("--frozen-walk-handoff is only for Kick Near training.")
     _apply_frozen_walk_spawn(cfg)
 
+  if (
+    hasattr(cfg.agent, "dataset_root")
+    and cfg.env.events
+    and "reset_robot_from_motion" in cfg.env.events
+  ):
+    reset_params = cfg.env.events["reset_robot_from_motion"].params
+    if reset_params.get("dataset_root") != cfg.agent.dataset_root:
+      weights_file = Path(str(cfg.agent.dataset_root)) / "dataset_weights.json"
+      if weights_file.is_file():
+        import json
+
+        meta = json.loads(weights_file.read_text())
+        cfg.agent.dataset_weights = [float(w) for w in meta["weights"]]
+      else:
+        cfg.agent.dataset_weights = None
+    reset_params["dataset_root"] = cfg.agent.dataset_root
+    reset_params["dataset_weights"] = cfg.agent.dataset_weights
+
   if rank == 0:
     print(f"[INFO] Logging experiment in directory: {log_dir}")
 

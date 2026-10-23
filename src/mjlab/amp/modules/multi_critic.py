@@ -69,9 +69,7 @@ def mix_group_advantages(
       f"returns shape {tuple(returns.shape)} != values shape {tuple(values.shape)}"
     )
   if returns.shape[-1] != len(alphas):
-    raise ValueError(
-      f"expected {len(alphas)} reward groups, got {returns.shape[-1]}"
-    )
+    raise ValueError(f"expected {len(alphas)} reward groups, got {returns.shape[-1]}")
   mixed = torch.zeros(
     returns.shape[0], returns.shape[1], 1, device=returns.device, dtype=returns.dtype
   )

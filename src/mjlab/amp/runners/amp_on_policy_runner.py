@@ -87,6 +87,39 @@ class AmpOnPolicyRunnerCfg(RslRlOnPolicyRunnerCfg):
   """Samples inserted per rollout once the AMP replay buffer is full."""
   num_amp_obs_steps: int = 10
   """Number of sequential observation frames in each discriminator sample."""
+  kick_teacher_checkpoint: str | None = None
+  """Dribble kick mode (v23): a kick-loop checkpoint whose actor is imitated in
+  kick windows near the ball (with ``algorithm.imitation_coef`` > 0)."""
+  kick_teacher_dist: float | None = None
+  """Imitate the kick teacher within this ball distance (m) before the kick;
+  None = KICK_TEACHER_DIST (1.5 m). v24 uses the whole window (approach too)."""
+  kick_teacher_max_offset_deg: float | None = None
+  """v36: imitate the kick teacher only in kick windows whose direction is at
+  most this far (deg) off the robot-to-ball line (straight power kicks)."""
+  kick_teacher_arms: bool = False
+  """Also imitate the teacher's arms (its balance through the kick), not only
+  the legs (v24)."""
+  kick_takeover_prob: float | None = None
+  """v43: with kick_teacher_bhuman_dist, B-Human *executes* the legs (instead of
+  only labelling them) in this share of angled kick windows near the ball; the
+  executed steps feed imitation only (zero advantage). Decays to 0 over
+  kick_takeover_decay updates."""
+  kick_takeover_decay: int = 3000
+  kick_teacher_bhuman_dist: float | None = None
+  """v41: B-Human's kick policy (K1_kick_inner, via the play_bhuman_kick adapter)
+  is the teacher in the angled kick windows (beyond kick_teacher_max_offset_deg)
+  within this ball distance (m); its legs only (arms stay the kick-loop's)."""
+  extra_reward_group: tuple[str, ...] | None = None
+  """v27: env reward terms that form a third reward group (own critic head and
+  ``multi_critic_alphas`` entry), taken out of the task group; e.g. the
+  dribble's kick terms."""
+  amp_cond_free_prob: float = 0.25
+  """With an ``amp_cond`` observation group: share of expert samples given the
+  all-zero ("free") condition, as policy samples get before ball control."""
+  amp_speed_mass: tuple[tuple[float, float], ...] | None = None
+  """With ``amp_cond``: expert sampling mass per travel-speed bin, as
+  (upper speed m/s, mass) pairs in ascending order; the clip weights only
+  share mass within a bin. None keeps the clip weights."""
   algorithm: AmpRslRlPpoAlgorithmCfg | AmpRslRlMuonPpoAlgorithmCfg = field(
     default_factory=AmpRslRlPpoAlgorithmCfg
   )

@@ -440,6 +440,9 @@ class ManagerBasedRlEnv:
     self.episode_length_buf += 1
     self.common_step_counter += 1
 
+    # Commands that terminations / rewards read this step (no-op by default).
+    self.command_manager.post_physics_step(self.step_dt)
+
     # Check terminations and compute rewards.
     # NOTE: Derived quantities (xpos, xquat, ...) are stale by one physics
     # substep here. See the docstring above for why this is acceptable.

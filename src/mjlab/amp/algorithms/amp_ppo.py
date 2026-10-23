@@ -21,6 +21,51 @@ from mjlab.amp.modules.multi_critic import MultiCritic, mix_group_advantages
 from mjlab.rl.muon import HybridMuonOptimizer
 
 
+def _add_critic_heads(loaded: dict, current: dict) -> dict | None:
+  """Grow a MultiCritic state with k heads to the current model's n > k heads
+  (v27: a kick head next to style and task). Heads 0..k-1 load as saved; each
+  extra head copies head k-1, whose return contains the new group's reward.
+  None when the layouts differ in any other way."""
+
+  def heads(sd: dict) -> int:
+    idx = {int(k.split(".")[1]) for k in sd if k.startswith("critics.")}
+    return max(idx) + 1 if idx else 0
+
+  k, n = heads(loaded), heads(current)
+  if k == 0 or n <= k:
+    return None
+  out = {}
+  for key, value in current.items():
+    i = int(key.split(".")[1])
+    src = key if i < k else key.replace(f"critics.{i}.", f"critics.{k - 1}.", 1)
+    if src not in loaded or loaded[src].shape != value.shape:
+      return None
+    out[key] = loaded[src].clone()
+  return out
+
+
+def _widen_discriminator_state(loaded: dict, current: dict) -> dict:
+  """Fit a checkpoint discriminator to one with extra trailing inputs (an AMP
+  condition appended to the history). The old inputs keep their weights and
+  normalizer stats; the new input columns start at zero weight, so the warm
+  discriminator judges as before until it learns to use the condition. Any
+  other mismatch is left for load_state_dict to report."""
+  out = dict(loaded)
+  for key, value in loaded.items():
+    target = current.get(key)
+    if target is None or target.shape == value.shape or value.ndim != 2:
+      continue
+    if target.shape[0] != value.shape[0] or target.shape[1] <= value.shape[1]:
+      continue
+    widened = target.detach().clone()
+    n = value.shape[1]
+    widened[:, :n] = value
+    if not key.startswith("amp_normalizer."):
+      widened[:, n:] = 0.0
+    out[key] = widened
+  return out
+
+
 class AmpPPO(PPO):
   """Proximal Policy Optimization algorithm with AMP support.
 
@@ -75,6 +120,9 @@ class AmpPPO(PPO):
     self._teacher_actions: torch.Tensor | None = None
     self._teacher_mask: torch.Tensor | None = None
     self.imitation_cols: list[int] | None = None
+    # v43 teacher takeover: steps the teacher executed (not sampled by the
+    # actor) get zero advantage, so they only feed imitation and the critic.
+    self._takeover_mask: torch.Tensor | None = None
     # APEX multi-critic: one advantage weight per reward group. None keeps the
     # single critic. Order matches the groups stacked in the AMP runner
     # (motion style, then task).
@@ -221,7 +269,9 @@ class AmpPPO(PPO):
   def compute_returns(self, obs: TensorDict) -> None:
     """Per-group GAE, then APEX's normalized weighted advantage."""
     if self.multi_critic_alphas is None:
-      return super().compute_returns(obs)
+      super().compute_returns(obs)
+      self._zero_takeover_advantages()
+      return
     storage = self.storage
     assert storage is not None
     critic_hidden_state = self.critic.get_hidden_state()
@@ -245,6 +295,7 @@ class AmpPPO(PPO):
     storage.advantages = mix_group_advantages(
       storage.returns, storage.values, self.multi_critic_alphas
     )
+    self._zero_takeover_advantages()
 
   def act_amp(self, amp_obs: torch.Tensor) -> None:
     """Initialize AMP history if collection has not started yet."""
@@ -255,10 +306,13 @@ class AmpPPO(PPO):
     self.amp.reset_history(amp_obs)
 
   def process_amp_step(
-    self, next_amp_obs: torch.Tensor, dones: torch.Tensor
+    self,
+    next_amp_obs: torch.Tensor,
+    dones: torch.Tensor,
+    cond: torch.Tensor | None = None,
   ) -> torch.Tensor:
     """Append an AMP frame and insert its history into the replay buffer."""
-    return self.amp.process_step(next_amp_obs, dones)
+    return self.amp.process_step(next_amp_obs, dones, cond)
 
   def predict_style_reward(self, amp_history: torch.Tensor) -> torch.Tensor:
     """Predict style reward for a flattened AMP history."""
@@ -327,6 +381,29 @@ class AmpPPO(PPO):
     self._teacher_actions[i] = actions.to(self.device)
     self._teacher_mask[i] = mask.to(self.device)
 
+  def record_takeover(self, mask: torch.Tensor) -> None:
+    """Mark this rollout step's envs whose executed action was the teacher's."""
+    storage = self.storage
+    assert storage is not None
+    if self._takeover_mask is None:
+      with torch.inference_mode(False):
+        self._takeover_mask = torch.zeros(
+          storage.num_transitions_per_env,
+          storage.num_envs,
+          dtype=torch.bool,
+          device=self.device,
+        )
+    self._takeover_mask[storage.step] = mask.to(self.device)
+
+  def _zero_takeover_advantages(self) -> None:
+    if self._takeover_mask is None or self.storage is None:
+      return
+    adv = self.storage.advantages
+    self.storage.advantages = torch.where(
+      self._takeover_mask.view(*self._takeover_mask.shape, 1), 0.0, adv
+    )
+    self._takeover_mask.zero_()
+
   def _imitation_loss(self, n: int) -> torch.Tensor | None:
     if self._teacher_actions is None or self._teacher_mask is None:
       return None
@@ -369,6 +446,12 @@ class AmpPPO(PPO):
     """
     if self.storage is None:
       raise RuntimeError("Storage is not initialized. Call init_storage first.")
+    if self.schedule != "adaptive":
+      # A resumed optimizer state carries the learning rate it was saved with;
+      # a fixed schedule means the configured one.
+      for param_group in self.optimizer.param_groups:
+        lr_scale = float(param_group.get("lr_scale", 1.0))
+        param_group["lr"] = self.learning_rate * lr_scale
 
     # Accumulate on GPU to avoid synchronization
     mean_value_loss = torch.zeros(1, device=self.device)
@@ -658,18 +741,36 @@ class AmpPPO(PPO):
     current = self._raw_critic.state_dict()
     if set(current) != set(loaded_critic):
       return False
-    return all(
-      current[key].shape == loaded_critic[key].shape for key in current
-    )
+    return all(current[key].shape == loaded_critic[key].shape for key in current)
 
   def load(self, loaded_dict: dict, load_cfg: dict | None, strict: bool) -> bool:
     """Load specified models from a saved dict."""
     if "discriminator_state_dict" in loaded_dict:
       self.amp.discriminator.load_state_dict(
-        loaded_dict["discriminator_state_dict"], strict=strict
+        _widen_discriminator_state(
+          loaded_dict["discriminator_state_dict"],
+          self.amp.discriminator.state_dict(),
+        ),
+        strict=strict,
       )
 
     loaded_critic = loaded_dict.get("critic_state_dict")
+    if loaded_critic is not None:
+      grown = _add_critic_heads(loaded_critic, self._raw_critic.state_dict())
+      if grown is not None:
+        print(
+          "[INFO] Checkpoint critic has fewer heads: extra heads start as copies "
+          "of its last head; the optimizer starts fresh."
+        )
+        loaded_dict = dict(loaded_dict, critic_state_dict=grown)
+        loaded_critic = grown
+        # rsl_rl treats a missing key as "do not load": start from its full
+        # default (None = everything), not an empty dict (v27's first launch
+        # loaded no actor and trained from random weights).
+        load_cfg = dict(
+          load_cfg or {"actor": True, "critic": True, "iteration": True, "rnd": True}
+        )
+        load_cfg["optimizer"] = False
     self.loaded_matching_critic = (
       loaded_critic is not None and self._critic_state_matches(loaded_critic)
     )
@@ -732,9 +833,9 @@ class AmpPPO(PPO):
       # A fresh critic config per head: constructing a head can pop keys.
       critic = MultiCritic(
         [
-          critic_class(
-            obs, cfg["obs_groups"], "critic", 1, **dict(cfg["critic"])
-          ).to(device)
+          critic_class(obs, cfg["obs_groups"], "critic", 1, **dict(cfg["critic"])).to(
+            device
+          )
           for _ in range(n_critics)
         ]
       ).to(device)

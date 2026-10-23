@@ -114,24 +114,32 @@ def reset_state_dict_obs_dims(
   grows the weights from there.
   """
   out = {k: v.clone() if torch.is_tensor(v) else v for k, v in state_dict.items()}
-  key = _first_linear_weight_key(out)
-  obs_dim = out[key].shape[1]
-  if dims and max(dims) >= obs_dim:
-    raise ValueError(f"Reset dim {max(dims)} out of range for {key} obs dim {obs_dim}")
-  out[key][:, dims] = 0.0
+  weight_keys = [
+    k for k in out if k == "mlp.0.weight" or k.endswith(".mlp.0.weight")
+  ]
+  if not weight_keys:
+    weight_keys = [_first_linear_weight_key(out)]
+  for key in weight_keys:
+    obs_dim = out[key].shape[1]
+    if dims and max(dims) >= obs_dim:
+      raise ValueError(
+        f"Reset dim {max(dims)} out of range for {key} obs dim {obs_dim}"
+      )
+    out[key][:, dims] = 0.0
 
-  normalizer_defaults = {
+  normalizer_suffixes = {
     "obs_normalizer._mean": 0.0,
     "obs_normalizer._var": 1.0,
     "obs_normalizer._std": 1.0,
   }
-  for norm_key, fill in normalizer_defaults.items():
-    if norm_key in out:
-      out[norm_key][:, dims] = fill
-  if normalizer_count is not None and "obs_normalizer.count" in out:
-    # The running stats share one count, so a smaller count lets every dim
-    # re-estimate quickly on the new task's data.
-    out["obs_normalizer.count"] = torch.tensor(normalizer_count, dtype=torch.long)
+  for k in list(out.keys()):
+    for suffix, fill in normalizer_suffixes.items():
+      if k == suffix or k.endswith("." + suffix):
+        out[k][:, dims] = fill
+    if normalizer_count is not None and (
+      k == "obs_normalizer.count" or k.endswith(".obs_normalizer.count")
+    ):
+      out[k] = torch.tensor(normalizer_count, dtype=torch.long)
   return out
 
 
@@ -204,6 +212,8 @@ def main() -> int:
       "reset_obs_dims": reset_dims,
     },
   }
+  if "discriminator_state_dict" in checkpoint:
+    payload["discriminator_state_dict"] = checkpoint["discriminator_state_dict"]
   torch.save(payload, args.output)
   if pad_actor is not None:
     key = _first_linear_weight_key(actor_sd)

@@ -310,6 +310,12 @@ class ApproachYawCommand(CommandTerm):
     self._det_hist_b = torch.zeros(n, hist, 2, device=device)
     self._det_hist_vis = torch.zeros(n, hist, dtype=torch.bool, device=device)
     self._det_lag = torch.zeros(n, dtype=torch.long, device=device)
+    # Camera frame rate (vision_hold_steps): a new detection every k policy
+    # steps, held in between, as the runner holds its last detection.
+    self._hold_k = torch.ones(n, dtype=torch.long, device=device)
+    self._hold_ctr = torch.zeros(n, dtype=torch.long, device=device)
+    self._held_b = torch.zeros(n, 2, device=device)
+    self._held_vis = torch.zeros(n, dtype=torch.bool, device=device)
     # exp(-time since seen / tau); only filled with ``ball_memory``.
     self.ball_age_obs = torch.zeros(n, device=device)
     self.metrics["abs_alpha"] = torch.zeros(n, device=device)
@@ -394,6 +400,13 @@ class ApproachYawCommand(CommandTerm):
         int(lo), int(hi) + 1, (len(env_ids),), device=self.device
       )
     self._det_hist_vis[env_ids] = False
+    hold_lo, hold_hi = self.cfg.vision_hold_steps
+    if hold_hi > 1 and len(env_ids) > 0:
+      self._hold_k[env_ids] = torch.randint(
+        int(hold_lo), int(hold_hi) + 1, (len(env_ids),), device=self.device
+      )
+      self._hold_ctr[env_ids] = 0
+      self._held_vis[env_ids] = False
     self._spawn_ball_and_target(env_ids)
     ranges = (self.cfg.speed_limit_vx, self.cfg.speed_limit_vy, self.cfg.speed_limit_wz)
     for i, (low, high) in enumerate(ranges):
@@ -434,6 +447,12 @@ class ApproachYawCommand(CommandTerm):
       rows = torch.arange(self.num_envs, device=self.device)
       seen_b = self._det_hist_b[rows, self._det_lag]
       det = self._det_hist_vis[rows, self._det_lag]
+    if self.cfg.vision_hold_steps[1] > 1:
+      fresh = self._hold_ctr % self._hold_k == 0
+      self._held_b[:] = torch.where(fresh.unsqueeze(-1), seen_b, self._held_b)
+      self._held_vis[:] = torch.where(fresh, det, self._held_vis)
+      self._hold_ctr += 1
+      seen_b, det = self._held_b.clone(), self._held_vis.clone()
     visible = det
     self.masked_ball_b[:] = seen_b * visible.unsqueeze(-1)
 
@@ -788,6 +807,9 @@ class ApproachYawCommandCfg(CommandTermCfg):
   """Probability per step that a ball in view is not detected (actor only)."""
   vision_delay_steps: tuple[int, int] = (0, 0)
   """Per-episode delay of the actor's ball detection, in policy steps."""
+  vision_hold_steps: tuple[int, int] = (1, 1)
+  """Per-episode camera period in policy steps: the actor's detection refreshes
+  every k steps and is held in between (k = 3 is ~16 Hz at 50 Hz). (1, 1) = off."""
   side_kicks: bool = False
   """Count standing beside the kick line facing the ball as lined up (v52)."""
   side_drill_prob: float = 0.0

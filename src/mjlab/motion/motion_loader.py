@@ -82,6 +82,56 @@ def _filter_joint_obs(
   return torch.cat(obs_terms, dim=-1)
 
 
+COND_DIM = 4
+"""Conditioned AMP: [speed / COND_SPEED_SCALE, cos, sin of the travel direction
+in the heading frame, 1]; direction zeros below COND_STILL_SPEED."""
+COND_SPEED_SCALE = 2.0
+COND_STILL_SPEED = 0.1
+COND_SMOOTH_S = 0.5
+"""Travel velocity is averaged over about one stride, as a commanded velocity."""
+
+
+def _travel_cond(
+  vel_heading_xy: torch.Tensor, dt: float
+) -> tuple[torch.Tensor, torch.Tensor]:
+  """Per-frame condition and speed from a clip's heading-frame velocity."""
+  k = max(1, round(COND_SMOOTH_S / dt))
+  v = vel_heading_xy.T.unsqueeze(1)  # (2, 1, T)
+  v = torch.nn.functional.pad(v, (k // 2, (k - 1) // 2), mode="replicate")
+  v = torch.nn.functional.avg_pool1d(v, k, stride=1).squeeze(1).T  # (T, 2)
+  speed = torch.linalg.norm(v, dim=-1)
+  moving = (speed >= COND_STILL_SPEED).float()
+  unit = v / speed.clamp(min=1.0e-6).unsqueeze(-1) * moving.unsqueeze(-1)
+  cond = torch.cat(
+    (
+      (speed / COND_SPEED_SCALE).unsqueeze(-1),
+      unit,
+      torch.ones_like(speed).unsqueeze(-1),
+    ),
+    dim=-1,
+  )
+  return cond, speed
+
+
+def _rebalance_by_speed(
+  per_frame: torch.Tensor, speed: torch.Tensor, speed_mass: Sequence[Sequence[float]]
+) -> torch.Tensor:
+  """Give each travel-speed bin its configured mass; the clip weights share
+  it within the bin. Empty bins drop out (the rest are renormalized)."""
+  out = torch.zeros_like(per_frame)
+  lo = -1.0
+  for hi, mass in speed_mass:
+    in_bin = (speed > lo) & (speed <= hi)
+    total = per_frame[in_bin].sum()
+    if total > 0:
+      out[in_bin] = per_frame[in_bin] / total * float(mass)
+    lo = float(hi)
+  rest = speed > lo
+  if rest.any():
+    raise ValueError(f"speed_mass bins end at {lo} m/s; clips reach {speed.max():.2f}")
+  return out
+
+
 class MotionLoader:
   """Load AMP motion clips from a local path or Hugging Face dataset repo.
 
@@ -109,7 +159,14 @@ class MotionLoader:
     include_base_ang_vel: bool = True,
     include_projected_gravity: bool = False,
     device: str | torch.device = "cpu",
+    cond_dim: int = 0,
+    cond_free_prob: float = 0.25,
+    speed_mass: Sequence[Sequence[float]] | None = None,
   ) -> None:
+    if cond_dim not in (0, COND_DIM):
+      raise ValueError(f"cond_dim must be 0 or {COND_DIM}, got {cond_dim}")
+    self.cond_dim = cond_dim
+    self.cond_free_prob = cond_free_prob
     self.device = device
     self.dataset_source = str(dataset_root)
     self.dataset_root = Path(dataset_root)
@@ -138,6 +195,7 @@ class MotionLoader:
     )
 
     obs_list: List[torch.Tensor] = []
+    speed_list: List[torch.Tensor] = []
     reset_states: List[torch.Tensor] = []
     num_retargeted = 0
     retargeted_dims: tuple[int, int] | None = None
@@ -199,7 +257,14 @@ class MotionLoader:
         # history: [obs(t-K+1), ..., obs(t)]. Early clip frames are
         # backfilled with the first frame, matching the policy history
         # initialization at episode boundaries.
-        obs_list.append(obs.reshape(num_frames, -1))
+        obs = obs.reshape(num_frames, -1)
+        if self.cond_dim:
+          cond, speed = _travel_cond(
+            data.base_lin_velocities_heading[:, :2], self.simulation_dt
+          )
+          obs = torch.cat((obs, cond), dim=-1)
+          speed_list.append(speed)
+        obs_list.append(obs)
         joint_pos, joint_vel, base_linvel, base_angvel, quat = data.get_reset_state(
           indices
         )
@@ -230,6 +295,8 @@ class MotionLoader:
       ]
     )
 
+    if speed_mass is not None:
+      per_frame = _rebalance_by_speed(per_frame, torch.cat(speed_list), speed_mass)
     self.per_frame_weights = per_frame / per_frame.sum()
 
   def _resolve_motion_files(self) -> list[Path | MotionFile]:
@@ -318,7 +385,14 @@ class MotionLoader:
     indices = torch.multinomial(self.per_frame_weights, total, replacement=True)
     for i in range(num_mini_batch):
       batch_idx = indices[i * mini_batch_size : (i + 1) * mini_batch_size]
-      yield self.all_obs[batch_idx]
+      batch = self.all_obs[batch_idx]
+      if self.cond_dim and self.cond_free_prob > 0.0:
+        # Unconditioned samples for the policy's "free" condition (no ball
+        # control yet): the discriminator then judges style alone.
+        free = torch.rand(batch.shape[0], device=batch.device) < self.cond_free_prob
+        batch = batch.clone()
+        batch[free, -self.cond_dim :] = 0.0
+      yield batch
 
   def get_state_for_reset(
     self, number_of_samples: int, return_indices: bool = False

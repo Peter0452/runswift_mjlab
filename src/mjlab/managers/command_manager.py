@@ -114,6 +114,12 @@ class CommandTerm(ManagerTermBase):
       self._resample(resample_env_ids)
     self._update_command()
 
+  def post_physics_step(self, dt: float) -> None:
+    """Hook run once per env step after the physics substeps and before
+    terminations and rewards. No-op by default; for terms whose state must be
+    current when terminations and rewards read it."""
+    del dt
+
   def _resample(self, env_ids: torch.Tensor) -> None:
     if len(env_ids) != 0:
       self.time_left[env_ids] = self.time_left[env_ids].uniform_(
@@ -250,6 +256,10 @@ class CommandManager(ManagerBase):
     for term in self._terms.values():
       term.compute(dt)
 
+  def post_physics_step(self, dt: float) -> None:
+    for term in self._terms.values():
+      term.post_physics_step(dt)
+
   def get_command(self, name: str) -> torch.Tensor:
     return self._terms[name].command
 
@@ -288,6 +298,9 @@ class NullCommandManager:
     return "NullCommandManager()"
 
   def debug_vis(self, visualizer: "DebugVisualizer") -> None:
+    pass
+
+  def post_physics_step(self, dt: float) -> None:
     pass
 
   def create_gui(

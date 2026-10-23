@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import math
+
 import torch
 from tensordict import TensorDict
 
@@ -8,6 +10,9 @@ from mjlab.amp.curriculums import AMP_STYLE_WEIGHT_ATTR
 AMP_STYLE_REWARD_KEY = "Episode_Metrics/Amp/style_reward"
 AMP_TASK_REWARD_KEY = "Episode_Metrics/Amp/task_reward"
 AMP_STYLE_TASK_RATIO_KEY = "Episode_Metrics/Amp/style_task_ratio"
+KICK_TEACHER_DIST = 1.5
+"""Dribble kick mode: the kick-loop teacher is imitated within this trunk-to-ball
+distance (m); farther out the dribble's own approach is kept."""
 
 
 class AmpRunner:
@@ -99,6 +104,9 @@ class AmpRunner:
     """B-Human's kick policy as the teacher within IMITATION_DIST of a visible
     ball (kick tasks); its leg actions are imitated (see AmpPPO)."""
     env = self.env.unwrapped
+    if self.cfg.get("kick_teacher_checkpoint"):
+      self._record_kick_teacher(obs)
+      return
     if not hasattr(self, "_teacher"):
       from mjlab.scripts.play_bhuman_kick import BHumanKickPlayConfig, BHumanKickPolicy
 
@@ -110,6 +118,97 @@ class AmpRunner:
     teacher_actions = self._teacher(obs)
     mask = (cmd.dist <= 1.1) & ~cmd.ball_lost
     self.alg.record_teacher(teacher_actions, mask)
+
+  def _reward_terms_sum(self, names: tuple[str, ...]) -> torch.Tensor:
+    """This step's dt-scaled reward of the named env reward terms (absent
+    terms count 0), as the reward manager added them to the env reward."""
+    rm = self.env.unwrapped.reward_manager
+    idx = [i for i, n in enumerate(rm.active_terms) if n in names]
+    scale = self._compute_style_reward_scale()
+    if not idx:
+      return torch.zeros(self.env.num_envs, device=self.device)
+    return rm._step_reward[:, idx].sum(dim=-1).to(self.device) * scale
+
+  def _record_kick_teacher(self, obs) -> None:
+    """Dribble kick mode (v23): a frozen kick-loop actor as the teacher, on the
+    dribble's own kick-window observations (slots 80-82 = its long-kick
+    one-hot), within KICK_TEACHER_DIST (or kick_teacher_dist) of a visible
+    ball before the kick. Legs, and arms with kick_teacher_arms; never the
+    head (the dribble's)."""
+    env = self.env.unwrapped
+    if not hasattr(self, "_kick_teacher"):
+      from mjlab.amp.modules.kick_teacher import KickLoopTeacher
+
+      self._kick_teacher = KickLoopTeacher(
+        self.cfg["kick_teacher_checkpoint"], self.device
+      )
+      names = env.action_manager.get_term("joint_pos").target_names
+      parts = ("Hip", "Knee", "Ankle")
+      if self.cfg.get("kick_teacher_arms"):
+        parts = parts + ("Shoulder", "Elbow")
+      self.alg.imitation_cols = [
+        i for i, n in enumerate(names) if any(p in n for p in parts)
+      ]
+    cmd = env.command_manager.get_term("twist")
+    actions = self._kick_teacher(obs["actor"].to(self.device))
+    reach = float(self.cfg.get("kick_teacher_dist") or KICK_TEACHER_DIST)
+    lining_up = cmd.kick_mode & ~cmd.kick_done & (cmd.ball_trunk_dist <= reach)
+    # Up to the kick only: afterwards slot 80 is the dribble's "kicked" flag,
+    # which the kick loop reads as its short-range one-hot.
+    mask = lining_up & ~cmd.ball_lost
+    # v36: the teacher (a front-foot kicker) only for straight kicks, so angled
+    # kicks learn the side-foot technique without it pulling the other way.
+    max_off = self.cfg.get("kick_teacher_max_offset_deg")
+    if max_off is not None:
+      straight = cmd.kick_offset <= math.radians(float(max_off))
+      bh_dist = self.cfg.get("kick_teacher_bhuman_dist")
+      if bh_dist is not None:
+        # v41: B-Human's side kick teaches the angled windows near the ball.
+        if not hasattr(self, "_bhuman_teacher"):
+          from mjlab.scripts.play_bhuman_kick import (
+            BHumanKickPlayConfig,
+            BHumanKickPolicy,
+          )
+
+          self._bhuman_teacher = BHumanKickPolicy(
+            env,
+            BHumanKickPlayConfig(
+              num_envs=env.num_envs, print_kicks=False, strong_kick="always"
+            ),
+          )
+          self._bhuman_leg_cols = self._bhuman_teacher.leg_cols.to(self.device)
+        bh = self._bhuman_teacher(obs).to(self.device)
+        angled = (
+          (cmd.kick_mode & ~cmd.kick_done & ~cmd.ball_lost)
+          & ~straight
+          & (cmd.ball_trunk_dist <= float(bh_dist))
+        )
+        cols = self._bhuman_leg_cols
+        takeover_p = self.cfg.get("kick_takeover_prob")
+        if takeover_p is not None:
+          # v43: B-Human executes the legs in a share of the angled windows
+          # (drawn once per window), so its gait clock matches the motion it
+          # labels; v41's labels on the student's own steps did not.
+          frac = 1.0 - self.alg._imit_updates / max(
+            1, int(self.cfg.get("kick_takeover_decay") or 3000)
+          )
+          beta = float(takeover_p) * max(0.0, frac)
+          if not hasattr(self, "_takeover_flag"):
+            self._takeover_flag = torch.zeros_like(angled)
+          in_window = cmd.kick_mode & ~straight
+          draw = torch.rand(angled.shape, device=angled.device) < beta
+          self._takeover_flag = torch.where(in_window, self._takeover_flag, draw)
+          angled = angled & self._takeover_flag
+          self._takeover_active = angled
+          self._takeover_legs = bh[:, cols]
+        actions = actions.clone()
+        actions[:, cols] = torch.where(
+          angled.unsqueeze(-1), bh[:, cols], actions[:, cols]
+        )
+        mask = (mask & straight) | angled
+      else:
+        mask = mask & straight
+    self.alg.record_teacher(actions, mask)
 
   def _amp_collect_step(
     self,
@@ -124,6 +223,16 @@ class AmpRunner:
     actions = self.alg.act(obs)
     if getattr(self.alg, "imitation_coef", 0.0) > 0.0:
       self._record_teacher(obs)
+    active = getattr(self, "_takeover_active", None)
+    if active is not None:
+      # v43: the teacher's legs are executed in takeover windows; the stored
+      # transition keeps the actor's sample, with zero advantage.
+      self.alg.record_takeover(active)
+      cols = self._bhuman_leg_cols
+      actions = actions.clone()
+      actions[:, cols] = torch.where(
+        active.unsqueeze(-1), self._takeover_legs, actions[:, cols]
+      )
     if self._amp_enabled:
       self.alg.act_amp(amp_obs)
 
@@ -134,7 +243,8 @@ class AmpRunner:
 
     if self._amp_enabled:
       next_amp_obs = self._get_amp_obs(obs)
-      next_amp_history = self.alg.process_amp_step(next_amp_obs, dones)
+      cond = obs["amp_cond"] if "amp_cond" in obs.keys() else None
+      next_amp_history = self.alg.process_amp_step(next_amp_obs, dones, cond)
       style_weight = self._compute_style_weight()
       style_mask = self._get_amp_style_mask().view_as(rewards)
       style_pred = self.alg.predict_style_reward(next_amp_history).view_as(rewards)
@@ -157,12 +267,14 @@ class AmpRunner:
         # including penalties, without the style weight scaling it down.
         # The scalar returned below stays the previous mix so episode logs
         # keep their old meaning.
-        self.alg.set_reward_groups(
-          torch.stack(
-            (style_rewards.view(-1), rewards.view(-1)),
-            dim=-1,
-          )
-        )
+        groups = [style_rewards.view(-1), rewards.view(-1)]
+        extra = self.cfg.get("extra_reward_group")
+        if extra:
+          # v27: a third head for the named env reward terms (the dribble's
+          # kick), taken out of the task head's reward.
+          part = self._reward_terms_sum(tuple(extra)).view(-1)
+          groups = [groups[0], groups[1] - part, part]
+        self.alg.set_reward_groups(torch.stack(groups, dim=-1))
       rewards = task_rewards + style_rewards
       log = extras.setdefault("log", {})
       if isinstance(log, dict):
@@ -174,6 +286,8 @@ class AmpRunner:
         proximity = getattr(self, "_amp_last_proximity", None)
         if proximity is not None:
           log["Metrics/amp_style_proximity"] = proximity.mean()
+        if active is not None:
+          log["Metrics/kick_takeover_frac"] = active.float().mean()
       self._update_amp_metrics_log(
         extras=extras,
         dones=dones,

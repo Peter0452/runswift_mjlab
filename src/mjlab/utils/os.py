@@ -34,6 +34,23 @@ def get_checkpoint_path(
   (highest alphabetical order) run and checkpoint are selected. To disable this
   behavior, set `sort_alpha` to `False`.
   """
+  direct_ckpt = Path(checkpoint)
+  if direct_ckpt.is_file():
+    return direct_ckpt.resolve()
+  direct_run = Path(run_dir)
+  if direct_run.is_file():
+    return direct_run.resolve()
+  if not direct_run.is_dir() and (log_path.parent / run_dir).is_dir():
+    direct_run = (log_path.parent / run_dir).resolve()
+  if direct_run.is_dir():
+    candidate = direct_run / checkpoint
+    if candidate.is_file():
+      return candidate.resolve()
+    matches = [f.name for f in direct_run.iterdir() if re.match(checkpoint, f.name)]
+    if matches:
+      matches.sort(key=lambda m: f"{m:0>15}")
+      return (direct_run / matches[-1]).resolve()
+
   if not log_path.exists():
     raise ValueError(f"Log path does not exist: {log_path}")
   # Exclude wandb_checkpoints directory which is used for caching downloaded checkpoints.
