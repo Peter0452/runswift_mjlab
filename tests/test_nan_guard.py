@@ -181,7 +181,7 @@ def test_nan_guard_saves_model(simple_model):
 @pytest.mark.slow
 def test_nan_guard_with_complex_model():
   """NaN guard should work with complex robot model."""
-  from k1.tasks.velocity.config.k1.env_cfgs import booster_k1_rough_env_cfg
+  from k1.tasks.walk.baselines.env_cfgs import booster_k1_rough_env_cfg
   from mjlab.scene import Scene
 
   scene = Scene(booster_k1_rough_env_cfg().scene, device=get_test_device())

@@ -33,6 +33,7 @@ ALIASES = {
   "k1.tasks.velocity.config.k1_amp.selfplay_cfgs": "k1.tasks.selfplay.config",
   "k1.tasks.velocity.rl.selfplay_runner": "k1.tasks.selfplay.runner",
   "k1.tasks.velocity.rl.striker_runner": "k1.tasks.striker.runner",
+  "k1.tasks.velocity.config.k1": "k1.tasks.walk.baselines",
   "mjlab.tasks.tracking.config.k1": "k1.tasks.legacy.tracking",
 }
 

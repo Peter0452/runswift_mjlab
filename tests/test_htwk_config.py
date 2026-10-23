@@ -6,7 +6,7 @@ import math
 
 import pytest
 
-from k1.tasks.velocity.config.k1 import env_cfgs as k1_env_cfgs
+from k1.tasks.walk.baselines import env_cfgs as k1_env_cfgs
 from mjlab.tasks.registry import load_env_cfg, load_rl_cfg
 
 TASK = "Mjlab-Velocity-HTWK-Booster-K1-Nubots"

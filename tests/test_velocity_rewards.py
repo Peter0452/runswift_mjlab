@@ -288,10 +288,10 @@ def test_body_ang_vel_penalty_scales_with_command_speed():
 
 
 def test_nubots_quality_torso_swing_penalties():
-  from k1.tasks.velocity.config.k1.env_cfgs import (
+  from k1.tasks.velocity.mdp.rewards import angular_momentum_penalty
+  from k1.tasks.walk.baselines.env_cfgs import (
     booster_k1_nubots_quality_env_cfg,
   )
-  from k1.tasks.velocity.mdp.rewards import angular_momentum_penalty
 
   cfg = booster_k1_nubots_quality_env_cfg(play=False)
   assert cfg.rewards["ang_vel_xy"].weight == -0.6
@@ -306,7 +306,7 @@ def test_nubots_quality_torso_swing_penalties():
 
 def test_nubots_quality_unlocks_arm_swing():
   """The momentum penalty needs shoulder authority to act through."""
-  from k1.tasks.velocity.config.k1.env_cfgs import (
+  from k1.tasks.walk.baselines.env_cfgs import (
     booster_k1_nubots_quality_env_cfg,
     booster_k1_nubots_rough_env_cfg,
   )
@@ -474,10 +474,10 @@ def test_tracking_reward_scales_with_commanded_speed():
 
 
 def test_nubots_speed_cfg_restores_gradient_and_cadence():
-  from k1.tasks.velocity.config.k1.env_cfgs import (
+  from k1.tasks.velocity.mdp.rewards import feet_gait
+  from k1.tasks.walk.baselines.env_cfgs import (
     booster_k1_nubots_speed_env_cfg,
   )
-  from k1.tasks.velocity.mdp.rewards import feet_gait
 
   cfg = booster_k1_nubots_speed_env_cfg(play=False)
 
@@ -509,7 +509,7 @@ def test_nubots_speed_cfg_restores_gradient_and_cadence():
 
 
 def test_nubots_speed_runner_is_configured_for_scratch():
-  from k1.tasks.velocity.config.k1.rl_cfg import (
+  from k1.tasks.walk.baselines.rl_cfg import (
     booster_k1_nubots_speed_ppo_runner_cfg,
   )
 
@@ -523,8 +523,8 @@ def test_nubots_speed_runner_is_configured_for_scratch():
 
 
 def test_k1_env_cfg_includes_feet_swing():
-  from k1.tasks.velocity.config.k1.env_cfgs import booster_k1_flat_env_cfg
   from k1.tasks.velocity.mdp.rewards import feet_swing
+  from k1.tasks.walk.baselines.env_cfgs import booster_k1_flat_env_cfg
   from k1.tasks.walk.mdp import walk_params
 
   cfg = booster_k1_flat_env_cfg(play=False)
@@ -537,10 +537,10 @@ def test_k1_env_cfg_includes_feet_swing():
 
 
 def test_htwk_nubots_reward_setup_matches_teacher():
-  from k1.tasks.velocity.config.k1.env_cfgs import (
+  from k1.tasks.velocity.mdp import rewards
+  from k1.tasks.walk.baselines.env_cfgs import (
     booster_k1_nubots_htwk_env_cfg,
   )
-  from k1.tasks.velocity.mdp import rewards
 
   cfg = booster_k1_nubots_htwk_env_cfg(play=False)
   expected = {

@@ -1,7 +1,5 @@
 from k1.tasks.velocity.rl import VelocityOnPolicyRunner
-from mjlab.tasks.registry import register_mjlab_task
-
-from .env_cfgs import (
+from k1.tasks.walk.baselines.env_cfgs import (
   booster_k1_base_walk_env_cfg,
   booster_k1_base_walk_rough_ft_env_cfg,
   booster_k1_flat_env_cfg,
@@ -11,7 +9,7 @@ from .env_cfgs import (
   booster_k1_nubots_htwk_unclipped_env_cfg,
   booster_k1_rough_env_cfg,
 )
-from .rl_cfg import (
+from k1.tasks.walk.baselines.rl_cfg import (
   booster_k1_base_walk_ppo_runner_cfg,
   booster_k1_base_walk_rough_ft_ppo_runner_cfg,
   booster_k1_nubots_htwk_exact_ppo_runner_cfg,
@@ -20,6 +18,7 @@ from .rl_cfg import (
   booster_k1_nubots_htwk_unclipped_ppo_runner_cfg,
   booster_k1_ppo_runner_cfg,
 )
+from mjlab.tasks.registry import register_mjlab_task
 
 register_mjlab_task(
   task_id="Mjlab-Velocity-Rough-Booster-K1",
