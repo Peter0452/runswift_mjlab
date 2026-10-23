@@ -8,7 +8,9 @@ REPO = Path("/home/peter/Desktop/Project/RL/runswift_mjlab")
 RUNNER = Path("/home/peter/Desktop/Project/RL/k1_policy_runner")
 MEM = Path("/home/peter/.claude/projects/-home-peter-Desktop-Project-RL/memory")
 OUT = Path(sys.argv[1]) if len(sys.argv) > 1 else REPO / "restructure"
-ACTIVE_SINCE = time.mktime((2026, 10, 20, 0, 0, 0, 0, 0, -1))
+# Runs with checkpoints newer than this are treated as active (nothing pruned).
+# Override with INVENTORY_ACTIVE_SINCE=YYYY-MM-DD once that work has finished.
+ACTIVE_SINCE = time.mktime(time.strptime(os.environ.get("INVENTORY_ACTIVE_SINCE", "2026-10-20"), "%Y-%m-%d"))
 TS = re.compile(r"^\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}_")
 STEP = re.compile(r"model_(\d+)\.pt$")
 

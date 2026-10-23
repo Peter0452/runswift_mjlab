@@ -31,6 +31,7 @@ Files in this folder:
 | — | No ARCHIVE category: AMP walk grid (6), arc kick, Kick-Near-Amp, Kick-WalkAmp, Kick-WalkAmp-Amp, root probes, `launch_v15.sh`, `relaunch_selfplay.sh`, `styles_then_evolve.sh` deleted | **Done**. Kept `dribble_watch*.sh` and `play_dribble.sh` while dribble is active. `kick_transition_probe.py` and `artifacts/` are untracked, so deleting them is permanent: not done yet |
 | — | Delete `record_kick_kinematics.py`, `collect_arrival_buffer.py`, `measure_swing_stretch.py`, `import_nubots_onnx.py` | **Done** |
 | A9 | No cold backup | approved |
+| — | Trim the dribble runs (user, 2026-10-23: dribble work finished) — latest + best + referenced, with the active window ended (`INVENTORY_ACTIVE_SINCE=2026-10-24`) | **Done**: 851 checkpoints deleted, 6.5 GB freed; 160 dribble checkpoints kept (deployed sources, evaluated, golden model, parents) |
 | — | Git: snapshot on `archive/pre-restructure-2026-10-23`; stashes saved as `archive/selfplay-stash-*` and `archive/stash-*`; `git gc` | **Done**: `.git` 17 GB → 148 MB |
 
 ### Incident found during Step 2 (2026-10-23)

@@ -76,966 +76,115 @@ logs/rsl_rl/k1_dribble_amp/2026-10-19_17-26-39_dribble_deploymatch_v16_ABORTED_n
 logs/rsl_rl/k1_dribble_amp/2026-10-19_17-44-27_dribble_deploymatch_v16/model_13900.pt,6.5,KEEP,deployed ONNX (match by version+step)
 logs/rsl_rl/k1_dribble_amp/2026-10-19_17-44-27_dribble_deploymatch_v16/model_14050.pt,6.5,KEEP,best (peak training reward)
 logs/rsl_rl/k1_dribble_amp/2026-10-19_17-44-27_dribble_deploymatch_v16/model_14550.pt,6.5,KEEP,latest of run
-logs/rsl_rl/k1_dribble_amp/2026-10-20_10-06-23_dribble_flatfoot_v17_ABORTED_w200/model_13900.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_10-06-23_dribble_flatfoot_v17_ABORTED_w200/model_13950.pt,6.5,KEEP (active run),best (peak training reward); latest of run
-logs/rsl_rl/k1_dribble_amp/2026-10-20_10-07-53_dribble_flatfoot_v17/model_13900.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_10-07-53_dribble_flatfoot_v17/model_13950.pt,6.5,KEEP (active run),best (peak training reward)
-logs/rsl_rl/k1_dribble_amp/2026-10-20_10-07-53_dribble_flatfoot_v17/model_14000.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_10-07-53_dribble_flatfoot_v17/model_14050.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_10-07-53_dribble_flatfoot_v17/model_14100.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_10-07-53_dribble_flatfoot_v17/model_14150.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_10-07-53_dribble_flatfoot_v17/model_14200.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_10-07-53_dribble_flatfoot_v17/model_14250.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_10-07-53_dribble_flatfoot_v17/model_14300.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_10-07-53_dribble_flatfoot_v17/model_14350.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_10-07-53_dribble_flatfoot_v17/model_14400.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_10-07-53_dribble_flatfoot_v17/model_14450.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_10-07-53_dribble_flatfoot_v17/model_14500.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_10-07-53_dribble_flatfoot_v17/model_14550.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_10-07-53_dribble_flatfoot_v17/model_14600.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_10-07-53_dribble_flatfoot_v17/model_14650.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_10-07-53_dribble_flatfoot_v17/model_14700.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_10-07-53_dribble_flatfoot_v17/model_14750.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_10-07-53_dribble_flatfoot_v17/model_14800.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_10-07-53_dribble_flatfoot_v17/model_14850.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_10-07-53_dribble_flatfoot_v17/model_14900.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_10-07-53_dribble_flatfoot_v17/model_14950.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_10-07-53_dribble_flatfoot_v17/model_15000.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_10-07-53_dribble_flatfoot_v17/model_15050.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_10-07-53_dribble_flatfoot_v17/model_15100.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_10-07-53_dribble_flatfoot_v17/model_15150.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_10-07-53_dribble_flatfoot_v17/model_15200.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_10-07-53_dribble_flatfoot_v17/model_15250.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_10-07-53_dribble_flatfoot_v17/model_15300.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_10-07-53_dribble_flatfoot_v17/model_15350.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_10-07-53_dribble_flatfoot_v17/model_15400.pt,6.5,KEEP (active run),deployed ONNX (match by version+step)
-logs/rsl_rl/k1_dribble_amp/2026-10-20_10-07-53_dribble_flatfoot_v17/model_15450.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_10-07-53_dribble_flatfoot_v17/model_15500.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_10-07-53_dribble_flatfoot_v17/model_15550.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_10-07-53_dribble_flatfoot_v17/model_15600.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_10-07-53_dribble_flatfoot_v17/model_15650.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_10-07-53_dribble_flatfoot_v17/model_15700.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_10-07-53_dribble_flatfoot_v17/model_15750.pt,6.5,KEEP (active run),latest of run
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18/model_15400.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18/model_15450.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18/model_15500.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18/model_15550.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18/model_15600.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18/model_15650.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18/model_15700.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18/model_15750.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18/model_15800.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18/model_15850.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18/model_15900.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18/model_15950.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18/model_16000.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18/model_16050.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18/model_16100.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18/model_16150.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18/model_16200.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18/model_16250.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18/model_16300.pt,6.5,KEEP (active run),parent of k1_dribble_amp/2026-10-20_20-44-39_dribble_condamp_v20; run metadata
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18/model_16350.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18/model_16400.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18/model_16450.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18/model_16500.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18/model_16550.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18/model_16600.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18/model_16650.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18/model_16700.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18/model_16750.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18/model_16800.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18/model_16850.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18/model_16900.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18/model_16950.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18/model_17000.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18/model_17050.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18/model_17100.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18/model_17150.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18/model_17200.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18/model_17250.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18/model_17300.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18/model_17350.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18/model_17400.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18/model_17450.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18/model_17500.pt,6.5,KEEP (active run),best (peak training reward)
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18/model_17550.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18/model_17600.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18/model_17650.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18/model_17700.pt,6.5,KEEP (active run),latest of run
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-42-08_dribble_fastmix_v19/model_15400.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-42-08_dribble_fastmix_v19/model_15450.pt,6.5,KEEP (active run),best (peak training reward)
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-42-08_dribble_fastmix_v19/model_15500.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-42-08_dribble_fastmix_v19/model_15550.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-42-08_dribble_fastmix_v19/model_15600.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-42-08_dribble_fastmix_v19/model_15650.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-42-08_dribble_fastmix_v19/model_15700.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-42-08_dribble_fastmix_v19/model_15750.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-42-08_dribble_fastmix_v19/model_15800.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-42-08_dribble_fastmix_v19/model_15850.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-42-08_dribble_fastmix_v19/model_15900.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-42-08_dribble_fastmix_v19/model_15950.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-42-08_dribble_fastmix_v19/model_16000.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-42-08_dribble_fastmix_v19/model_16050.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-42-08_dribble_fastmix_v19/model_16100.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-42-08_dribble_fastmix_v19/model_16150.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-42-08_dribble_fastmix_v19/model_16200.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-42-08_dribble_fastmix_v19/model_16250.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-42-08_dribble_fastmix_v19/model_16300.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-42-08_dribble_fastmix_v19/model_16350.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-42-08_dribble_fastmix_v19/model_16400.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-42-08_dribble_fastmix_v19/model_16450.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-42-08_dribble_fastmix_v19/model_16500.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-42-08_dribble_fastmix_v19/model_16550.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_14-42-08_dribble_fastmix_v19/model_16600.pt,6.5,KEEP (active run),latest of run
-logs/rsl_rl/k1_dribble_amp/2026-10-20_20-44-39_dribble_condamp_v20/model_0.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_20-44-39_dribble_condamp_v20/model_100.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_20-44-39_dribble_condamp_v20/model_1000.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_20-44-39_dribble_condamp_v20/model_1050.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_20-44-39_dribble_condamp_v20/model_1100.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_20-44-39_dribble_condamp_v20/model_1150.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_20-44-39_dribble_condamp_v20/model_1200.pt,6.5,KEEP (active run),parent of k1_dribble_amp/2026-10-20_22-41-35_dribble_pushchase_v21; run metadata
-logs/rsl_rl/k1_dribble_amp/2026-10-20_20-44-39_dribble_condamp_v20/model_1250.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_20-44-39_dribble_condamp_v20/model_1300.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_20-44-39_dribble_condamp_v20/model_1350.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_20-44-39_dribble_condamp_v20/model_1400.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_20-44-39_dribble_condamp_v20/model_1450.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_20-44-39_dribble_condamp_v20/model_150.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_20-44-39_dribble_condamp_v20/model_1500.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_20-44-39_dribble_condamp_v20/model_1550.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_20-44-39_dribble_condamp_v20/model_1600.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_20-44-39_dribble_condamp_v20/model_1650.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_20-44-39_dribble_condamp_v20/model_1700.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_20-44-39_dribble_condamp_v20/model_1750.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_20-44-39_dribble_condamp_v20/model_1800.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_20-44-39_dribble_condamp_v20/model_1850.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_20-44-39_dribble_condamp_v20/model_1900.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_20-44-39_dribble_condamp_v20/model_1950.pt,6.5,KEEP (active run),best (peak training reward)
-logs/rsl_rl/k1_dribble_amp/2026-10-20_20-44-39_dribble_condamp_v20/model_200.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_20-44-39_dribble_condamp_v20/model_2000.pt,6.5,KEEP (active run),latest of run
-logs/rsl_rl/k1_dribble_amp/2026-10-20_20-44-39_dribble_condamp_v20/model_250.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_20-44-39_dribble_condamp_v20/model_300.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_20-44-39_dribble_condamp_v20/model_350.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_20-44-39_dribble_condamp_v20/model_400.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_20-44-39_dribble_condamp_v20/model_450.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_20-44-39_dribble_condamp_v20/model_50.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_20-44-39_dribble_condamp_v20/model_500.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_20-44-39_dribble_condamp_v20/model_550.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_20-44-39_dribble_condamp_v20/model_600.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_20-44-39_dribble_condamp_v20/model_650.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_20-44-39_dribble_condamp_v20/model_700.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_20-44-39_dribble_condamp_v20/model_750.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_20-44-39_dribble_condamp_v20/model_800.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_20-44-39_dribble_condamp_v20/model_850.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_20-44-39_dribble_condamp_v20/model_900.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_20-44-39_dribble_condamp_v20/model_950.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_22-41-35_dribble_pushchase_v21/model_1200.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_22-41-35_dribble_pushchase_v21/model_1250.pt,6.5,KEEP (active run),best (peak training reward)
-logs/rsl_rl/k1_dribble_amp/2026-10-20_22-41-35_dribble_pushchase_v21/model_1300.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_22-41-35_dribble_pushchase_v21/model_1350.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_22-41-35_dribble_pushchase_v21/model_1400.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_22-41-35_dribble_pushchase_v21/model_1450.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_22-41-35_dribble_pushchase_v21/model_1500.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_22-41-35_dribble_pushchase_v21/model_1550.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_22-41-35_dribble_pushchase_v21/model_1600.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_22-41-35_dribble_pushchase_v21/model_1650.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_22-41-35_dribble_pushchase_v21/model_1700.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_22-41-35_dribble_pushchase_v21/model_1750.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_22-41-35_dribble_pushchase_v21/model_1800.pt,6.5,KEEP (active run),latest of run; parent of k1_dribble_amp/2026-10-20_23-08-27_dribble_skills_v22; run metadata
-logs/rsl_rl/k1_dribble_amp/2026-10-20_23-08-27_dribble_skills_v22/model_1800.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_23-08-27_dribble_skills_v22/model_1850.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_23-08-27_dribble_skills_v22/model_1900.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_23-08-27_dribble_skills_v22/model_1950.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_23-08-27_dribble_skills_v22/model_2000.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_23-08-27_dribble_skills_v22/model_2050.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_23-08-27_dribble_skills_v22/model_2100.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_23-08-27_dribble_skills_v22/model_2150.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_23-08-27_dribble_skills_v22/model_2200.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_23-08-27_dribble_skills_v22/model_2250.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_23-08-27_dribble_skills_v22/model_2300.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_23-08-27_dribble_skills_v22/model_2350.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_23-08-27_dribble_skills_v22/model_2400.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_23-08-27_dribble_skills_v22/model_2450.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_23-08-27_dribble_skills_v22/model_2500.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_23-08-27_dribble_skills_v22/model_2550.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_23-08-27_dribble_skills_v22/model_2600.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_23-08-27_dribble_skills_v22/model_2650.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_23-08-27_dribble_skills_v22/model_2700.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_23-08-27_dribble_skills_v22/model_2750.pt,6.5,KEEP (active run),best (peak training reward)
-logs/rsl_rl/k1_dribble_amp/2026-10-20_23-08-27_dribble_skills_v22/model_2800.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-20_23-08-27_dribble_skills_v22/model_2850.pt,6.5,KEEP (active run),latest of run; parent of k1_dribble_amp/2026-10-21_00-19-57_dribble_kickteacher_v23; parent of k1_dribble_amp/2026-10-21_01-25-46_dribble_kickteacher2_v24_ABORTED_no_kicked_flag; parent of k1_dribble_amp/2026-10-21_01-29-44_dribble_kickteacher2_v24; run metadata
-logs/rsl_rl/k1_dribble_amp/2026-10-21_00-19-57_dribble_kickteacher_v23/model_2850.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_00-19-57_dribble_kickteacher_v23/model_2900.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_00-19-57_dribble_kickteacher_v23/model_2950.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_00-19-57_dribble_kickteacher_v23/model_3000.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_00-19-57_dribble_kickteacher_v23/model_3050.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_00-19-57_dribble_kickteacher_v23/model_3100.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_00-19-57_dribble_kickteacher_v23/model_3150.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_00-19-57_dribble_kickteacher_v23/model_3200.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_00-19-57_dribble_kickteacher_v23/model_3250.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_00-19-57_dribble_kickteacher_v23/model_3300.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_00-19-57_dribble_kickteacher_v23/model_3350.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_00-19-57_dribble_kickteacher_v23/model_3400.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_00-19-57_dribble_kickteacher_v23/model_3450.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_00-19-57_dribble_kickteacher_v23/model_3500.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_00-19-57_dribble_kickteacher_v23/model_3550.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_00-19-57_dribble_kickteacher_v23/model_3600.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_00-19-57_dribble_kickteacher_v23/model_3650.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_00-19-57_dribble_kickteacher_v23/model_3700.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_00-19-57_dribble_kickteacher_v23/model_3750.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_00-19-57_dribble_kickteacher_v23/model_3800.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_00-19-57_dribble_kickteacher_v23/model_3850.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_00-19-57_dribble_kickteacher_v23/model_3900.pt,6.5,KEEP (active run),best (peak training reward)
-logs/rsl_rl/k1_dribble_amp/2026-10-21_00-19-57_dribble_kickteacher_v23/model_3950.pt,6.5,KEEP (active run),latest of run
-logs/rsl_rl/k1_dribble_amp/2026-10-21_01-25-46_dribble_kickteacher2_v24_ABORTED_no_kicked_flag/model_2850.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_01-25-46_dribble_kickteacher2_v24_ABORTED_no_kicked_flag/model_2900.pt,6.5,KEEP (active run),best (peak training reward); latest of run
-logs/rsl_rl/k1_dribble_amp/2026-10-21_01-29-44_dribble_kickteacher2_v24/model_2850.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_01-29-44_dribble_kickteacher2_v24/model_2900.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_01-29-44_dribble_kickteacher2_v24/model_2950.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_01-29-44_dribble_kickteacher2_v24/model_3000.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_01-29-44_dribble_kickteacher2_v24/model_3050.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_01-29-44_dribble_kickteacher2_v24/model_3100.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_01-29-44_dribble_kickteacher2_v24/model_3150.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_01-29-44_dribble_kickteacher2_v24/model_3200.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_01-29-44_dribble_kickteacher2_v24/model_3250.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_01-29-44_dribble_kickteacher2_v24/model_3300.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_01-29-44_dribble_kickteacher2_v24/model_3350.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_01-29-44_dribble_kickteacher2_v24/model_3400.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_01-29-44_dribble_kickteacher2_v24/model_3450.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_01-29-44_dribble_kickteacher2_v24/model_3500.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_01-29-44_dribble_kickteacher2_v24/model_3550.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_01-29-44_dribble_kickteacher2_v24/model_3600.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_01-29-44_dribble_kickteacher2_v24/model_3650.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_01-29-44_dribble_kickteacher2_v24/model_3700.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_01-29-44_dribble_kickteacher2_v24/model_3750.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_01-29-44_dribble_kickteacher2_v24/model_3800.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_01-29-44_dribble_kickteacher2_v24/model_3850.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_01-29-44_dribble_kickteacher2_v24/model_3900.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_01-29-44_dribble_kickteacher2_v24/model_3950.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_01-29-44_dribble_kickteacher2_v24/model_4000.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_01-29-44_dribble_kickteacher2_v24/model_4050.pt,6.5,KEEP (active run),parent of k1_dribble_amp/2026-10-21_03-20-16_dribble_lightteacher_v25; run metadata
-logs/rsl_rl/k1_dribble_amp/2026-10-21_01-29-44_dribble_kickteacher2_v24/model_4100.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_01-29-44_dribble_kickteacher2_v24/model_4150.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_01-29-44_dribble_kickteacher2_v24/model_4200.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_01-29-44_dribble_kickteacher2_v24/model_4250.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_01-29-44_dribble_kickteacher2_v24/model_4300.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_01-29-44_dribble_kickteacher2_v24/model_4350.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_01-29-44_dribble_kickteacher2_v24/model_4400.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_01-29-44_dribble_kickteacher2_v24/model_4450.pt,6.5,KEEP (active run),best (peak training reward)
-logs/rsl_rl/k1_dribble_amp/2026-10-21_01-29-44_dribble_kickteacher2_v24/model_4500.pt,6.5,KEEP (active run),latest of run
-logs/rsl_rl/k1_dribble_amp/2026-10-21_03-20-16_dribble_lightteacher_v25/model_4050.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_03-20-16_dribble_lightteacher_v25/model_4100.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_03-20-16_dribble_lightteacher_v25/model_4150.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_03-20-16_dribble_lightteacher_v25/model_4200.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_03-20-16_dribble_lightteacher_v25/model_4250.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_03-20-16_dribble_lightteacher_v25/model_4300.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_03-20-16_dribble_lightteacher_v25/model_4350.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_03-20-16_dribble_lightteacher_v25/model_4400.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_03-20-16_dribble_lightteacher_v25/model_4450.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_03-20-16_dribble_lightteacher_v25/model_4500.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_03-20-16_dribble_lightteacher_v25/model_4550.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_03-20-16_dribble_lightteacher_v25/model_4600.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_03-20-16_dribble_lightteacher_v25/model_4650.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_03-20-16_dribble_lightteacher_v25/model_4700.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_03-20-16_dribble_lightteacher_v25/model_4750.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_03-20-16_dribble_lightteacher_v25/model_4800.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_03-20-16_dribble_lightteacher_v25/model_4850.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_03-20-16_dribble_lightteacher_v25/model_4900.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_03-20-16_dribble_lightteacher_v25/model_4950.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_03-20-16_dribble_lightteacher_v25/model_5000.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_03-20-16_dribble_lightteacher_v25/model_5050.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_03-20-16_dribble_lightteacher_v25/model_5100.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_03-20-16_dribble_lightteacher_v25/model_5150.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_03-20-16_dribble_lightteacher_v25/model_5200.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_03-20-16_dribble_lightteacher_v25/model_5250.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_03-20-16_dribble_lightteacher_v25/model_5300.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_03-20-16_dribble_lightteacher_v25/model_5350.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_03-20-16_dribble_lightteacher_v25/model_5400.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_03-20-16_dribble_lightteacher_v25/model_5450.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_03-20-16_dribble_lightteacher_v25/model_5500.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_03-20-16_dribble_lightteacher_v25/model_5550.pt,6.5,KEEP (active run),deployed ONNX (match by version+step); script
-logs/rsl_rl/k1_dribble_amp/2026-10-21_03-20-16_dribble_lightteacher_v25/model_5600.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_03-20-16_dribble_lightteacher_v25/model_5650.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_03-20-16_dribble_lightteacher_v25/model_5700.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_03-20-16_dribble_lightteacher_v25/model_5750.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_03-20-16_dribble_lightteacher_v25/model_5800.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_03-20-16_dribble_lightteacher_v25/model_5850.pt,6.5,KEEP (active run),best (peak training reward); latest of run; parent of k1_dribble_amp/2026-10-21_05-24-53_dribble_kickfix_v26; run metadata
-logs/rsl_rl/k1_dribble_amp/2026-10-21_05-24-53_dribble_kickfix_v26/model_5850.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_05-24-53_dribble_kickfix_v26/model_5900.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_05-24-53_dribble_kickfix_v26/model_5950.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_05-24-53_dribble_kickfix_v26/model_6000.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_05-24-53_dribble_kickfix_v26/model_6050.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_05-24-53_dribble_kickfix_v26/model_6100.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_05-24-53_dribble_kickfix_v26/model_6150.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_05-24-53_dribble_kickfix_v26/model_6200.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_05-24-53_dribble_kickfix_v26/model_6250.pt,6.5,KEEP (active run),deployed ONNX (match by version+step); parent of k1_dribble_amp/2026-10-21_09-09-02_dribble_pushside_v27_ABORTED_actor_not_loaded; parent of k1_dribble_amp/2026-10-21_09-43-51_dribble_pushside_v27; run metadata
-logs/rsl_rl/k1_dribble_amp/2026-10-21_05-24-53_dribble_kickfix_v26/model_6300.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_05-24-53_dribble_kickfix_v26/model_6350.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_05-24-53_dribble_kickfix_v26/model_6400.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_05-24-53_dribble_kickfix_v26/model_6450.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_05-24-53_dribble_kickfix_v26/model_6500.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_05-24-53_dribble_kickfix_v26/model_6550.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_05-24-53_dribble_kickfix_v26/model_6600.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_05-24-53_dribble_kickfix_v26/model_6650.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_05-24-53_dribble_kickfix_v26/model_6700.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_05-24-53_dribble_kickfix_v26/model_6750.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_05-24-53_dribble_kickfix_v26/model_6800.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_05-24-53_dribble_kickfix_v26/model_6850.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_05-24-53_dribble_kickfix_v26/model_6900.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_05-24-53_dribble_kickfix_v26/model_6950.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_05-24-53_dribble_kickfix_v26/model_7000.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_05-24-53_dribble_kickfix_v26/model_7050.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_05-24-53_dribble_kickfix_v26/model_7100.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_05-24-53_dribble_kickfix_v26/model_7150.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_05-24-53_dribble_kickfix_v26/model_7200.pt,6.5,KEEP (active run),best (peak training reward)
-logs/rsl_rl/k1_dribble_amp/2026-10-21_05-24-53_dribble_kickfix_v26/model_7250.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_05-24-53_dribble_kickfix_v26/model_7300.pt,6.5,KEEP (active run),latest of run
-logs/rsl_rl/k1_dribble_amp/2026-10-21_09-09-02_dribble_pushside_v27_ABORTED_actor_not_loaded/model_0.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_09-09-02_dribble_pushside_v27_ABORTED_actor_not_loaded/model_100.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_09-09-02_dribble_pushside_v27_ABORTED_actor_not_loaded/model_150.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_09-09-02_dribble_pushside_v27_ABORTED_actor_not_loaded/model_200.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_09-09-02_dribble_pushside_v27_ABORTED_actor_not_loaded/model_250.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_09-09-02_dribble_pushside_v27_ABORTED_actor_not_loaded/model_300.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_09-09-02_dribble_pushside_v27_ABORTED_actor_not_loaded/model_350.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_09-09-02_dribble_pushside_v27_ABORTED_actor_not_loaded/model_400.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_09-09-02_dribble_pushside_v27_ABORTED_actor_not_loaded/model_450.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_09-09-02_dribble_pushside_v27_ABORTED_actor_not_loaded/model_50.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_09-09-02_dribble_pushside_v27_ABORTED_actor_not_loaded/model_500.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_09-09-02_dribble_pushside_v27_ABORTED_actor_not_loaded/model_550.pt,8.2,KEEP (active run),best (peak training reward)
-logs/rsl_rl/k1_dribble_amp/2026-10-21_09-09-02_dribble_pushside_v27_ABORTED_actor_not_loaded/model_600.pt,8.2,KEEP (active run),latest of run
-logs/rsl_rl/k1_dribble_amp/2026-10-21_09-43-51_dribble_pushside_v27/model_6250.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_09-43-51_dribble_pushside_v27/model_6300.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_09-43-51_dribble_pushside_v27/model_6350.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_09-43-51_dribble_pushside_v27/model_6400.pt,8.2,KEEP (active run),best (peak training reward)
-logs/rsl_rl/k1_dribble_amp/2026-10-21_09-43-51_dribble_pushside_v27/model_6450.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_09-43-51_dribble_pushside_v27/model_6500.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_09-43-51_dribble_pushside_v27/model_6550.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_09-43-51_dribble_pushside_v27/model_6600.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_09-43-51_dribble_pushside_v27/model_6650.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_09-43-51_dribble_pushside_v27/model_6700.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_09-43-51_dribble_pushside_v27/model_6750.pt,8.2,KEEP (active run),deployed ONNX (match by version+step); parent of k1_dribble_amp/2026-10-21_13-14-20_dribble_safefast_v28; parent of k1_dribble_amp/2026-10-21_14-09-21_dribble_safefast_v28b; parent of k1_dribble_amp/2026-10-21_16-26-43_dribble_caps13_v29; parent of k1_dribble_amp/2026-10-21_17-17-41_dribble_findball_v30; run metadata
-logs/rsl_rl/k1_dribble_amp/2026-10-21_09-43-51_dribble_pushside_v27/model_6800.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_09-43-51_dribble_pushside_v27/model_6850.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_09-43-51_dribble_pushside_v27/model_6900.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_09-43-51_dribble_pushside_v27/model_6950.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_09-43-51_dribble_pushside_v27/model_7000.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_09-43-51_dribble_pushside_v27/model_7050.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_09-43-51_dribble_pushside_v27/model_7100.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_09-43-51_dribble_pushside_v27/model_7150.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_09-43-51_dribble_pushside_v27/model_7200.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_09-43-51_dribble_pushside_v27/model_7250.pt,8.2,KEEP (active run),deployed ONNX (match by version+step)
-logs/rsl_rl/k1_dribble_amp/2026-10-21_09-43-51_dribble_pushside_v27/model_7300.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_09-43-51_dribble_pushside_v27/model_7350.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_09-43-51_dribble_pushside_v27/model_7400.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_09-43-51_dribble_pushside_v27/model_7450.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_09-43-51_dribble_pushside_v27/model_7500.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_09-43-51_dribble_pushside_v27/model_7550.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_09-43-51_dribble_pushside_v27/model_7600.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_09-43-51_dribble_pushside_v27/model_7650.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_09-43-51_dribble_pushside_v27/model_7700.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_09-43-51_dribble_pushside_v27/model_7750.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_09-43-51_dribble_pushside_v27/model_7800.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_09-43-51_dribble_pushside_v27/model_7850.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_09-43-51_dribble_pushside_v27/model_7900.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_09-43-51_dribble_pushside_v27/model_7950.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_09-43-51_dribble_pushside_v27/model_8000.pt,8.2,KEEP (active run),latest of run
-logs/rsl_rl/k1_dribble_amp/2026-10-21_13-14-20_dribble_safefast_v28/model_6750.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_13-14-20_dribble_safefast_v28/model_6800.pt,8.2,KEEP (active run),best (peak training reward)
-logs/rsl_rl/k1_dribble_amp/2026-10-21_13-14-20_dribble_safefast_v28/model_6850.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_13-14-20_dribble_safefast_v28/model_6900.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_13-14-20_dribble_safefast_v28/model_6950.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_13-14-20_dribble_safefast_v28/model_7000.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_13-14-20_dribble_safefast_v28/model_7050.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_13-14-20_dribble_safefast_v28/model_7100.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_13-14-20_dribble_safefast_v28/model_7150.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_13-14-20_dribble_safefast_v28/model_7200.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_13-14-20_dribble_safefast_v28/model_7250.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_13-14-20_dribble_safefast_v28/model_7300.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_13-14-20_dribble_safefast_v28/model_7350.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_13-14-20_dribble_safefast_v28/model_7400.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_13-14-20_dribble_safefast_v28/model_7450.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_13-14-20_dribble_safefast_v28/model_7500.pt,8.2,KEEP (active run),latest of run
-logs/rsl_rl/k1_dribble_amp/2026-10-21_14-09-21_dribble_safefast_v28b/model_6750.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_14-09-21_dribble_safefast_v28b/model_6800.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_14-09-21_dribble_safefast_v28b/model_6850.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_14-09-21_dribble_safefast_v28b/model_6900.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_14-09-21_dribble_safefast_v28b/model_6950.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_14-09-21_dribble_safefast_v28b/model_7000.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_14-09-21_dribble_safefast_v28b/model_7050.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_14-09-21_dribble_safefast_v28b/model_7100.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_14-09-21_dribble_safefast_v28b/model_7150.pt,8.2,KEEP (active run),best (peak training reward)
-logs/rsl_rl/k1_dribble_amp/2026-10-21_14-09-21_dribble_safefast_v28b/model_7200.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_14-09-21_dribble_safefast_v28b/model_7250.pt,8.2,KEEP (active run),deployed ONNX (k1_policy_runner)
-logs/rsl_rl/k1_dribble_amp/2026-10-21_14-09-21_dribble_safefast_v28b/model_7300.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_14-09-21_dribble_safefast_v28b/model_7350.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_14-09-21_dribble_safefast_v28b/model_7400.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_14-09-21_dribble_safefast_v28b/model_7450.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_14-09-21_dribble_safefast_v28b/model_7500.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_14-09-21_dribble_safefast_v28b/model_7550.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_14-09-21_dribble_safefast_v28b/model_7600.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_14-09-21_dribble_safefast_v28b/model_7650.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_14-09-21_dribble_safefast_v28b/model_7700.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_14-09-21_dribble_safefast_v28b/model_7750.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_14-09-21_dribble_safefast_v28b/model_7800.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_14-09-21_dribble_safefast_v28b/model_7850.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_14-09-21_dribble_safefast_v28b/model_7900.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_14-09-21_dribble_safefast_v28b/model_7950.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_14-09-21_dribble_safefast_v28b/model_8000.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_14-09-21_dribble_safefast_v28b/model_8050.pt,8.2,KEEP (active run),latest of run
-logs/rsl_rl/k1_dribble_amp/2026-10-21_16-26-43_dribble_caps13_v29/model_6750.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_16-26-43_dribble_caps13_v29/model_6800.pt,8.2,KEEP (active run),best (peak training reward)
-logs/rsl_rl/k1_dribble_amp/2026-10-21_16-26-43_dribble_caps13_v29/model_6850.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_16-26-43_dribble_caps13_v29/model_6900.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_16-26-43_dribble_caps13_v29/model_6950.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_16-26-43_dribble_caps13_v29/model_7000.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_16-26-43_dribble_caps13_v29/model_7050.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_16-26-43_dribble_caps13_v29/model_7100.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_16-26-43_dribble_caps13_v29/model_7150.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_16-26-43_dribble_caps13_v29/model_7200.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_16-26-43_dribble_caps13_v29/model_7250.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_16-26-43_dribble_caps13_v29/model_7300.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_16-26-43_dribble_caps13_v29/model_7350.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_16-26-43_dribble_caps13_v29/model_7400.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_16-26-43_dribble_caps13_v29/model_7450.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_16-26-43_dribble_caps13_v29/model_7500.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_16-26-43_dribble_caps13_v29/model_7550.pt,8.2,KEEP (active run),latest of run
-logs/rsl_rl/k1_dribble_amp/2026-10-21_17-17-41_dribble_findball_v30/model_6750.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_17-17-41_dribble_findball_v30/model_6800.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_17-17-41_dribble_findball_v30/model_6850.pt,8.2,KEEP (active run),best (peak training reward)
-logs/rsl_rl/k1_dribble_amp/2026-10-21_17-17-41_dribble_findball_v30/model_6900.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_17-17-41_dribble_findball_v30/model_6950.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_17-17-41_dribble_findball_v30/model_7000.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_17-17-41_dribble_findball_v30/model_7050.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_17-17-41_dribble_findball_v30/model_7100.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_17-17-41_dribble_findball_v30/model_7150.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_17-17-41_dribble_findball_v30/model_7200.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_17-17-41_dribble_findball_v30/model_7250.pt,8.2,KEEP (active run),deployed ONNX (k1_policy_runner); parent of k1_dribble_amp/2026-10-21_18-57-11_dribble_drive12_v31; parent of k1_dribble_amp/2026-10-21_22-04-17_dribble_rekick_v32; parent of k1_dribble_amp/2026-10-21_23-01-21_dribble_power_v33; run metadata
-logs/rsl_rl/k1_dribble_amp/2026-10-21_17-17-41_dribble_findball_v30/model_7300.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_17-17-41_dribble_findball_v30/model_7350.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_17-17-41_dribble_findball_v30/model_7400.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_17-17-41_dribble_findball_v30/model_7450.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_17-17-41_dribble_findball_v30/model_7500.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_17-17-41_dribble_findball_v30/model_7550.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_17-17-41_dribble_findball_v30/model_7600.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_17-17-41_dribble_findball_v30/model_7650.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_17-17-41_dribble_findball_v30/model_7700.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_17-17-41_dribble_findball_v30/model_7750.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_17-17-41_dribble_findball_v30/model_7800.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_17-17-41_dribble_findball_v30/model_7850.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_17-17-41_dribble_findball_v30/model_7900.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_17-17-41_dribble_findball_v30/model_7950.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_17-17-41_dribble_findball_v30/model_8000.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_17-17-41_dribble_findball_v30/model_8050.pt,8.2,KEEP (active run),latest of run
-logs/rsl_rl/k1_dribble_amp/2026-10-21_18-57-11_dribble_drive12_v31/model_7250.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_18-57-11_dribble_drive12_v31/model_7300.pt,8.2,KEEP (active run),best (peak training reward)
-logs/rsl_rl/k1_dribble_amp/2026-10-21_18-57-11_dribble_drive12_v31/model_7350.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_18-57-11_dribble_drive12_v31/model_7400.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_18-57-11_dribble_drive12_v31/model_7450.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_18-57-11_dribble_drive12_v31/model_7500.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_18-57-11_dribble_drive12_v31/model_7550.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_18-57-11_dribble_drive12_v31/model_7600.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_18-57-11_dribble_drive12_v31/model_7650.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_18-57-11_dribble_drive12_v31/model_7700.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_18-57-11_dribble_drive12_v31/model_7750.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_18-57-11_dribble_drive12_v31/model_7800.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_18-57-11_dribble_drive12_v31/model_7850.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_18-57-11_dribble_drive12_v31/model_7900.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_18-57-11_dribble_drive12_v31/model_7950.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_18-57-11_dribble_drive12_v31/model_8000.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_18-57-11_dribble_drive12_v31/model_8050.pt,8.2,KEEP (active run),latest of run
-logs/rsl_rl/k1_dribble_amp/2026-10-21_22-04-17_dribble_rekick_v32/model_7250.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_22-04-17_dribble_rekick_v32/model_7300.pt,8.2,KEEP (active run),best (peak training reward)
-logs/rsl_rl/k1_dribble_amp/2026-10-21_22-04-17_dribble_rekick_v32/model_7350.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_22-04-17_dribble_rekick_v32/model_7400.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_22-04-17_dribble_rekick_v32/model_7450.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_22-04-17_dribble_rekick_v32/model_7500.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_22-04-17_dribble_rekick_v32/model_7550.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_22-04-17_dribble_rekick_v32/model_7600.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_22-04-17_dribble_rekick_v32/model_7650.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_22-04-17_dribble_rekick_v32/model_7700.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_22-04-17_dribble_rekick_v32/model_7750.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_22-04-17_dribble_rekick_v32/model_7800.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_22-04-17_dribble_rekick_v32/model_7850.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_22-04-17_dribble_rekick_v32/model_7900.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_22-04-17_dribble_rekick_v32/model_7950.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_22-04-17_dribble_rekick_v32/model_8000.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_22-04-17_dribble_rekick_v32/model_8050.pt,8.2,KEEP (active run),latest of run
-logs/rsl_rl/k1_dribble_amp/2026-10-21_23-01-21_dribble_power_v33/model_7250.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_23-01-21_dribble_power_v33/model_7300.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_23-01-21_dribble_power_v33/model_7350.pt,8.2,KEEP (active run),best (peak training reward)
-logs/rsl_rl/k1_dribble_amp/2026-10-21_23-01-21_dribble_power_v33/model_7400.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_23-01-21_dribble_power_v33/model_7450.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_23-01-21_dribble_power_v33/model_7500.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_23-01-21_dribble_power_v33/model_7550.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_23-01-21_dribble_power_v33/model_7600.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_23-01-21_dribble_power_v33/model_7650.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_23-01-21_dribble_power_v33/model_7700.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_23-01-21_dribble_power_v33/model_7750.pt,8.2,KEEP (active run),deployed ONNX (k1_policy_runner); parent of k1_dribble_amp/2026-10-22_00-29-28_dribble_noteacher_v34; parent of k1_dribble_amp/2026-10-22_01-19-57_dribble_sidegate_v35; parent of k1_dribble_amp/2026-10-22_02-10-44_dribble_teachstraight_v36; run metadata
-logs/rsl_rl/k1_dribble_amp/2026-10-21_23-01-21_dribble_power_v33/model_7800.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_23-01-21_dribble_power_v33/model_7850.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_23-01-21_dribble_power_v33/model_7900.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_23-01-21_dribble_power_v33/model_7950.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_23-01-21_dribble_power_v33/model_8000.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_23-01-21_dribble_power_v33/model_8050.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_23-01-21_dribble_power_v33/model_8100.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_23-01-21_dribble_power_v33/model_8150.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_23-01-21_dribble_power_v33/model_8200.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_23-01-21_dribble_power_v33/model_8250.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_23-01-21_dribble_power_v33/model_8300.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_23-01-21_dribble_power_v33/model_8350.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_23-01-21_dribble_power_v33/model_8400.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_23-01-21_dribble_power_v33/model_8450.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-21_23-01-21_dribble_power_v33/model_8500.pt,8.2,KEEP (active run),latest of run
-logs/rsl_rl/k1_dribble_amp/2026-10-22_00-29-28_dribble_noteacher_v34/model_7750.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_00-29-28_dribble_noteacher_v34/model_7800.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_00-29-28_dribble_noteacher_v34/model_7850.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_00-29-28_dribble_noteacher_v34/model_7900.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_00-29-28_dribble_noteacher_v34/model_7950.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_00-29-28_dribble_noteacher_v34/model_8000.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_00-29-28_dribble_noteacher_v34/model_8050.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_00-29-28_dribble_noteacher_v34/model_8100.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_00-29-28_dribble_noteacher_v34/model_8150.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_00-29-28_dribble_noteacher_v34/model_8200.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_00-29-28_dribble_noteacher_v34/model_8250.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_00-29-28_dribble_noteacher_v34/model_8300.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_00-29-28_dribble_noteacher_v34/model_8350.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_00-29-28_dribble_noteacher_v34/model_8400.pt,8.2,KEEP (active run),best (peak training reward)
-logs/rsl_rl/k1_dribble_amp/2026-10-22_00-29-28_dribble_noteacher_v34/model_8450.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_00-29-28_dribble_noteacher_v34/model_8500.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_00-29-28_dribble_noteacher_v34/model_8550.pt,8.2,KEEP (active run),latest of run
-logs/rsl_rl/k1_dribble_amp/2026-10-22_01-19-57_dribble_sidegate_v35/model_7750.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_01-19-57_dribble_sidegate_v35/model_7800.pt,8.2,KEEP (active run),best (peak training reward)
-logs/rsl_rl/k1_dribble_amp/2026-10-22_01-19-57_dribble_sidegate_v35/model_7850.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_01-19-57_dribble_sidegate_v35/model_7900.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_01-19-57_dribble_sidegate_v35/model_7950.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_01-19-57_dribble_sidegate_v35/model_8000.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_01-19-57_dribble_sidegate_v35/model_8050.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_01-19-57_dribble_sidegate_v35/model_8100.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_01-19-57_dribble_sidegate_v35/model_8150.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_01-19-57_dribble_sidegate_v35/model_8200.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_01-19-57_dribble_sidegate_v35/model_8250.pt,8.2,KEEP (active run),deployed ONNX (k1_policy_runner)
-logs/rsl_rl/k1_dribble_amp/2026-10-22_01-19-57_dribble_sidegate_v35/model_8300.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_01-19-57_dribble_sidegate_v35/model_8350.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_01-19-57_dribble_sidegate_v35/model_8400.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_01-19-57_dribble_sidegate_v35/model_8450.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_01-19-57_dribble_sidegate_v35/model_8500.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_01-19-57_dribble_sidegate_v35/model_8550.pt,8.2,KEEP (active run),latest of run
-logs/rsl_rl/k1_dribble_amp/2026-10-22_02-10-44_dribble_teachstraight_v36/model_7750.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_02-10-44_dribble_teachstraight_v36/model_7800.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_02-10-44_dribble_teachstraight_v36/model_7850.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_02-10-44_dribble_teachstraight_v36/model_7900.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_02-10-44_dribble_teachstraight_v36/model_7950.pt,8.2,KEEP (active run),best (peak training reward)
-logs/rsl_rl/k1_dribble_amp/2026-10-22_02-10-44_dribble_teachstraight_v36/model_8000.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_02-10-44_dribble_teachstraight_v36/model_8050.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_02-10-44_dribble_teachstraight_v36/model_8100.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_02-10-44_dribble_teachstraight_v36/model_8150.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_02-10-44_dribble_teachstraight_v36/model_8200.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_02-10-44_dribble_teachstraight_v36/model_8250.pt,8.2,KEEP (active run),deployed ONNX (match by version+step); parent of k1_dribble_amp/2026-10-22_03-01-37_dribble_quickkick_v37; parent of k1_dribble_amp/2026-10-22_04-43-23_dribble_sideoutcome_v38; parent of k1_dribble_amp/2026-10-22_05-34-23_dribble_v36cont_v39; parent of k1_dribble_amp/2026-10-22_06-33-19_dribble_quickpay_v40; parent of k1_dribble_amp/2026-10-22_07-43-06_dribble_bhumanside_v41; parent of k1_dribble_amp/2026-10-22_08-42-34_dribble_sidew_v42; run metadata
-logs/rsl_rl/k1_dribble_amp/2026-10-22_02-10-44_dribble_teachstraight_v36/model_8300.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_02-10-44_dribble_teachstraight_v36/model_8350.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_02-10-44_dribble_teachstraight_v36/model_8400.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_02-10-44_dribble_teachstraight_v36/model_8450.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_02-10-44_dribble_teachstraight_v36/model_8500.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_02-10-44_dribble_teachstraight_v36/model_8550.pt,8.2,KEEP (active run),latest of run
-logs/rsl_rl/k1_dribble_amp/2026-10-22_03-01-37_dribble_quickkick_v37/model_8250.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_03-01-37_dribble_quickkick_v37/model_8300.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_03-01-37_dribble_quickkick_v37/model_8350.pt,8.2,KEEP (active run),best (peak training reward)
-logs/rsl_rl/k1_dribble_amp/2026-10-22_03-01-37_dribble_quickkick_v37/model_8400.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_03-01-37_dribble_quickkick_v37/model_8450.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_03-01-37_dribble_quickkick_v37/model_8500.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_03-01-37_dribble_quickkick_v37/model_8550.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_03-01-37_dribble_quickkick_v37/model_8600.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_03-01-37_dribble_quickkick_v37/model_8650.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_03-01-37_dribble_quickkick_v37/model_8700.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_03-01-37_dribble_quickkick_v37/model_8750.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_03-01-37_dribble_quickkick_v37/model_8800.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_03-01-37_dribble_quickkick_v37/model_8850.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_03-01-37_dribble_quickkick_v37/model_8900.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_03-01-37_dribble_quickkick_v37/model_8950.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_03-01-37_dribble_quickkick_v37/model_9000.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_03-01-37_dribble_quickkick_v37/model_9050.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_03-01-37_dribble_quickkick_v37/model_9100.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_03-01-37_dribble_quickkick_v37/model_9150.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_03-01-37_dribble_quickkick_v37/model_9200.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_03-01-37_dribble_quickkick_v37/model_9250.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_03-01-37_dribble_quickkick_v37/model_9300.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_03-01-37_dribble_quickkick_v37/model_9350.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_03-01-37_dribble_quickkick_v37/model_9400.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_03-01-37_dribble_quickkick_v37/model_9450.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_03-01-37_dribble_quickkick_v37/model_9500.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_03-01-37_dribble_quickkick_v37/model_9550.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_03-01-37_dribble_quickkick_v37/model_9600.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_03-01-37_dribble_quickkick_v37/model_9650.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_03-01-37_dribble_quickkick_v37/model_9700.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_03-01-37_dribble_quickkick_v37/model_9750.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_03-01-37_dribble_quickkick_v37/model_9800.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_03-01-37_dribble_quickkick_v37/model_9850.pt,8.2,KEEP (active run),latest of run
-logs/rsl_rl/k1_dribble_amp/2026-10-22_04-43-23_dribble_sideoutcome_v38/model_8250.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_04-43-23_dribble_sideoutcome_v38/model_8300.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_04-43-23_dribble_sideoutcome_v38/model_8350.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_04-43-23_dribble_sideoutcome_v38/model_8400.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_04-43-23_dribble_sideoutcome_v38/model_8450.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_04-43-23_dribble_sideoutcome_v38/model_8500.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_04-43-23_dribble_sideoutcome_v38/model_8550.pt,8.2,KEEP (active run),best (peak training reward)
-logs/rsl_rl/k1_dribble_amp/2026-10-22_04-43-23_dribble_sideoutcome_v38/model_8600.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_04-43-23_dribble_sideoutcome_v38/model_8650.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_04-43-23_dribble_sideoutcome_v38/model_8700.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_04-43-23_dribble_sideoutcome_v38/model_8750.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_04-43-23_dribble_sideoutcome_v38/model_8800.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_04-43-23_dribble_sideoutcome_v38/model_8850.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_04-43-23_dribble_sideoutcome_v38/model_8900.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_04-43-23_dribble_sideoutcome_v38/model_8950.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_04-43-23_dribble_sideoutcome_v38/model_9000.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_04-43-23_dribble_sideoutcome_v38/model_9050.pt,8.2,KEEP (active run),latest of run
-logs/rsl_rl/k1_dribble_amp/2026-10-22_05-34-23_dribble_v36cont_v39/model_8250.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_05-34-23_dribble_v36cont_v39/model_8300.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_05-34-23_dribble_v36cont_v39/model_8350.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_05-34-23_dribble_v36cont_v39/model_8400.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_05-34-23_dribble_v36cont_v39/model_8450.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_05-34-23_dribble_v36cont_v39/model_8500.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_05-34-23_dribble_v36cont_v39/model_8550.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_05-34-23_dribble_v36cont_v39/model_8600.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_05-34-23_dribble_v36cont_v39/model_8650.pt,8.2,KEEP (active run),best (peak training reward)
-logs/rsl_rl/k1_dribble_amp/2026-10-22_05-34-23_dribble_v36cont_v39/model_8700.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_05-34-23_dribble_v36cont_v39/model_8750.pt,8.2,KEEP (active run),deployed ONNX (match by version+step)
-logs/rsl_rl/k1_dribble_amp/2026-10-22_05-34-23_dribble_v36cont_v39/model_8800.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_05-34-23_dribble_v36cont_v39/model_8850.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_05-34-23_dribble_v36cont_v39/model_8900.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_05-34-23_dribble_v36cont_v39/model_8950.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_05-34-23_dribble_v36cont_v39/model_9000.pt,8.2,KEEP (active run),latest of run
-logs/rsl_rl/k1_dribble_amp/2026-10-22_06-33-19_dribble_quickpay_v40/model_8250.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_06-33-19_dribble_quickpay_v40/model_8300.pt,8.2,KEEP (active run),best (peak training reward)
-logs/rsl_rl/k1_dribble_amp/2026-10-22_06-33-19_dribble_quickpay_v40/model_8350.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_06-33-19_dribble_quickpay_v40/model_8400.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_06-33-19_dribble_quickpay_v40/model_8450.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_06-33-19_dribble_quickpay_v40/model_8500.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_06-33-19_dribble_quickpay_v40/model_8550.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_06-33-19_dribble_quickpay_v40/model_8600.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_06-33-19_dribble_quickpay_v40/model_8650.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_06-33-19_dribble_quickpay_v40/model_8700.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_06-33-19_dribble_quickpay_v40/model_8750.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_06-33-19_dribble_quickpay_v40/model_8800.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_06-33-19_dribble_quickpay_v40/model_8850.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_06-33-19_dribble_quickpay_v40/model_8900.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_06-33-19_dribble_quickpay_v40/model_8950.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_06-33-19_dribble_quickpay_v40/model_9000.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_06-33-19_dribble_quickpay_v40/model_9050.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_06-33-19_dribble_quickpay_v40/model_9100.pt,8.2,KEEP (active run),latest of run
-logs/rsl_rl/k1_dribble_amp/2026-10-22_07-43-06_dribble_bhumanside_v41/model_8250.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_07-43-06_dribble_bhumanside_v41/model_8300.pt,8.2,KEEP (active run),best (peak training reward)
-logs/rsl_rl/k1_dribble_amp/2026-10-22_07-43-06_dribble_bhumanside_v41/model_8350.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_07-43-06_dribble_bhumanside_v41/model_8400.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_07-43-06_dribble_bhumanside_v41/model_8450.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_07-43-06_dribble_bhumanside_v41/model_8500.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_07-43-06_dribble_bhumanside_v41/model_8550.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_07-43-06_dribble_bhumanside_v41/model_8600.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_07-43-06_dribble_bhumanside_v41/model_8650.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_07-43-06_dribble_bhumanside_v41/model_8700.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_07-43-06_dribble_bhumanside_v41/model_8750.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_07-43-06_dribble_bhumanside_v41/model_8800.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_07-43-06_dribble_bhumanside_v41/model_8850.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_07-43-06_dribble_bhumanside_v41/model_8900.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_07-43-06_dribble_bhumanside_v41/model_8950.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_07-43-06_dribble_bhumanside_v41/model_9000.pt,8.2,KEEP (active run),latest of run
-logs/rsl_rl/k1_dribble_amp/2026-10-22_08-42-34_dribble_sidew_v42/model_10000.pt,8.2,KEEP (active run),latest of run
-logs/rsl_rl/k1_dribble_amp/2026-10-22_08-42-34_dribble_sidew_v42/model_8250.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_08-42-34_dribble_sidew_v42/model_8300.pt,8.2,KEEP (active run),best (peak training reward)
-logs/rsl_rl/k1_dribble_amp/2026-10-22_08-42-34_dribble_sidew_v42/model_8350.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_08-42-34_dribble_sidew_v42/model_8400.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_08-42-34_dribble_sidew_v42/model_8450.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_08-42-34_dribble_sidew_v42/model_8500.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_08-42-34_dribble_sidew_v42/model_8550.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_08-42-34_dribble_sidew_v42/model_8600.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_08-42-34_dribble_sidew_v42/model_8650.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_08-42-34_dribble_sidew_v42/model_8700.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_08-42-34_dribble_sidew_v42/model_8750.pt,8.2,KEEP (active run),deployed ONNX (k1_policy_runner)
-logs/rsl_rl/k1_dribble_amp/2026-10-22_08-42-34_dribble_sidew_v42/model_8800.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_08-42-34_dribble_sidew_v42/model_8850.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_08-42-34_dribble_sidew_v42/model_8900.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_08-42-34_dribble_sidew_v42/model_8950.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_08-42-34_dribble_sidew_v42/model_9000.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_08-42-34_dribble_sidew_v42/model_9050.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_08-42-34_dribble_sidew_v42/model_9100.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_08-42-34_dribble_sidew_v42/model_9150.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_08-42-34_dribble_sidew_v42/model_9200.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_08-42-34_dribble_sidew_v42/model_9250.pt,8.2,KEEP (active run),deployed ONNX (k1_policy_runner); parent of k1_dribble_amp/2026-10-22_13-24-16_dribble_takeover_v43; parent of k1_dribble_amp/2026-10-22_21-18-25_dribble_signedaim_v44; parent of k1_dribble_amp/2026-10-22_23-05-20_dribble_posegate_v45; parent of k1_dribble_amp/2026-10-23_00-54-08_dribble_aimcurr_v46; parent of k1_dribble_amp/2026-10-23_01-52-45_dribble_aimcurrb_v46b; parent of k1_dribble_amp/2026-10-23_03-35-36_dribble_quick_v47; parent of k1_dribble_amp/2026-10-23_04-34-15_dribble_spin_v48; parent of k1_dribble_amp/2026-10-23_05-35-32_dribble_aimwide_v49; parent of k1_dribble_amp/2026-10-23_07-21-01_dribble_headup_v50; run metadata
-logs/rsl_rl/k1_dribble_amp/2026-10-22_08-42-34_dribble_sidew_v42/model_9300.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_08-42-34_dribble_sidew_v42/model_9350.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_08-42-34_dribble_sidew_v42/model_9400.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_08-42-34_dribble_sidew_v42/model_9450.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_08-42-34_dribble_sidew_v42/model_9500.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_08-42-34_dribble_sidew_v42/model_9550.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_08-42-34_dribble_sidew_v42/model_9600.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_08-42-34_dribble_sidew_v42/model_9650.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_08-42-34_dribble_sidew_v42/model_9700.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_08-42-34_dribble_sidew_v42/model_9750.pt,8.2,KEEP (active run),deployed ONNX (k1_policy_runner)
-logs/rsl_rl/k1_dribble_amp/2026-10-22_08-42-34_dribble_sidew_v42/model_9800.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_08-42-34_dribble_sidew_v42/model_9850.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_08-42-34_dribble_sidew_v42/model_9900.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_08-42-34_dribble_sidew_v42/model_9950.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_13-24-16_dribble_takeover_v43/model_10000.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_13-24-16_dribble_takeover_v43/model_10050.pt,8.2,KEEP (active run),latest of run
-logs/rsl_rl/k1_dribble_amp/2026-10-22_13-24-16_dribble_takeover_v43/model_9250.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_13-24-16_dribble_takeover_v43/model_9300.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_13-24-16_dribble_takeover_v43/model_9350.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_13-24-16_dribble_takeover_v43/model_9400.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_13-24-16_dribble_takeover_v43/model_9450.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_13-24-16_dribble_takeover_v43/model_9500.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_13-24-16_dribble_takeover_v43/model_9550.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_13-24-16_dribble_takeover_v43/model_9600.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_13-24-16_dribble_takeover_v43/model_9650.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_13-24-16_dribble_takeover_v43/model_9700.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_13-24-16_dribble_takeover_v43/model_9750.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_13-24-16_dribble_takeover_v43/model_9800.pt,8.2,KEEP (active run),best (peak training reward)
-logs/rsl_rl/k1_dribble_amp/2026-10-22_13-24-16_dribble_takeover_v43/model_9850.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_13-24-16_dribble_takeover_v43/model_9900.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_13-24-16_dribble_takeover_v43/model_9950.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_21-18-25_dribble_signedaim_v44/model_10000.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_21-18-25_dribble_signedaim_v44/model_10050.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_21-18-25_dribble_signedaim_v44/model_10100.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_21-18-25_dribble_signedaim_v44/model_10150.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_21-18-25_dribble_signedaim_v44/model_10200.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_21-18-25_dribble_signedaim_v44/model_10250.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_21-18-25_dribble_signedaim_v44/model_10300.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_21-18-25_dribble_signedaim_v44/model_10350.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_21-18-25_dribble_signedaim_v44/model_10400.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_21-18-25_dribble_signedaim_v44/model_10450.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_21-18-25_dribble_signedaim_v44/model_10500.pt,8.2,KEEP (active run),latest of run
-logs/rsl_rl/k1_dribble_amp/2026-10-22_21-18-25_dribble_signedaim_v44/model_9250.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_21-18-25_dribble_signedaim_v44/model_9300.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_21-18-25_dribble_signedaim_v44/model_9350.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_21-18-25_dribble_signedaim_v44/model_9400.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_21-18-25_dribble_signedaim_v44/model_9450.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_21-18-25_dribble_signedaim_v44/model_9500.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_21-18-25_dribble_signedaim_v44/model_9550.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_21-18-25_dribble_signedaim_v44/model_9600.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_21-18-25_dribble_signedaim_v44/model_9650.pt,8.2,KEEP (active run),best (peak training reward)
-logs/rsl_rl/k1_dribble_amp/2026-10-22_21-18-25_dribble_signedaim_v44/model_9700.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_21-18-25_dribble_signedaim_v44/model_9750.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_21-18-25_dribble_signedaim_v44/model_9800.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_21-18-25_dribble_signedaim_v44/model_9850.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_21-18-25_dribble_signedaim_v44/model_9900.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_21-18-25_dribble_signedaim_v44/model_9950.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_23-05-20_dribble_posegate_v45/model_10000.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_23-05-20_dribble_posegate_v45/model_10050.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_23-05-20_dribble_posegate_v45/model_10100.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_23-05-20_dribble_posegate_v45/model_10150.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_23-05-20_dribble_posegate_v45/model_10200.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_23-05-20_dribble_posegate_v45/model_10250.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_23-05-20_dribble_posegate_v45/model_10300.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_23-05-20_dribble_posegate_v45/model_10350.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_23-05-20_dribble_posegate_v45/model_10400.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_23-05-20_dribble_posegate_v45/model_10450.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_23-05-20_dribble_posegate_v45/model_10500.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_23-05-20_dribble_posegate_v45/model_10550.pt,8.2,KEEP (active run),latest of run
-logs/rsl_rl/k1_dribble_amp/2026-10-22_23-05-20_dribble_posegate_v45/model_9250.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_23-05-20_dribble_posegate_v45/model_9300.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_23-05-20_dribble_posegate_v45/model_9350.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_23-05-20_dribble_posegate_v45/model_9400.pt,8.2,KEEP (active run),best (peak training reward)
-logs/rsl_rl/k1_dribble_amp/2026-10-22_23-05-20_dribble_posegate_v45/model_9450.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_23-05-20_dribble_posegate_v45/model_9500.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_23-05-20_dribble_posegate_v45/model_9550.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_23-05-20_dribble_posegate_v45/model_9600.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_23-05-20_dribble_posegate_v45/model_9650.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_23-05-20_dribble_posegate_v45/model_9700.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_23-05-20_dribble_posegate_v45/model_9750.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_23-05-20_dribble_posegate_v45/model_9800.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_23-05-20_dribble_posegate_v45/model_9850.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_23-05-20_dribble_posegate_v45/model_9900.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-22_23-05-20_dribble_posegate_v45/model_9950.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_00-54-08_dribble_aimcurr_v46/model_10000.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_00-54-08_dribble_aimcurr_v46/model_10050.pt,8.2,KEEP (active run),latest of run
-logs/rsl_rl/k1_dribble_amp/2026-10-23_00-54-08_dribble_aimcurr_v46/model_9250.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_00-54-08_dribble_aimcurr_v46/model_9300.pt,8.2,KEEP (active run),best (peak training reward)
-logs/rsl_rl/k1_dribble_amp/2026-10-23_00-54-08_dribble_aimcurr_v46/model_9350.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_00-54-08_dribble_aimcurr_v46/model_9400.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_00-54-08_dribble_aimcurr_v46/model_9450.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_00-54-08_dribble_aimcurr_v46/model_9500.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_00-54-08_dribble_aimcurr_v46/model_9550.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_00-54-08_dribble_aimcurr_v46/model_9600.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_00-54-08_dribble_aimcurr_v46/model_9650.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_00-54-08_dribble_aimcurr_v46/model_9700.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_00-54-08_dribble_aimcurr_v46/model_9750.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_00-54-08_dribble_aimcurr_v46/model_9800.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_00-54-08_dribble_aimcurr_v46/model_9850.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_00-54-08_dribble_aimcurr_v46/model_9900.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_00-54-08_dribble_aimcurr_v46/model_9950.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_01-52-45_dribble_aimcurrb_v46b/model_10000.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_01-52-45_dribble_aimcurrb_v46b/model_10050.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_01-52-45_dribble_aimcurrb_v46b/model_10100.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_01-52-45_dribble_aimcurrb_v46b/model_10150.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_01-52-45_dribble_aimcurrb_v46b/model_10200.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_01-52-45_dribble_aimcurrb_v46b/model_10250.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_01-52-45_dribble_aimcurrb_v46b/model_10300.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_01-52-45_dribble_aimcurrb_v46b/model_10350.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_01-52-45_dribble_aimcurrb_v46b/model_10400.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_01-52-45_dribble_aimcurrb_v46b/model_10450.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_01-52-45_dribble_aimcurrb_v46b/model_10500.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_01-52-45_dribble_aimcurrb_v46b/model_10550.pt,8.2,KEEP (active run),latest of run
-logs/rsl_rl/k1_dribble_amp/2026-10-23_01-52-45_dribble_aimcurrb_v46b/model_9250.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_01-52-45_dribble_aimcurrb_v46b/model_9300.pt,8.2,KEEP (active run),best (peak training reward)
-logs/rsl_rl/k1_dribble_amp/2026-10-23_01-52-45_dribble_aimcurrb_v46b/model_9350.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_01-52-45_dribble_aimcurrb_v46b/model_9400.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_01-52-45_dribble_aimcurrb_v46b/model_9450.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_01-52-45_dribble_aimcurrb_v46b/model_9500.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_01-52-45_dribble_aimcurrb_v46b/model_9550.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_01-52-45_dribble_aimcurrb_v46b/model_9600.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_01-52-45_dribble_aimcurrb_v46b/model_9650.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_01-52-45_dribble_aimcurrb_v46b/model_9700.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_01-52-45_dribble_aimcurrb_v46b/model_9750.pt,8.2,KEEP (active run),deployed ONNX (match by version+step)
-logs/rsl_rl/k1_dribble_amp/2026-10-23_01-52-45_dribble_aimcurrb_v46b/model_9800.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_01-52-45_dribble_aimcurrb_v46b/model_9850.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_01-52-45_dribble_aimcurrb_v46b/model_9900.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_01-52-45_dribble_aimcurrb_v46b/model_9950.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_03-35-36_dribble_quick_v47/model_10000.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_03-35-36_dribble_quick_v47/model_10050.pt,8.2,KEEP (active run),latest of run
-logs/rsl_rl/k1_dribble_amp/2026-10-23_03-35-36_dribble_quick_v47/model_9250.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_03-35-36_dribble_quick_v47/model_9300.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_03-35-36_dribble_quick_v47/model_9350.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_03-35-36_dribble_quick_v47/model_9400.pt,8.2,KEEP (active run),best (peak training reward)
-logs/rsl_rl/k1_dribble_amp/2026-10-23_03-35-36_dribble_quick_v47/model_9450.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_03-35-36_dribble_quick_v47/model_9500.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_03-35-36_dribble_quick_v47/model_9550.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_03-35-36_dribble_quick_v47/model_9600.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_03-35-36_dribble_quick_v47/model_9650.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_03-35-36_dribble_quick_v47/model_9700.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_03-35-36_dribble_quick_v47/model_9750.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_03-35-36_dribble_quick_v47/model_9800.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_03-35-36_dribble_quick_v47/model_9850.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_03-35-36_dribble_quick_v47/model_9900.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_03-35-36_dribble_quick_v47/model_9950.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_04-34-15_dribble_spin_v48/model_10000.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_04-34-15_dribble_spin_v48/model_10050.pt,8.2,KEEP (active run),latest of run
-logs/rsl_rl/k1_dribble_amp/2026-10-23_04-34-15_dribble_spin_v48/model_9250.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_04-34-15_dribble_spin_v48/model_9300.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_04-34-15_dribble_spin_v48/model_9350.pt,8.2,KEEP (active run),best (peak training reward)
-logs/rsl_rl/k1_dribble_amp/2026-10-23_04-34-15_dribble_spin_v48/model_9400.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_04-34-15_dribble_spin_v48/model_9450.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_04-34-15_dribble_spin_v48/model_9500.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_04-34-15_dribble_spin_v48/model_9550.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_04-34-15_dribble_spin_v48/model_9600.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_04-34-15_dribble_spin_v48/model_9650.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_04-34-15_dribble_spin_v48/model_9700.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_04-34-15_dribble_spin_v48/model_9750.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_04-34-15_dribble_spin_v48/model_9800.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_04-34-15_dribble_spin_v48/model_9850.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_04-34-15_dribble_spin_v48/model_9900.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_04-34-15_dribble_spin_v48/model_9950.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_05-35-32_dribble_aimwide_v49/model_10000.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_05-35-32_dribble_aimwide_v49/model_10050.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_05-35-32_dribble_aimwide_v49/model_10100.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_05-35-32_dribble_aimwide_v49/model_10150.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_05-35-32_dribble_aimwide_v49/model_10200.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_05-35-32_dribble_aimwide_v49/model_10250.pt,8.2,KEEP (active run),deployed ONNX (k1_policy_runner); parent of k1_dribble_amp/2026-10-23_08-22-20_dribble_aimhead_v51; run metadata
-logs/rsl_rl/k1_dribble_amp/2026-10-23_05-35-32_dribble_aimwide_v49/model_10300.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_05-35-32_dribble_aimwide_v49/model_10350.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_05-35-32_dribble_aimwide_v49/model_10400.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_05-35-32_dribble_aimwide_v49/model_10450.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_05-35-32_dribble_aimwide_v49/model_10500.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_05-35-32_dribble_aimwide_v49/model_10550.pt,8.2,KEEP (active run),latest of run
-logs/rsl_rl/k1_dribble_amp/2026-10-23_05-35-32_dribble_aimwide_v49/model_9250.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_05-35-32_dribble_aimwide_v49/model_9300.pt,8.2,KEEP (active run),best (peak training reward)
-logs/rsl_rl/k1_dribble_amp/2026-10-23_05-35-32_dribble_aimwide_v49/model_9350.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_05-35-32_dribble_aimwide_v49/model_9400.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_05-35-32_dribble_aimwide_v49/model_9450.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_05-35-32_dribble_aimwide_v49/model_9500.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_05-35-32_dribble_aimwide_v49/model_9550.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_05-35-32_dribble_aimwide_v49/model_9600.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_05-35-32_dribble_aimwide_v49/model_9650.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_05-35-32_dribble_aimwide_v49/model_9700.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_05-35-32_dribble_aimwide_v49/model_9750.pt,8.2,KEEP (active run),deployed ONNX (k1_policy_runner)
-logs/rsl_rl/k1_dribble_amp/2026-10-23_05-35-32_dribble_aimwide_v49/model_9800.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_05-35-32_dribble_aimwide_v49/model_9850.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_05-35-32_dribble_aimwide_v49/model_9900.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_05-35-32_dribble_aimwide_v49/model_9950.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_07-21-01_dribble_headup_v50/model_10000.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_07-21-01_dribble_headup_v50/model_10050.pt,8.2,KEEP (active run),latest of run
-logs/rsl_rl/k1_dribble_amp/2026-10-23_07-21-01_dribble_headup_v50/model_9250.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_07-21-01_dribble_headup_v50/model_9300.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_07-21-01_dribble_headup_v50/model_9350.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_07-21-01_dribble_headup_v50/model_9400.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_07-21-01_dribble_headup_v50/model_9450.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_07-21-01_dribble_headup_v50/model_9500.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_07-21-01_dribble_headup_v50/model_9550.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_07-21-01_dribble_headup_v50/model_9600.pt,8.2,KEEP (active run),best (peak training reward)
-logs/rsl_rl/k1_dribble_amp/2026-10-23_07-21-01_dribble_headup_v50/model_9650.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_07-21-01_dribble_headup_v50/model_9700.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_07-21-01_dribble_headup_v50/model_9750.pt,8.2,KEEP (active run),deployed ONNX (k1_policy_runner)
-logs/rsl_rl/k1_dribble_amp/2026-10-23_07-21-01_dribble_headup_v50/model_9800.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_07-21-01_dribble_headup_v50/model_9850.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_07-21-01_dribble_headup_v50/model_9900.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_07-21-01_dribble_headup_v50/model_9950.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_08-22-20_dribble_aimhead_v51/model_10250.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_08-22-20_dribble_aimhead_v51/model_10300.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_08-22-20_dribble_aimhead_v51/model_10350.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_08-22-20_dribble_aimhead_v51/model_10400.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_08-22-20_dribble_aimhead_v51/model_10450.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_08-22-20_dribble_aimhead_v51/model_10500.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_08-22-20_dribble_aimhead_v51/model_10550.pt,8.2,KEEP (active run),best (peak training reward)
-logs/rsl_rl/k1_dribble_amp/2026-10-23_08-22-20_dribble_aimhead_v51/model_10600.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_08-22-20_dribble_aimhead_v51/model_10650.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_08-22-20_dribble_aimhead_v51/model_10700.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_08-22-20_dribble_aimhead_v51/model_10750.pt,8.2,KEEP (active run),deployed ONNX (k1_policy_runner)
-logs/rsl_rl/k1_dribble_amp/2026-10-23_08-22-20_dribble_aimhead_v51/model_10800.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_08-22-20_dribble_aimhead_v51/model_10850.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_08-22-20_dribble_aimhead_v51/model_10900.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_08-22-20_dribble_aimhead_v51/model_10950.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_08-22-20_dribble_aimhead_v51/model_11000.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_08-22-20_dribble_aimhead_v51/model_11050.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_08-22-20_dribble_aimhead_v51/model_11100.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_08-22-20_dribble_aimhead_v51/model_11150.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_08-22-20_dribble_aimhead_v51/model_11200.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_08-22-20_dribble_aimhead_v51/model_11250.pt,8.2,KEEP (active run),deployed ONNX (k1_policy_runner)
-logs/rsl_rl/k1_dribble_amp/2026-10-23_08-22-20_dribble_aimhead_v51/model_11300.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_08-22-20_dribble_aimhead_v51/model_11350.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_08-22-20_dribble_aimhead_v51/model_11400.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_08-22-20_dribble_aimhead_v51/model_11450.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_08-22-20_dribble_aimhead_v51/model_11500.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_08-22-20_dribble_aimhead_v51/model_11550.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_08-22-20_dribble_aimhead_v51/model_11600.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_08-22-20_dribble_aimhead_v51/model_11650.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_08-22-20_dribble_aimhead_v51/model_11700.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_08-22-20_dribble_aimhead_v51/model_11750.pt,8.2,KEEP (active run),deployed ONNX (k1_policy_runner); parent of k1_dribble_amp/2026-10-23_10-38-01_dribble_kickprac_v52; parent of k1_dribble_amp/2026-10-23_12-13-21_dribble_kickalpha_v53; run metadata
-logs/rsl_rl/k1_dribble_amp/2026-10-23_08-22-20_dribble_aimhead_v51/model_11800.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_08-22-20_dribble_aimhead_v51/model_11850.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_08-22-20_dribble_aimhead_v51/model_11900.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_08-22-20_dribble_aimhead_v51/model_11950.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_08-22-20_dribble_aimhead_v51/model_12000.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_08-22-20_dribble_aimhead_v51/model_12050.pt,8.2,KEEP (active run),latest of run
-logs/rsl_rl/k1_dribble_amp/2026-10-23_10-38-01_dribble_kickprac_v52/model_11750.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_10-38-01_dribble_kickprac_v52/model_11800.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_10-38-01_dribble_kickprac_v52/model_11850.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_10-38-01_dribble_kickprac_v52/model_11900.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_10-38-01_dribble_kickprac_v52/model_11950.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_10-38-01_dribble_kickprac_v52/model_12000.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_10-38-01_dribble_kickprac_v52/model_12050.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_10-38-01_dribble_kickprac_v52/model_12100.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_10-38-01_dribble_kickprac_v52/model_12150.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_10-38-01_dribble_kickprac_v52/model_12200.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_10-38-01_dribble_kickprac_v52/model_12250.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_10-38-01_dribble_kickprac_v52/model_12300.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_10-38-01_dribble_kickprac_v52/model_12350.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_10-38-01_dribble_kickprac_v52/model_12400.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_10-38-01_dribble_kickprac_v52/model_12450.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_10-38-01_dribble_kickprac_v52/model_12500.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_10-38-01_dribble_kickprac_v52/model_12550.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_10-38-01_dribble_kickprac_v52/model_12600.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_10-38-01_dribble_kickprac_v52/model_12650.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_10-38-01_dribble_kickprac_v52/model_12700.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_10-38-01_dribble_kickprac_v52/model_12750.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_10-38-01_dribble_kickprac_v52/model_12800.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_10-38-01_dribble_kickprac_v52/model_12850.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_10-38-01_dribble_kickprac_v52/model_12900.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_10-38-01_dribble_kickprac_v52/model_12950.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_10-38-01_dribble_kickprac_v52/model_13000.pt,8.2,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/2026-10-23_10-38-01_dribble_kickprac_v52/model_13050.pt,8.2,KEEP (active run),best (peak training reward); latest of run
-logs/rsl_rl/k1_dribble_amp/2026-10-23_12-13-21_dribble_kickalpha_v53/model_11750.pt,8.2,KEEP (active run),best (peak training reward); latest of run
-logs/rsl_rl/k1_dribble_amp/blend_v22v24/b50_v22_2850_v24_4050.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/blend_v22v24/b70_v24_4050.pt,6.5,KEEP (active run),latest of run
-logs/rsl_rl/k1_dribble_amp/swa_v15/swaA_v15b_12150-12400.pt,6.5,KEEP (active run),deployed ONNX (match by name tokens); parent of k1_dribble_amp/2026-10-19_17-26-39_dribble_deploymatch_v16_ABORTED_no_ball_dr; parent of k1_dribble_amp/2026-10-19_17-44-27_dribble_deploymatch_v16
-logs/rsl_rl/k1_dribble_amp/swa_v15/swaB_bcd_12450-13000.pt,6.5,KEEP (active run),
-logs/rsl_rl/k1_dribble_amp/swa_v15/swa_v16_13300-13900.pt,6.5,KEEP (active run),deployed ONNX (match by name tokens); memory note; parent of k1_dribble_amp/2026-10-20_10-06-23_dribble_flatfoot_v17_ABORTED_w200; parent of k1_dribble_amp/2026-10-20_10-07-53_dribble_flatfoot_v17
-logs/rsl_rl/k1_dribble_amp/swa_v15/swa_v17_14200-15400.pt,6.5,KEEP (active run),deployed ONNX (match by name tokens); latest of run; memory note; parent of k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18; parent of k1_dribble_amp/2026-10-20_14-42-08_dribble_fastmix_v19; run metadata
+logs/rsl_rl/k1_dribble_amp/2026-10-20_10-06-23_dribble_flatfoot_v17_ABORTED_w200/model_13950.pt,6.5,KEEP,best (peak training reward); latest of run
+logs/rsl_rl/k1_dribble_amp/2026-10-20_10-07-53_dribble_flatfoot_v17/model_13950.pt,6.5,KEEP,best (peak training reward)
+logs/rsl_rl/k1_dribble_amp/2026-10-20_10-07-53_dribble_flatfoot_v17/model_15400.pt,6.5,KEEP,deployed ONNX (match by version+step)
+logs/rsl_rl/k1_dribble_amp/2026-10-20_10-07-53_dribble_flatfoot_v17/model_15750.pt,6.5,KEEP,latest of run
+logs/rsl_rl/k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18/model_16300.pt,6.5,KEEP,parent of k1_dribble_amp/2026-10-20_20-44-39_dribble_condamp_v20; run metadata
+logs/rsl_rl/k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18/model_17500.pt,6.5,KEEP,best (peak training reward)
+logs/rsl_rl/k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18/model_17700.pt,6.5,KEEP,latest of run
+logs/rsl_rl/k1_dribble_amp/2026-10-20_14-42-08_dribble_fastmix_v19/model_15450.pt,6.5,KEEP,best (peak training reward)
+logs/rsl_rl/k1_dribble_amp/2026-10-20_14-42-08_dribble_fastmix_v19/model_16600.pt,6.5,KEEP,latest of run
+logs/rsl_rl/k1_dribble_amp/2026-10-20_20-44-39_dribble_condamp_v20/model_1200.pt,6.5,KEEP,parent of k1_dribble_amp/2026-10-20_22-41-35_dribble_pushchase_v21; run metadata
+logs/rsl_rl/k1_dribble_amp/2026-10-20_20-44-39_dribble_condamp_v20/model_1950.pt,6.5,KEEP,best (peak training reward)
+logs/rsl_rl/k1_dribble_amp/2026-10-20_20-44-39_dribble_condamp_v20/model_2000.pt,6.5,KEEP,latest of run
+logs/rsl_rl/k1_dribble_amp/2026-10-20_22-41-35_dribble_pushchase_v21/model_1250.pt,6.5,KEEP,best (peak training reward)
+logs/rsl_rl/k1_dribble_amp/2026-10-20_22-41-35_dribble_pushchase_v21/model_1800.pt,6.5,KEEP,latest of run; parent of k1_dribble_amp/2026-10-20_23-08-27_dribble_skills_v22; run metadata
+logs/rsl_rl/k1_dribble_amp/2026-10-20_23-08-27_dribble_skills_v22/model_2750.pt,6.5,KEEP,best (peak training reward)
+logs/rsl_rl/k1_dribble_amp/2026-10-20_23-08-27_dribble_skills_v22/model_2850.pt,6.5,KEEP,latest of run; parent of k1_dribble_amp/2026-10-21_00-19-57_dribble_kickteacher_v23; parent of k1_dribble_amp/2026-10-21_01-25-46_dribble_kickteacher2_v24_ABORTED_no_kicked_flag; parent of k1_dribble_amp/2026-10-21_01-29-44_dribble_kickteacher2_v24; run metadata
+logs/rsl_rl/k1_dribble_amp/2026-10-21_00-19-57_dribble_kickteacher_v23/model_3900.pt,6.5,KEEP,best (peak training reward)
+logs/rsl_rl/k1_dribble_amp/2026-10-21_00-19-57_dribble_kickteacher_v23/model_3950.pt,6.5,KEEP,latest of run
+logs/rsl_rl/k1_dribble_amp/2026-10-21_01-25-46_dribble_kickteacher2_v24_ABORTED_no_kicked_flag/model_2900.pt,6.5,KEEP,best (peak training reward); latest of run
+logs/rsl_rl/k1_dribble_amp/2026-10-21_01-29-44_dribble_kickteacher2_v24/model_4050.pt,6.5,KEEP,parent of k1_dribble_amp/2026-10-21_03-20-16_dribble_lightteacher_v25; run metadata
+logs/rsl_rl/k1_dribble_amp/2026-10-21_01-29-44_dribble_kickteacher2_v24/model_4450.pt,6.5,KEEP,best (peak training reward)
+logs/rsl_rl/k1_dribble_amp/2026-10-21_01-29-44_dribble_kickteacher2_v24/model_4500.pt,6.5,KEEP,latest of run
+logs/rsl_rl/k1_dribble_amp/2026-10-21_03-20-16_dribble_lightteacher_v25/model_5550.pt,6.5,KEEP,deployed ONNX (match by version+step); script
+logs/rsl_rl/k1_dribble_amp/2026-10-21_03-20-16_dribble_lightteacher_v25/model_5850.pt,6.5,KEEP,best (peak training reward); latest of run; parent of k1_dribble_amp/2026-10-21_05-24-53_dribble_kickfix_v26; run metadata
+logs/rsl_rl/k1_dribble_amp/2026-10-21_05-24-53_dribble_kickfix_v26/model_6250.pt,6.5,KEEP,deployed ONNX (match by version+step); parent of k1_dribble_amp/2026-10-21_09-09-02_dribble_pushside_v27_ABORTED_actor_not_loaded; parent of k1_dribble_amp/2026-10-21_09-43-51_dribble_pushside_v27; run metadata
+logs/rsl_rl/k1_dribble_amp/2026-10-21_05-24-53_dribble_kickfix_v26/model_7200.pt,6.5,KEEP,best (peak training reward)
+logs/rsl_rl/k1_dribble_amp/2026-10-21_05-24-53_dribble_kickfix_v26/model_7300.pt,6.5,KEEP,latest of run
+logs/rsl_rl/k1_dribble_amp/2026-10-21_09-09-02_dribble_pushside_v27_ABORTED_actor_not_loaded/model_550.pt,8.2,KEEP,best (peak training reward)
+logs/rsl_rl/k1_dribble_amp/2026-10-21_09-09-02_dribble_pushside_v27_ABORTED_actor_not_loaded/model_600.pt,8.2,KEEP,latest of run
+logs/rsl_rl/k1_dribble_amp/2026-10-21_09-43-51_dribble_pushside_v27/model_6400.pt,8.2,KEEP,best (peak training reward)
+logs/rsl_rl/k1_dribble_amp/2026-10-21_09-43-51_dribble_pushside_v27/model_6750.pt,8.2,KEEP,deployed ONNX (match by version+step); parent of k1_dribble_amp/2026-10-21_13-14-20_dribble_safefast_v28; parent of k1_dribble_amp/2026-10-21_14-09-21_dribble_safefast_v28b; parent of k1_dribble_amp/2026-10-21_16-26-43_dribble_caps13_v29; parent of k1_dribble_amp/2026-10-21_17-17-41_dribble_findball_v30; run metadata
+logs/rsl_rl/k1_dribble_amp/2026-10-21_09-43-51_dribble_pushside_v27/model_7250.pt,8.2,KEEP,deployed ONNX (match by version+step)
+logs/rsl_rl/k1_dribble_amp/2026-10-21_09-43-51_dribble_pushside_v27/model_8000.pt,8.2,KEEP,latest of run
+logs/rsl_rl/k1_dribble_amp/2026-10-21_13-14-20_dribble_safefast_v28/model_6800.pt,8.2,KEEP,best (peak training reward)
+logs/rsl_rl/k1_dribble_amp/2026-10-21_13-14-20_dribble_safefast_v28/model_7500.pt,8.2,KEEP,latest of run
+logs/rsl_rl/k1_dribble_amp/2026-10-21_14-09-21_dribble_safefast_v28b/model_7150.pt,8.2,KEEP,best (peak training reward)
+logs/rsl_rl/k1_dribble_amp/2026-10-21_14-09-21_dribble_safefast_v28b/model_7250.pt,8.2,KEEP,deployed ONNX (k1_policy_runner)
+logs/rsl_rl/k1_dribble_amp/2026-10-21_14-09-21_dribble_safefast_v28b/model_8050.pt,8.2,KEEP,latest of run
+logs/rsl_rl/k1_dribble_amp/2026-10-21_16-26-43_dribble_caps13_v29/model_6800.pt,8.2,KEEP,best (peak training reward)
+logs/rsl_rl/k1_dribble_amp/2026-10-21_16-26-43_dribble_caps13_v29/model_7550.pt,8.2,KEEP,latest of run
+logs/rsl_rl/k1_dribble_amp/2026-10-21_17-17-41_dribble_findball_v30/model_6850.pt,8.2,KEEP,best (peak training reward)
+logs/rsl_rl/k1_dribble_amp/2026-10-21_17-17-41_dribble_findball_v30/model_7250.pt,8.2,KEEP,deployed ONNX (k1_policy_runner); parent of k1_dribble_amp/2026-10-21_18-57-11_dribble_drive12_v31; parent of k1_dribble_amp/2026-10-21_22-04-17_dribble_rekick_v32; parent of k1_dribble_amp/2026-10-21_23-01-21_dribble_power_v33; run metadata
+logs/rsl_rl/k1_dribble_amp/2026-10-21_17-17-41_dribble_findball_v30/model_8050.pt,8.2,KEEP,latest of run
+logs/rsl_rl/k1_dribble_amp/2026-10-21_18-57-11_dribble_drive12_v31/model_7300.pt,8.2,KEEP,best (peak training reward)
+logs/rsl_rl/k1_dribble_amp/2026-10-21_18-57-11_dribble_drive12_v31/model_8050.pt,8.2,KEEP,latest of run
+logs/rsl_rl/k1_dribble_amp/2026-10-21_22-04-17_dribble_rekick_v32/model_7300.pt,8.2,KEEP,best (peak training reward)
+logs/rsl_rl/k1_dribble_amp/2026-10-21_22-04-17_dribble_rekick_v32/model_8050.pt,8.2,KEEP,latest of run
+logs/rsl_rl/k1_dribble_amp/2026-10-21_23-01-21_dribble_power_v33/model_7350.pt,8.2,KEEP,best (peak training reward)
+logs/rsl_rl/k1_dribble_amp/2026-10-21_23-01-21_dribble_power_v33/model_7750.pt,8.2,KEEP,deployed ONNX (k1_policy_runner); parent of k1_dribble_amp/2026-10-22_00-29-28_dribble_noteacher_v34; parent of k1_dribble_amp/2026-10-22_01-19-57_dribble_sidegate_v35; parent of k1_dribble_amp/2026-10-22_02-10-44_dribble_teachstraight_v36; run metadata
+logs/rsl_rl/k1_dribble_amp/2026-10-21_23-01-21_dribble_power_v33/model_8500.pt,8.2,KEEP,latest of run
+logs/rsl_rl/k1_dribble_amp/2026-10-22_00-29-28_dribble_noteacher_v34/model_8400.pt,8.2,KEEP,best (peak training reward)
+logs/rsl_rl/k1_dribble_amp/2026-10-22_00-29-28_dribble_noteacher_v34/model_8550.pt,8.2,KEEP,latest of run
+logs/rsl_rl/k1_dribble_amp/2026-10-22_01-19-57_dribble_sidegate_v35/model_7800.pt,8.2,KEEP,best (peak training reward)
+logs/rsl_rl/k1_dribble_amp/2026-10-22_01-19-57_dribble_sidegate_v35/model_8250.pt,8.2,KEEP,deployed ONNX (k1_policy_runner)
+logs/rsl_rl/k1_dribble_amp/2026-10-22_01-19-57_dribble_sidegate_v35/model_8550.pt,8.2,KEEP,latest of run
+logs/rsl_rl/k1_dribble_amp/2026-10-22_02-10-44_dribble_teachstraight_v36/model_7950.pt,8.2,KEEP,best (peak training reward)
+logs/rsl_rl/k1_dribble_amp/2026-10-22_02-10-44_dribble_teachstraight_v36/model_8250.pt,8.2,KEEP,deployed ONNX (match by version+step); parent of k1_dribble_amp/2026-10-22_03-01-37_dribble_quickkick_v37; parent of k1_dribble_amp/2026-10-22_04-43-23_dribble_sideoutcome_v38; parent of k1_dribble_amp/2026-10-22_05-34-23_dribble_v36cont_v39; parent of k1_dribble_amp/2026-10-22_06-33-19_dribble_quickpay_v40; parent of k1_dribble_amp/2026-10-22_07-43-06_dribble_bhumanside_v41; parent of k1_dribble_amp/2026-10-22_08-42-34_dribble_sidew_v42; run metadata
+logs/rsl_rl/k1_dribble_amp/2026-10-22_02-10-44_dribble_teachstraight_v36/model_8550.pt,8.2,KEEP,latest of run
+logs/rsl_rl/k1_dribble_amp/2026-10-22_03-01-37_dribble_quickkick_v37/model_8350.pt,8.2,KEEP,best (peak training reward)
+logs/rsl_rl/k1_dribble_amp/2026-10-22_03-01-37_dribble_quickkick_v37/model_9850.pt,8.2,KEEP,latest of run
+logs/rsl_rl/k1_dribble_amp/2026-10-22_04-43-23_dribble_sideoutcome_v38/model_8550.pt,8.2,KEEP,best (peak training reward)
+logs/rsl_rl/k1_dribble_amp/2026-10-22_04-43-23_dribble_sideoutcome_v38/model_9050.pt,8.2,KEEP,latest of run
+logs/rsl_rl/k1_dribble_amp/2026-10-22_05-34-23_dribble_v36cont_v39/model_8650.pt,8.2,KEEP,best (peak training reward)
+logs/rsl_rl/k1_dribble_amp/2026-10-22_05-34-23_dribble_v36cont_v39/model_8750.pt,8.2,KEEP,deployed ONNX (match by version+step)
+logs/rsl_rl/k1_dribble_amp/2026-10-22_05-34-23_dribble_v36cont_v39/model_9000.pt,8.2,KEEP,latest of run
+logs/rsl_rl/k1_dribble_amp/2026-10-22_06-33-19_dribble_quickpay_v40/model_8300.pt,8.2,KEEP,best (peak training reward)
+logs/rsl_rl/k1_dribble_amp/2026-10-22_06-33-19_dribble_quickpay_v40/model_9100.pt,8.2,KEEP,latest of run
+logs/rsl_rl/k1_dribble_amp/2026-10-22_07-43-06_dribble_bhumanside_v41/model_8300.pt,8.2,KEEP,best (peak training reward)
+logs/rsl_rl/k1_dribble_amp/2026-10-22_07-43-06_dribble_bhumanside_v41/model_9000.pt,8.2,KEEP,latest of run
+logs/rsl_rl/k1_dribble_amp/2026-10-22_08-42-34_dribble_sidew_v42/model_10000.pt,8.2,KEEP,latest of run
+logs/rsl_rl/k1_dribble_amp/2026-10-22_08-42-34_dribble_sidew_v42/model_8300.pt,8.2,KEEP,best (peak training reward)
+logs/rsl_rl/k1_dribble_amp/2026-10-22_08-42-34_dribble_sidew_v42/model_8750.pt,8.2,KEEP,deployed ONNX (k1_policy_runner)
+logs/rsl_rl/k1_dribble_amp/2026-10-22_08-42-34_dribble_sidew_v42/model_9250.pt,8.2,KEEP,deployed ONNX (k1_policy_runner); parent of k1_dribble_amp/2026-10-22_13-24-16_dribble_takeover_v43; parent of k1_dribble_amp/2026-10-22_21-18-25_dribble_signedaim_v44; parent of k1_dribble_amp/2026-10-22_23-05-20_dribble_posegate_v45; parent of k1_dribble_amp/2026-10-23_00-54-08_dribble_aimcurr_v46; parent of k1_dribble_amp/2026-10-23_01-52-45_dribble_aimcurrb_v46b; parent of k1_dribble_amp/2026-10-23_03-35-36_dribble_quick_v47; parent of k1_dribble_amp/2026-10-23_04-34-15_dribble_spin_v48; parent of k1_dribble_amp/2026-10-23_05-35-32_dribble_aimwide_v49; parent of k1_dribble_amp/2026-10-23_07-21-01_dribble_headup_v50; run metadata
+logs/rsl_rl/k1_dribble_amp/2026-10-22_08-42-34_dribble_sidew_v42/model_9750.pt,8.2,KEEP,deployed ONNX (k1_policy_runner)
+logs/rsl_rl/k1_dribble_amp/2026-10-22_13-24-16_dribble_takeover_v43/model_10050.pt,8.2,KEEP,latest of run
+logs/rsl_rl/k1_dribble_amp/2026-10-22_13-24-16_dribble_takeover_v43/model_9800.pt,8.2,KEEP,best (peak training reward)
+logs/rsl_rl/k1_dribble_amp/2026-10-22_21-18-25_dribble_signedaim_v44/model_10500.pt,8.2,KEEP,latest of run
+logs/rsl_rl/k1_dribble_amp/2026-10-22_21-18-25_dribble_signedaim_v44/model_9650.pt,8.2,KEEP,best (peak training reward)
+logs/rsl_rl/k1_dribble_amp/2026-10-22_23-05-20_dribble_posegate_v45/model_10550.pt,8.2,KEEP,latest of run
+logs/rsl_rl/k1_dribble_amp/2026-10-22_23-05-20_dribble_posegate_v45/model_9400.pt,8.2,KEEP,best (peak training reward)
+logs/rsl_rl/k1_dribble_amp/2026-10-23_00-54-08_dribble_aimcurr_v46/model_10050.pt,8.2,KEEP,latest of run
+logs/rsl_rl/k1_dribble_amp/2026-10-23_00-54-08_dribble_aimcurr_v46/model_9300.pt,8.2,KEEP,best (peak training reward)
+logs/rsl_rl/k1_dribble_amp/2026-10-23_01-52-45_dribble_aimcurrb_v46b/model_10550.pt,8.2,KEEP,latest of run
+logs/rsl_rl/k1_dribble_amp/2026-10-23_01-52-45_dribble_aimcurrb_v46b/model_9300.pt,8.2,KEEP,best (peak training reward)
+logs/rsl_rl/k1_dribble_amp/2026-10-23_01-52-45_dribble_aimcurrb_v46b/model_9750.pt,8.2,KEEP,deployed ONNX (match by version+step)
+logs/rsl_rl/k1_dribble_amp/2026-10-23_03-35-36_dribble_quick_v47/model_10050.pt,8.2,KEEP,latest of run
+logs/rsl_rl/k1_dribble_amp/2026-10-23_03-35-36_dribble_quick_v47/model_9400.pt,8.2,KEEP,best (peak training reward)
+logs/rsl_rl/k1_dribble_amp/2026-10-23_04-34-15_dribble_spin_v48/model_10050.pt,8.2,KEEP,latest of run
+logs/rsl_rl/k1_dribble_amp/2026-10-23_04-34-15_dribble_spin_v48/model_9350.pt,8.2,KEEP,best (peak training reward)
+logs/rsl_rl/k1_dribble_amp/2026-10-23_05-35-32_dribble_aimwide_v49/model_10250.pt,8.2,KEEP,deployed ONNX (k1_policy_runner); parent of k1_dribble_amp/2026-10-23_08-22-20_dribble_aimhead_v51; run metadata
+logs/rsl_rl/k1_dribble_amp/2026-10-23_05-35-32_dribble_aimwide_v49/model_10550.pt,8.2,KEEP,latest of run
+logs/rsl_rl/k1_dribble_amp/2026-10-23_05-35-32_dribble_aimwide_v49/model_9300.pt,8.2,KEEP,best (peak training reward)
+logs/rsl_rl/k1_dribble_amp/2026-10-23_05-35-32_dribble_aimwide_v49/model_9750.pt,8.2,KEEP,deployed ONNX (k1_policy_runner)
+logs/rsl_rl/k1_dribble_amp/2026-10-23_07-21-01_dribble_headup_v50/model_10050.pt,8.2,KEEP,latest of run
+logs/rsl_rl/k1_dribble_amp/2026-10-23_07-21-01_dribble_headup_v50/model_9600.pt,8.2,KEEP,best (peak training reward)
+logs/rsl_rl/k1_dribble_amp/2026-10-23_07-21-01_dribble_headup_v50/model_9750.pt,8.2,KEEP,deployed ONNX (k1_policy_runner)
+logs/rsl_rl/k1_dribble_amp/2026-10-23_08-22-20_dribble_aimhead_v51/model_10550.pt,8.2,KEEP,best (peak training reward)
+logs/rsl_rl/k1_dribble_amp/2026-10-23_08-22-20_dribble_aimhead_v51/model_10750.pt,8.2,KEEP,deployed ONNX (k1_policy_runner)
+logs/rsl_rl/k1_dribble_amp/2026-10-23_08-22-20_dribble_aimhead_v51/model_11250.pt,8.2,KEEP,deployed ONNX (k1_policy_runner)
+logs/rsl_rl/k1_dribble_amp/2026-10-23_08-22-20_dribble_aimhead_v51/model_11750.pt,8.2,KEEP,deployed ONNX (k1_policy_runner); parent of k1_dribble_amp/2026-10-23_10-38-01_dribble_kickprac_v52; parent of k1_dribble_amp/2026-10-23_12-13-21_dribble_kickalpha_v53; run metadata; script
+logs/rsl_rl/k1_dribble_amp/2026-10-23_08-22-20_dribble_aimhead_v51/model_12050.pt,8.2,KEEP,latest of run
+logs/rsl_rl/k1_dribble_amp/2026-10-23_10-38-01_dribble_kickprac_v52/model_13050.pt,8.2,KEEP,best (peak training reward); latest of run
+logs/rsl_rl/k1_dribble_amp/2026-10-23_12-13-21_dribble_kickalpha_v53/model_11750.pt,8.2,KEEP,best (peak training reward); latest of run
+logs/rsl_rl/k1_dribble_amp/blend_v22v24/b50_v22_2850_v24_4050.pt,6.5,ASK (unreferenced blend/SWA),
+logs/rsl_rl/k1_dribble_amp/blend_v22v24/b70_v24_4050.pt,6.5,KEEP,latest of run
+logs/rsl_rl/k1_dribble_amp/swa_v15/swaA_v15b_12150-12400.pt,6.5,KEEP,deployed ONNX (match by name tokens); parent of k1_dribble_amp/2026-10-19_17-26-39_dribble_deploymatch_v16_ABORTED_no_ball_dr; parent of k1_dribble_amp/2026-10-19_17-44-27_dribble_deploymatch_v16
+logs/rsl_rl/k1_dribble_amp/swa_v15/swaB_bcd_12450-13000.pt,6.5,ASK (unreferenced blend/SWA),
+logs/rsl_rl/k1_dribble_amp/swa_v15/swa_v16_13300-13900.pt,6.5,KEEP,deployed ONNX (match by name tokens); memory note; parent of k1_dribble_amp/2026-10-20_10-06-23_dribble_flatfoot_v17_ABORTED_w200; parent of k1_dribble_amp/2026-10-20_10-07-53_dribble_flatfoot_v17
+logs/rsl_rl/k1_dribble_amp/swa_v15/swa_v17_14200-15400.pt,6.5,KEEP,deployed ONNX (match by name tokens); latest of run; memory note; parent of k1_dribble_amp/2026-10-20_14-41-48_dribble_sigma_v18; parent of k1_dribble_amp/2026-10-20_14-42-08_dribble_fastmix_v19; run metadata
 logs/rsl_rl/k1_dribble_amp/warmstart_s1_2000/model_0.pt,3.0,KEEP,latest of run; parent of k1_dribble_amp/2026-10-18_14-31-50_gvhmr70_from_s1_2000
 logs/rsl_rl/k1_dribble_amp/warmstart_v6_fov/model_0.pt,3.0,KEEP,latest of run; parent of k1_dribble_amp/2026-10-18_18-14-09_gvhmr70_fov_spin_v7
 logs/rsl_rl/k1_kick_approach/2026-09-16_10-21-12_approach_close_fast/model_65700.pt,2.2,KEEP,best (peak training reward)
@@ -1167,7 +316,7 @@ logs/rsl_rl/k1_kick_selfplay_amp/2026-10-13_23-24-12_p2_kick_v15_std04/model_760
 logs/rsl_rl/k1_kick_selfplay_amp/2026-10-13_23-24-12_p2_kick_v15_std04/model_8200.pt,4.8,KEEP,latest of run
 logs/rsl_rl/k1_kick_selfplay_amp/2026-10-14_03-51-23_p2_kick_v16_std025/model_11250.pt,4.8,KEEP,latest of run
 logs/rsl_rl/k1_kick_selfplay_amp/2026-10-14_03-51-23_p2_kick_v16_std025/model_9750.pt,4.8,KEEP,best (peak training reward)
-logs/rsl_rl/k1_kick_selfplay_amp/swa_v15v16/model_9100.pt,4.8,KEEP,benchmark result; code default; deployed ONNX (k1_policy_runner); k1_policy_runner config/code; latest of run; memory note; parent of k1_striker_controller/2026-10-14_12-40-47_controller_v3_mem5s; parent of k1_striker_controller/2026-10-14_18-19-14_controller_v4_ballsearch; parent of k1_striker_controller/2026-10-14_23-00-20_controller_v5_walkrace; parent of k1_striker_controller/2026-10-15_00-42-42_controller_v5b_std05; parent of k1_striker_controller/2026-10-15_16-11-33_controller_v7_swa_fromv2; parent of k1_striker_controller/swa_v4
+logs/rsl_rl/k1_kick_selfplay_amp/swa_v15v16/model_9100.pt,4.8,KEEP,benchmark result; code default; deployed ONNX (k1_policy_runner); k1_policy_runner config/code; latest of run; memory note; parent of k1_striker_controller/2026-10-14_12-40-47_controller_v3_mem5s; parent of k1_striker_controller/2026-10-14_18-19-14_controller_v4_ballsearch; parent of k1_striker_controller/2026-10-14_23-00-20_controller_v5_walkrace; parent of k1_striker_controller/2026-10-15_00-42-42_controller_v5b_std05; parent of k1_striker_controller/2026-10-15_16-11-33_controller_v7_swa_fromv2; parent of k1_striker_controller/swa_v4; script
 logs/rsl_rl/k1_kick_selfplay_amp/swa_v16/model_10100.pt,4.8,ASK (unreferenced blend/SWA),
 logs/rsl_rl/k1_kick_selfplay_amp/swa_v16/model_11100.pt,4.8,KEEP,latest of run
 logs/rsl_rl/k1_kick_stage1_amp/2026-09-30_22-03-48/model_12900.pt,4.8,KEEP,latest of run
@@ -1652,7 +801,7 @@ logs/rsl_rl/k1_kick_stage3_amp/2026-10-08_11-05-43_h011_c1/model_18000.pt,4.8,KE
 logs/rsl_rl/k1_kick_stage3_amp/2026-10-08_11-08-42_champ_h010_c2_17850_x70/model_17149.pt,4.8,KEEP,benchmark result; evolution records; evolution state (champion/archive); latest of run
 logs/rsl_rl/k1_kick_stage3_amp/2026-10-08_12-04-08_h011_c2/model_17600.pt,4.8,KEEP,best (peak training reward)
 logs/rsl_rl/k1_kick_stage3_amp/2026-10-08_12-04-08_h011_c2/model_17650.pt,4.8,KEEP,benchmark result; evolution records
-logs/rsl_rl/k1_kick_stage3_amp/2026-10-08_12-04-08_h011_c2/model_17750.pt,4.8,KEEP,benchmark result; code default; deployed ONNX (k1_policy_runner); evolution records; memory note; parent of k1_dribble_amp/2026-10-21_00-19-57_dribble_kickteacher_v23; parent of k1_dribble_amp/2026-10-21_01-25-46_dribble_kickteacher2_v24_ABORTED_no_kicked_flag; parent of k1_dribble_amp/2026-10-21_01-29-44_dribble_kickteacher2_v24; parent of k1_dribble_amp/2026-10-21_03-20-16_dribble_lightteacher_v25; parent of k1_dribble_amp/2026-10-21_05-24-53_dribble_kickfix_v26; parent of k1_dribble_amp/2026-10-21_09-09-02_dribble_pushside_v27_ABORTED_actor_not_loaded; parent of k1_dribble_amp/2026-10-21_09-43-51_dribble_pushside_v27; parent of k1_dribble_amp/2026-10-21_13-14-20_dribble_safefast_v28; parent of k1_dribble_amp/2026-10-21_14-09-21_dribble_safefast_v28b; parent of k1_dribble_amp/2026-10-21_16-26-43_dribble_caps13_v29; parent of k1_dribble_amp/2026-10-21_17-17-41_dribble_findball_v30; parent of k1_dribble_amp/2026-10-21_18-57-11_dribble_drive12_v31; parent of k1_dribble_amp/2026-10-21_22-04-17_dribble_rekick_v32; parent of k1_dribble_amp/2026-10-21_23-01-21_dribble_power_v33; parent of k1_dribble_amp/2026-10-22_01-19-57_dribble_sidegate_v35; parent of k1_dribble_amp/2026-10-22_02-10-44_dribble_teachstraight_v36; parent of k1_dribble_amp/2026-10-22_03-01-37_dribble_quickkick_v37; parent of k1_dribble_amp/2026-10-22_04-43-23_dribble_sideoutcome_v38; parent of k1_dribble_amp/2026-10-22_05-34-23_dribble_v36cont_v39; parent of k1_dribble_amp/2026-10-22_06-33-19_dribble_quickpay_v40; parent of k1_dribble_amp/2026-10-22_07-43-06_dribble_bhumanside_v41; parent of k1_dribble_amp/2026-10-22_08-42-34_dribble_sidew_v42; parent of k1_dribble_amp/2026-10-22_13-24-16_dribble_takeover_v43; parent of k1_dribble_amp/2026-10-22_21-18-25_dribble_signedaim_v44; parent of k1_dribble_amp/2026-10-22_23-05-20_dribble_posegate_v45; parent of k1_dribble_amp/2026-10-23_00-54-08_dribble_aimcurr_v46; parent of k1_dribble_amp/2026-10-23_01-52-45_dribble_aimcurrb_v46b; parent of k1_dribble_amp/2026-10-23_03-35-36_dribble_quick_v47; parent of k1_dribble_amp/2026-10-23_04-34-15_dribble_spin_v48; parent of k1_dribble_amp/2026-10-23_05-35-32_dribble_aimwide_v49; parent of k1_dribble_amp/2026-10-23_07-21-01_dribble_headup_v50; parent of k1_dribble_amp/2026-10-23_08-22-20_dribble_aimhead_v51; parent of k1_dribble_amp/2026-10-23_10-38-01_dribble_kickprac_v52; parent of k1_dribble_amp/2026-10-23_12-13-21_dribble_kickalpha_v53; run metadata
+logs/rsl_rl/k1_kick_stage3_amp/2026-10-08_12-04-08_h011_c2/model_17750.pt,4.8,KEEP,benchmark result; code default; deployed ONNX (k1_policy_runner); evolution records; memory note; parent of k1_dribble_amp/2026-10-21_00-19-57_dribble_kickteacher_v23; parent of k1_dribble_amp/2026-10-21_01-25-46_dribble_kickteacher2_v24_ABORTED_no_kicked_flag; parent of k1_dribble_amp/2026-10-21_01-29-44_dribble_kickteacher2_v24; parent of k1_dribble_amp/2026-10-21_03-20-16_dribble_lightteacher_v25; parent of k1_dribble_amp/2026-10-21_05-24-53_dribble_kickfix_v26; parent of k1_dribble_amp/2026-10-21_09-09-02_dribble_pushside_v27_ABORTED_actor_not_loaded; parent of k1_dribble_amp/2026-10-21_09-43-51_dribble_pushside_v27; parent of k1_dribble_amp/2026-10-21_13-14-20_dribble_safefast_v28; parent of k1_dribble_amp/2026-10-21_14-09-21_dribble_safefast_v28b; parent of k1_dribble_amp/2026-10-21_16-26-43_dribble_caps13_v29; parent of k1_dribble_amp/2026-10-21_17-17-41_dribble_findball_v30; parent of k1_dribble_amp/2026-10-21_18-57-11_dribble_drive12_v31; parent of k1_dribble_amp/2026-10-21_22-04-17_dribble_rekick_v32; parent of k1_dribble_amp/2026-10-21_23-01-21_dribble_power_v33; parent of k1_dribble_amp/2026-10-22_01-19-57_dribble_sidegate_v35; parent of k1_dribble_amp/2026-10-22_02-10-44_dribble_teachstraight_v36; parent of k1_dribble_amp/2026-10-22_03-01-37_dribble_quickkick_v37; parent of k1_dribble_amp/2026-10-22_04-43-23_dribble_sideoutcome_v38; parent of k1_dribble_amp/2026-10-22_05-34-23_dribble_v36cont_v39; parent of k1_dribble_amp/2026-10-22_06-33-19_dribble_quickpay_v40; parent of k1_dribble_amp/2026-10-22_07-43-06_dribble_bhumanside_v41; parent of k1_dribble_amp/2026-10-22_08-42-34_dribble_sidew_v42; parent of k1_dribble_amp/2026-10-22_13-24-16_dribble_takeover_v43; parent of k1_dribble_amp/2026-10-22_21-18-25_dribble_signedaim_v44; parent of k1_dribble_amp/2026-10-22_23-05-20_dribble_posegate_v45; parent of k1_dribble_amp/2026-10-23_00-54-08_dribble_aimcurr_v46; parent of k1_dribble_amp/2026-10-23_01-52-45_dribble_aimcurrb_v46b; parent of k1_dribble_amp/2026-10-23_03-35-36_dribble_quick_v47; parent of k1_dribble_amp/2026-10-23_04-34-15_dribble_spin_v48; parent of k1_dribble_amp/2026-10-23_05-35-32_dribble_aimwide_v49; parent of k1_dribble_amp/2026-10-23_07-21-01_dribble_headup_v50; parent of k1_dribble_amp/2026-10-23_08-22-20_dribble_aimhead_v51; parent of k1_dribble_amp/2026-10-23_10-38-01_dribble_kickprac_v52; parent of k1_dribble_amp/2026-10-23_12-13-21_dribble_kickalpha_v53; run metadata; script
 logs/rsl_rl/k1_kick_stage3_amp/2026-10-08_12-04-08_h011_c2/model_17850.pt,4.8,KEEP,benchmark result; evolution records
 logs/rsl_rl/k1_kick_stage3_amp/2026-10-08_12-04-08_h011_c2/model_17950.pt,4.8,KEEP,benchmark result; evolution records
 logs/rsl_rl/k1_kick_stage3_amp/2026-10-08_12-04-08_h011_c2/model_18000.pt,4.8,KEEP,benchmark result; evolution records; latest of run
@@ -1823,7 +972,7 @@ logs/rsl_rl/k1_kick_stage3_amp/2026-10-09_06-17-45_h022_c1/model_18500.pt,4.8,KE
 logs/rsl_rl/k1_kick_stage3_amp/2026-10-09_07-17-43_h022_c2/model_18150.pt,4.8,KEEP,benchmark result; evolution records
 logs/rsl_rl/k1_kick_stage3_amp/2026-10-09_07-17-43_h022_c2/model_18250.pt,4.8,KEEP,benchmark result; evolution records
 logs/rsl_rl/k1_kick_stage3_amp/2026-10-09_07-17-43_h022_c2/model_18350.pt,4.8,KEEP,benchmark result; evolution records
-logs/rsl_rl/k1_kick_stage3_amp/2026-10-09_07-17-43_h022_c2/model_18450.pt,4.8,KEEP,K1 notes/docs; benchmark result; deployed ONNX (k1_policy_runner); evolution records; experience repo; memory note
+logs/rsl_rl/k1_kick_stage3_amp/2026-10-09_07-17-43_h022_c2/model_18450.pt,4.8,KEEP,K1 notes/docs; benchmark result; deployed ONNX (k1_policy_runner); evolution records; experience repo; memory note; script
 logs/rsl_rl/k1_kick_stage3_amp/2026-10-09_07-17-43_h022_c2/model_18500.pt,4.8,KEEP,benchmark result; best (peak training reward); evolution records; latest of run
 logs/rsl_rl/k1_kick_stage3_amp/2026-10-09_07-57-56_h023_c0/model_18150.pt,4.8,KEEP,benchmark result
 logs/rsl_rl/k1_kick_stage3_amp/2026-10-09_07-57-56_h023_c0/model_18350.pt,4.8,KEEP,best (peak training reward)
@@ -1844,7 +993,7 @@ logs/rsl_rl/k1_kick_stage3_amp/2026-10-09_10-06-35_h023_c1/model_18700.pt,4.8,KE
 logs/rsl_rl/k1_kick_stage3_amp/2026-10-09_10-06-35_h023_c1/model_18800.pt,4.8,KEEP,benchmark result; evolution records
 logs/rsl_rl/k1_kick_stage3_amp/2026-10-09_10-06-35_h023_c1/model_18900.pt,4.8,KEEP,benchmark result; evolution records
 logs/rsl_rl/k1_kick_stage3_amp/2026-10-09_10-06-35_h023_c1/model_18950.pt,4.8,KEEP,benchmark result; evolution records; latest of run
-logs/rsl_rl/k1_kick_stage3_amp/2026-10-09_10-22-47_champ_h022_c2_18450/model_18450.pt,4.8,KEEP,evolution records; evolution state (champion/archive); latest of run
+logs/rsl_rl/k1_kick_stage3_amp/2026-10-09_10-22-47_champ_h022_c2_18450/model_18450.pt,4.8,KEEP,benchmark result; evolution records; evolution state (champion/archive); latest of run
 logs/rsl_rl/k1_kick_stage3_amp/2026-10-09_11-20-00_bh_prec/model_18450.pt,4.8,KEEP,best (peak training reward); latest of run
 logs/rsl_rl/k1_kick_stage3_amp/2026-10-09_11-20-44_bh_prec2/model_18750.pt,4.8,KEEP,best (peak training reward)
 logs/rsl_rl/k1_kick_stage3_amp/2026-10-09_11-20-44_bh_prec2/model_18949.pt,4.8,KEEP,benchmark result; deployed ONNX (k1_policy_runner); latest of run

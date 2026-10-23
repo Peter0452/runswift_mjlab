@@ -1,19 +1,15 @@
 {
  "n_runs": 427,
- "n_ckpts": 2091,
- "total_gb": 12.620393494,
+ "n_ckpts": 1240,
+ "total_gb": 6.103935509,
  "by_decision": {
   "ASK (unreferenced blend/SWA)": [
-   32,
-   0.15239539200000005
+   34,
+   0.16540065200000004
   ],
   "KEEP": [
-   1094,
-   5.096926652999947
-  ],
-  "KEEP (active run)": [
-   960,
-   7.3576326759999535
+   1201,
+   5.925096083999933
   ],
   "PRUNE (intermediate, unreferenced)": [
    5,
@@ -22,9 +18,8 @@
  },
  "by_status": {
   "PLAIN": 4,
-  "REFERENCED": 143,
-  "NOTABLE": 236,
-  "ACTIVE": 44
+  "REFERENCED": 170,
+  "NOTABLE": 253
  },
  "deployed_matched": 108,
  "deployed_unmatched": [
@@ -624,12 +619,12 @@
   },
   "k1_dribble_amp": {
    "runs": 67,
-   "ckpts": 1011,
-   "gb": 7.6820498230000025,
-   "keep": 1011,
-   "keep_gb": 7.6820498230000025,
-   "active": 44,
-   "notable": 1
+   "ckpts": 160,
+   "gb": 1.1655918380000003,
+   "keep": 160,
+   "keep_gb": 1.1655918380000003,
+   "active": 0,
+   "notable": 18
   },
   "k1_kick_approach": {
    "runs": 47,
