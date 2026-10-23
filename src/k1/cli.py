@@ -75,6 +75,47 @@ def _run_show(args: argparse.Namespace) -> int:
   return 0
 
 
+def _deploy_check(args: argparse.Namespace) -> int:
+  import os
+  import tempfile
+
+  from k1 import runs
+
+  env = dict(os.environ)
+  task = args.task
+  info = None
+  if args.run:
+    info = runs.read(args.run)
+    task = task or info["task"]
+    env.update(info.get("env_vars", {}))
+  if not task:
+    print("give --run RUN_DIR (with run.json) or --task TASK")
+    return 2
+  out = Path(args.out or tempfile.mkdtemp(prefix="deploy_gate_"))
+  proc = subprocess.run(
+    [sys.executable, "-m", "k1.deploy.parity", task, str(Path(args.checkpoint).resolve()),
+     str(out)],
+    cwd=ROOT, env=env, capture_output=True, text=True,
+  )  # fmt: skip
+  lines = [ln for ln in proc.stdout.splitlines() if ln.startswith("GATE ")]
+  if proc.returncode != 0 or not lines:
+    print(
+      "deploy gate crashed:\n"
+      + "\n".join((proc.stderr or proc.stdout).splitlines()[-8:])
+    )
+    return 1
+  result = json.loads(lines[-1][len("GATE ") :])
+  print(json.dumps(result, indent=2))
+  if info is not None:
+    info.setdefault("verdicts", []).append({"kind": "deploy_gate", **result})
+    if result["passed"] and info.get("label") == "research":
+      info["label"] = "deployable"
+    runs.write(Path(args.run), info)
+    print(f"run.json updated: label {info['label']}")
+  print("deploy gate " + ("PASSED" if result["passed"] else "FAILED"))
+  return 0 if result["passed"] else 1
+
+
 def _check(args: argparse.Namespace) -> int:
   py = sys.executable
   steps = [
@@ -126,6 +167,13 @@ def main(argv: list[str] | None = None) -> int:
   p = run.add_parser("show")
   p.add_argument("run_dir")
   p.set_defaults(func=_run_show)
+  dep = sub.add_parser("deploy").add_subparsers(dest="deploy_cmd", required=True)
+  p = dep.add_parser("check")
+  p.add_argument("checkpoint")
+  p.add_argument("--run", help="run directory with run.json (task and env vars)")
+  p.add_argument("--task", help="task id when there is no run.json")
+  p.add_argument("--out", help="where to write the ONNX (default: a temp dir)")
+  p.set_defaults(func=_deploy_check)
   p = sub.add_parser("check")
   p.add_argument("--bench", action="store_true", help="also the champion benchmark")
   p.set_defaults(func=_check)

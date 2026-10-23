@@ -13,6 +13,8 @@ made without asking.
 | 6138b66 | `k1/runs.py`: `run.json` in each run directory (recipe, env vars, methods actually on, git, label `research`, verdicts later) | written by a real 2-iteration `rsw train` smoke run (run deleted afterwards) |
 | 6138b66 | `rsw` CLI (`k1/cli.py`, `pyproject` script): `tasks`, `methods`, `recipe check|diff`, `train` (dry run unless `--go`), `run show`, `check [--bench]` | used for all of the above |
 | 6138b66 | `mjlab/scripts/train.py`: `launch_training(..., log_dir=None)` and `run_log_dir()` so `rsw train` can write `run.json` first (backward compatible) | full test suite |
+| c35e46e | `k1/deploy/contract.py` (rate, joint order, default pose, scales, PD, joint-target clip, torque clip, delay) + `tests/test_deploy_contract.py` | configs unchanged; contract test on walk, kick, dribble, self-play |
+| (this) | Deploy gate `k1/deploy/parity.py` + `rsw deploy check` (export, ONNX metadata vs contract, ONNX vs actor, lost-ball rule) recording a verdict in `run.json` and labelling the run `deployable` | deployed champion h022 passes (ONNX diff 3.8e-6, lost-rule p99 0); metadata check on the four deployed ONNX files |
 
 ## What the checks found
 
@@ -56,13 +58,21 @@ made without asking.
 6. **`rsw train` resumes from `init`** by setting `resume`, `load_run`,
    `load_checkpoint` (the trainer's own mechanism); `warm_start` stays a recipe
    `rl:` field when wanted.
+8. **Lost-rule gate thresholds:** `lost_rule_parity.py` always exits 0, so the gate
+   parses its statistics: pass when p99 |diff| <= 0.01 and at most 1 % of steps
+   differ by > 0.05 (the champion: 0-6 of 1500, the documented edge cases).
+9. **The gold walk's deployed ONNX fails the metadata check:**
+   `../k1_policy_runner/amp_models/model_9950.onnx` has 3-decimal action scales
+   (0.213 for 0.2125, 0.12 for 0.119687; lesson S5 predates the fix). Marked as a
+   strict known failure in `tests/test_deploy_parity.py`. Fix: re-export with
+   `scripts/tools/export_onnx.py --task Mjlab-Velocity-Rough-Amp-DA-Muon-Booster-K1`
+   and deploy it (a runner-side file swap; not done from this repo). Worth checking
+   whether the runner reads the walk's scales from this metadata.
 7. The smoke run used `--agent.logger tensorboard --agent.upload-model False`
    so nothing went to wandb.
 
 ## Not built yet (next)
 
-- Deploy parity gate and labels (`research` → `deployable`), contract tables into
-  `k1/deploy/contract.py`.
 - Verdict schema and `k1/eval` judges (one shape per task), appended to `run.json`.
 - Outer loop (diagnose → designer → recipe → gates → pool → judge → verdict →
   escalate) and inner PBT/PB2 loop; loop state in `experiments/evolution/`
