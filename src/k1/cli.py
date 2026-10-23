@@ -116,6 +116,30 @@ def _deploy_check(args: argparse.Namespace) -> int:
   return 0 if result["passed"] else 1
 
 
+def _judge(args: argparse.Namespace) -> int:
+  from k1 import runs
+  from k1.eval import judges
+
+  env: dict[str, str] = {}
+  task, info = args.task, None
+  if args.run:
+    info = runs.read(args.run)
+    task = task or info["task"]
+    env = info.get("env_vars", {})
+  if not task:
+    print("give --run RUN_DIR (with run.json) or --task TASK")
+    return 2
+  ckpt = str(Path(args.checkpoint).resolve())
+  name = args.name or f"judge_{Path(ckpt).parent.name}_{Path(ckpt).stem}"
+  verdict = judges.run(task, ckpt, name, args.size, env)
+  print(json.dumps(verdict.to_dict(), indent=2))
+  if info is not None:
+    info.setdefault("verdicts", []).append(verdict.to_dict())
+    runs.write(Path(args.run), info)
+    print("verdict appended to run.json")
+  return 0 if verdict.status == "scored" else 1
+
+
 def _check(args: argparse.Namespace) -> int:
   py = sys.executable
   steps = [
@@ -174,6 +198,13 @@ def main(argv: list[str] | None = None) -> int:
   p.add_argument("--task", help="task id when there is no run.json")
   p.add_argument("--out", help="where to write the ONNX (default: a temp dir)")
   p.set_defaults(func=_deploy_check)
+  p = sub.add_parser("judge")
+  p.add_argument("checkpoint")
+  p.add_argument("--run", help="run directory with run.json (task and env vars)")
+  p.add_argument("--task", help="task id when there is no run.json")
+  p.add_argument("--size", default="quick", choices=("quick", "full"))
+  p.add_argument("--name", help="benchmark result name (docs/benchmarks_v2/NAME.json)")
+  p.set_defaults(func=_judge)
   p = sub.add_parser("check")
   p.add_argument("--bench", action="store_true", help="also the champion benchmark")
   p.set_defaults(func=_check)

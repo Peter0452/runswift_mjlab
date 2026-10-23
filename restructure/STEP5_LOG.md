@@ -14,7 +14,8 @@ made without asking.
 | 6138b66 | `rsw` CLI (`k1/cli.py`, `pyproject` script): `tasks`, `methods`, `recipe check|diff`, `train` (dry run unless `--go`), `run show`, `check [--bench]` | used for all of the above |
 | 6138b66 | `mjlab/scripts/train.py`: `launch_training(..., log_dir=None)` and `run_log_dir()` so `rsw train` can write `run.json` first (backward compatible) | full test suite |
 | c35e46e | `k1/deploy/contract.py` (rate, joint order, default pose, scales, PD, joint-target clip, torque clip, delay) + `tests/test_deploy_contract.py` | configs unchanged; contract test on walk, kick, dribble, self-play |
-| (this) | Deploy gate `k1/deploy/parity.py` + `rsw deploy check` (export, ONNX metadata vs contract, ONNX vs actor, lost-ball rule) recording a verdict in `run.json` and labelling the run `deployable` | deployed champion h022 passes (ONNX diff 3.8e-6, lost-rule p99 0); metadata check on the four deployed ONNX files |
+| 86cb231 | Deploy gate `k1/deploy/parity.py` + `rsw deploy check` (export, ONNX metadata vs contract, ONNX vs actor, lost-ball rule) recording a verdict in `run.json` and labelling the run `deployable` | deployed champion h022 passes (ONNX diff 3.8e-6, lost-rule p99 0); metadata check on the four deployed ONNX files |
+| (this) | `k1/eval`: `Verdict` (fixed shape; only `scored` has a score; `promotable` needs a seed-2 confirmation) and judges per task (kick wrapped: bench v2 + `fitness_v2` vs the champion and B-Human; dribble, self-play, striker, B-Human listed with their current tools); `rsw judge` appends the verdict to `run.json` | `tests/test_k1_eval.py`; `rsw judge` on the champion |
 
 ## What the checks found
 
@@ -68,12 +69,21 @@ made without asking.
    `scripts/tools/export_onnx.py --task Mjlab-Velocity-Rough-Amp-DA-Muon-Booster-K1`
    and deploy it (a runner-side file swap; not done from this repo). Worth checking
    whether the runner reads the walk's scales from this metadata.
+10. **Judge noise and promotion:** the champion judged against its own reference
+   scored +10.6 and +29.3 on single quick runs (0 real regressions), so a verdict is
+   `promotable` only with `confirmed=True` (second seed vs the reference's second
+   seed, as `evolve_kick.confirm_and_install` does). Seed-2 confirmation inside
+   `rsw judge` is not built yet.
+11. **CI-less style metrics are findings, not regressions** in the kick judge
+   (`style_selection_pct`, `style_repertoire`), matching golden_bench's UNGATED set;
+   `fitness_v2` itself still counts them (left unchanged: the old loop uses it).
 7. The smoke run used `--agent.logger tensorboard --agent.upload-model False`
    so nothing went to wandb.
 
 ## Not built yet (next)
 
-- Verdict schema and `k1/eval` judges (one shape per task), appended to `run.json`.
+- Wrap the dribble / self-play / striker judges; seed-2 confirmation in `rsw judge`;
+  behaviour checklist filled automatically (falls, posture, peak vs final).
 - Outer loop (diagnose → designer → recipe → gates → pool → judge → verdict →
   escalate) and inner PBT/PB2 loop; loop state in `experiments/evolution/`
   (gitignored). These need decisions from you (GPU budget per night, which
