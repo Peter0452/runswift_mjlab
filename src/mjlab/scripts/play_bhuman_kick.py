@@ -35,8 +35,8 @@ import torch
 import tyro
 from onnx import numpy_helper
 
-from k1.tasks.velocity.mdp.dribble import DribbleCommand
-from k1.tasks.velocity.mdp.kick_loop import KickLoopCommand
+from k1.tasks.dribble.mdp.dribble import DribbleCommand
+from k1.tasks.kick.mdp.kick_loop import KickLoopCommand
 from mjlab.envs import ManagerBasedRlEnv
 from mjlab.envs.mdp.actions import JointPositionAction
 from mjlab.rl import RslRlVecEnvWrapper

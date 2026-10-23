@@ -20,6 +20,16 @@ ALIASES = {
   "mjlab.tasks.kick": "k1.tasks.legacy.kick",
   "mjlab.tasks.getup": "k1.tasks.getup",
   "mjlab.tasks.velocity": "k1.tasks.velocity",
+  # Split out of velocity/mdp by family (old paths chain through the line above).
+  "k1.tasks.velocity.mdp.approach": "k1.tasks.kick.mdp.approach",
+  "k1.tasks.velocity.mdp.kick_loop": "k1.tasks.kick.mdp.kick_loop",
+  "k1.tasks.velocity.mdp.kick_handoff": "k1.tasks.kick.mdp.kick_handoff",
+  "k1.tasks.velocity.mdp.kick_prior": "k1.tasks.kick.mdp.kick_prior",
+  "k1.tasks.velocity.mdp.dribble": "k1.tasks.dribble.mdp.dribble",
+  "k1.tasks.velocity.mdp.dribble_rewards": "k1.tasks.dribble.mdp.dribble_rewards",
+  "k1.tasks.velocity.mdp.self_play": "k1.tasks.selfplay.mdp.self_play",
+  "k1.tasks.velocity.mdp.striker_skills": "k1.tasks.striker.mdp.striker_skills",
+  "k1.tasks.velocity.mdp.walk_params": "k1.tasks.walk.mdp.walk_params",
   "mjlab.tasks.tracking.config.k1": "k1.tasks.legacy.tracking",
 }
 

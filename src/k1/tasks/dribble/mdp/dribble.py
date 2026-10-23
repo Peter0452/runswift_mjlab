@@ -29,7 +29,7 @@ from typing import TYPE_CHECKING, Any, Callable
 
 import torch
 
-from k1.tasks.velocity.mdp.approach import (
+from k1.tasks.kick.mdp.approach import (
   WALK_COMMAND_SPEED,
   ApproachYawCommand,
   ApproachYawCommandCfg,
@@ -37,7 +37,7 @@ from k1.tasks.velocity.mdp.approach import (
   _yaw_angle,
   ball_radius,
 )
-from k1.tasks.velocity.mdp.kick_loop import classify_touch, loft_factor
+from k1.tasks.kick.mdp.kick_loop import classify_touch, loft_factor
 from mjlab.motion.motion_loader import COND_SPEED_SCALE
 
 if TYPE_CHECKING:

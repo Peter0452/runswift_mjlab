@@ -36,7 +36,7 @@ from typing import Any, cast
 import torch
 from tensordict import TensorDict
 
-from k1.tasks.velocity.mdp.self_play import pad_input_columns, resolve_checkpoint
+from k1.tasks.selfplay.mdp.self_play import pad_input_columns, resolve_checkpoint
 from mjlab.amp.algorithms.amp_ppo import AmpPPO
 from mjlab.amp.runners.amp_on_policy_runner import AmpRslRlMuonPpoAlgorithmCfg
 

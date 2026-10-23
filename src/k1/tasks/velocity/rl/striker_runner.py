@@ -22,12 +22,12 @@ import torch
 from rsl_rl.algorithms import PPO
 from tensordict import TensorDict
 
-from k1.tasks.velocity.mdp import striker_skills as skills
-from k1.tasks.velocity.mdp.self_play import (
+from k1.tasks.selfplay.mdp.self_play import (
   CONTROLLER_VIS_LEGEND,
   OpponentPolicyAction,
   SelfPlayKickCommand,
 )
+from k1.tasks.striker.mdp import striker_skills as skills
 from k1.tasks.velocity.rl.selfplay_runner import actor_std_range, sync_opponent
 from mjlab.rl import MjlabOnPolicyRunner, RslRlOnPolicyRunnerCfg, RslRlVecEnvWrapper
 

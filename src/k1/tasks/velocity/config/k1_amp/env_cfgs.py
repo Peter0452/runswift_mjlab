@@ -15,8 +15,8 @@ from k1.robot.whirlwind_sensors import (
   FootClearanceSensorCfg,
   FootSoleGridPatternCfg,
 )
+from k1.tasks.kick.mdp import approach as approach_mdp
 from k1.tasks.velocity import mdp
-from k1.tasks.velocity.mdp import approach as approach_mdp
 from k1.tasks.velocity.velocity_amp_env_cfg import make_velocity_env_cfg
 from mjlab.asset_zoo.props.ball import BALL_XML, get_ball_radius
 from mjlab.entity import EntityCfg

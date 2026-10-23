@@ -524,8 +524,8 @@ def test_nubots_speed_runner_is_configured_for_scratch():
 
 def test_k1_env_cfg_includes_feet_swing():
   from k1.tasks.velocity.config.k1.env_cfgs import booster_k1_flat_env_cfg
-  from k1.tasks.velocity.mdp import walk_params
   from k1.tasks.velocity.mdp.rewards import feet_swing
+  from k1.tasks.walk.mdp import walk_params
 
   cfg = booster_k1_flat_env_cfg(play=False)
   term = cfg.rewards["feet_swing"]

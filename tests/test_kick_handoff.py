@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import torch
 
-from k1.tasks.velocity.mdp.kick_handoff import (
+from k1.tasks.kick.mdp.kick_handoff import (
   DEFAULT_KICK_CKPTS,
   sample_handoff_command,
   select_handoff_ids,

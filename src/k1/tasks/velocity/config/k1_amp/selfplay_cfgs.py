@@ -4,16 +4,16 @@ from __future__ import annotations
 
 import dataclasses
 
-from k1.tasks.velocity import mdp
-from k1.tasks.velocity.mdp.kick_loop import (
+from k1.tasks.kick.mdp.kick_loop import (
   HEAD_FULL_SEARCH_PITCH,
   HEAD_FULL_SEARCH_YAW,
 )
-from k1.tasks.velocity.mdp.self_play import (
+from k1.tasks.selfplay.mdp.self_play import (
   SELFPLAY_KICK_CKPT,
   OpponentPolicyActionCfg,
   SelfPlayKickCommandCfg,
 )
+from k1.tasks.velocity import mdp
 from k1.tasks.velocity.rl.anchor import with_anchor
 from k1.tasks.velocity.rl.selfplay_runner import SelfPlayAmpRunnerCfg
 from k1.tasks.velocity.rl.striker_runner import StrikerControllerRunnerCfg
@@ -305,7 +305,7 @@ def booster_k1_kick_selfplay_runner_cfg() -> SelfPlayAmpRunnerCfg:
   cfg.algorithm.symmetry_cfg = dict(
     cfg.algorithm.symmetry_cfg,
     data_augmentation_func=(
-      "k1.tasks.velocity.mdp.self_play:augment_symmetries_selfplay"
+      "k1.tasks.selfplay.mdp.self_play:augment_symmetries_selfplay"
     ),
   )
   cfg.experiment_name = "k1_kick_selfplay_amp"

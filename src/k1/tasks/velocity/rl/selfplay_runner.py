@@ -13,7 +13,7 @@ from dataclasses import dataclass
 
 import torch
 
-from k1.tasks.velocity.mdp.self_play import (
+from k1.tasks.selfplay.mdp.self_play import (
   OpponentPolicyAction,
   pad_input_columns,
   resolve_checkpoint,

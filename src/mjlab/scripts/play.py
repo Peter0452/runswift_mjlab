@@ -148,7 +148,7 @@ def run_play(task_id: str, cfg: PlayConfig):
       twist.spawn_view_half_angle = 0.5 * (hi - lo)
       twist.side_drill_prob = 0.0
     if cfg.kick_range is not None:
-      from k1.tasks.velocity.mdp.approach import KICK_RANGE_NAMES, range_bin
+      from k1.tasks.kick.mdp.approach import KICK_RANGE_NAMES, range_bin
 
       twist.kick_range = KICK_RANGE_NAMES.index(cfg.kick_range)
       band = range_bin(twist.target_distance_bins, twist.range_edges, twist.kick_range)

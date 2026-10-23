@@ -9,7 +9,7 @@ from conftest import get_test_device
 from rsl_rl.models import MLPModel
 from tensordict import TensorDict
 
-from k1.tasks.velocity.mdp.self_play import (
+from k1.tasks.selfplay.mdp.self_play import (
   OpponentPolicyAction,
   OpponentPolicyActionCfg,
   OpponentSeedCfg,

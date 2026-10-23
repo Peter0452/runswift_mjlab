@@ -6,7 +6,7 @@ import json
 import os
 from pathlib import Path
 
-from k1.tasks.velocity.mdp.dribble_rewards import KICK_GROUP_TERMS
+from k1.tasks.dribble.mdp.dribble_rewards import KICK_GROUP_TERMS
 from mjlab.amp.runners import (
   AmpDiscriminatorCfg,
   AmpOnPolicyRunnerCfg,
@@ -150,7 +150,7 @@ def booster_k1_dribble_runner_cfg() -> AmpOnPolicyRunnerCfg:
   cfg.algorithm.symmetry_cfg = dict(
     _AMP_SYMMETRY_CFG,
     data_augmentation_func=(
-      "k1.tasks.velocity.mdp.dribble:augment_symmetries_dribble"
+      "k1.tasks.dribble.mdp.dribble:augment_symmetries_dribble"
     ),
   )
   # v19 (2026-10-20): DRIBBLE_GENES {"amp_mix": "fast"} swaps in the fast weights

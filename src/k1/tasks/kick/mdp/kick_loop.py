@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING
 
 import torch
 
-from k1.tasks.velocity.mdp.approach import (
+from k1.tasks.kick.mdp.approach import (
   BALL_ALPHA_RANGE,
   BALL_MASS,
   BALL_RADIUS,

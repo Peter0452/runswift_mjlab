@@ -31,12 +31,12 @@ from typing import TYPE_CHECKING
 
 import torch
 
-from k1.tasks.velocity.mdp.approach import (
+from k1.tasks.dribble.mdp.dribble import _dribble, dribble_window_success
+from k1.tasks.kick.mdp.approach import (
   _yaw_angle,
   approach_view,
   speed_limit_excess,
 )
-from k1.tasks.velocity.mdp.dribble import _dribble, dribble_window_success
 from mjlab.managers.reward_manager import RewardTermCfg
 from mjlab.utils.lab_api.math import wrap_to_pi
 

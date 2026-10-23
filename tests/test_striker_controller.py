@@ -10,14 +10,14 @@ from rsl_rl.models import MLPModel, RNNModel
 from rsl_rl.storage import RolloutStorage
 from tensordict import TensorDict
 
-from k1.tasks.velocity.mdp import striker_skills as skills
-from k1.tasks.velocity.mdp.self_play import (
+from k1.tasks.selfplay.mdp.self_play import (
   OpponentPolicyAction,
   OpponentPolicyActionCfg,
   OpponentSeedCfg,
   frozen_policy_from_state_dict,
   race_time,
 )
+from k1.tasks.striker.mdp import striker_skills as skills
 from k1.tasks.velocity.rl.selfplay_runner import clamp_action_std
 from k1.tasks.velocity.rl.striker_runner import (
   MemoryResetPPO,

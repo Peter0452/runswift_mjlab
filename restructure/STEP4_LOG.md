@@ -34,7 +34,8 @@ when kick-loop code is touched.
 | 311ad64 | Legacy kick (`Mjlab-Kick-*`, arc kick, walk-AMP kick) → `k1/tasks/legacy/kick/`; alias `mjlab.tasks.kick` | 1273 pass, golden ok |
 | e9587e3 | K1 tracking kick tasks (`Mjlab-Tracking-Flat-Booster-K1-Kick*`) → `k1/tasks/legacy/tracking/` | 1273 pass, golden ok |
 | 3356ca6 | Getup (`Mjlab-Getup-Flat-Booster-K1`) → `k1/tasks/getup/` | 1273 pass, golden ok |
-| (this) | Whole `mjlab.tasks.velocity` (walk, kick, dribble, self-play, striker, AMP configs and runners; all K1 now) → `k1/tasks/velocity/` | 1273 pass, golden ok, bench ok (2 separated) |
+| ab41a60 | Whole `mjlab.tasks.velocity` (walk, kick, dribble, self-play, striker, AMP configs and runners; all K1 now) → `k1/tasks/velocity/` | 1273 pass, golden ok, bench ok (2 separated) |
+| (this) | Family mdp modules out of `velocity/mdp`: approach, kick_loop, kick_handoff, kick_prior → `kick/mdp/`; dribble, dribble_rewards → `dribble/mdp/`; self_play → `selfplay/mdp/`; striker_skills → `striker/mdp/`; walk_params → `walk/mdp/`. `velocity.mdp` re-exports them; namespace verified identical (482 names, 0 differences vs the previous commit) | 1273 pass, golden ok (one intermittent fail, see note 7), bench ok (2 separated) |
 
 ## Best guesses (review these)
 
@@ -53,6 +54,16 @@ when kick-loop code is touched.
    `rewards.py` were edited to use them, so they stay in the framework for now
    (moving them would make mjlab import k1). Listed in "Our edits inside the
    framework" below.
+7. **Intermittent golden failure (not treated as a regression):** after the mdp split one
+   full `golden.py check` had `kick_h011_teacher` fresh-reset obs drift 2.5 (actions on
+   stored obs: diff 0). It passed alone and in two more full runs, and the `mdp`
+   namespace is identical name by name, so the guess is GPU nondeterminism in the reset
+   (one sampled value). Seen once in ~12 golden runs tonight. Watch for it; if it recurs,
+   pin the reset (deterministic warp, or compare with a tolerance on sampled spawns).
+8. **`velocity/mdp/__init__` import order is load-bearing** (star imports, later wins):
+   marked `# ruff: noqa: I001`. Family `mdp/__init__` files import the aggregate first so
+   direct imports load in the old order. Transitional; goes away when configs import
+   family modules directly.
 
 ## Our edits inside the framework (left in `src/mjlab/`, to list or move later)
 

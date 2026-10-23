@@ -2,8 +2,8 @@
 
 import pytest
 
+from k1.tasks.kick.mdp.approach import ApproachYawCommandCfg
 from k1.tasks.velocity.mdp import UniformVelocityCommandCfg
-from k1.tasks.velocity.mdp.approach import ApproachYawCommandCfg
 from k1.tasks.velocity.mdp.velocity_command import ParameterWalkCommandCfg
 from mjlab.asset_zoo.robots import G1_ACTION_SCALE, GO1_ACTION_SCALE
 from mjlab.envs.mdp.actions import JointPositionActionCfg

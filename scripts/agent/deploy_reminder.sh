@@ -6,7 +6,7 @@ f="$(jq -r '.tool_input.file_path // .tool_response.filePath // empty' 2>/dev/nu
 [ -n "$f" ] || exit 0
 
 # What the policy sees or does on the robot. Current layout and the planned k1/ package.
-pattern='(tasks/velocity/mdp/(approach|kick_loop|dribble|observations|self_play|striker_skills|decap)\.py'
+pattern='(tasks/(velocity|kick|dribble|selfplay|striker)/mdp/(approach|kick_loop|dribble|observations|self_play|striker_skills|decap)\.py'
 pattern+='|tasks/velocity/config/k1_amp/env_cfgs\.py|asset_zoo/robots/booster_k1/|envs/mdp/actions/'
 pattern+='|export_onnx\.py|/k1/(deploy|robot)/|/k1/common/(vision|ball)\.py|k1_policy_runner/)'
 echo "$f" | grep -qE "$pattern" || exit 0

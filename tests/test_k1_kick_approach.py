@@ -7,11 +7,7 @@ import math
 import torch
 
 import mjlab.tasks  # noqa: F401
-from k1.tasks.velocity.mdp.amp_symmetry import (
-  POLICY_DIM_KICK_STAGE1,
-  flip_k1_policy_obs_left_right,
-)
-from k1.tasks.velocity.mdp.approach import (
+from k1.tasks.kick.mdp.approach import (
   FOV_HALF_ANGLE,
   STAND_DISTANCE,
   WEDGE_HALF_ANGLE,
@@ -23,6 +19,10 @@ from k1.tasks.velocity.mdp.approach import (
   range_one_hot,
   speed_limit_excess,
   stand_yaw_quality,
+)
+from k1.tasks.velocity.mdp.amp_symmetry import (
+  POLICY_DIM_KICK_STAGE1,
+  flip_k1_policy_obs_left_right,
 )
 from mjlab.tasks.registry import load_env_cfg, load_rl_cfg
 

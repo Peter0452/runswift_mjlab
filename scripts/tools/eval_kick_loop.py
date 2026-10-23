@@ -20,13 +20,13 @@ import torch
 os.environ["KICK_EVAL"] = "1"  # no mid-kick starts in evaluation
 
 import mjlab.tasks  # noqa: F401  # isort: skip
-from k1.tasks.velocity import mdp as vmdp
-from k1.tasks.velocity.mdp.kick_loop import (
+from k1.tasks.kick.mdp.kick_loop import (
   KickLoopCommand,
   _lateral_gaps,
   arm_pose_deviation,
   knee_gap,
 )
+from k1.tasks.velocity import mdp as vmdp
 from mjlab.envs import ManagerBasedRlEnv
 from mjlab.managers.event_manager import EventTermCfg
 from mjlab.rl import RslRlVecEnvWrapper

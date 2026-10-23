@@ -4,7 +4,7 @@ from types import SimpleNamespace
 
 import torch
 
-from k1.tasks.velocity.mdp import self_play
+from k1.tasks.selfplay.mdp import self_play
 
 
 def _step(cmd, learner, opponent):
