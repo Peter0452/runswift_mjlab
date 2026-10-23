@@ -1,28 +1,28 @@
 {
- "n_runs": 430,
- "n_ckpts": 10040,
- "total_gb": 49.678287227,
+ "n_runs": 427,
+ "n_ckpts": 2091,
+ "total_gb": 12.620393494,
  "by_decision": {
   "ASK (unreferenced blend/SWA)": [
    32,
    0.15239539200000005
   ],
   "KEEP": [
-   1103,
-   5.139401267999948
-  ],
-  "PRUNE (intermediate, unreferenced)": [
-   7945,
-   37.02885789100256
+   1094,
+   5.096926652999947
   ],
   "KEEP (active run)": [
    960,
    7.3576326759999535
+  ],
+  "PRUNE (intermediate, unreferenced)": [
+   5,
+   0.013438772999999998
   ]
  },
  "by_status": {
   "PLAIN": 4,
-  "REFERENCED": 146,
+  "REFERENCED": 143,
   "NOTABLE": 236,
   "ACTIVE": 44
  },
@@ -69,8 +69,8 @@
   ],
   [
    "amp_models/model_9950.onnx",
-   "logs/rsl_rl/k1_velocity_amp_symmetric_muon_wwcmu30/2026-09-20_21-17-22/model_9950.pt",
-   "deployed ONNX (match by name tokens)"
+   "logs/rsl_rl/k1_velocity_amp_symmetric_muon_wwcmu50_roughft/2026-09-21_20-34-24_stageA/model_9950.pt",
+   "deployed ONNX (exact: identical export in run dir)"
   ],
   [
    "dribble_models/k1_dribble_aimcurr_v46b_9750.onnx",
@@ -205,7 +205,7 @@
   [
    "kick_loop_models/2026-10-02_17-25-32_stage3_v31.onnx",
    "logs/rsl_rl/k1_kick_stage3_amp/2026-10-02_17-25-32_stage3_v31/model_5700.pt",
-   "deployed ONNX (k1_policy_runner)"
+   "deployed ONNX (exact: identical export in run dir)"
   ],
   [
    "kick_loop_models/2026-10-03_12-12-18_stage3_v50.onnx",
@@ -615,8 +615,8 @@
   },
   "k1_bhuman_kick": {
    "runs": 4,
-   "ckpts": 28,
-   "gb": 0.072576694,
+   "ckpts": 26,
+   "gb": 0.068101728,
    "keep": 26,
    "keep_gb": 0.068101728,
    "active": 0,
@@ -624,8 +624,8 @@
   },
   "k1_dribble_amp": {
    "runs": 67,
-   "ckpts": 1509,
-   "gb": 10.917743265,
+   "ckpts": 1011,
+   "gb": 7.6820498230000025,
    "keep": 1011,
    "keep_gb": 7.6820498230000025,
    "active": 44,
@@ -633,26 +633,26 @@
   },
   "k1_kick_approach": {
    "runs": 47,
-   "ckpts": 994,
-   "gb": 2.5999093209999997,
+   "ckpts": 73,
+   "gb": 0.20211863499999994,
    "keep": 69,
    "keep_gb": 0.19062730699999994,
    "active": 0,
    "notable": 14
   },
   "k1_kick_approach_amp": {
-   "runs": 11,
-   "ckpts": 718,
-   "gb": 3.413961966,
-   "keep": 21,
-   "keep_gb": 0.093922769,
+   "runs": 10,
+   "ckpts": 18,
+   "gb": 0.07963272400000002,
+   "keep": 18,
+   "keep_gb": 0.07963272400000002,
    "active": 0,
-   "notable": 6
+   "notable": 5
   },
   "k1_kick_selfplay_amp": {
    "runs": 18,
-   "ckpts": 609,
-   "gb": 2.45930006,
+   "ckpts": 41,
+   "gb": 0.196297675,
    "keep": 41,
    "keep_gb": 0.196297675,
    "active": 0,
@@ -660,8 +660,8 @@
   },
   "k1_kick_stage1_amp": {
    "runs": 2,
-   "ckpts": 300,
-   "gb": 1.5000904780000002,
+   "ckpts": 4,
+   "gb": 0.020787394,
    "keep": 4,
    "keep_gb": 0.020787394,
    "active": 0,
@@ -669,8 +669,8 @@
   },
   "k1_kick_stage3_amp": {
    "runs": 234,
-   "ckpts": 2587,
-   "gb": 12.310475002999974,
+   "ckpts": 831,
+   "gb": 3.945988273000012,
    "keep": 831,
    "keep_gb": 3.945988273000012,
    "active": 0,
@@ -678,8 +678,8 @@
   },
   "k1_kick_tracking": {
    "runs": 8,
-   "ckpts": 346,
-   "gb": 3.467841458,
+   "ckpts": 17,
+   "gb": 0.170491007,
    "keep": 17,
    "keep_gb": 0.170491007,
    "active": 0,
@@ -687,8 +687,8 @@
   },
   "k1_kick_walkamp_amp_da_muon": {
    "runs": 5,
-   "ckpts": 127,
-   "gb": 0.600725257,
+   "ckpts": 9,
+   "gb": 0.042570759,
    "keep": 9,
    "keep_gb": 0.042570759,
    "active": 0,
@@ -696,8 +696,8 @@
   },
   "k1_kick_walkamp_da_muon": {
    "runs": 9,
-   "ckpts": 412,
-   "gb": 1.399567676,
+   "ckpts": 18,
+   "gb": 0.061145648000000004,
    "keep": 18,
    "keep_gb": 0.061145648000000004,
    "active": 0,
@@ -705,8 +705,8 @@
   },
   "k1_striker_controller": {
    "runs": 10,
-   "ckpts": 127,
-   "gb": 0.210392382,
+   "ckpts": 19,
+   "gb": 0.03700066599999999,
    "keep": 18,
    "keep_gb": 0.03505322099999999,
    "active": 0,
@@ -723,8 +723,8 @@
   },
   "k1_velocity_amp_symmetric_muon": {
    "runs": 1,
-   "ckpts": 169,
-   "gb": 0.793857675,
+   "ckpts": 2,
+   "gb": 0.009394794,
    "keep": 2,
    "keep_gb": 0.009394794,
    "active": 0,
@@ -732,30 +732,30 @@
   },
   "k1_velocity_amp_symmetric_muon_wwcmu30": {
    "runs": 1,
-   "ckpts": 601,
-   "gb": 2.823170873,
-   "keep": 3,
-   "keep_gb": 0.014092285,
+   "ckpts": 2,
+   "gb": 0.009394888,
+   "keep": 2,
+   "keep_gb": 0.009394888,
    "active": 0,
    "notable": 1
   },
   "k1_velocity_amp_symmetric_muon_wwcmu45_roughft": {
-   "runs": 5,
-   "ckpts": 869,
-   "gb": 4.082070245,
-   "keep": 9,
-   "keep_gb": 0.042276128999999996,
+   "runs": 4,
+   "ckpts": 7,
+   "gb": 0.032881241,
+   "keep": 7,
+   "keep_gb": 0.032881241,
    "active": 0,
    "notable": 0
   },
   "k1_velocity_amp_symmetric_muon_wwcmu50_roughft": {
-   "runs": 6,
-   "ckpts": 641,
-   "gb": 3.011039879,
-   "keep": 13,
-   "keep_gb": 0.061065529,
+   "runs": 5,
+   "ckpts": 10,
+   "gb": 0.046973244000000004,
+   "keep": 10,
+   "keep_gb": 0.046973244000000004,
    "active": 0,
-   "notable": 0
+   "notable": 1
   }
  }
 }

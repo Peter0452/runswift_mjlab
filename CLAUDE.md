@@ -1,3 +1,9 @@
+# Project knowledge
+
+This fork trains Booster K1 football skills. Before working on a skill, read
+`knowledge/INDEX.md`; objectives and standing decisions are in
+`knowledge/objectives.md` and must not change without asking the user.
+
 # Development Workflow
 
 **Always use `uv run`, not python**.

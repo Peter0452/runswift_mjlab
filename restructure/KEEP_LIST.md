@@ -33,6 +33,24 @@ Files in this folder:
 | A9 | No cold backup | approved |
 | — | Git: snapshot on `archive/pre-restructure-2026-10-23`; stashes saved as `archive/selfplay-stash-*` and `archive/stash-*`; `git gc` | **Done**: `.git` 17 GB → 148 MB |
 
+### Incident found during Step 2 (2026-10-23)
+
+Three run directories in `logs/rsl_rl` are symlinks to runs in other
+experiments (`wwcmu45_roughft/2026-09-20_21-17-22` → wwcmu30,
+`wwcmu50_roughft/2026-09-21_09-46-12_trk275` → wwcmu45,
+`k1_kick_approach_amp/2026-09-30_22-03-48` → stage 1). The inventory listed
+each alias as its own run, so pruning through an alias deleted
+`k1_velocity_amp_symmetric_muon_wwcmu30/2026-09-20_21-17-22/model_9950.pt`,
+which the real run had marked KEEP. It was kept only because of a wrong
+deployed-ONNX match: the deployed `amp_models/model_9950.onnx` is
+byte-identical to the gold walk's export
+(`wwcmu50_roughft/2026-09-21_20-34-24_stageA/model_9950.onnx`), whose `.pt`
+is intact. So the lost file was an ordinary intermediate checkpoint; nothing
+referenced is missing (all 2,091 kept rows checked). Fixed in `inventory.py`:
+symlinked run dirs are skipped, deployed models are matched by exact ONNX hash
+first, and "active" uses checkpoint times only (deleting files had bumped the
+directory times). The CSVs here are the corrected run.
+
 ## Decisions needed from you
 
 | # | Question | Recommendation |

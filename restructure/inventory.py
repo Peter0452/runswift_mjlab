@@ -1,6 +1,6 @@
 """Read-only checkpoint/run inventory for the runswift_mjlab keep-list."""
 
-import csv, json, os, re, sys, time
+import csv, hashlib, json, os, re, sys, time
 from collections import defaultdict
 from pathlib import Path
 
@@ -25,12 +25,18 @@ for exp in sorted(LOGS.iterdir()):
       runs.setdefault(key, {"exp": exp.name, "run": "_loose", "dir": exp, "ckpts": []})
       runs[key]["ckpts"].append(p)
     elif p.is_dir():
+      # A symlinked run dir is an alias of a run in another experiment. Listing
+      # it too gave the same files two keep decisions, and pruning through the
+      # alias deleted one the real run kept (2026-10-23).
+      if p.is_symlink():
+        continue
       key = f"{exp.name}/{p.name}"
       pts = [q for q in p.rglob("*.pt") if q.is_file() and not q.is_symlink()]
       runs[key] = {"exp": exp.name, "run": p.name, "dir": p, "ckpts": pts}
 for key, r in runs.items():
   r["short"] = TS.sub("", r["run"])
-  r["mtime"] = max([os.path.getmtime(q) for q in r["ckpts"]] + [os.path.getmtime(r["dir"])])
+  # Checkpoint times only: deleting files bumps the directory mtime.
+  r["mtime"] = max((os.path.getmtime(q) for q in r["ckpts"]), default=os.path.getmtime(r["dir"]))
   r["active"] = r["mtime"] >= ACTIVE_SINCE
   def order(q):
     m = STEP.search(q.name)
@@ -143,8 +149,31 @@ for f, lab in texts():
 
 # ---------- deployed ONNX in k1_policy_runner ----------
 deployed, unmatched = [], []
+def _md5(path):
+  h = hashlib.md5()
+  with open(path, "rb") as fh:
+    for chunk in iter(lambda: fh.read(1 << 20), b""):
+      h.update(chunk)
+  return h.hexdigest()
+
+
+# Exact matches first: a run dir often holds the ONNX it exported.
+run_onnx = {}
+for rk, r in runs.items():
+  for q in r["dir"].glob("*.onnx"):
+    m = re.search(r"model_(\d+)\.onnx$", q.name)
+    c = ck_in(rk, step=int(m.group(1))) if m else (
+      str(r["ckpts"][-1].relative_to(REPO)) if r["ckpts"] else None)
+    if c:
+      run_onnx.setdefault(_md5(q), c)
+
 for f in sorted(RUNNER.rglob("*.onnx")):
   if "build" in f.parts:
+    continue
+  exact = run_onnx.get(_md5(f))
+  if exact:
+    ckpts[exact]["reasons"].add("deployed ONNX (exact: identical export in run dir)")
+    deployed.append((str(f.relative_to(RUNNER)), exact, "deployed ONNX (exact: identical export in run dir)"))
     continue
   stem = f.stem
   sub = f.parent.name
@@ -232,7 +261,7 @@ with open(OUT / "checkpoints.csv", "w", newline="") as fh:
     w.writerow([c, f"{d['size']/1e6:.1f}", d["decision"], "; ".join(sorted(d["reasons"]))])
 
 notable_labels = {"evolution state (champion/archive)", "curated checkpoints/README", "memory note",
-                  "deployed ONNX (k1_policy_runner)", "deployed ONNX (match by version+step)", "deployed ONNX (match by name tokens)", "deployed ONNX (probable: unique step)", "K1 notes/docs", "evolution records", "experience repo"}
+                  "deployed ONNX (k1_policy_runner)", "deployed ONNX (exact: identical export in run dir)", "deployed ONNX (match by version+step)", "deployed ONNX (match by name tokens)", "deployed ONNX (probable: unique step)", "K1 notes/docs", "evolution records", "experience repo"}
 rows = []
 for rk, r in sorted(runs.items()):
   cs = [ckpts[str(q.relative_to(REPO))] for q in r["ckpts"]]
