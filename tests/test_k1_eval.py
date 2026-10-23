@@ -25,7 +25,7 @@ def test_promotion_needs_a_confirmed_clean_gain() -> None:
 
 
 def test_kick_judge_scores_the_champion_against_itself_as_zero() -> None:
-  ref = json.loads(judges.KICK_REFERENCE["quick"].read_text())
+  ref = json.loads(judges.KICK_REFERENCE[("quick", 1)].read_text())
   total, regressions, _ = judges.score_kick(ref, "quick")
   assert total == 0.0 and regressions == []
 

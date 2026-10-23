@@ -7,6 +7,14 @@ rsw recipe diff PATH RUN_DIR   compare a recipe with a past run's params
 rsw train PATH [--go] [-- ARGS]  train a recipe (dry run without --go); ARGS go
                                to the trainer, e.g. --agent.max-iterations 100
 rsw run show RUN_DIR           a run's run.json
+rsw judge CKPT [--run RUN_DIR | --task TASK] [--size quick|full] [--confirm]
+                               score a checkpoint on its task's fixed benchmark
+                               (default env; --confirm: full, seeds 1 and 2);
+                               appends the verdict to run.json
+rsw deploy check CKPT [--run RUN_DIR | --task TASK]
+                               deploy gate: export, ONNX parity, contract
+                               metadata, lost-ball rule; records the result in
+                               run.json and labels the run deployable
 rsw check [--bench]            the safety net (tests/golden/README.md)
 """
 
@@ -120,18 +128,16 @@ def _judge(args: argparse.Namespace) -> int:
   from k1 import runs
   from k1.eval import judges
 
-  env: dict[str, str] = {}
   task, info = args.task, None
   if args.run:
     info = runs.read(args.run)
     task = task or info["task"]
-    env = info.get("env_vars", {})
   if not task:
     print("give --run RUN_DIR (with run.json) or --task TASK")
     return 2
   ckpt = str(Path(args.checkpoint).resolve())
   name = args.name or f"judge_{Path(ckpt).parent.name}_{Path(ckpt).stem}"
-  verdict = judges.run(task, ckpt, name, args.size, env)
+  verdict = judges.run(task, ckpt, name, args.size, confirm=args.confirm)
   print(json.dumps(verdict.to_dict(), indent=2))
   if info is not None:
     info.setdefault("verdicts", []).append(verdict.to_dict())
@@ -204,6 +210,9 @@ def main(argv: list[str] | None = None) -> int:
   p.add_argument("--task", help="task id when there is no run.json")
   p.add_argument("--size", default="quick", choices=("quick", "full"))
   p.add_argument("--name", help="benchmark result name (docs/benchmarks_v2/NAME.json)")
+  p.add_argument(
+    "--confirm", action="store_true", help="full benchmark, seeds 1 and 2 (promotion)"
+  )
   p.set_defaults(func=_judge)
   p = sub.add_parser("check")
   p.add_argument("--bench", action="store_true", help="also the champion benchmark")
