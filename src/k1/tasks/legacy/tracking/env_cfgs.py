@@ -23,6 +23,7 @@ from k1.robot.k1_whirlwind_constants import (
   ACTUATOR_R14,
 )
 from k1.tasks.legacy.kick.mdp.commands import UniformGoalPositionCommandCfg
+from k1.tasks.legacy.tracking.kick_motion import KICK_TRACKING_NPZ
 from mjlab.asset_zoo.props.ball import get_ball_radius, get_ball_spec
 from mjlab.asset_zoo.props.goal import get_goal_spec
 from mjlab.entity import EntityArticulationInfoCfg, EntityCfg
@@ -35,7 +36,6 @@ from mjlab.managers.observation_manager import ObservationGroupCfg, ObservationT
 from mjlab.managers.reward_manager import RewardTermCfg
 from mjlab.managers.scene_entity_config import SceneEntityCfg
 from mjlab.sensor import ContactMatch, ContactSensorCfg
-from mjlab.tasks.tracking.config.k1.kick_motion import KICK_TRACKING_NPZ
 from mjlab.tasks.tracking.mdp import MotionCommandCfg
 from mjlab.tasks.tracking.mdp.events import place_goal_at_command
 from mjlab.tasks.tracking.mdp.observations import (

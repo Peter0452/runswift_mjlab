@@ -542,8 +542,8 @@ def _strike_ball(
 
 def _load_kick_clip(path, robot_names: list[str], dt: float):
   """Resample one CSV to the policy rate in ``robot_names`` order."""
+  from k1.tasks.legacy.tracking.kick_motion import mirror_kick_state
   from mjlab.motion.motion_data import MotionFile
-  from mjlab.tasks.tracking.config.k1.kick_motion import mirror_kick_state
 
   prepared = MotionFile.load(path).prepare(simulation_dt=dt)
   names = list(K1_JOINT_ORDER)
@@ -595,8 +595,8 @@ def from_kick_clips(
   from k1.robot.k1_whirlwind_constants import (
     get_k1_whirlwind_robot_cfg,
   )
+  from k1.tasks.legacy.tracking.kick_motion import EXCLUDED_KICK_STEMS
   from mjlab.entity import Entity
-  from mjlab.tasks.tracking.config.k1.kick_motion import EXCLUDED_KICK_STEMS
 
   robot = Entity(get_k1_whirlwind_robot_cfg())
   model = robot.spec.compile()

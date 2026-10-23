@@ -35,7 +35,7 @@ from mjlab.utils.lab_api.math import (
 
 TRACKING_FPS = 50.0
 KICK_MOTION_DIR = (
-  Path(__file__).resolve().parents[7] / "data" / "retargeted" / "k1" / "kick"
+  Path(__file__).resolve().parents[6] / "data" / "retargeted" / "k1" / "kick"
 )
 KICK_TRACKING_NPZ = KICK_MOTION_DIR / "tracking.npz"
 # CMU 10_04 retargets to a straight walk, not a kick.

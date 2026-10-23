@@ -8,6 +8,11 @@ import pytest
 import torch
 
 from k1.robot.k1_constants import K1_ACTION_SCALE
+from k1.tasks.legacy.tracking.env_cfgs import (
+  _GOAL_REWARD_STD,
+  K1_TRACKED_BODY_NAMES,
+)
+from k1.tasks.legacy.tracking.kick_motion import KICK_TRACKING_NPZ
 from mjlab.asset_zoo.props.ball import get_ball_radius
 from mjlab.asset_zoo.props.goal import (
   GOAL_DIVISION_SCALE,
@@ -17,11 +22,6 @@ from mjlab.asset_zoo.props.goal import (
 )
 from mjlab.envs.mdp.actions import JointPositionActionCfg
 from mjlab.tasks.registry import load_env_cfg, load_rl_cfg
-from mjlab.tasks.tracking.config.k1.env_cfgs import (
-  _GOAL_REWARD_STD,
-  K1_TRACKED_BODY_NAMES,
-)
-from mjlab.tasks.tracking.config.k1.kick_motion import KICK_TRACKING_NPZ
 from mjlab.tasks.tracking.mdp import MotionCommandCfg
 from mjlab.tasks.tracking.mdp.commands import (
   MotionCommand,

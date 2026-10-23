@@ -31,7 +31,8 @@ when kick-loop code is touched.
 | bd17078 | Fix: gait-clock state on the env, not a dict keyed by `id(env)` (cause of the intermittent env-build test failures) | 1261 pass, golden ok |
 | 544fe20 | `k1/deploy/obs_layout.py` + `tests/test_deploy_obs_layout.py` (deployed actor layouts as code, checked against golden) | new tests pass |
 | ea8abe5 | `k1.compat` import finder replaces alias folders | 1272 pass, golden ok |
-| (this) | Legacy kick (`Mjlab-Kick-*`, arc kick, walk-AMP kick) → `k1/tasks/legacy/kick/`; alias `mjlab.tasks.kick` | 1273 pass, golden ok |
+| 311ad64 | Legacy kick (`Mjlab-Kick-*`, arc kick, walk-AMP kick) → `k1/tasks/legacy/kick/`; alias `mjlab.tasks.kick` | 1273 pass, golden ok |
+| (this) | K1 tracking kick tasks (`Mjlab-Tracking-Flat-Booster-K1-Kick*`) → `k1/tasks/legacy/tracking/` | 1273 pass, golden ok |
 
 ## Best guesses (review these)
 
@@ -45,3 +46,12 @@ when kick-loop code is touched.
 3. **`arrival_buffer.py` default path** resolves to `Desktop/Project/data/kick/` (outside
    `RL/`; `parents[6].parent`, now `parents[7].parent` after the move). Looks like a
    pre-existing bug, but kept identical: the legacy task's behaviour must not change.
+4. **Tracking: only the K1 config moved.** `tracking/mdp/shot.py`, `shot_rewards.py`
+   and `stand_blend.py` are ours but upstream's `tracking/mdp/commands.py` and
+   `rewards.py` were edited to use them, so they stay in the framework for now
+   (moving them would make mjlab import k1). Listed in "Our edits inside the
+   framework" below.
+
+## Our edits inside the framework (left in `src/mjlab/`, to list or move later)
+
+- `tasks/tracking/mdp/{shot,shot_rewards,stand_blend}.py` + hooks in `commands.py`, `rewards.py`.
