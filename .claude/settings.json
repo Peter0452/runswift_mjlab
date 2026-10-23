@@ -14,13 +14,30 @@
     ]
   },
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/scripts/agent/session_brief.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Write|Edit",
         "hooks": [
           {
             "type": "command",
-            "command": "uv run ruff format"
+            "command": "\"$CLAUDE_PROJECT_DIR\"/scripts/agent/format_edited.sh 2>/dev/null || true",
+            "timeout": 30
+          },
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/scripts/agent/deploy_reminder.sh 2>/dev/null || true",
+            "timeout": 10
           }
         ]
       }

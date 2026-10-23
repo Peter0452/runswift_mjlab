@@ -1,0 +1,19 @@
+---
+description: K1 robot soccer — deploy-first rules for every change in this repo
+alwaysApply: true
+---
+
+# K1 robot soccer: deploy first
+
+This repo trains Booster K1 football skills for the **real robot**, run by
+`../k1_policy_runner` (ONNX, 50 Hz).
+
+1. Read `knowledge/INDEX.md` before working; objectives and standing decisions
+   are in `knowledge/objectives.md` (ask before changing them).
+2. What a policy observes or outputs is the deployment contract
+   (`knowledge/deployment.md`). Changing it is a runtime change: note the
+   matching runner change, pass parity, say so in the commit. Do not edit
+   `../k1_policy_runner` from this repo's work.
+3. Run the safety net in `tests/golden/README.md` before and after code changes.
+4. One change per run, judged against a same-length control on the task's
+   benchmark, never on training curves.

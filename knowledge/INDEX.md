@@ -24,6 +24,8 @@ experience records, in-code design notes and the session memory.
 | If you want to | Read |
 |---|---|
 | Know what "better" means and what must not change | [objectives.md](objectives.md) |
+| Keep training and the robot runner consistent | [deployment.md](deployment.md) |
+| See the target layout, methods/recipes and the evolution-loop design | [architecture.md](architecture.md) |
 | Work on a skill | [skills/](skills/): [walk](skills/walk.md), [kick](skills/kick.md), [dribble](skills/dribble.md), [self-play striker](skills/selfplay_striker.md), [B-Human port](skills/bhuman_kick.md) |
 | Find the current best model for something | [models.md](models.md) |
 | Design a reward or a run | [lessons/reward_design.md](lessons/reward_design.md) |

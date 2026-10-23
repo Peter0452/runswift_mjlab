@@ -1,8 +1,24 @@
-# Project knowledge
+# Project: K1 robot soccer, aimed at the real robot
 
-This fork trains Booster K1 football skills. Before working on a skill, read
-`knowledge/INDEX.md`; objectives and standing decisions are in
-`knowledge/objectives.md` and must not change without asking the user.
+This fork trains Booster K1 football skills that run on the real robot through
+`../k1_policy_runner`. Before working on anything, read `knowledge/INDEX.md`;
+objectives and standing decisions are in `knowledge/objectives.md` and must not
+change without asking the user. The target layout and the evolution-loop design
+are in `knowledge/architecture.md`.
+
+Deploy-first rules:
+
+- What a policy observes or outputs (observation slots, action scales, PD, ball
+  frame, lost rule, head tracker, speed caps, joint/torque clips, delay) is the
+  deployment contract in `knowledge/deployment.md`. A change to it is a runtime
+  change: record the matching k1_policy_runner change, pass the parity check, and
+  say so in the commit. Rewards and DR inside approved ranges are training-only.
+- Do not edit `../k1_policy_runner` from work in this repo.
+- Run the safety net (`tests/golden/README.md`) before and after code changes and
+  after every merge; a failure means behaviour changed.
+- Shared defaults (ball model, reward weights, caps) affect every task built on
+  them: change them only deliberately and re-run the safety net.
+- Use `.venv/bin/python -m pytest`; evals with `timeout -k 30 N .venv/bin/python ...`.
 
 # Development Workflow
 
