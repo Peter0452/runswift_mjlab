@@ -15,9 +15,6 @@ if TYPE_CHECKING:
 
 _DEFAULT_ASSET_CFG = SceneEntityCfg("robot")
 
-# Shared across actor/critic term instances for the same env (keyed by id).
-_GAIT_STATE: dict[int, dict[str, Any]] = {}
-
 
 def constant_zeros(env: ManagerBasedRlEnv, dim: int) -> torch.Tensor:
   """Fixed zero command slots. Stage 1 holds these until a later stage fills them."""
@@ -121,14 +118,16 @@ def twist_velocity_commands(env: ManagerBasedRlEnv, command_name: str) -> torch.
 
 
 def _gait_state(env: ManagerBasedRlEnv) -> dict[str, Any]:
-  key = id(env)
-  state = _GAIT_STATE.get(key)
+  # Shared by the actor and critic terms of one env. Kept on the env: a module
+  # dict keyed by id(env) handed a dead env's phase buffer to a new env that
+  # reused its id.
+  state = getattr(env, "_gait_state", None)
   if state is None:
     state = {
       "phase": torch.zeros(env.num_envs, device=env.device),
       "step": -1,
     }
-    _GAIT_STATE[key] = state
+    env._gait_state = state  # type: ignore[attr-defined]
   return state
 
 
