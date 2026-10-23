@@ -38,6 +38,19 @@ import numpy as np
 import torch
 
 import mjlab.tasks  # noqa: F401
+
+# Trials and constants are shared with our kick loop's benchmark
+# (scripts/tools/rs_kick_bench.py) so the two compare.
+from k1.eval.rs_kick import (  # noqa: E402
+  ACC_REF,
+  SECTORS,
+  SIDES,
+  STOP_SPEED,
+  TIME_REF,
+  TRACK_S,
+  TRIAL_S,
+  make_trials,
+)
 from k1.tasks.bhuman.kick_command import BHumanKickCommand, BHumanKickCommandCfg
 from k1.tasks.bhuman.mdp import set_ball_size_mass
 from k1.tasks.bhuman.robot import get_bhuman_ball_cfg
@@ -46,49 +59,6 @@ from mjlab.envs import ManagerBasedRlEnv
 from mjlab.managers.event_manager import RecomputeLevel
 from mjlab.scripts.play_bhuman_kick import _load_mlp
 from mjlab.tasks.registry import load_env_cfg
-
-SECTORS = {
-  "forward": (-45.0, 45.0),
-  "left": (45.0, 135.0),
-  "back": (135.0, 225.0),
-  "right": (-135.0, -45.0),
-}
-SIDES = {"left": (0.0, 30.0), "right": (-30.0, 0.0)}
-TRIAL_S = 12.0
-TRACK_S = 6.0
-STOP_SPEED = 0.05
-TIME_REF = 2.3
-ACC_REF = 30.0
-
-
-def make_trials(per_cell: int, seed: int) -> list[dict]:
-  rng = np.random.default_rng(seed)
-  trials = []
-  for c, ((sector, (d0, d1)), (side, (b0, b1))) in enumerate(
-    (s, b) for s in SECTORS.items() for b in SIDES.items()
-  ):
-    # Latin hypercube: one stratum per trial in every dimension.
-    u = (
-      np.stack([rng.permutation(per_cell) for _ in range(5)], 1)
-      + rng.random((per_cell, 5))
-    ) / per_cell
-    for i in range(per_cell):
-      strong = (i + c) % 2 == 0
-      rng_m = math.exp(math.log(0.5) + u[i, 3] * (math.log(20.0) - math.log(0.5)))
-      trials.append(
-        {
-          "sector": sector,
-          "side": side,
-          "dist": 0.35 + 0.65 * u[i, 0],
-          "bearing_deg": b0 + (b1 - b0) * u[i, 1],
-          "direction_deg": d0 + (d1 - d0) * u[i, 2],
-          "strong": strong,
-          "range": 20.0 if strong else rng_m,
-          "radius": 0.08 + 0.04 * u[i, 4],
-          "mass": 0.28 + 0.04 * rng.random(),
-        }
-      )
-  return trials
 
 
 def build_env(task: str, n: int, obs_noise: bool, training_dr: bool, rolling: float):

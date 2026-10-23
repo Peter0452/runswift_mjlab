@@ -28,6 +28,7 @@ per task, one verdict shape) and `k1/evolve` (see `knowledge/architecture.md`).
 | Kick | `kick_bench2_cpu.py` | Benchmark v2 on the CPU engine: the robot's own runner code in the runner's MuJoCo bridge |
 | Kick | `kick_bench2_report.py` | Side-by-side report of benchmark v2 results |
 | Kick | `fitness_v2.py` | Fitness and promotion gates on benchmark v2 results |
+| Kick | `rs_kick_bench.py` | **runswift kick benchmark v2**: 200 trials (4 direction sectors x 2 ball sides x 25), ball in front, standing start; same trials and score as `bench_bhuman_kick_v2.py` (`k1/eval/rs_kick.py`) |
 | Kick | `kick_benchmark.py` | Benchmark v1 (older; scored table vs B-Human and our best) |
 | Kick | `eval_kick_loop.py` | Per-episode evaluation of the stage-3 kick loop |
 | Kick | `kick_probes.py` | Probes beyond `eval_kick_loop.py` |
