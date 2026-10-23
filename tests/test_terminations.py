@@ -7,7 +7,7 @@ import pytest
 import torch
 from conftest import get_test_device
 
-from mjlab.envs.mdp.terminations import nan_detection
+from mjlab.envs.mdp.terminations import nan_detection, physics_blowup
 from mjlab.managers.termination_manager import TerminationManager, TerminationTermCfg
 from mjlab.sim.sim import Simulation, SimulationCfg
 from mjlab.tasks.velocity.mdp.terminations import (
@@ -238,3 +238,23 @@ def test_out_of_terrain_bounds_includes_border_width(mock_grid_terrain_env):
   asset.data.root_link_pos_w[1, 0] = 42.0  # Past border edge (limit 41.7m).
   result = out_of_terrain_bounds(env)
   assert not result[0] and result[1]
+
+
+def test_physics_blowup_flags_huge_velocity_and_marks_invalid(mock_env_with_sim):
+  """Huge finite qvel counts as a blow-up; only flagged terms set invalid_state."""
+  env = mock_env_with_sim
+  env.sim.data.qvel[0, 0] = 150.0
+  env.sim.data.qvel[2, 3] = -500.0
+  env.sim.data.qpos[3, 0] = float("nan")
+  result = physics_blowup(env, max_qvel=200.0)
+  assert result.tolist() == [False, False, True, True]
+
+  cfg = {
+    "blowup": TerminationTermCfg(
+      func=physics_blowup, params={"max_qvel": 200.0}, invalid_state=True
+    ),
+    "nan_only": TerminationTermCfg(func=nan_detection, params={}),
+  }
+  manager = TerminationManager(cfg, env)
+  manager.compute()
+  assert manager.invalid_state.tolist() == [False, False, True, True]

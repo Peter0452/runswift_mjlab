@@ -13,7 +13,9 @@ the side that did not touch the ball last. A learner restart puts the ball
 ahead of the learner, inside the field, and the opponent at the learner's spot
 mirrored through the ball (both meet the ball from their own side). An
 opponent restart puts the ball near where it went out (the centre after a
-goal), clear of the learner, with the opponent behind it facing its attack.
+goal), clear of the learner, with the opponent behind it facing its attack,
+as far from it as the learner. Both sides perceive alike (noise, dropout,
+delay) and copies of the learner sample actions as it does.
 The learner is never teleported; episodes end on falls or time out.
 
 Both robots see each other as the robot's vision reports other robots: the
@@ -49,6 +51,7 @@ from mjlab.tasks.velocity.mdp.approach import (
   NOMINAL_ROOT_HEIGHT,
   ApproachYawCommandCfg,
   _root_pose,
+  _yaw_angle,
   ball_radius,
   camera_angles,
   in_camera_view,
@@ -57,7 +60,14 @@ from mjlab.tasks.velocity.mdp.approach import (
 )
 from mjlab.tasks.velocity.mdp.kick_loop import (
   HEAD_DEFAULT,
+  HEAD_SCAN_PERIOD,
+  HEAD_SCAN_YAW,
+  HEAD_SEARCH_AFTER,
+  HEAD_SEARCH_PITCH,
+  HEAD_SEARCH_YAW,
+  POST_KICK_WINDOW,
   SPEED_CAP_FINAL,
+  WALK_SPEED_REF,
   KickLoopCommand,
   KickLoopCommandCfg,
   _found,
@@ -65,7 +75,12 @@ from mjlab.tasks.velocity.mdp.kick_loop import (
   head_goal,
   head_step,
 )
-from mjlab.utils.lab_api.math import quat_apply_inverse, wrap_to_pi, yaw_quat
+from mjlab.utils.lab_api.math import (
+  quat_apply,
+  quat_apply_inverse,
+  wrap_to_pi,
+  yaw_quat,
+)
 
 if TYPE_CHECKING:
   from rsl_rl.env import VecEnv
@@ -129,6 +144,8 @@ class FrozenPolicy:
   layers: list[tuple[torch.Tensor, torch.Tensor]]
   gru: tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor] | None = None
   """``weight_ih, weight_hh, bias_ih, bias_hh`` of rsl_rl's ``RNNModel``."""
+  action_std: torch.Tensor | None = None
+  """The actor's Gaussian action std (``[1, out]``), for sampled copies."""
 
   @property
   def in_dim(self) -> int:
@@ -208,7 +225,20 @@ def frozen_policy_from_state_dict(
   else:
     mean = torch.zeros(1, in_dim, device=device)
     std = torch.ones(1, in_dim, device=device)
-  return FrozenPolicy(kind=kind, name=name, mean=mean, std=std, layers=layers, gru=gru)
+  action_std = None
+  if "distribution.std_param" in state_dict:
+    action_std = get("distribution.std_param").reshape(1, -1).abs()
+  elif "distribution.log_std_param" in state_dict:
+    action_std = get("distribution.log_std_param").exp().reshape(1, -1)
+  return FrozenPolicy(
+    kind=kind,
+    name=name,
+    mean=mean,
+    std=std,
+    layers=layers,
+    gru=gru,
+    action_std=action_std,
+  )
 
 
 def zero_policy(kind: str, name: str, device: str) -> FrozenPolicy:
@@ -313,6 +343,12 @@ class SelfPlayKickCommand(KickLoopCommand):
   kickoffs after each point, with an opponent."""
 
   cfg: SelfPlayKickCommandCfg  # pyright: ignore[reportIncompatibleVariableOverride]
+  controller_decision: (
+    tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor | None] | None
+  ) = None
+  """The learner's two-level decision (kick, direction, level, direct walk
+  command or None), set by the controller wrapper; drawn by
+  ``_debug_vis_impl``."""
 
   def __init__(self, cfg: SelfPlayKickCommandCfg, env: ManagerBasedRlEnv):
     # Set before super().__init__: the parent may place targets while building.
@@ -341,6 +377,11 @@ class SelfPlayKickCommand(KickLoopCommand):
     self.ball_out = torch.zeros(n, dtype=torch.bool, device=dev)
     # Last robot to touch the ball this point: 1 learner, -1 opponent, 0 none.
     self.last_touch = torch.zeros(n, dtype=torch.long, device=dev)
+    # +1 when the learner takes the ball, -1 when the opponent does.
+    self.possession_change = torch.zeros(n, device=dev)
+    # Ball race (``ball_race``): opponent's minus learner's time to the ball.
+    self.race_phi = torch.zeros(n, device=dev)
+    self.race_delta = torch.zeros(n, device=dev)
     # Set on kickoffs, cleared by the opponent action once it has re-read the
     # field (its ball memory, head and last action restart).
     self.kickoff_pending = torch.ones(n, dtype=torch.bool, device=dev)
@@ -486,9 +527,14 @@ class SelfPlayKickCommand(KickLoopCommand):
     # free ball).
     learner_touch = _found(self._env, self.cfg.feet_ball_sensor) | self.body_touch
     opponent_touch = _found(self._env, self.cfg.opponent_ball_sensor)
+    prev_touch = self.last_touch.clone()
     self.last_touch[:] = torch.where(
       learner_touch, 1, torch.where(opponent_touch, -1, self.last_touch)
     )
+    self.possession_change[:] = ((self.last_touch == 1) & (prev_touch != 1)).float() - (
+      (self.last_touch == -1) & (prev_touch != -1)
+    ).float()
+    self._update_race()
     self.opponent_detection[:], self.opponent_true[:] = detect_robot(
       self.robot,
       self._head_id,
@@ -583,7 +629,8 @@ class SelfPlayKickCommand(KickLoopCommand):
     """New point for the opponent: the ball near ``anchor``, inside the
     field and at least ``restart_learner_distance`` from the learner (the
     learner is never teleported), the opponent behind it facing the goal it
-    attacks, clear of the learner. Of the candidates that qualify, the one
+    attacks, as far from the ball as the learner (as a learner restart puts
+    them), clear of the learner. Of the candidates that qualify, the one
     nearest the anchor; else the one farthest from the learner."""
     n, dev, cfg = len(env_ids), self.device, self.cfg
     k = 32
@@ -607,9 +654,12 @@ class SelfPlayKickCommand(KickLoopCommand):
     across = torch.maximum(torch.minimum(across, half_w), -half_w)
     rows = env_ids.repeat_interleave(k)
     ball = self._to_world(along.reshape(-1), across.reshape(-1), rows).reshape(n, k, 2)
-    # The opponent attacks -axis: it stands on the +axis side of the ball.
-    lo, hi = cfg.restart_opponent_distance
-    d = torch.empty(n, k, device=dev).uniform_(lo, hi)
+    learner = _root_pose(self.robot, env_ids)[:, :2].unsqueeze(1)
+    ball_gap = (ball - learner).norm(dim=-1)
+    # The opponent attacks -axis: it stands on the +axis side of the ball,
+    # as far from it as the learner (jittered as in place_opponent).
+    jitter = torch.empty(n, k, device=dev).uniform_(0.8, 1.2)
+    d = (ball_gap * jitter).clamp(*cfg.opponent_distance_range)
     ang = torch.empty(n, k, device=dev).uniform_(
       -cfg.opponent_spawn_half_angle, cfg.opponent_spawn_half_angle
     )
@@ -619,8 +669,6 @@ class SelfPlayKickCommand(KickLoopCommand):
       (c * u[..., 0] - s * u[..., 1], s * u[..., 0] + c * u[..., 1]), -1
     )
     opp = ball + back * d.unsqueeze(-1)
-    learner = _root_pose(self.robot, env_ids)[:, :2].unsqueeze(1)
-    ball_gap = (ball - learner).norm(dim=-1)
     opp_gap = (opp - learner).norm(dim=-1)
     o_along, o_across = self.field_coords(opp.reshape(-1, 2), rows)
     on_field = (
@@ -639,12 +687,26 @@ class SelfPlayKickCommand(KickLoopCommand):
     ball_xy, opp_xy = ball[idx, pick], opp[idx, pick]
     self._move_ball(env_ids, ball_xy)
     self._new_point(env_ids, ball_xy)
-    face = ball_xy - opp_xy
-    yaw = torch.atan2(face[:, 1], face[:, 0]) + torch.empty(n, device=dev).uniform_(
-      -cfg.opponent_yaw_noise, cfg.opponent_yaw_noise
-    )
+    yaw = self._mirrored_yaw(env_ids, ball_xy, opp_xy)
     place_upright(self.opponent, env_ids, opp_xy, yaw, self._env.scene.env_origins)
     self.kickoff_pending[env_ids] = True
+
+  def _mirrored_yaw(
+    self, env_ids: torch.Tensor, ball_xy: torch.Tensor, opp_xy: torch.Tensor
+  ) -> torch.Tensor:
+    """Opponent heading that puts the ball at the bearing the learner has it
+    (ahead after a learner restart, anywhere after it shot or kicked out),
+    jittered by ``opponent_yaw_noise``."""
+    pose = _root_pose(self.robot, env_ids)
+    to_ball = ball_xy - pose[:, :2]
+    bearing = wrap_to_pi(
+      torch.atan2(to_ball[:, 1], to_ball[:, 0]) - _yaw_angle(pose[:, 3:7])
+    )
+    face = ball_xy - opp_xy
+    jitter = torch.empty(len(env_ids), device=self.device).uniform_(
+      -self.cfg.opponent_yaw_noise, self.cfg.opponent_yaw_noise
+    )
+    return torch.atan2(face[:, 1], face[:, 0]) - bearing + jitter
 
   def _move_ball(self, env_ids: torch.Tensor, xy: torch.Tensor) -> None:
     """Put a resting ball at ``xy`` where the learner just saw it."""
@@ -697,13 +759,22 @@ class SelfPlayKickCommand(KickLoopCommand):
     pick = score.argmax(dim=1)
     rows = torch.arange(n, device=dev)
     xy = cand[rows, pick]
-    face = ball_xy - xy
-    yaw = torch.atan2(face[:, 1], face[:, 0])
-    yaw = yaw + torch.empty(n, device=dev).uniform_(
-      -self.cfg.opponent_yaw_noise, self.cfg.opponent_yaw_noise
-    )
+    yaw = self._mirrored_yaw(env_ids, ball_xy, xy)
     place_upright(self.opponent, env_ids, xy, yaw, self._env.scene.env_origins)
     self.kickoff_pending[env_ids] = True
+
+  def _update_race(self) -> None:
+    """Ball-race potential and its change this step (see ``ball_race``)."""
+    opp = self._env.action_manager.get_term("opponent")
+    assert isinstance(opp, OpponentPolicyAction)
+    ball = self.ball.data.root_link_pos_w[:, :2]
+    mine = race_time(self.robot, ball, self.speed_limit)
+    theirs = race_time(self.opponent, ball, opp.speed_limit)
+    phi = (theirs - mine).clamp(-RACE_CLIP_S, RACE_CLIP_S)
+    delta = phi - self.race_phi
+    # Teleports (kickoffs, resets, a fallen opponent stood up) are not play.
+    self.race_delta[:] = torch.where(delta.abs() > RACE_JUMP_S, 0.0, delta)
+    self.race_phi[:] = phi
 
   def _debug_vis_impl(self, visualizer: DebugVisualizer) -> None:
     """Touchlines, goal lines and goals, on top of the kick-loop drawing."""
@@ -742,6 +813,129 @@ class SelfPlayKickCommand(KickLoopCommand):
         visualizer.add_cylinder(
           np.array([a[0], a[1], top]), np.array([b[0], b[1], top]), 0.05, goal_color
         )
+    self._draw_controllers(visualizer, env_ids)
+
+  def _draw_controllers(self, visualizer: DebugVisualizer, env_ids: list[int]) -> None:
+    """Two-level strikers' decisions (see ``CONTROLLER_VIS_LEGEND``)."""
+    opp = self._env.action_manager.get_term("opponent")
+    assert isinstance(opp, OpponentPolicyAction)
+    memory = opp.cfg.controller_ball_memory
+    rows = []
+    if self.controller_decision is not None:
+      kick, theta, level, walk_cmd = self.controller_decision
+      ball = _controller_ball_view(
+        self.masked_ball_b,
+        self.ball_lost | self.never_seen,
+        self.memory_disproved | self.never_seen,
+        self.memory_ball_b,
+        self.time_since_seen == 0.0,
+        memory,
+      )
+      rows.append((self.robot, kick, theta, level, ball, None, walk_cmd))
+    kinds = [getattr(p, "kind", "") for p in opp.slots]
+    is_ctrl = torch.tensor([kinds[i] == "controller" for i in opp.slot.tolist()])
+    if bool(is_ctrl.any()):
+      opp_ball = _controller_ball_view(
+        opp.memory_ball_b,
+        opp.ball_lost,
+        opp.memory_disproved,
+        opp.memory_ball_b,
+        opp.time_unseen == 0.0,
+        memory,
+      )
+      walk = torch.where(
+        opp.ctrl_walk_direct.unsqueeze(-1),
+        opp.ctrl_walk,
+        skills.walk_command(opp.ctrl_theta, opp.ctrl_level),
+      )
+      rows.append(
+        (
+          self.opponent,
+          opp.ctrl_kick,
+          opp.ctrl_theta,
+          opp.ctrl_level,
+          opp_ball,
+          is_ctrl,
+          walk,
+        )
+      )
+    for entity, kick, theta, level, (ball_b, state), mask, walk_cmd in rows:
+      if walk_cmd is None:
+        walk_cmd = skills.walk_command(theta, level)
+      walk_np = walk_cmd.cpu().numpy()
+      pos = entity.data.root_link_pos_w.cpu().numpy()
+      yaw = _yaw_angle(entity.data.root_link_quat_w).cpu().numpy()
+      kick_np, theta_np = kick.cpu().numpy(), theta.cpu().numpy()
+      ball_np, state_np = ball_b.cpu().numpy(), state
+      rng = skills.range_from_level(level).argmax(-1).cpu().numpy()
+      for k in env_ids:
+        if mask is not None and not bool(mask[k]):
+          continue
+        p, c, s_ = pos[k], math.cos(yaw[k]), math.sin(yaw[k])
+        top = p + np.array([0.0, 0.0, 0.62])
+        if kick_np[k]:
+          color, length = _VIS_KICK_RANGE[rng[k]], 0.6 * (rng[k] + 1)
+          a = yaw[k] + theta_np[k]
+        else:
+          vx, vy = walk_np[k, 0], walk_np[k, 1]
+          color, length = _VIS_WALK, 0.3 + math.hypot(vx, vy)
+          a = yaw[k] + math.atan2(vy, vx)
+        visualizer.add_sphere(top, 0.09, color, label="skill")
+        start = np.array([p[0], p[1], 0.05])
+        end = start + length * np.array([math.cos(a), math.sin(a), 0.0])
+        visualizer.add_arrow(start, end, color, width=0.03, label="command")
+        st = int(state_np[k])
+        if st == _BALL_DISPROVED:
+          visualizer.add_sphere(
+            top + np.array([0.0, 0.0, 0.2]), 0.06, _VIS_BALL[st], label="search"
+          )
+          continue
+        bx, by = ball_np[k]
+        w = np.array([p[0] + c * bx - s_ * by, p[1] + s_ * bx + c * by, 0.12])
+        visualizer.add_sphere(w, 0.07, _VIS_BALL[st], label="ball belief")
+
+
+# Debug drawing of two-level strikers in play (the learner and controller
+# opponents alike).
+CONTROLLER_VIS_LEGEND = (
+  "sphere over the head: skill (blue walk; yellow / orange / red kick short /"
+  " medium / long); ground arrow: commanded direction (length: walk speed or"
+  " kick range); ball belief: green seen, yellow remembered, magenta the"
+  " kick skill's lost-ball turn cue (controller without its own view); red"
+  " sphere over the skill sphere: memory disproved, searching"
+)
+_VIS_WALK = (0.2, 0.5, 1.0, 0.9)
+_VIS_KICK_RANGE = (
+  (1.0, 0.9, 0.1, 0.9),
+  (1.0, 0.55, 0.05, 0.9),
+  (0.9, 0.1, 0.05, 0.9),
+)
+_BALL_SEEN, _BALL_MEMORY, _BALL_CUE, _BALL_DISPROVED = 0, 1, 2, 3
+_VIS_BALL = (
+  (0.1, 0.9, 0.2, 0.9),
+  (1.0, 0.9, 0.1, 0.9),
+  (0.9, 0.2, 0.9, 0.9),
+  (1.0, 0.1, 0.1, 0.95),
+)
+
+
+def _controller_ball_view(
+  cue_b: torch.Tensor,
+  lost: torch.Tensor,
+  disproved: torch.Tensor,
+  memory_b: torch.Tensor,
+  seen: torch.Tensor,
+  controller_memory: bool,
+) -> tuple[torch.Tensor, np.ndarray]:
+  """Where a controller believes the ball is (trunk frame) and why."""
+  state = torch.where(seen, _BALL_SEEN, _BALL_MEMORY)
+  if controller_memory:
+    state = torch.where(lost & disproved, _BALL_DISPROVED, state)
+    ball = torch.where(lost.unsqueeze(-1), memory_b, cue_b)
+  else:
+    state = torch.where(lost, _BALL_CUE, state)
+    ball = cue_b
+  return ball, state.cpu().numpy()
 
 
 def place_upright(
@@ -796,7 +990,9 @@ class SelfPlayKickCommandCfg(KickLoopCommandCfg):
   """Limits of the opponent's distance from the ball at kickoff (m)."""
   opponent_spawn_half_angle: float = 0.4
   """Jitter of the opponent's mirrored spot around the ball (rad)."""
-  opponent_yaw_noise: float = 0.3
+  opponent_yaw_noise: float = 0.1
+  """Jitter of the opponent's heading around the learner's bearing to the
+  ball (rad)."""
   opponent_clearance: float = 1.0
   """Minimum learner-opponent distance at kickoff (m), when achievable."""
   opponent_max_range: float = 6.0
@@ -812,10 +1008,9 @@ class SelfPlayKickCommandCfg(KickLoopCommandCfg):
   (False: every point restarts with the learner's ball)."""
   restart_search_radius: float = 1.5
   """Opponent restart balls are sought within this of the anchor (m)."""
-  restart_learner_distance: float = 2.0
-  """Opponent restart balls are at least this far from the learner (m)."""
-  restart_opponent_distance: tuple[float, float] = (0.4, 0.9)
-  """The restarting opponent's distance behind the ball (m)."""
+  restart_learner_distance: float = 1.0
+  """Opponent restart balls are at least this far from the learner (m), the
+  near end of the learner's own spawn distance."""
 
   def build(self, env: ManagerBasedRlEnv) -> SelfPlayKickCommand:
     return SelfPlayKickCommand(self, env)
@@ -880,6 +1075,103 @@ def dribble_progress(
   d_mine = (ball - mine).norm(dim=-1)
   possess = (d_mine < possession_distance) & (d_mine < (ball - theirs).norm(dim=-1))
   return toward * possess.float()
+
+
+def walk_engage(env: ManagerBasedRlEnv, min_dist: float = 0.6) -> torch.Tensor:
+  """Speed at which the learner closes the gap to the ball by its own motion,
+  clipped to the vx cap, over min(cap, 1 m/s) as ``walk_speed``; down to
+  ``min_dist``.
+
+  Replaces stage 3's ``walk_speed`` in self-play. That term paid the robot's
+  speed toward the ball beyond 1.5 m, so following a ball the opponent carries
+  away paid as much as reaching it, and the last 1.5 m paid nothing: v8 moved
+  its time from < 0.6 m (21 % -> 14 %) to 1.5-3 m (28 % -> 34 %) and its goal
+  share vs h022 fell 0.39 -> 0.19. Here a ball moving away is subtracted, a
+  ball rolling in is not credited, and stepping back still costs.
+  """
+  cmd = _selfplay_command(env)
+  ball = cmd.ball.data.root_link_pos_w[:, :2]
+  me = cmd.robot.data.root_link_pos_w[:, :2]
+  gap = ball - me
+  dist = gap.norm(dim=-1)
+  u = gap / dist.unsqueeze(-1).clamp(min=1.0e-6)
+  v_robot = (cmd.robot.data.root_link_lin_vel_w[:, :2] * u).sum(dim=-1)
+  v_ball = (cmd.ball.data.root_link_lin_vel_w[:, :2] * u).sum(dim=-1)
+  engage = torch.minimum(v_robot, v_robot - v_ball)
+  cap = cmd.speed_limit[:, 0]
+  score = engage.clamp(min=-cap, max=cap) / cap.clamp(max=WALK_SPEED_REF)
+  active = (dist > min_dist) & (cmd.time_since_kick >= POST_KICK_WINDOW)
+  active &= ~cmd.ball_lost
+  return torch.where(active, score, torch.zeros_like(score))
+
+
+def possession_change(env: ManagerBasedRlEnv) -> torch.Tensor:
+  """Per event: +1 when the learner takes the ball (touches it and was not
+  the last to), -1 when the opponent does. Zero-sum; own repeated touches
+  (a dribble) pay nothing, so it cannot be farmed.
+
+  Goals reach the decision to commit to a ball only faintly (gamma 0.995 is
+  a ~4 s horizon; race -> kick -> goal takes 5-10 s), and tripling them
+  (v11) gave a small, short-lived gain. Winning the ball is a quick,
+  frequent signal of the same thing.
+  """
+  return _selfplay_command(env).possession_change
+
+
+RACE_CLIP_S = 2.0
+"""Ball-race advantage is capped at this many seconds either way."""
+RACE_JUMP_S = 0.25
+"""A one-step change beyond this is a teleport, not play (play moves the
+potential by about 0.05 s per step at most)."""
+
+
+def race_time(
+  robot: Entity, ball_xy: torch.Tensor, speed_limit: torch.Tensor
+) -> torch.Tensor:
+  """Rough time for ``robot`` to reach the ball: distance at its forward speed
+  cap plus the turn to face the ball at its turn-rate cap (s)."""
+  rel = ball_xy - robot.data.root_link_pos_w[:, :2]
+  heading = _yaw_angle(robot.data.root_link_quat_w)
+  bearing = wrap_to_pi(torch.atan2(rel[:, 1], rel[:, 0]) - heading)
+  run = rel.norm(dim=-1) / speed_limit[:, 0].clamp(min=0.2)
+  return run + bearing.abs() / speed_limit[:, 2].clamp(min=0.3)
+
+
+def ball_race(env: ManagerBasedRlEnv) -> torch.Tensor:
+  """Change of the ball-race advantage per second: the opponent's estimated
+  time to the ball minus the learner's (``race_time``), capped at
+  ``RACE_CLIP_S``. Potential-based (it sums to the change between any two
+  states, so loops pay nothing) and zero-sum (the sides' times swap).
+
+  Pays for whatever makes the learner first to the ball: closing on it,
+  turning to it, standing goal-side, kicking it where the opponent is not.
+  Standing still while the opponent closes costs.
+  """
+  return _selfplay_command(env).race_delta / env.step_dt
+
+
+def territory_progress(env: ManagerBasedRlEnv, max_speed: float = 3.0) -> torch.Tensor:
+  """Ball velocity along the field axis, own goal -> attacked goal (m/s),
+  clipped to ``max_speed`` either way and paid only while the ball is inside
+  the field.
+
+  Summed over time this is the ball's net progress up the field: a dense,
+  zero-sum game signal (the opponent's progress is the learner's loss, and
+  shuffling the ball back and forth nets nothing). Unlike the kick and dribble
+  shaping it is not annealed, so the attack keeps a signal between goals. A
+  ball rolling out (a long hoof over the line) stops paying at the line.
+  """
+  cmd = _selfplay_command(env)
+  ball = cmd.ball.data.root_link_pos_w[:, :2]
+  vel = cmd.ball.data.root_link_lin_vel_w[:, :2]
+  u = cmd.field_axis
+  perp = torch.stack((-u[:, 1], u[:, 0]), dim=-1)
+  rel = ball - cmd.field_center
+  inside = ((rel * u).sum(dim=-1).abs() <= 0.5 * cmd.field_length) & (
+    (rel * perp).sum(dim=-1).abs() <= 0.5 * cmd.field_width
+  )
+  toward = (vel * u).sum(dim=-1).clamp(-max_speed, max_speed)
+  return toward * inside.float()
 
 
 def contest_score(env: ManagerBasedRlEnv) -> torch.Tensor:
@@ -952,7 +1244,11 @@ class OpponentPolicyAction(ActionTerm):
     self.slot_weights: list[float] = [0.0]
     seeds = list(cfg.seeds)
     if cfg.controller_checkpoint:
-      seeds.append(OpponentSeedCfg(cfg.controller_checkpoint, "controller"))
+      seeds.append(
+        OpponentSeedCfg(
+          cfg.controller_checkpoint, "controller", weight=cfg.controller_weight
+        )
+      )
     for seed in seeds:
       self.slots.append(load_frozen_policy(seed.checkpoint, seed.kind, dev))
       self.slot_weights.append(float(seed.weight))
@@ -969,6 +1265,15 @@ class OpponentPolicyAction(ActionTerm):
     self.last_seen_w = torch.zeros(n, 2, device=dev)
     self.time_unseen = torch.zeros(n, device=dev)
     self.lost_side = torch.ones(n, device=dev)
+    # The learner's memory model (approach command): the last sighting in the
+    # trunk frame, turned by the IMU yaw change since (no odometry), and a
+    # lost flag latched until the ball is seen again.
+    self.last_seen_b = torch.zeros(n, 2, device=dev)
+    self.last_seen_yaw = torch.zeros(n, device=dev)
+    self.ball_lost = torch.zeros(n, dtype=torch.bool, device=dev)
+    self.memory_disproved = torch.zeros(n, dtype=torch.bool, device=dev)
+    self.memory_ball_b = torch.zeros(n, 2, device=dev)
+    self.memory_age = torch.zeros(n, device=dev)
     self.head_target = torch.tensor(HEAD_DEFAULT, device=dev).repeat(n, 1)
     self.speed_limit = torch.zeros(n, 3, device=dev)
     self.fallen_time = torch.zeros(n, device=dev)
@@ -976,10 +1281,24 @@ class OpponentPolicyAction(ActionTerm):
     self.ctrl_kick = torch.zeros(n, dtype=torch.bool, device=dev)
     self.ctrl_theta = torch.zeros(n, device=dev)
     self.ctrl_level = torch.zeros(n, device=dev)
+    self.ctrl_walk = torch.zeros(n, 3, device=dev)
+    self.ctrl_walk_direct = torch.zeros(n, dtype=torch.bool, device=dev)
+    self.ctrl_yaw = torch.zeros(n, device=dev)
     self.ctrl_wait = torch.zeros(n, dtype=torch.long, device=dev)
     self.ctrl_since = torch.zeros(n, dtype=torch.long, device=dev)
     # Recurrent controllers' hidden state, widened to the largest slot.
     self.ctrl_h = torch.zeros(n, 0, device=dev)
+    # Ball detections as the learner gets them: a per-episode delay of
+    # vision_delay_steps policy steps (history of detections).
+    hist = int(self._cmd.cfg.vision_delay_steps[1]) + 1
+    self._det_hist_b = torch.zeros(n, hist, 2, device=dev)
+    self._det_hist_vis = torch.zeros(n, hist, dtype=torch.bool, device=dev)
+    self._det_lag = torch.zeros(n, dtype=torch.long, device=dev)
+    # Head sweeps in scan_share of episodes, as the learner's head.
+    self.scan = torch.zeros(n, dtype=torch.bool, device=dev)
+    self._scan_phase = torch.zeros(n, device=dev)
+    self._scan_pitch = torch.zeros(n, device=dev)
+    self._scan_t = torch.zeros(n, device=dev)
     self._raw = torch.zeros(n, 0, device=dev)
     self._resample_speed_limit(torch.arange(n, device=dev))
 
@@ -1006,8 +1325,20 @@ class OpponentPolicyAction(ActionTerm):
     self.fallen_time[ids] = 0.0
     self._resample_speed_limit(ids)
     self.slot[ids] = self._sample_slots(len(ids))
-    # As the learner's GRU: memory lasts an episode (across kickoffs).
-    self.ctrl_h[ids] = 0.0
+    lo, hi = self._cmd.cfg.vision_delay_steps
+    if hi > 0 and len(ids) > 0:
+      self._det_lag[ids] = torch.randint(
+        int(lo), int(hi) + 1, (len(ids),), device=self.device
+      )
+    self._det_hist_vis[ids] = False
+    k = len(ids)
+    self.scan[ids] = torch.rand(k, device=self.device) < self.cfg.scan_share
+    self._scan_phase[ids] = torch.rand(k, device=self.device) * 6.2832
+    self._scan_pitch[ids] = torch.empty(k, device=self.device).uniform_(0.1, 0.6)
+    self._scan_t[ids] = 0.0
+    # Recurrent memory starts empty each episode (and, with
+    # ``memory_reset_mean_s``, each kickoff and at random; see ``_restart``).
+    self._forget(ids)
 
   def process_actions(self, actions: torch.Tensor) -> None:
     del actions  # Width 0.
@@ -1043,25 +1374,52 @@ class OpponentPolicyAction(ActionTerm):
       -1,
     )
     walk_obs = torch.cat((joint, self._walk_command()), -1)
+    ctrl_obs = kick_obs
+    if self.cfg.controller_ball_memory:
+      ctrl_obs = skills.controller_ball_obs(
+        kick_obs,
+        self.ball_lost,
+        self.memory_disproved,
+        self.memory_ball_b,
+        self.memory_age,
+      )
     raw = torch.zeros_like(self._joint.raw_action)
     for s in torch.unique(self.slot).tolist():
       ids = (self.slot == s).nonzero(as_tuple=False).squeeze(-1)
       policy = self.slots[s]
       if policy.kind == "controller":
-        raw[ids] = self._run_controller(policy, ids, kick_obs[ids])
+        raw[ids] = self._run_controller(s, ids, kick_obs[ids], ctrl_obs[ids])
       else:
         obs = kick_obs if policy.kind == "kick" else walk_obs
-        raw[ids] = policy(obs[ids])
+        raw[ids] = self._sample(s, policy(obs[ids]))
     self._joint.process_actions(raw)
     # The kick policy's head outputs are ignored, as for the learner: the head
     # tracks the ball estimate (also under a controller). A walk-only opponent
     # keeps its own head.
+    # As the learner's head: a lost ball gets the far sweep.
     lost_s = torch.where(
-      self.time_unseen > self.cfg.lost_timeout_s,
-      self.time_unseen.clamp(min=0.51),
+      self.ball_lost,
+      self.time_unseen.clamp(min=HEAD_SEARCH_AFTER + 0.01),
       self.time_unseen,
     )
-    goal = head_goal(ball_b, lost_s, self._cmd.cfg.camera_pitch)
+    head_ball = torch.where(
+      self.ball_lost.unsqueeze(-1), torch.full_like(ball_b, 10.0), ball_b
+    )
+    # The learner's search range, so both heads search alike.
+    learner_head = self._env.action_manager.get_term("joint_pos").cfg
+    goal = head_goal(
+      head_ball,
+      lost_s,
+      self._cmd.cfg.camera_pitch,
+      getattr(learner_head, "search_yaw", HEAD_SEARCH_YAW),
+      getattr(learner_head, "search_pitch", HEAD_SEARCH_PITCH),
+    )
+    self._scan_t += self._env.step_dt
+    scan_yaw = HEAD_SCAN_YAW * torch.sin(
+      6.2832 * self._scan_t / HEAD_SCAN_PERIOD + self._scan_phase
+    )
+    scan_goal = torch.stack((scan_yaw, self._scan_pitch), dim=-1)
+    goal = torch.where(self.scan.unsqueeze(-1), scan_goal, goal)
     self.head_target[:] = head_step(self.head_target, goal)
     kick = torch.tensor(
       [p.kind in ("kick", "controller") for p in self.slots], device=self.device
@@ -1085,38 +1443,70 @@ class OpponentPolicyAction(ActionTerm):
     return self._kick_skill, self._walk_skill
 
   def _run_controller(
-    self, policy: FrozenPolicy, ids: torch.Tensor, actor_obs: torch.Tensor
+    self,
+    slot: int,
+    ids: torch.Tensor,
+    actor_obs: torch.Tensor,
+    ctrl_obs: torch.Tensor | None = None,
   ) -> torch.Tensor:
-    """A two-level opponent: decide every few steps, run the chosen skill."""
+    """A two-level opponent: decide every few steps, run the chosen skill.
+    ``ctrl_obs``: the controller's inputs where they differ from the skills'
+    (``controller_ball_memory``)."""
+    ctrl_obs = actor_obs if ctrl_obs is None else ctrl_obs
+    policy = self.slots[slot]
     due = self.ctrl_wait[ids] <= 0
     if bool(due.any()):
       d = ids[due]
       inputs = skills.controller_inputs(
-        actor_obs[due], self.ctrl_kick[d], self.ctrl_since[d]
+        ctrl_obs[due], self.ctrl_kick[d], self.ctrl_since[d]
       )
       hd = policy.hidden_dim
       if hd > self.ctrl_h.shape[1]:
         pad = self.ctrl_h.new_zeros(self.num_envs, hd - self.ctrl_h.shape[1])
         self.ctrl_h = torch.cat((self.ctrl_h, pad), dim=1)
+      mean_s = self.cfg.memory_reset_mean_s
+      if hd and mean_s is not None:
+        p = self.cfg.decision_steps * self._env.step_dt / mean_s
+        self.ctrl_h[d[torch.rand(len(d), device=self.device) < p]] = 0.0
       out, h = policy.step(inputs, self.ctrl_h[d, :hd] if hd else None)
       if h is not None:
         self.ctrl_h[d, :hd] = h
-      kick, theta, level = skills.decode(out)
+      action = self._sample(slot, out)
+      kick, theta, level = skills.decode(action)
+      copy = slot == 0 or slot >= self._num_fixed
+      direct = self.cfg.controller_walk_velocity and copy
+      if direct:
+        self.ctrl_walk[d] = skills.walk_velocity_command(action, self.speed_limit[d])
+      self.ctrl_walk_direct[d] = direct
       switched = kick != self.ctrl_kick[d]
       self.ctrl_since[d] = torch.where(switched, 0, self.ctrl_since[d])
       self.ctrl_kick[d], self.ctrl_theta[d], self.ctrl_level[d] = kick, theta, level
+      self.ctrl_yaw[d] = skills.yaw_of(self._entity.data.root_link_quat_w[d])
       self.ctrl_wait[d] = self.cfg.decision_steps
     self.ctrl_wait[ids] -= 1
     self.ctrl_since[ids] += 1
     kick_skill, walk_skill = self.skills()
-    return skills.run_skills(
-      actor_obs,
-      self.ctrl_kick[ids],
-      self.ctrl_theta[ids],
-      self.ctrl_level[ids],
-      kick_skill,
-      walk_skill,
+    theta, level = self.ctrl_theta[ids], self.ctrl_level[ids]
+    if self.cfg.aim_world:
+      yaw = skills.yaw_of(self._entity.data.root_link_quat_w[ids])
+      theta = skills.held_direction(theta, self.ctrl_yaw[ids], yaw)
+    walk_cmd = torch.where(
+      self.ctrl_walk_direct[ids].unsqueeze(-1),
+      self.ctrl_walk[ids],
+      skills.walk_command(theta, level),
     )
+    return skills.run_skills(
+      actor_obs, self.ctrl_kick[ids], theta, level, kick_skill, walk_skill, walk_cmd
+    )
+
+  def _sample(self, slot: int, out: torch.Tensor) -> torch.Tensor:
+    """Copies of the learner (mirror, snapshots) act as it does in training:
+    their mean plus its Gaussian noise. Seeds stay deterministic."""
+    policy = self.slots[slot]
+    copy = slot == 0 or slot >= self._num_fixed
+    if not (self.cfg.sample_copies and copy and policy.action_std is not None):
+      return out
+    return out + policy.action_std * torch.randn_like(out)
 
   # Pool management, called by the self-play runner.
 
@@ -1140,6 +1530,9 @@ class OpponentPolicyAction(ActionTerm):
       self.slot_points = self.slot_points[keep]
       moved = self.slot == drop
       self.slot[moved] = 0
+      # ctrl_h is widened inside the rollout's inference mode; the runner calls
+      # this outside it, where an inference tensor cannot be written in place.
+      self.ctrl_h = self.ctrl_h.clone()
       self.ctrl_h[moved] = 0.0
       self.slot[self.slot > drop] -= 1
     self.slots.append(policy)
@@ -1190,14 +1583,30 @@ class OpponentPolicyAction(ActionTerm):
 
   def _restart(self, env_ids: torch.Tensor) -> None:
     """After a kickoff or reset: the opponent knows where the ball is."""
-    self.last_seen_w[env_ids] = self.ball.data.root_link_pos_w[env_ids, :2]
+    ball_xy = self.ball.data.root_link_pos_w[env_ids, :2]
+    self.last_seen_w[env_ids] = ball_xy
     self.time_unseen[env_ids] = 0.0
+    quat = self._entity.data.root_link_quat_w[env_ids]
+    rel = torch.zeros(len(env_ids), 3, device=self.device)
+    rel[:, :2] = ball_xy - self._origin_xy()[env_ids]
+    self.last_seen_b[env_ids] = quat_apply_inverse(yaw_quat(quat), rel)[:, :2]
+    self.last_seen_yaw[env_ids] = _yaw_angle(quat)
+    self.ball_lost[env_ids] = False
     self.head_target[env_ids] = torch.tensor(HEAD_DEFAULT, device=self.device)
     self.fallen_time[env_ids] = 0.0
     self.ctrl_kick[env_ids] = False
     self.ctrl_wait[env_ids] = 0
     self.ctrl_since[env_ids] = 0
+    self.ctrl_walk[env_ids] = 0.0
+    if self.cfg.memory_reset_mean_s is not None:
+      self._forget(env_ids)
     self._joint.reset(env_ids)
+
+  def _forget(self, env_ids: torch.Tensor) -> None:
+    """Zero recurrent controllers' state (clone an inference tensor first)."""
+    if self.ctrl_h.is_inference() and not torch.is_inference_mode_enabled():
+      self.ctrl_h = self.ctrl_h.clone()
+    self.ctrl_h[env_ids] = 0.0
 
   def _referee(self) -> None:
     """Stand a fallen opponent back up, placed as at a kickoff (the ball
@@ -1230,7 +1639,8 @@ class OpponentPolicyAction(ActionTerm):
     parts = [
       ang_vel,
       data.projected_gravity_b,
-      data.joint_pos - default_pos,
+      # With the encoder bias of the startup DR, as the learner's joint_pos.
+      data.joint_pos_biased - default_pos,
       data.joint_vel - default_vel,
     ]
     if self.cfg.obs_noise:
@@ -1248,7 +1658,7 @@ class OpponentPolicyAction(ActionTerm):
   def _perceive(
     self,
   ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
-    """Ball estimate (head camera, delay-free, with memory), its age and the
+    """Ball estimate (head camera, delayed as the learner's, with memory), its age and the
     kick direction / range to the goal the opponent attacks."""
     data = self._entity.data
     quat = data.root_link_quat_w
@@ -1271,29 +1681,79 @@ class OpponentPolicyAction(ActionTerm):
     base, slope = self.cfg.ball_obs_noise
     sigma = base + slope * true_b.norm(dim=-1, keepdim=True)
     seen_b = true_b + sigma * torch.randn_like(true_b)
+    if self._det_hist_b.shape[1] > 1:
+      self._det_hist_b[:] = torch.roll(self._det_hist_b, 1, dims=1)
+      self._det_hist_vis[:] = torch.roll(self._det_hist_vis, 1, dims=1)
+      self._det_hist_b[:, 0] = seen_b
+      self._det_hist_vis[:, 0] = visible
+      rows = torch.arange(self.num_envs, device=self.device)
+      seen_b = self._det_hist_b[rows, self._det_lag]
+      visible = self._det_hist_vis[rows, self._det_lag]
 
     self.last_seen_w[:] = torch.where(
       visible.unsqueeze(-1), ball_w[:, :2], self.last_seen_w
     )
+    vis = visible.unsqueeze(-1)
+    yaw = _yaw_angle(quat)
+    self.last_seen_b[:] = torch.where(vis, seen_b, self.last_seen_b)
+    self.last_seen_yaw[:] = torch.where(visible, yaw, self.last_seen_yaw)
     dt = self._env.step_dt
     self.time_unseen[:] = torch.where(visible, 0.0, self.time_unseen + dt)
-    mem = torch.zeros_like(ball_w)
-    mem[:, :2] = self.last_seen_w - origin
-    memory_b = quat_apply_inverse(yaw_quat(quat), mem)[:, :2]
-    ball_b = torch.where(visible.unsqueeze(-1), seen_b, memory_b)
-    # Lost: a virtual ball beside the robot on the side it was last seen, the
-    # learner's search cue (kick loop v56d).
-    lost = self.time_unseen > self.cfg.lost_timeout_s
-    newly = lost & (self.time_unseen - dt <= self.cfg.lost_timeout_s)
+    if cam.memory_odometry:
+      mem = torch.zeros_like(ball_w)
+      mem[:, :2] = self.last_seen_w - origin
+      memory_b = quat_apply_inverse(yaw_quat(quat), mem)[:, :2]
+    else:
+      # As the learner (and the robot runner): turned back by the IMU yaw
+      # change since the sighting, no translation.
+      dyaw = -wrap_to_pi(yaw - self.last_seen_yaw)
+      c, s_ = dyaw.cos(), dyaw.sin()
+      mb = self.last_seen_b
+      memory_b = torch.stack(
+        (c * mb[:, 0] - s_ * mb[:, 1], s_ * mb[:, 0] + c * mb[:, 1]), dim=-1
+      )
+    ball_b = torch.where(vis, seen_b, memory_b)
+    # Lost as the learner's memory_invalidate: the remembered spot in view and
+    # unseen for memory_lost_in_view_s, or unseen for memory_lost_timeout_s.
+    t = self.time_unseen
+    stale = t >= cam.memory_lost_timeout_s
+    if cam.memory_invalidate:
+      rel = torch.zeros_like(ball_w)
+      rel[:, :2] = memory_b
+      mem_w = data.root_link_pos_w + quat_apply(yaw_quat(quat), rel)
+      mem_w[:, 2] = ball_w[:, 2]
+      md, ma, me = camera_angles(
+        quat_apply_inverse(head_quat, mem_w - head_pos), cam.camera_pitch
+      )
+      in_view = in_camera_view(
+        md, ma, me, cam.fov_half_angle, cam.fov_vertical_half_angle
+      ) & (memory_b.norm(dim=-1) <= cam.memory_view_range)
+      disproved = in_view & (t >= cam.memory_lost_in_view_s)
+      stale |= disproved
+    else:
+      disproved = torch.zeros_like(stale)
+    newly = stale & ~self.ball_lost & ~visible
     side = torch.where(memory_b[:, 1] >= 0.0, 1.0, -1.0)
     self.lost_side[:] = torch.where(newly, side, self.lost_side)
-    ang, r = 1.6, 2.0
-    virt = torch.stack(
-      (torch.full_like(side, r * math.cos(ang)), self.lost_side * r * math.sin(ang)),
-      -1,
-    )
-    ball_b = torch.where(lost.unsqueeze(-1), virt, ball_b)
-    age = torch.exp(-self.time_unseen / self.cfg.ball_memory_tau)
+    self.ball_lost[:] = (self.ball_lost | stale) & ~visible
+    lost = self.ball_lost.unsqueeze(-1)
+    age = torch.exp(-t / self.cfg.ball_memory_tau)
+    # The controller's view (as the learner's command keeps it).
+    self.memory_disproved[:] = (self.memory_disproved | disproved) & self.ball_lost
+    self.memory_ball_b[:] = memory_b
+    self.memory_age[:] = age
+    if cam.lost_virtual_ball:
+      # A virtual ball beside the robot on the side it was last remembered,
+      # the learner's search cue (kick loop v56d); age keeps decaying.
+      ang, r = cam.lost_virtual_bearing, cam.lost_virtual_range
+      virt = torch.stack(
+        (torch.full_like(side, r * math.cos(ang)), self.lost_side * r * math.sin(ang)),
+        -1,
+      )
+      ball_b = torch.where(lost, virt, ball_b)
+    else:
+      ball_b = torch.where(lost, 0.0, ball_b)
+      age = torch.where(self.ball_lost, 0.0, age)
 
     goal = self._cmd.own_goal_w
     kick_dir = kick_direction_b(goal, self.last_seen_w, quat)
@@ -1348,12 +1808,33 @@ class OpponentPolicyActionCfg(ActionTermCfg):
   controller_checkpoint: str | None = None
   """A trained two-level striker's controller, added to the pool (it runs
   the skills below)."""
+  controller_weight: float = 1.0
+  """Sampling weight of ``controller_checkpoint`` within the pool."""
   kick_skill_checkpoint: str = SELFPLAY_KICK_CKPT
   """Kick skill of two-level strikers (learner and opponent)."""
   walk_skill_checkpoint: str = SELFPLAY_WALK_CKPT
   """Walk skill of two-level strikers (learner and opponent)."""
   decision_steps: int = skills.DECISION_STEPS
   """Env steps per controller decision."""
+  memory_reset_mean_s: float | None = None
+  """Recurrent controllers' state is zeroed at every kickoff / restart and at
+  random, on average this often (s), as the robot's runner zeroes it on each
+  striker takeover. None: only at episode ends. Applies to the learner's
+  controller (``StrikerControllerVecEnv``) and to controller opponents."""
+  controller_ball_memory: bool = False
+  """Controllers see a lost ball as their memory until the camera disproves
+  it, then (0, 0) and age 0 (``striker_skills.controller_ball_obs``); their
+  skills keep the kick loop's search cue. Learner's controller and controller
+  opponents alike."""
+  aim_world: bool = False
+  """Controllers' directions (kick aim, walk heading) are held fixed in the
+  world between decisions (``striker_skills.held_direction``), as the robot
+  runner holds them by IMU yaw; False: held in the robot frame, so they turn
+  with the robot for the 0.2 s a decision lasts."""
+  controller_walk_velocity: bool = False
+  """The learner's controller (and its copies in the pool) drives the walk
+  skill's command directly (``striker_skills.walk_velocity_command``);
+  ``controller_checkpoint`` keeps the direction / speed interface it learned."""
   latest_prob: float = 0.5
   """Share of episodes against the learner's latest weights (mirror)."""
   max_snapshots: int = 8
@@ -1362,7 +1843,6 @@ class OpponentPolicyActionCfg(ActionTermCfg):
   vision_dropout: float = 0.02
   ball_obs_noise: tuple[float, float] = (0.03, 0.05)
   ball_memory_tau: float = 2.0
-  lost_timeout_s: float = 1.5
   speed_limit_ranges: tuple[tuple[float, float], ...] = SPEED_CAP_FINAL
   """Per-episode |vx|, |vy|, |wz| limits the kick opponent observes."""
   walk_speed: float = 1.0
@@ -1371,6 +1851,12 @@ class OpponentPolicyActionCfg(ActionTermCfg):
   """Tilt from upright beyond which the opponent counts as fallen (rad)."""
   getup_after_s: float = 1.0
   """A fallen opponent is stood up again after this long (s)."""
+  scan_share: float = 0.0
+  """Share of episodes whose head sweeps instead of tracking the ball (set
+  to the learner's)."""
+  sample_copies: bool = True
+  """Copies of the learner sample actions with its noise, as the learner does
+  in training (False: their mean; play and evaluations)."""
   win_rate_window: float = 200.0
   """Points per opponent slot that the logged win rates cover (about)."""
 

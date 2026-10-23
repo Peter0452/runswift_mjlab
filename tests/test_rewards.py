@@ -157,6 +157,15 @@ def test_stateless_class_reward_no_reset(mock_env, stateless_reward_config):
   manager.reset(env_ids=torch.tensor([0, 2]))
 
 
+def test_invalid_envs_get_zero_reward(mock_env, function_reward_config):
+  """Envs flagged invalid (e.g. a sim blow-up) contribute nothing."""
+  manager = RewardManager(function_reward_config, mock_env)
+  invalid = torch.tensor([False, True, False, True])
+  reward = manager.compute(dt=1.0, invalid=invalid)
+  assert torch.equal(reward, torch.tensor([1.0, 0.0, 1.0, 0.0]))
+  assert torch.equal(manager._episode_sums["term"], reward)
+
+
 def test_electrical_power_cost_partially_actuated(device):
   """Test electrical_power_cost on robots with passive joints.
 

@@ -90,7 +90,9 @@ class SelfPlayAmpOnPolicyRunner(VelocityAmpOnPolicyRunner):
       path = resolve_checkpoint(init)
       print(f"[INFO] Self-play warm start from {path}")
       self.load(str(path), load_cfg={"actor": True, "critic": True})
-    self._opponent().set_latest(self._actor_state())
+    self._opponent().set_latest(
+      clamp_action_std(self._actor_state(), actor_std_range(self.cfg))
+    )
 
   def _on_policy_update(self, it: int) -> None:
     sync_opponent(
@@ -99,7 +101,27 @@ class SelfPlayAmpOnPolicyRunner(VelocityAmpOnPolicyRunner):
       it,
       int(self.cfg.get("snapshot_interval", 0)),
       self.logger.log_dir if self.logger.writer is not None else None,
+      actor_std_range(self.cfg),
     )
+
+
+def actor_std_range(cfg: dict) -> tuple[float, float] | None:
+  """The actor distribution's ``std_range`` in a runner cfg dict, if any."""
+  dist = (cfg.get("actor") or {}).get("distribution_cfg") or {}
+  rng = dist.get("std_range")
+  return (float(rng[0]), float(rng[1])) if rng is not None else None
+
+
+def clamp_action_std(
+  state: dict[str, torch.Tensor], std_range: tuple[float, float] | None
+) -> dict[str, torch.Tensor]:
+  """The actor state with its action std clamped as the learner's
+  distribution clamps it, so sampled copies explore as the learner does."""
+  if std_range is None or "distribution.std_param" not in state:
+    return state
+  out = dict(state)
+  out["distribution.std_param"] = state["distribution.std_param"].clamp(*std_range)
+  return out
 
 
 def sync_opponent(
@@ -108,9 +130,11 @@ def sync_opponent(
   it: int,
   interval: int,
   log_dir: str | None,
+  std_range: tuple[float, float] | None = None,
 ) -> None:
   """Mirror the learner into the opponent after update ``it``; every
   ``interval`` iterations add a snapshot to the pool (and save it)."""
+  state = clamp_action_std(state, std_range)
   opponent.set_latest(state)
   if interval <= 0 or (it + 1) % interval != 0:
     return

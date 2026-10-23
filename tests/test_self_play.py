@@ -163,6 +163,16 @@ def test_opponent_detected_in_view_only(env):
     2 * (q[:, 0] * q[:, 3] + q[:, 1] * q[:, 2]), 1 - 2 * (q[:, 2] ** 2 + q[:, 3] ** 2)
   )
   heading = torch.stack((yaw.cos(), yaw.sin()), -1)
+  # Upright with the head level: earlier steps leave the head pitched down at
+  # the ball (or the trunk leaning), which hides a robot 2.5 m ahead.
+  place_upright(robot, ids, pose, yaw, env.scene.env_origins)
+  head = torch.tensor(
+    [robot.joint_names.index(n) for n in ("Head_Yaw", "Head_Pitch")],
+    device=env.device,
+  )
+  jpos = robot.data.joint_pos.clone()
+  jpos[:, head] = 0.0
+  robot.write_joint_state_to_sim(jpos, torch.zeros_like(jpos))
   for sign, seen in ((1.0, True), (-1.0, False)):
     place_upright(opp, ids, pose + sign * 2.5 * heading, yaw, env.scene.env_origins)
     env.sim.forward()
@@ -239,6 +249,41 @@ def test_ball_over_other_lines_is_out(env, where):
   env.step(_zero_action(env))
   assert bool(cmd.ball_out[0])
   assert not bool(cmd.contest_scored[0] | cmd.contest_conceded[0])
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize(
+  "last, event", [(1, "out"), (-1, "out"), (0, "out"), (1, "goal")]
+)
+def test_restart_goes_to_the_side_that_did_not_cause_it(env, last, event):
+  cmd, _ = _parts(env)
+  hl, hw = 0.5 * float(cmd.field_length[0]), 0.5 * float(cmd.field_width[0])
+  point = (0.0, hw + 0.3) if event == "out" else (hl + 0.3, 0.0)
+  _put_ball(env, 0, _field_point(cmd, 0, *point))
+  cmd.last_touch[0] = last
+  before = float(cmd._opponent_restarts[0])
+  env.step(_zero_action(env))
+  assert bool(cmd.ball_out[0] if event == "out" else cmd.contest_scored[0])
+  env.sim.forward()  # Body poses after the restart's teleports.
+  ball = env.scene["ball"].data.root_link_pos_w[0, :2]
+  learner = env.scene["robot"].data.root_link_pos_w[0, :2]
+  opponent = env.scene["opponent"].data.root_link_pos_w[0, :2]
+  along, across = cmd.field_coords(ball.unsqueeze(0), torch.tensor([0]))
+  assert float(along.abs()) < hl and float(across.abs()) < hw
+  assert int(cmd.last_touch[0]) == 0
+  if last == -1:
+    # The opponent put it out: the learner's ball, as at any kickoff.
+    assert float(cmd._opponent_restarts[0]) == before
+    return
+  assert float(cmd._opponent_restarts[0]) == before + 1
+  assert float((ball - learner).norm()) >= cmd.cfg.restart_learner_distance - 1e-3
+  # The opponent stands behind the ball, facing the goal it attacks (-axis),
+  # as far from it as the learner (jitter 0.8-1.2, clamped).
+  gap = opponent - ball
+  lo, hi = cmd.cfg.opponent_distance_range
+  want = float((ball - learner).norm())
+  assert 0.8 * min(want, hi) - 0.05 <= float(gap.norm()) <= max(1.2 * want, lo) + 0.05
+  assert float((gap * cmd.field_axis[0]).sum()) > 0.0
 
 
 @pytest.mark.slow

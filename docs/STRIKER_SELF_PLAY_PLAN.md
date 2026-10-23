@@ -23,9 +23,14 @@ says *open play, you are the striker*.
   random heading, placed around the spawned ball and robot. Goals 2.4 m wide,
   crossbar 1.6 m (small) / 1.8 m (medium, length >= 11.5 m).
 - **Goal**: whole ball over the goal line between the posts, under the bar.
-  Over any other line: out. Either ends the point; a kickoff follows on the
-  same field (ball ahead of the learner, opponent at the learner's spot
-  mirrored through the ball). Episodes end on falls or time out (30 s).
+  Over any other line: out. Either ends the point and the side that did not
+  cause it restarts on the same field: after a goal the side that conceded,
+  after an out the side that did not touch the ball last (contact sensors;
+  ties and untouched balls count against the learner). Learner restart: ball
+  ahead of the learner, opponent at the learner's spot mirrored through the
+  ball. Opponent restart: ball near where it went out (centre after a goal),
+  ≥ 2 m from the learner (never teleported), opponent 0.4–0.9 m behind it
+  facing its attack. Episodes end on falls or time out (30 s).
 - **Opponent**: frozen copies of the learner (mirror) or members of a pool of
   past selves and seeds. It is not trained on its own.
 
@@ -59,7 +64,11 @@ noise 5 cm + 5 % of distance. Critic: 101 (stage-3 98 + true opponent).
 Controller every 0.2 s (10 env steps), 4 outputs in [−1, 1]:
 `a0` kick (> 0) or walk, `a1:3` direction (cos, sin) in the robot frame,
 `a3` kick range (thirds) or walk speed (0–1.2 m/s). Inputs: the 86 above +
-current skill + time since switch (88). Skills (frozen):
+current skill + time since switch (88). Actor: GRU (128) → MLP (128) → 4;
+its memory (opponent motion, play history the single-frame detections drop)
+lasts an episode, across kickoffs, and steps once per decision. Deploy as
+ONNX `obs` [1, 88] + `h_in` [1, 1, 128] → `actions` + `h_out`; the runner
+holds the state and zeroes it when the striker takes over. Skills (frozen):
 
 - **Kick**: stage-3 kick loop (`h022_c2_x50`); aim / range slots overwritten
   with the controller's choice.
@@ -74,7 +83,7 @@ runs.
 
 | Piece | Flat striker | Controller |
 |---|---|---|
-| RL | PPO (rsl_rl) | PPO at 5 Hz |
+| RL | PPO (rsl_rl) | PPO at 5 Hz, GRU actor (BPTT over a 24-decision rollout), MLP critic |
 | Style prior | AMP discriminator (weight 0.3, off around kicks) | — (skills own style) |
 | Optimiser | Muon (actor / critic), Adam (discriminator) | Adam |
 | Extras | Mirror augmentation, CAPS smoothness, privileged critic | Privileged critic |
@@ -158,14 +167,16 @@ IMU heading (`--kick-dir-mode field`) or through the ball, operator-supervised.
 Verified on CPU: unit / env tests (`tests/test_self_play.py`,
 `tests/test_striker_controller.py`), 2-iteration training runs of both tasks,
 ONNX export 86 → 22, balanced 3–3 frozen-vs-frozen rollout, handoff check (no
-falls from random kick / walk switching, 2.7 robot-minutes). **No GPU training
-run yet.**
+falls from random kick / walk switching, 2.7 robot-minutes). GRU controller
+(2026-10-11): frozen GRU opponents match rsl_rl's `RNNModel` step by step,
+3-iteration GPU smoke run (256 envs, GRU snapshots in the pool), ONNX export
+with `h_in` / `h_out`. **No full GPU training run yet.**
 
 ## 9. Next (in order)
 
-1. **Ball-out restart fix**: after an out, give the kickoff to the opponent
-   (ball ahead of it), optionally a small penalty. Today an out hands the
-   learner a fresh ball in front of it — a loophole.
+1. ~~Ball-out restart fix~~ done 2026-10-11 (see §2): outs and the
+   learner's goals hand the restart to the opponent. No extra penalty: losing
+   the ball is the cost. Watch `ball_out_by_learner`, `opponent_restarts`.
 2. **Aim realism**: noise on slots 78–80 (per-episode heading bias, jitter,
    occasional jumps) for localisation error; occasional aim-lane switches
    mid-point (as `select_target` does when a lane closes).
@@ -177,7 +188,8 @@ run yet.**
    constraints), so play is legal standalone.
 6. First GPU runs: phase 1, then phase 2; fixed-opponent evaluations (`h022`,
    walker, runswift scripted striker) logged alongside self-play win rates.
-7. Opponent motion: frame-stacked detections or a GRU controller.
+7. Opponent motion: GRU controller done; the flat striker still sees single
+   frames (frame stacking or a GRU there if it needs them).
 8. Integration: `StrikerIntent` in the behaviour, `StrikerPolicy` in the
    runner, SDK ↔ low-level mode handoff timing on the K1.
 9. Later: scripted runswift goalie (`blocking_target`) on the pitch; physical
@@ -191,6 +203,7 @@ run yet.**
 | `SelfPlay/win_rate_pool` | rising (beats past selves) |
 | `Metrics/twist/contest_scored` | rising per episode |
 | `Metrics/twist/ball_out` | falling |
+| `Metrics/twist/ball_out_by_learner` | falling (not used as a free reset) |
 | `Episode_Reward/dribble_progress` | rising without goals falling (carrying, not stalling) |
 | Falls, kick speed | stay at stage-3 levels |
 

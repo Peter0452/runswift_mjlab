@@ -9,7 +9,6 @@ import pytest
 from mjlab.tasks.registry import load_env_cfg, load_rl_cfg
 from mjlab.tasks.velocity.config.k1 import env_cfgs as k1_env_cfgs
 
-
 TASK = "Mjlab-Velocity-HTWK-Booster-K1-Nubots"
 UNCLIPPED_TASK = "Mjlab-Velocity-HTWK-Unclipped-Booster-K1-Nubots"
 
@@ -22,9 +21,9 @@ def test_htwk_task_preserves_nubots_interfaces_and_teacher_ranges():
   assert cfg.observations["actor"].terms["velocity_commands"].func.__name__ == (
     "nubots_parameter_walk_commands"
   )
-  assert cfg.observations["actor"].terms["velocity_commands"].params["command_name"] == (
-    "twist"
-  )
+  assert cfg.observations["actor"].terms["velocity_commands"].params[
+    "command_name"
+  ] == ("twist")
   assert twist.ranges.lin_vel_x == (-1.0, 2.0)
   assert twist.ranges.lin_vel_y == (-1.0, 1.0)
   assert twist.ranges.ang_vel_z == (-1.6, 1.6)
@@ -49,9 +48,7 @@ def test_htwk_task_has_no_experimental_speed_terms():
 
   assert "gait" not in cfg.rewards
   assert "angular_momentum" not in cfg.rewards
-  assert all(
-    "speed_ref" not in term.params for term in cfg.rewards.values()
-  )
+  assert all("speed_ref" not in term.params for term in cfg.rewards.values())
   assert cfg.rewards["tracking_lin_vel_x"].weight == 2.0
   assert cfg.rewards["tracking_lin_vel_y"].weight == 2.0
   assert cfg.rewards["tracking_ang_vel"].weight == 1.5
@@ -85,9 +82,9 @@ def test_htwk_exact_task_matches_reference_command_and_runner():
   assert command.still_proportion == pytest.approx(0.1)
   assert command.ranges.body_pitch_target == (-0.1, 0.3)
   assert command.ranges.feet_offset_y_target == (-0.08, 0.15)
-  assert cfg.observations["actor"].terms["velocity_commands"].params["command_name"] == (
-    "twist"
-  )
+  assert cfg.observations["actor"].terms["velocity_commands"].params[
+    "command_name"
+  ] == ("twist")
   assert cfg.only_positive_rewards is True
   assert set(cfg.terminations) == {"time_out", "base_height"}
   assert cfg.terminations["base_height"].params["minimum_height"] == pytest.approx(0.35)
@@ -127,15 +124,13 @@ def test_htwk_exact_task_matches_reference_command_and_runner():
   )
   sensor_names = {sensor.name for sensor in (cfg.scene.sensors or ())}
   assert "foot_foot_collision" in sensor_names
-  assert cfg.rewards["feet_offset_y"].params["feet_distance_ref"] == pytest.approx(
-    0.18
-  )
+  assert cfg.rewards["feet_offset_y"].params["feet_distance_ref"] == pytest.approx(0.18)
   assert cfg.rewards["feet_minimum_separation"].func.__name__ == (
     "htwk_feet_minimum_separation"
   )
-  assert cfg.rewards["feet_minimum_separation"].params["min_separation"] == pytest.approx(
-    0.10
-  )
+  assert cfg.rewards["feet_minimum_separation"].params[
+    "min_separation"
+  ] == pytest.approx(0.10)
   assert cfg.rewards["foot_foot_collision"].func.__name__ == (
     "htwk_foot_foot_collision"
   )
@@ -191,9 +186,7 @@ def test_htwk_robust_ft_task_has_staged_yaw_and_terrain_setup():
     {"iteration": 40_000, "proportions": [0.7, 0.15, 0.15]},
   ]
   assert runner.experiment_name == "k1_walk_htwk_robust_ft"
-  assert cfg.events["foot_friction"].params["ranges"] == pytest.approx(
-    (0.1, 2.0)
-  )
+  assert cfg.events["foot_friction"].params["ranges"] == pytest.approx((0.1, 2.0))
   assert cfg.events["trunk_external_wrench"].mode == "interval"
   assert cfg.events["trunk_external_wrench"].interval_range_s == pytest.approx(
     (4.0, 4.0)
@@ -204,9 +197,7 @@ def test_htwk_robust_ft_task_has_staged_yaw_and_terrain_setup():
   assert runner.clip_actions == pytest.approx(1.0)
   assert cfg.rewards["knee_separation"].func.__name__ == "htwk_knee_separation"
   assert cfg.rewards["knee_separation"].weight == pytest.approx(-3.0)
-  assert cfg.rewards["knee_separation"].params["safe_distance"] == pytest.approx(
-    0.18
-  )
+  assert cfg.rewards["knee_separation"].params["safe_distance"] == pytest.approx(0.18)
   assert cfg.rewards["knee_separation"].params["softness"] == pytest.approx(0.01)
   assert cfg.rewards["knee_separation"].params["asset_cfg"].body_names == (
     "Left_Shank",
@@ -214,9 +205,7 @@ def test_htwk_robust_ft_task_has_staged_yaw_and_terrain_setup():
   )
   assert cfg.rewards["hip_roll_barrier"].func.__name__ == "htwk_hip_roll_barrier"
   assert cfg.rewards["hip_roll_barrier"].weight == pytest.approx(-4.0)
-  assert cfg.rewards["hip_roll_barrier"].params["max_deviation"] == pytest.approx(
-    0.18
-  )
+  assert cfg.rewards["hip_roll_barrier"].params["max_deviation"] == pytest.approx(0.18)
   assert cfg.rewards["hip_roll_barrier"].params["softness"] == pytest.approx(0.02)
   assert cfg.rewards["hip_roll_barrier"].params["asset_cfg"].joint_names == (
     ".*_Hip_Roll",
@@ -238,9 +227,7 @@ def test_htwk_robust_ft_task_has_staged_yaw_and_terrain_setup():
   assert cfg.curriculum["shoulder_release"].params["start_weight"] == pytest.approx(
     -0.5
   )
-  assert cfg.curriculum["shoulder_release"].params["end_weight"] == pytest.approx(
-    -0.05
-  )
+  assert cfg.curriculum["shoulder_release"].params["end_weight"] == pytest.approx(-0.05)
   assert cfg.rewards["feet_offset_x"].params["min_velocity_scale"] == pytest.approx(
     0.35
   )

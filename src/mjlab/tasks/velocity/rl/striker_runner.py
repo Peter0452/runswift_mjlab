@@ -5,6 +5,12 @@ controller step: it decodes the controller's action into a skill decision,
 runs the frozen kick / walk skills for the learner at every env step, and sums
 the env reward. ``StrikerControllerRunner`` keeps the opponent's controller
 mirror and pool in step with the learner, as the flat self-play runner does.
+
+GRU memory: on the robot the runner zeroes the controller's state whenever
+the striker takes over (kickoffs, restarts, get-ups, role changes, expired
+intents), so in training it is zeroed at every kickoff / restart and at random
+(``memory_reset_mean_s``), not only at episode ends. ``MemoryResetPPO`` replays
+the GRU through the same resets in its update.
 """
 
 from __future__ import annotations
@@ -13,12 +19,17 @@ from dataclasses import dataclass
 from typing import cast
 
 import torch
+from rsl_rl.algorithms import PPO
 from tensordict import TensorDict
 
 from mjlab.rl import MjlabOnPolicyRunner, RslRlOnPolicyRunnerCfg, RslRlVecEnvWrapper
 from mjlab.tasks.velocity.mdp import striker_skills as skills
-from mjlab.tasks.velocity.mdp.self_play import OpponentPolicyAction
-from mjlab.tasks.velocity.rl.selfplay_runner import sync_opponent
+from mjlab.tasks.velocity.mdp.self_play import (
+  CONTROLLER_VIS_LEGEND,
+  OpponentPolicyAction,
+  SelfPlayKickCommand,
+)
+from mjlab.tasks.velocity.rl.selfplay_runner import actor_std_range, sync_opponent
 
 
 class StrikerControllerVecEnv(RslRlVecEnvWrapper):
@@ -37,6 +48,14 @@ class StrikerControllerVecEnv(RslRlVecEnvWrapper):
     assert isinstance(opponent, OpponentPolicyAction)
     self.kick_skill, self.walk_skill = opponent.skills()
     self.decision_steps = int(opponent.cfg.decision_steps)
+    command = self.unwrapped.command_manager.get_term(opponent.cfg.command_name)
+    assert isinstance(command, SelfPlayKickCommand)
+    self.command = command
+    self.memory_reset_prob = memory_reset_prob(opponent.cfg, self.unwrapped.step_dt)
+    self.controller_ball_memory = bool(opponent.cfg.controller_ball_memory)
+    self.walk_velocity = bool(opponent.cfg.controller_walk_velocity)
+    self.aim_world = bool(opponent.cfg.aim_world)
+    self.robot = self.unwrapped.scene["robot"]
     self.switch_cost = float(switch_cost)
     self.num_actions = skills.CONTROLLER_ACTION_DIM
     n, dev = self.num_envs, self.device
@@ -44,11 +63,41 @@ class StrikerControllerVecEnv(RslRlVecEnvWrapper):
     self.since = torch.zeros(n, dtype=torch.long, device=dev)
     self._obs = self.unwrapped.observation_manager.compute()
 
+  def yaw(self) -> torch.Tensor:
+    return skills.yaw_of(self.robot.data.root_link_quat_w)
+
+  def held(self, theta: torch.Tensor, yaw0: torch.Tensor) -> torch.Tensor:
+    """The decision's direction now (``aim_world``), else as decided."""
+    if not self.aim_world:
+      return theta
+    return skills.held_direction(theta, yaw0, self.yaw())
+
+  def walk_cmd(self, actions: torch.Tensor) -> torch.Tensor | None:
+    """Direct walk commands (``controller_walk_velocity``), else None."""
+    if not self.walk_velocity:
+      return None
+    return skills.walk_velocity_command(actions, self.command.speed_limit)
+
+  def _controller_actor(self, actor: torch.Tensor) -> torch.Tensor:
+    """The skills' actor inputs with the controller's view of a lost ball."""
+    if not self.controller_ball_memory:
+      return actor
+    cmd = self.command
+    age = torch.exp(-cmd.time_since_seen / cmd.cfg.ball_memory_tau)
+    return skills.controller_ball_obs(
+      actor,
+      cmd.ball_lost | cmd.never_seen,
+      cmd.memory_disproved | cmd.never_seen,
+      cmd.memory_ball_b,
+      age,
+    )
+
   def _wrap(self, obs: dict) -> TensorDict:
     state = skills.skill_state(self.kick, self.since)
+    actor = self._controller_actor(obs["actor"])
     return TensorDict(
       {
-        "actor": torch.cat((obs["actor"], state), dim=-1),
+        "actor": torch.cat((actor, state), dim=-1),
         "critic": torch.cat((obs["critic"], state), dim=-1),
       },
       batch_size=[self.num_envs],
@@ -68,7 +117,11 @@ class StrikerControllerVecEnv(RslRlVecEnvWrapper):
   def step(
     self, actions: torch.Tensor
   ) -> tuple[TensorDict, torch.Tensor, torch.Tensor, dict]:
-    kick, theta, level = skills.decode(actions.to(self.device))
+    actions = actions.to(self.device)
+    kick, theta, level = skills.decode(actions)
+    walk_cmd = self.walk_cmd(actions)
+    yaw0 = self.yaw()
+    self.command.controller_decision = (kick, theta, level, walk_cmd)
     switched = kick != self.kick
     self.since = torch.where(switched, 0, self.since)
     self.kick = kick
@@ -76,6 +129,7 @@ class StrikerControllerVecEnv(RslRlVecEnvWrapper):
     total = -self.switch_cost * switched.float()
     done = torch.zeros(n, dtype=torch.bool, device=dev)
     time_out = torch.zeros(n, dtype=torch.bool, device=dev)
+    kickoff = torch.zeros(n, dtype=torch.bool, device=dev)
     stand_kick, stand_theta, stand_level = skills.stand_action(n, dev)
     log: dict = {}
     extras: dict = {}
@@ -84,16 +138,18 @@ class StrikerControllerVecEnv(RslRlVecEnvWrapper):
       # After an env ends inside the chunk its new episode stands until the
       # next decision; those steps are not this transition's.
       k = torch.where(done, stand_kick, kick)
-      th = torch.where(done, stand_theta, theta)
+      th = torch.where(done, stand_theta, self.held(theta, yaw0))
       lv = torch.where(done, stand_level, level)
+      wc = None if walk_cmd is None else torch.where(done.unsqueeze(-1), 0.0, walk_cmd)
       actor = cast(torch.Tensor, obs["actor"])
-      joint = skills.run_skills(actor, k, th, lv, self.kick_skill, self.walk_skill)
+      joint = skills.run_skills(actor, k, th, lv, self.kick_skill, self.walk_skill, wc)
       obs, rew, terminated, truncated, extras = self.env.step(joint)
       assert isinstance(rew, torch.Tensor)
       total = total + torch.where(done, 0.0, rew)
       ended = (terminated | truncated) & ~done
       time_out |= truncated & ended
       done |= ended
+      kickoff |= self.command.kickoff_pending & ~done
       log.update(extras.get("log", {}))
       self.since += 1
     self._obs = obs
@@ -101,9 +157,56 @@ class StrikerControllerVecEnv(RslRlVecEnvWrapper):
     self.since = torch.where(done, 0, self.since)
     extras = dict(extras)
     extras["log"] = log
+    if self.memory_reset_prob is not None:
+      drop = torch.rand(n, device=dev) < self.memory_reset_prob
+      extras["memory_reset"] = (kickoff | drop) & ~done
     if not self.cfg.is_finite_horizon:
       extras["time_outs"] = time_out
     return self._wrap(obs), total, done.to(dtype=torch.long), extras
+
+
+def memory_reset_prob(opponent_cfg, step_dt: float) -> float | None:
+  """Per-decision chance of a random GRU reset (None: episode ends only)."""
+  mean_s = opponent_cfg.memory_reset_mean_s
+  if mean_s is None:
+    return None
+  return opponent_cfg.decision_steps * step_dt / mean_s
+
+
+class MemoryResetPPO(PPO):
+  """PPO whose recurrent actor also forgets at ``extras["memory_reset"]``.
+
+  The rollout zeroes the actor's state there; the update splits the replayed
+  trajectories at the same steps, so it recomputes exactly the rollout's
+  actions. Returns still run across the reset (the game goes on).
+  """
+
+  _memory_splits: torch.Tensor | None = None
+
+  def process_env_step(self, obs, rewards, dones, extras) -> None:
+    reset = extras.get("memory_reset")
+    super().process_env_step(obs, rewards, dones, extras)
+    if reset is None:
+      return
+    st = self.storage
+    if self._memory_splits is None:
+      self._memory_splits = torch.zeros_like(st.dones)
+    self._memory_splits[st.step - 1].copy_(reset.view(-1, 1))
+    self.actor.reset(reset.to(self.device).long())
+
+  def update(self) -> dict:
+    splits = self._memory_splits
+    if splits is None:
+      return super().update()
+    st = self.storage
+    dones = st.dones
+    st.dones = dones | splits
+    try:
+      return super().update()
+    finally:
+      # Made in the rollout's inference mode: replaced, not zeroed in place.
+      st.dones = dones
+      self._memory_splits = None
 
 
 @dataclass
@@ -154,6 +257,7 @@ class StrikerControllerRunner(MjlabOnPolicyRunner):
       it,
       int(self.cfg.get("snapshot_interval", 0)) if snapshot else 0,
       self.logger.log_dir if self.logger.writer is not None else None,
+      actor_std_range(self.cfg),
     )
 
   def load(
@@ -187,12 +291,16 @@ class StrikerControllerPlayEnv:
   """
 
   def __init__(self, inner: StrikerControllerVecEnv) -> None:
+    print(f"[INFO] Two-level striker overlay: {CONTROLLER_VIS_LEGEND}")
     self.inner = inner
     self.num_envs = inner.num_envs
     self.unwrapped = inner.unwrapped
     self.t = 0
     self._done = torch.zeros(inner.num_envs, dtype=torch.bool, device=inner.device)
-    self._decision: tuple[torch.Tensor, torch.Tensor, torch.Tensor] | None = None
+    self._yaw0 = torch.zeros(inner.num_envs, device=inner.device)
+    self._decision: (
+      tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor | None] | None
+    ) = None
     self._wrapped = inner._wrap(inner._obs)
 
   def __getattr__(self, name):
@@ -233,21 +341,25 @@ class StrikerControllerPlayEnv:
   def step(self, actions: torch.Tensor):
     inner = self.inner
     if self.t == 0 or self._decision is None:
-      kick, theta, level = skills.decode(actions.to(inner.device))
+      actions = actions.to(inner.device)
+      kick, theta, level = skills.decode(actions)
       switched = kick != inner.kick
       inner.since = torch.where(switched, 0, inner.since)
       inner.kick = kick
-      self._decision = (kick, theta, level)
+      self._decision = (kick, theta, level, inner.walk_cmd(actions))
+      self._yaw0 = inner.yaw()
+      inner.command.controller_decision = self._decision
       self._done[:] = False
       self.t = 0
-    kick, theta, level = self._decision
+    kick, theta, level, walk_cmd = self._decision
     done = self._done
     sk, st, sl = skills.stand_action(inner.num_envs, inner.device)
     k = torch.where(done, sk, kick)
-    th = torch.where(done, st, theta)
+    th = torch.where(done, st, inner.held(theta, self._yaw0))
     lv = torch.where(done, sl, level)
+    wc = None if walk_cmd is None else torch.where(done.unsqueeze(-1), 0.0, walk_cmd)
     actor = cast(torch.Tensor, inner._obs["actor"])
-    joint = skills.run_skills(actor, k, th, lv, inner.kick_skill, inner.walk_skill)
+    joint = skills.run_skills(actor, k, th, lv, inner.kick_skill, inner.walk_skill, wc)
     obs, rew, terminated, truncated, extras = inner.env.step(joint)
     done |= (terminated | truncated) & ~done
     inner.since += 1

@@ -139,11 +139,11 @@ def test_attach_metadata_to_onnx_nested_clip_and_scale():
     metadata_props = {prop.key: prop.value for prop in loaded_model.metadata_props}
 
     clip_entries = metadata_props["observation_terms_clip"].split(",")
-    assert clip_entries == ["-inf;inf", "-1.000;1.000", "-inf;inf"]
+    assert clip_entries == ["-inf;inf", "-1.000000;1.000000", "-inf;inf"]
     assert [float(x) for x in clip_entries[1].split(";")] == [-1.0, 1.0]
 
     scale_entries = metadata_props["observation_terms_scale"].split(",")
-    assert scale_entries == ["1.000", "0.500;1.200;0.300", "2.000"]
+    assert scale_entries == ["1.000000", "0.500000;1.200000;0.300000", "2.000000"]
     assert [float(x) for x in scale_entries[1].split(";")] == [0.5, 1.2, 0.3]
 
 

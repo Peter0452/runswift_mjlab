@@ -338,13 +338,14 @@ def booster_k1_kick_stage1_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   return cfg
 
 
-_APPROACH_BALL_RADIUS = 0.08
-_APPROACH_BALL_MASS = 0.1
+# B-Human K1 ball (MachineLearning/IsaacGymRL envs/K1_Ball.yaml asset.ball).
+_APPROACH_BALL_RADIUS = 0.095
+_APPROACH_BALL_MASS = 0.290
 _APPROACH_BALL_FRICTION = (1.0, 0.5, 0.015)
 
 
 def _get_approach_ball_spec() -> mujoco.MjSpec:
-  """Size-5 mesh scaled to the 0.08 m kick ball."""
+  """Size-5 mesh scaled to the B-Human 0.095 m kick ball."""
   spec = mujoco.MjSpec.from_file(str(BALL_XML))
   scale = _APPROACH_BALL_RADIUS / get_ball_radius(5)
   for mesh in spec.meshes:
@@ -358,7 +359,8 @@ def _get_approach_ball_spec() -> mujoco.MjSpec:
     elif geom.name == "ball_collision":
       geom.group = 3
       geom.size = (_APPROACH_BALL_RADIUS, 0, 0)
-      geom.typeinertia = mujoco.mjtGeomInertia.mjINERTIA_SHELL
+      # Solid sphere, matching Isaac Gym recomputeInertia on create_sphere.
+      geom.typeinertia = mujoco.mjtGeomInertia.mjINERTIA_VOLUME
       geom.priority = 1
       geom.condim = 6
       geom.mass = _APPROACH_BALL_MASS
@@ -813,19 +815,16 @@ def booster_k1_kick_stage3_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     ),
   )
 
-  # A different ball every episode, so the kick does not depend on one ball:
-  # mass ±30 % (inertia scaled with it), sliding friction ±30 %, rolling
-  # resistance 0.6–1.6×.
-  # Size too (user 2026-10-08): radius 0.07–0.13 m and mass 0.05–0.45 kg
-  # (e^{2α} × 0.1 kg), drawn independently; real balls from B-Human's 0.095 m /
-  # 0.29 kg to a FIFA size 5 (0.11 m / 0.43 kg). The key stays "ball_mass" so
-  # tools that pop it get the fixed nominal ball.
+  # B-Human's ball (K1_Ball.yaml): radius 0.095 m ± 0.01, mass 0.290 kg ± 0.01,
+  # drawn independently each episode. alpha is the existing e^{2α} mass factor
+  # around 0.290 kg (0.280–0.300 kg). The key stays "ball_mass" so tools that
+  # pop it get the fixed nominal ball.
   cfg.events["ball_mass"] = EventTermCfg(
     mode="reset",
     func=mdp.ball_size_mass,
     params={
-      "radius_range": (0.07, 0.13),
-      "alpha_range": (-0.347, 0.752),
+      "radius_range": (0.085, 0.105),
+      "alpha_range": (-0.0175, 0.0170),
       "nominal_mass": _APPROACH_BALL_MASS,
       "geom_cfg": SceneEntityCfg("ball", geom_names=("ball_collision",)),
       "body_cfg": SceneEntityCfg("ball", body_names=("ball",)),
@@ -970,6 +969,8 @@ def booster_k1_kick_stage3_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     # v41 tried 8: no faster (0.95 m/s at 2 m/s caps) and kicking fell
     # (2.1 kicks, 0.89 goals, 88 % within 20°); back to 3.
     "walk_speed_track": (mdp.walk_speed_track, 3.0),
+    # Turn at the yaw cap while the ball is still far. Off unless set.
+    "yaw_cap_track": (mdp.yaw_cap_track, 0.0),
     "kick_direction": (mdp.kick_direction, 900.0),
     "kick_vel": (mdp.kick_vel, 900.0),
     "kick_vel_accurate": (mdp.kick_vel_accurate, 300.0),
@@ -986,6 +987,10 @@ def booster_k1_kick_stage3_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     "turn_rate_track": (mdp.turn_rate_track, 0.0),
     # Long kicks without a speed cap (gene w.long_kick_speed_linear).
     "long_kick_speed_linear": (mdp.long_kick_speed_linear, 0.0),
+    # Goal-mouth aim and power. Off unless a fine-tune sets the weights: the
+    # champion's kick rewards stay the baseline, and these only add pay.
+    "goal_mouth": (mdp.goal_mouth, 0.0),
+    "long_kick_speed_in_mouth": (mdp.long_kick_speed_in_mouth, 0.0),
     # Situational style choice from running outcome statistics (gene).
     "style_advantage": (mdp.style_advantage, 0.0),
     "kick_double_touch": (mdp.kick_double_touch, -200.0),
@@ -1164,10 +1169,9 @@ def booster_k1_kick_stage3_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   twist = cfg.commands["twist"]
   twist.ball_origin = str(KICK_GENES.get("ball_origin", "feet"))  # ty: ignore[unresolved-attribute]
   twist.ball_origin_jitter = float(KICK_GENES.get("ball_origin_jitter", 0.02))  # ty: ignore[unresolved-attribute]
-  # Heavier balls in training (user 2026-10-07: heavy ball too): gene
-  # ball_mass_alpha_max raises the mass DR ceiling (0.55 -> up to 0.30 kg).
-  # Since 2026-10-08 the default ceiling (0.752, 0.45 kg) is above the old
-  # genes' 0.55, so the gene only ever raises it.
+  # Gene ball_mass_alpha_max only raises the mass ceiling above the B-Human
+  # ball (default alpha 0.017 → 0.300 kg). Old genes (0.55, 0.752) were
+  # written for the 0.1 kg ball and will make this ball much heavier.
   if "ball_mass_alpha_max" in KICK_GENES and "ball_mass" in cfg.events:
     lo, hi = cfg.events["ball_mass"].params["alpha_range"]
     hi = max(hi, float(KICK_GENES["ball_mass_alpha_max"]))

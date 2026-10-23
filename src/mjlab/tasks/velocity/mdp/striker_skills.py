@@ -5,9 +5,11 @@ The controller acts every ``DECISION_STEPS`` env steps (5 Hz at 50 Hz) with
 four numbers in [-1, 1]:
 
 - ``a[0]``: kick (> 0) or walk.
-- ``a[1:3]``: direction (cos, sin), robot frame. The kick skill aims the ball
-  along it; the walk skill heads along it.
-- ``a[3]``: kick range (short / medium / long in thirds) or walk speed.
+- kick: ``a[1:3]`` the aim (cos, sin) in the robot frame, ``a[3]`` the range
+  (short / medium / long in thirds).
+- walk: with ``walk_velocity`` controllers, ``a[1:4]`` the walk skill's own
+  command (vx, vy, wz, ``walk_velocity_command``); otherwise ``a[1:3]`` a
+  direction and ``a[3]`` a speed (``walk_command``, controller_v2 to v4).
 
 Skills are the stage-3 kick loop (83 inputs, or 86 with the opponent
 detection) and the AMP walk (75 inputs: the same 72 body inputs and a
@@ -26,6 +28,8 @@ Policy = Callable[[torch.Tensor], torch.Tensor]
 
 # Actor layout of the kick loop (see docs/K1_KICK_LOOP_POLICY_IO.md).
 BODY_DIM = 72
+BALL_SLOTS = slice(72, 75)
+"""Ball x, y (trunk frame) and memory age."""
 KICK_DIR_SLOTS = slice(78, 80)
 KICK_RANGE_SLOTS = slice(80, 83)
 
@@ -38,6 +42,14 @@ WALK_SPEED_MAX = 1.2
 WALK_LATERAL_SHARE = 0.35
 WALK_TURN_GAIN = 2.0
 WALK_TURN_MAX = 1.2
+WALK_TURN_SPEED_SHARE = 0.35
+WALK_VEL_FORWARD = 1.8
+WALK_VEL_BACKWARD = 1.0
+WALK_VEL_LATERAL = 1.2
+WALK_VEL_TURN = 1.5
+"""Direct walk commands at |a| = 1 (m/s, rad/s): inside the AMP walk's trained
+ranges (vx -1.75..2.0, vy +-1.8, wz +-1.6), with margin."""
+"""Share of the walk speed kept while turning toward a far-off direction."""
 SWITCH_HOLD_STEPS = 50
 """Steps since the last switch at which the skill-state input saturates."""
 
@@ -57,14 +69,48 @@ def range_from_level(level: torch.Tensor) -> torch.Tensor:
 
 
 def walk_command(theta: torch.Tensor, level: torch.Tensor) -> torch.Tensor:
-  """Velocity command (vx, vy, wz) that walks along ``theta`` and turns to it."""
+  """Velocity command (vx, vy, wz) that walks along ``theta`` and turns to it.
+
+  Off to the side or behind (beyond 0.8 rad) it walks forward at a third of
+  the speed while turning, an arc toward ``theta``, rather than backing up
+  toward it (which left a ball behind the robot at ~0 m/s closing speed).
+  """
   speed = WALK_SPEED_MAX * 0.5 * (level + 1.0)
-  facing = (theta.abs() < 0.8).to(theta.dtype)
-  speed = speed * (0.35 + 0.65 * facing)
-  vx = speed * theta.cos()
+  facing = theta.abs() < 0.8
+  vx = torch.where(facing, speed * theta.cos(), WALK_TURN_SPEED_SHARE * speed)
   vy = WALK_LATERAL_SHARE * speed * theta.sin()
+  vy = torch.where(facing, vy, WALK_TURN_SPEED_SHARE * vy)
   wz = (WALK_TURN_GAIN * theta).clamp(-WALK_TURN_MAX, WALK_TURN_MAX)
   return torch.stack((vx, vy, wz), dim=-1)
+
+
+def yaw_of(quat: torch.Tensor) -> torch.Tensor:
+  """Heading (rad) of wxyz quaternions."""
+  qw, qx, qy, qz = quat[:, 0], quat[:, 1], quat[:, 2], quat[:, 3]
+  return torch.atan2(2.0 * (qw * qz + qx * qy), 1.0 - 2.0 * (qy * qy + qz * qz))
+
+
+def held_direction(
+  theta: torch.Tensor, yaw_at_decision: torch.Tensor, yaw_now: torch.Tensor
+) -> torch.Tensor:
+  """A decision's direction (robot frame when made) in the current robot
+  frame: fixed in the world between decisions, turned by the yaw change since,
+  as the robot runner holds an intent's aim (by IMU yaw)."""
+  a = theta + yaw_at_decision - yaw_now
+  return torch.atan2(a.sin(), a.cos())
+
+
+def walk_velocity_command(
+  action: torch.Tensor, speed_limit: torch.Tensor | None = None
+) -> torch.Tensor:
+  """The walk skill's command (vx, vy, wz) straight from ``a[1:4]``, clipped
+  to the episode's speed caps (the kick skill obeys them too)."""
+  a = action.clamp(-1.0, 1.0)
+  vx = torch.where(a[:, 1] >= 0.0, WALK_VEL_FORWARD, WALK_VEL_BACKWARD) * a[:, 1]
+  cmd = torch.stack((vx, WALK_VEL_LATERAL * a[:, 2], WALK_VEL_TURN * a[:, 3]), -1)
+  if speed_limit is not None:
+    cmd = torch.maximum(torch.minimum(cmd, speed_limit), -speed_limit)
+  return cmd
 
 
 def kick_inputs(actor_obs: torch.Tensor, theta: torch.Tensor, level: torch.Tensor):
@@ -75,9 +121,40 @@ def kick_inputs(actor_obs: torch.Tensor, theta: torch.Tensor, level: torch.Tenso
   return obs
 
 
-def walk_inputs(actor_obs: torch.Tensor, theta: torch.Tensor, level: torch.Tensor):
-  """The AMP walk's 75 inputs: body state and the controller's command."""
-  return torch.cat((actor_obs[:, :BODY_DIM], walk_command(theta, level)), dim=-1)
+def walk_inputs(
+  actor_obs: torch.Tensor,
+  theta: torch.Tensor,
+  level: torch.Tensor,
+  command: torch.Tensor | None = None,
+):
+  """The AMP walk's 75 inputs: body state and the controller's command (a
+  direct ``command``, else ``walk_command`` from direction and speed)."""
+  if command is None:
+    command = walk_command(theta, level)
+  return torch.cat((actor_obs[:, :BODY_DIM], command), dim=-1)
+
+
+def controller_ball_obs(
+  actor_obs: torch.Tensor,
+  lost: torch.Tensor,
+  disproved: torch.Tensor,
+  memory_b: torch.Tensor,
+  age: torch.Tensor,
+) -> torch.Tensor:
+  """The controller's view of a lost ball (slots 72-74).
+
+  The kick skill's inputs replace a lost ball with a "turn this way" cue (a
+  virtual ball beside the robot, kick loop v56d). The controller instead keeps
+  the IMU-turned memory and its decaying age until the camera disproves it
+  (the remembered spot in view, nothing there); then ball (0, 0) and age 0,
+  which nothing else shows (seen is 1, memory decays above 0): searching is
+  its own decision. Not lost: unchanged.
+  """
+  known = torch.cat((memory_b, age.unsqueeze(-1)), dim=-1)
+  view = torch.where(disproved.unsqueeze(-1), 0.0, known)
+  obs = actor_obs.clone()
+  obs[:, BALL_SLOTS] = torch.where(lost.unsqueeze(-1), view, obs[:, BALL_SLOTS])
+  return obs
 
 
 def skill_state(kick: torch.Tensor, since_switch: torch.Tensor) -> torch.Tensor:
@@ -99,8 +176,10 @@ def run_skills(
   level: torch.Tensor,
   kick_skill: Policy,
   walk_skill: Policy,
+  walk_cmd: torch.Tensor | None = None,
 ) -> torch.Tensor:
-  """Joint actions (22) from the chosen skill per env."""
+  """Joint actions (22) from the chosen skill per env; ``walk_cmd``: direct
+  walk commands (``walk_velocity_command``)."""
   out = torch.zeros(actor_obs.shape[0], 22, device=actor_obs.device)
   if bool(kick.any()):
     ids = kick.nonzero(as_tuple=False).squeeze(-1)
@@ -108,7 +187,8 @@ def run_skills(
   walk = ~kick
   if bool(walk.any()):
     ids = walk.nonzero(as_tuple=False).squeeze(-1)
-    out[ids] = walk_skill(walk_inputs(actor_obs[ids], theta[ids], level[ids]))
+    cmd = None if walk_cmd is None else walk_cmd[ids]
+    out[ids] = walk_skill(walk_inputs(actor_obs[ids], theta[ids], level[ids], cmd))
   return out
 
 

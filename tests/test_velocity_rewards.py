@@ -6,7 +6,6 @@ import math
 from unittest.mock import MagicMock, PropertyMock
 
 import pytest
-
 import torch
 
 from mjlab.managers.reward_manager import RewardTermCfg
@@ -431,9 +430,7 @@ def test_feet_gait_stance_fraction_creates_double_support():
 
   # At duty 0.5 that same exchange phase permits no double support, so the
   # fully-planted case is now half wrong. This is what the new parameter buys.
-  legacy = _make_feet_gait(
-    phase[:1], contact[:1], moving[:1], stance_fraction=0.5
-  )()
+  legacy = _make_feet_gait(phase[:1], contact[:1], moving[:1], stance_fraction=0.5)()
   torch.testing.assert_close(legacy, torch.tensor([0.5]))
 
 
@@ -468,9 +465,7 @@ def test_tracking_reward_scales_with_commanded_speed():
       "mjlab.tasks.velocity.mdp.rewards._ema_filtered_base_vel",
       return_value=(measured, torch.zeros_like(measured)),
     ):
-      return track_lin_vel_axis(
-        env, axis=0, command_name="twist", speed_ref=speed_ref
-      )
+      return track_lin_vel_axis(env, axis=0, command_name="twist", speed_ref=speed_ref)
 
   # speed_ref=0 disables scaling: both cap at 1.0 regardless of command.
   torch.testing.assert_close(_call(0.0), torch.tensor([1.0, 1.0]))
@@ -646,18 +641,14 @@ def test_htwk_foot_offset_uses_command_target_and_velocity_gate():
   env = MagicMock()
   asset = MagicMock()
   env.scene = {"robot": asset}
-  asset.data.body_link_pos_w = torch.tensor(
-    [[[0.10, 0.08, 0.0], [-0.10, -0.08, 0.0]]]
-  )
+  asset.data.body_link_pos_w = torch.tensor([[[0.10, 0.08, 0.0], [-0.10, -0.08, 0.0]]])
   asset.data.root_link_quat_w = _identity_quat(1)
   env.command_manager.get_command.return_value = torch.tensor(
     [[0.5, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.0]]
   )
   feet = SceneEntityCfg("robot", body_ids=slice(0, 2))
 
-  cost = htwk_feet_offset_x(
-    env, command_name="twist", max_vel=1.0, asset_cfg=feet
-  )
+  cost = htwk_feet_offset_x(env, command_name="twist", max_vel=1.0, asset_cfg=feet)
   # |0.2 - 0.1| clipped at 0.1, then (1 - 0.5)^2 velocity gate.
   torch.testing.assert_close(cost, torch.tensor([0.025]))
 
@@ -669,9 +660,7 @@ def test_feet_offset_x_fixed_opens_range_with_vx_cmd():
   asset = MagicMock()
   env.scene = {"robot": asset}
   # Sagittal stagger x_offset = 0.08 m.
-  asset.data.body_link_pos_w = torch.tensor(
-    [[[0.04, 0.10, 0.0], [-0.04, -0.10, 0.0]]]
-  )
+  asset.data.body_link_pos_w = torch.tensor([[[0.04, 0.10, 0.0], [-0.04, -0.10, 0.0]]])
   asset.data.root_link_quat_w = _identity_quat(1)
   feet = SceneEntityCfg("robot", body_ids=slice(0, 2))
 
@@ -705,9 +694,7 @@ def test_feet_offset_y_fixed_relaxes_when_vy_is_commanded():
   env = MagicMock()
   asset = MagicMock()
   env.scene = {"robot": asset}
-  asset.data.body_link_pos_w = torch.tensor(
-    [[[0.0, 0.30, 0.0], [0.0, 0.0, 0.0]]]
-  )
+  asset.data.body_link_pos_w = torch.tensor([[[0.0, 0.30, 0.0], [0.0, 0.0, 0.0]]])
   asset.data.root_link_quat_w = _identity_quat(1)
   env.command_manager.get_command.return_value = torch.tensor([[0.0, 1.0, 0.0, 1.9]])
   feet = SceneEntityCfg("robot", body_ids=slice(0, 2))
@@ -732,9 +719,7 @@ def test_htwk_y_offset_is_relative_to_nominal_foot_distance():
   env = MagicMock()
   asset = MagicMock()
   env.scene = {"robot": asset}
-  asset.data.body_link_pos_w = torch.tensor(
-    [[[0.0, 0.19, 0.0], [0.0, 0.0, 0.0]]]
-  )
+  asset.data.body_link_pos_w = torch.tensor([[[0.0, 0.19, 0.0], [0.0, 0.0, 0.0]]])
   asset.data.root_link_quat_w = _identity_quat(1)
   env.command_manager.get_command.return_value = torch.tensor(
     [[0.5, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.01]]
@@ -757,9 +742,7 @@ def test_htwk_feet_offset_x_keeps_min_velocity_scale_at_high_speed():
   env = MagicMock()
   asset = MagicMock()
   env.scene = {"robot": asset}
-  asset.data.body_link_pos_w = torch.tensor(
-    [[[0.10, 0.08, 0.0], [-0.10, -0.08, 0.0]]]
-  )
+  asset.data.body_link_pos_w = torch.tensor([[[0.10, 0.08, 0.0], [-0.10, -0.08, 0.0]]])
   asset.data.root_link_quat_w = _identity_quat(1)
   env.command_manager.get_command.return_value = torch.tensor(
     [[1.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.0]]
@@ -786,15 +769,11 @@ def test_htwk_feet_site_xy_separation_penalizes_close_sites():
   env = MagicMock()
   asset = MagicMock()
   env.scene = {"robot": asset}
-  asset.data.site_pos_w = torch.tensor(
-    [[[0.0, 0.06, 0.0], [0.0, -0.05, 0.0]]]
-  )
+  asset.data.site_pos_w = torch.tensor([[[0.0, 0.06, 0.0], [0.0, -0.05, 0.0]]])
   asset.data.root_link_quat_w = _identity_quat(1)
   sites = SceneEntityCfg("robot", site_ids=slice(0, 2))
 
-  cost = htwk_feet_site_xy_separation(
-    env, min_separation=0.14, asset_cfg=sites
-  )
+  cost = htwk_feet_site_xy_separation(env, min_separation=0.14, asset_cfg=sites)
   # Lateral separation is 0.11 m: ((0.14 - 0.11) / 0.14)^2.
   torch.testing.assert_close(cost, torch.tensor([0.045918367]))
 
@@ -805,15 +784,11 @@ def test_htwk_minimum_feet_separation_is_a_smooth_squared_hinge():
   env = MagicMock()
   asset = MagicMock()
   env.scene = {"robot": asset}
-  asset.data.body_link_pos_w = torch.tensor(
-    [[[0.0, 0.05, 0.0], [0.0, -0.04, 0.0]]]
-  )
+  asset.data.body_link_pos_w = torch.tensor([[[0.0, 0.05, 0.0], [0.0, -0.04, 0.0]]])
   asset.data.root_link_quat_w = _identity_quat(1)
   feet = SceneEntityCfg("robot", body_ids=slice(0, 2))
 
-  cost = htwk_feet_minimum_separation(
-    env, min_separation=0.10, asset_cfg=feet
-  )
+  cost = htwk_feet_minimum_separation(env, min_separation=0.10, asset_cfg=feet)
   # Separation is 0.09 m: ((0.10 - 0.09) / 0.10)^2 = 0.01.
   torch.testing.assert_close(cost, torch.tensor([0.01]))
 
@@ -833,9 +808,7 @@ def test_htwk_knee_separation_increases_below_safe_distance():
   )
   knees = SceneEntityCfg("robot", body_ids=slice(0, 2))
 
-  cost = htwk_knee_separation(
-    env, safe_distance=0.15, softness=0.01, asset_cfg=knees
-  )
+  cost = htwk_knee_separation(env, safe_distance=0.15, softness=0.01, asset_cfg=knees)
   assert cost.shape == (3,)
   assert cost[0] < cost[1] < cost[2]
 
@@ -856,9 +829,7 @@ def test_htwk_hip_roll_barrier_has_deadband():
   )
   hips = SceneEntityCfg("robot", joint_ids=slice(0, 2))
 
-  cost = htwk_hip_roll_barrier(
-    env, max_deviation=0.12, softness=0.02, asset_cfg=hips
-  )
+  cost = htwk_hip_roll_barrier(env, max_deviation=0.12, softness=0.02, asset_cfg=hips)
   assert cost.shape == (3,)
   assert cost[0] < cost[1] < cost[2]
 

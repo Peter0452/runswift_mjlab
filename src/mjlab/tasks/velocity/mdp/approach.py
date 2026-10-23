@@ -58,7 +58,8 @@ SPAWN_VIEW_HALF_ANGLE = 0.4
 SPEED_LIMIT_VX = (0.3, 1.2)
 SPEED_LIMIT_VY = (0.2, 1.0)
 SPEED_LIMIT_WZ = (0.4, 1.25)
-BALL_RADIUS = 0.08
+# B-Human K1 ball (MachineLearning/IsaacGymRL K1_Ball.yaml asset.ball).
+BALL_RADIUS = 0.095
 # Pelvis height used only to put the ball on the ground under the robot.
 NOMINAL_ROOT_HEIGHT = 0.53
 VIEW_SIGMA = 0.35
@@ -299,6 +300,12 @@ class ApproachYawCommand(CommandTerm):
     # robot (+1 left, -1 right) where the ball was last remembered.
     self.ball_lost = torch.zeros(n, dtype=torch.bool, device=device)
     self.lost_dir = torch.ones(n, device=device)
+    # Lost because the camera disproved the memory (its spot in view, nothing
+    # there), as opposed to only unseen for long; a subset of ``ball_lost``.
+    # The IMU-turned memory is kept as is for the two-level controller's
+    # inputs (``controller_ball_obs``).
+    self.memory_disproved = torch.zeros(n, dtype=torch.bool, device=device)
+    self.memory_ball_b = torch.zeros(n, 2, device=device)
     # L3 scenario gene: episodes with a world-model ball (always fresh).
     self.world_ball = torch.zeros(n, dtype=torch.bool, device=device)
     self.trunk_origin = torch.zeros(n, dtype=torch.bool, device=device)
@@ -522,8 +529,10 @@ class ApproachYawCommand(CommandTerm):
     Lost when the remembered spot is in the camera view (within
     ``memory_view_range``) and nothing was detected for ``memory_lost_in_view_s``,
     or nothing was detected for ``memory_lost_timeout_s`` wherever it points.
-    While lost the actor gets ball (0, 0) and age 0 ("search"), and the head
-    sweeps. The runner must apply the same rule (KICK_LOOP_POLICY_IO.md).
+    While lost the head sweeps and the actor gets, with ``lost_virtual_ball``
+    (v56d, the kick loop's setting), a virtual ball beside it on the side last
+    remembered with the age still decaying, else ball (0, 0) and age 0. The
+    runner must apply the same rule (KICK_LOOP_POLICY_IO.md).
     """
     robot_pos = self.robot.data.root_link_pos_w
     rel = torch.zeros_like(robot_pos)
@@ -545,6 +554,9 @@ class ApproachYawCommand(CommandTerm):
     side = torch.where(memory_b[:, 1] >= 0.0, 1.0, -1.0)
     self.lost_dir[:] = torch.where(newly, side, self.lost_dir)
     self.ball_lost[:] = (self.ball_lost | stale) & ~visible
+    disproved = in_view & (t >= self.cfg.memory_lost_in_view_s)
+    self.memory_disproved[:] = (self.memory_disproved | disproved) & self.ball_lost
+    self.memory_ball_b[:] = memory_b
     lost = self.ball_lost.unsqueeze(-1)
     if self.cfg.lost_virtual_ball:
       # v56d: a virtual ball fixed beside the robot on the side the ball was
@@ -891,8 +903,10 @@ def approach_command_obs(
   """Ball xy, then slot 74.
 
   The actor's ball is masked to the camera view: zero when unseen, or the
-  last-seen position with ``ball_memory``. Slot 74 is the memory age
-  exp(-t/tau) with ``ball_memory``, else zero. The critic gets the true ball.
+  last-seen position with ``ball_memory`` (and, once lost with
+  ``memory_invalidate``, the search cue described in ``_invalidate_memory``).
+  Slot 74 is the memory age exp(-t/tau) with ``ball_memory``, else zero. The
+  critic gets the true ball.
   """
   cmd = _command(env)
   ball = cmd.true_ball_b if privileged else cmd.masked_ball_b

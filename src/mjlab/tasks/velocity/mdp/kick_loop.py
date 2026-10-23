@@ -101,10 +101,10 @@ LONG_BAND_EMA = 0.02  # per long kick
 LONG_POWER_SIGMA = 1.5
 # v34 speed caps (policy inputs 75–77), ramped in from the v31 maxima over
 # SPEED_CAP_RAMP_STEPS env steps. Backward speed is capped at BACKWARD_SPEED_MAX.
-SPEED_CAP_FINAL = ((0.3, 2.0), (0.2, 1.5), (0.4, 1.5))
+SPEED_CAP_FINAL = ((0.3, 2.0), (0.2, 2.0), (0.4, 3.0))
 # v34 ramped from (1.2, 1.0, 1.25); runs resuming from v34 or later start at
-# the final caps.
-SPEED_CAP_START_MAX = (2.0, 1.5, 1.5)
+# the final caps. Yaw 3 rad/s and lateral 2 m/s are the chase caps (2026-10-16).
+SPEED_CAP_START_MAX = (2.0, 2.0, 3.0)
 SPEED_CAP_RAMP_STEPS = 300 * 24
 BACKWARD_SPEED_MAX = 1.75
 # Width of the sharp part of the kick-direction score (rad, ~20°).
@@ -200,6 +200,13 @@ HEAD_SEARCH_YAW = 0.8
 HEAD_SEARCH_YAW_PERIOD = 3.0
 HEAD_SEARCH_PITCH = (0.55, 0.2)  # centre, amplitude
 HEAD_SEARCH_PITCH_PERIOD = 1.5
+# Self-play: the search sweeps the head's whole range (joint yaw ±1.0, pitch
+# from the tracker's far limit to its feet limit); the defaults keep stage 3.
+HEAD_FULL_SEARCH_YAW = 0.95
+HEAD_FULL_SEARCH_PITCH = (
+  0.5 * (HEAD_PITCH_LIMITS[0] + HEAD_PITCH_LIMITS[1]),
+  0.5 * (HEAD_PITCH_LIMITS[1] - HEAD_PITCH_LIMITS[0]),
+)
 # Lost close to the robot (v28): walking onto the ball, it leaves the bottom
 # of the image while the no-odometry memory still says it is farther. Look
 # straight down at once, and sweep yaw down there, instead of the mid sweep
@@ -353,17 +360,28 @@ def head_track_angles(
   return torch.stack((yaw, pitch), dim=-1)
 
 
-def head_search_angles(lost_s: torch.Tensor) -> torch.Tensor:
-  """Search sweep after ``lost_s`` seconds unseen (starts at the centre)."""
+def head_search_angles(
+  lost_s: torch.Tensor,
+  yaw_amp: float = HEAD_SEARCH_YAW,
+  pitch: tuple[float, float] = HEAD_SEARCH_PITCH,
+) -> torch.Tensor:
+  """Search sweep after ``lost_s`` seconds unseen (starts at the centre).
+
+  ``yaw_amp``: yaw amplitude; ``pitch``: (centre, amplitude) of the pitch.
+  """
   t = (lost_s - HEAD_SEARCH_AFTER).clamp(min=0.0)
-  yaw = HEAD_SEARCH_YAW * torch.sin(6.2832 * t / HEAD_SEARCH_YAW_PERIOD)
-  centre, amp = HEAD_SEARCH_PITCH
+  yaw = yaw_amp * torch.sin(6.2832 * t / HEAD_SEARCH_YAW_PERIOD)
+  centre, amp = pitch
   pitch = centre + amp * torch.cos(6.2832 * t / HEAD_SEARCH_PITCH_PERIOD)
   return torch.stack((yaw, pitch), dim=-1)
 
 
 def head_goal(
-  ball_b: torch.Tensor, lost_s: torch.Tensor, camera_pitch: float = 0.0
+  ball_b: torch.Tensor,
+  lost_s: torch.Tensor,
+  camera_pitch: float = 0.0,
+  search_yaw: float = HEAD_SEARCH_YAW,
+  search_pitch: tuple[float, float] = HEAD_SEARCH_PITCH,
 ) -> torch.Tensor:
   """Tracker goal from the actor's ball estimate and time since last seen.
 
@@ -372,7 +390,7 @@ def head_goal(
   yaw after HEAD_SEARCH_AFTER. Lost far for HEAD_SEARCH_AFTER: full sweep.
   """
   goal = head_track_angles(ball_b, camera_pitch=camera_pitch)
-  sweep = head_search_angles(lost_s)
+  sweep = head_search_angles(lost_s, search_yaw, search_pitch)
   near = ball_b.norm(dim=-1) < HEAD_NEAR_LOST
   searching = lost_s > HEAD_SEARCH_AFTER
   down_yaw = torch.where(searching, sweep[..., 0], goal[..., 0])
@@ -587,6 +605,15 @@ class KickLoopCommand(ApproachYawCommand):
         jit = 1.0 + 0.1 * (2 * torch.rand(len(env_ids), 3, device=self.device) - 1)
         self.speed_limit[env_ids] = torch.where(
           low.unsqueeze(-1), caps * jit, self.speed_limit[env_ids]
+        )
+      if self.cfg.fast_cap_prob > 0.0:
+        # Chase episodes pinned at 2 m/s linear and 3 rad/s yaw. Low caps win.
+        fast = torch.rand(len(env_ids), device=self.device) < self.cfg.fast_cap_prob
+        if self.cfg.cap_low_prob > 0.0:
+          fast = fast & ~low
+        pinned = torch.tensor((2.0, 2.0, 3.0), device=self.device)
+        self.speed_limit[env_ids] = torch.where(
+          fast.unsqueeze(-1), pinned, self.speed_limit[env_ids]
         )
     # Recorded mid-kick starts bring their own targets: off while a range is pinned.
     if self.cfg.rsi_files and len(env_ids) > 0 and self._range_pin is None:
@@ -1112,6 +1139,8 @@ class KickLoopCommandCfg(ApproachYawCommandCfg):
   rsi_files: tuple[tuple[str, float], ...] = ()
   cap_low_prob: float = 0.0
   """L3: share of episodes at runswift's low caps (0.5 / 0.3 / 0.6)."""
+  fast_cap_prob: float = 0.0
+  """Share of episodes pinned at 2 m/s linear and 3 rad/s yaw."""
   """K4b: (npz path, probability) of starting an episode mid-kick from that set."""
   heading_far: float = HEADING_FAR
   ball_roll_decel: float = BALL_ROLL_DECEL
@@ -1208,7 +1237,13 @@ class HeadTrackedJointPositionAction(JointPositionAction):
       cmd.time_since_seen.clamp(min=HEAD_SEARCH_AFTER + 0.01),
       cmd.time_since_seen,
     )
-    goal = head_goal(ball_b, lost_s, cmd.cfg.camera_pitch)
+    goal = head_goal(
+      ball_b,
+      lost_s,
+      cmd.cfg.camera_pitch,
+      self.cfg.search_yaw,
+      self.cfg.search_pitch,
+    )
     scan_yaw = HEAD_SCAN_YAW * torch.sin(
       6.2832 * self._t / HEAD_SCAN_PERIOD + self._scan_phase
     )
@@ -1230,6 +1265,10 @@ class HeadTrackedJointPositionAction(JointPositionAction):
 @dataclass(kw_only=True)
 class HeadTrackedJointPositionActionCfg(JointPositionActionCfg):
   scan_share: float = HEAD_SCAN_SHARE
+  search_yaw: float = HEAD_SEARCH_YAW
+  """Yaw amplitude of the lost-ball search sweep (rad)."""
+  search_pitch: tuple[float, float] = HEAD_SEARCH_PITCH
+  """(centre, amplitude) of the search sweep's pitch (rad, positive down)."""
 
   def build(self, env: ManagerBasedRlEnv) -> HeadTrackedJointPositionAction:
     return HeadTrackedJointPositionAction(self, env)
@@ -1314,6 +1353,24 @@ def walk_speed_track(
   active = (dist > min_dist) & (cmd.time_since_kick >= POST_KICK_WINDOW)
   active &= ~cmd.ball_lost
   return torch.where(active, score, torch.zeros_like(score))
+
+
+def yaw_cap_track(env: ManagerBasedRlEnv) -> torch.Tensor:
+  """Turn toward the ball at the yaw cap while it is still far.
+
+  Full pay when the yaw rate matches the cap and the bearing is at least
+  0.5 rad. Off inside 1.5 m, so the kick is not a spin.
+  """
+  cmd = _kick_command(env)
+  _, dist, _, _, _, _, _, ball_b = _current(env)
+  robot: Entity = env.scene["robot"]
+  err = torch.atan2(ball_b[:, 1], ball_b[:, 0])
+  wz = robot.data.root_link_ang_vel_b[:, 2]
+  cap = cmd.speed_limit[:, 2].clamp(min=0.1)
+  toward = (torch.sign(err) * wz / cap).clamp(0.0, 1.0)
+  need = (err.abs() / 0.5).clamp(max=1.0)
+  active = (dist > 1.5) & ~cmd.ball_lost & (cmd.time_since_kick >= POST_KICK_WINDOW)
+  return torch.where(active, toward * need, torch.zeros_like(toward))
 
 
 def walk_speed_limit(env: ManagerBasedRlEnv) -> torch.Tensor:
@@ -1496,6 +1553,83 @@ LONG_LINEAR_REF = 8.0
 LONG_LINEAR_CLIP = 2.0
 
 
+# Goal mouth (runswift posts are 2.4 m wide). A shot whose velocity ray passes
+# the target by more than half a goal still has a slope out to half a goal
+# beyond the post, so a long miss is told to come in without a tighter
+# Gaussian (that one is flat where h022 actually shoots). Existing kick
+# rewards are unchanged; this only adds pay for a ball that would score.
+GOAL_HALF_WIDTH = 1.25
+MOUTH_RAMP_M = 1.5
+
+
+def _mouth_ramp(cmd: KickLoopCommand) -> torch.Tensor:
+  """1 inside the posts, 0 a ramp-width outside them, 0 if heading away.
+
+  Lateral miss is the distance from the target to the ball's velocity ray.
+  """
+  ball_xy = cmd.ball.data.root_link_pos_w[:, :2]
+  ball_vel = cmd.ball.data.root_link_lin_vel_w[:, :2]
+  to_target = cmd.target_w - ball_xy
+  speed = ball_vel.norm(dim=-1).clamp(min=1.0e-6)
+  cross = (ball_vel[:, 0] * to_target[:, 1] - ball_vel[:, 1] * to_target[:, 0]).abs()
+  outside = (cross / speed - GOAL_HALF_WIDTH).clamp(min=0.0)
+  ramp = (1.0 - outside / MOUTH_RAMP_M).clamp(0.0, 1.0)
+  toward = (ball_vel * to_target).sum(dim=-1) > 0.0
+  return torch.where(toward, ramp, torch.zeros_like(ramp))
+
+
+def goal_mouth(env: ManagerBasedRlEnv) -> torch.Tensor:
+  """Per kick: how close the launch line comes to scoring, times quality.
+
+  Full pay through the goal, falling linearly across the next 1.5 m. A ball
+  kicked away from the target pays nothing, so a softer or wider kick cannot
+  collect this on top of the unchanged aim and power rewards.
+  """
+  cmd = _kick_command(env)
+  return (
+    cmd.kick_event.float()
+    * _mouth_ramp(cmd)
+    * cmd.kick_quality
+    * _promptness(cmd)
+  )
+
+
+def long_kick_speed_in_mouth(env: ManagerBasedRlEnv) -> torch.Tensor:
+  """Per long kick: 3D ball speed / 8 m/s (uncapped until 16), times the mouth.
+
+  Extra power pay only for a shot that is on the goal. A harder kick that
+  misses collects nothing here, so it cannot outbid the kick h022 already has.
+  Air balls count (no loft factor).
+  """
+  cmd = _kick_command(env)
+  lk = cmd.kick_event & cmd.kick_long
+  speed = (cmd.kick_speed / LONG_LINEAR_REF).clamp(max=LONG_LINEAR_CLIP)
+  return lk.float() * speed * _mouth_ramp(cmd) * cmd.kick_quality * _promptness(cmd)
+
+
+# 1 keeps today's power rewards. Below 1, a long kick that misses the posts
+# keeps only this fraction of long_kick_power and long_kick_speed_linear, so
+# a faster shot cannot outbid one that would score. Read at call time (gene).
+POWER_MOUTH_FLOOR = 1.0
+# 1 leaves long-kick power independent of how long the robot waited. Below 1,
+# a late kick keeps only this fraction of that reward, so releasing the same
+# strike sooner pays more. Read at call time (gene).
+POWER_PROMPT_FLOOR = 1.0
+
+
+def _power_mouth(cmd: KickLoopCommand) -> torch.Tensor | float:
+  if POWER_MOUTH_FLOOR >= 1.0:  # off: skip the ball geometry
+    return 1.0
+  ramp = _mouth_ramp(cmd)
+  return POWER_MOUTH_FLOOR + (1.0 - POWER_MOUTH_FLOOR) * ramp
+
+
+def _power_prompt(cmd: KickLoopCommand) -> torch.Tensor | float:
+  if POWER_PROMPT_FLOOR >= 1.0:
+    return 1.0
+  return POWER_PROMPT_FLOOR + (1.0 - POWER_PROMPT_FLOOR) * _promptness(cmd)
+
+
 def long_kick_speed_linear(env: ManagerBasedRlEnv) -> torch.Tensor:
   """Per long (>= 8 m) kick: 3D ball speed / LONG_LINEAR_REF, uncapped up to
   LONG_LINEAR_CLIP (16 m/s), x sharp aim x quality (2026-10-07, user: long
@@ -1504,7 +1638,7 @@ def long_kick_speed_linear(env: ManagerBasedRlEnv) -> torch.Tensor:
   cmd = _kick_command(env)
   lk = cmd.kick_event & cmd.kick_long
   speed = (cmd.kick_speed / LONG_LINEAR_REF).clamp(max=LONG_LINEAR_CLIP)
-  return lk.float() * speed * _long_aim(cmd) * cmd.kick_quality
+  return lk.float() * speed * _long_aim(cmd) * _power_mouth(cmd) * cmd.kick_quality
 
 
 STYLE_STATS_RATE = 0.01
@@ -1588,6 +1722,8 @@ def long_kick_power(
     * ramp
     * transfer
     * _long_aim(cmd)
+    * _power_mouth(cmd)
+    * _power_prompt(cmd)
     * cmd.kick_quality
     * cmd.kick_loft
   )
@@ -1781,6 +1917,34 @@ def search_turn(env: ManagerBasedRlEnv) -> torch.Tensor:
   return cmd.ball_lost.float() * (wz * cmd.lost_dir / cap).clamp(-1.0, 1.0)
 
 
+def ball_lost_penalty(env: ManagerBasedRlEnv) -> torch.Tensor:
+  """While the ball is lost: 1, plus 1 - (signed turn toward the side it was
+  last remembered, over the wz cap), so in [1, 3]; 0 while tracked.
+
+  Self-play replaces ``search_turn`` with this: an opponent takes the ball out
+  of view far more often than stage 3 did, and +10/s for searching paid more
+  than kicking (p2_kick_v1: ball_lost 0.13 -> 0.28, kick quality 0.33 ->
+  0.20). Lost always costs; searching the right way costs least. Episodes
+  whose scripted head scans instead of tracking are exempt (not the policy's
+  doing).
+  """
+  cmd = _kick_command(env)
+  robot: Entity = env.scene["robot"]
+  wz = robot.data.root_link_ang_vel_b[:, 2]
+  cap = cmd.speed_limit[:, 2].clamp(min=0.1)
+  turn = (wz * cmd.lost_dir / cap).clamp(-1.0, 1.0)
+  lost = cmd.ball_lost.float()
+  head = env.action_manager.get_term("joint_pos")
+  scan = getattr(head, "scan", None)
+  tracking = torch.ones_like(lost) if scan is None else (~scan).float()
+  log = env.extras["log"]
+  log["Metrics/ball_lost"] = lost.mean()
+  log["Metrics/ball_lost_tracking"] = (lost * tracking).sum() / tracking.sum().clamp(
+    min=1.0
+  )
+  return lost * tracking * (2.0 - turn)
+
+
 def search_backward(env: ManagerBasedRlEnv) -> torch.Tensor:
   """v56: backward speed (m/s) while the ball is lost."""
   cmd = _kick_command(env)
@@ -1841,16 +2005,17 @@ def ball_relocate_unseen(
 def ball_size_mass(
   env: ManagerBasedRlEnv,
   env_ids: torch.Tensor | None,
-  radius_range: tuple[float, float] = (0.07, 0.13),
-  alpha_range: tuple[float, float] = (-0.347, 0.752),
-  nominal_mass: float = 0.1,
+  radius_range: tuple[float, float] = (0.085, 0.105),
+  alpha_range: tuple[float, float] = (-0.0175, 0.0170),
+  nominal_mass: float = 0.290,
   *,
   geom_cfg: SceneEntityCfg,
   body_cfg: SceneEntityCfg,
 ) -> None:
-  """A different ball every episode (user 2026-10-08): collision radius uniform
-  in ``radius_range`` and mass ``nominal_mass * e^{2 alpha}``, independent;
-  thin-shell inertia 2/3 m r^2 to match the collision geom. Spawns read the
+  """B-Human ball each episode (K1_Ball.yaml): collision radius uniform in
+  ``radius_range`` (0.095 m ± 0.01) and mass ``nominal_mass * e^{2 alpha}``
+  (0.290 kg ± 0.01), independent; solid-sphere inertia 2/5 m r^2 to match
+  Isaac Gym ``recomputeInertia`` on the collision sphere. Spawns read the
   radius back (``ball_radius``); the visual mesh keeps the nominal size."""
   if env_ids is None:
     env_ids = torch.arange(env.num_envs, device=env.device)
@@ -1869,7 +2034,7 @@ def ball_size_mass(
     -1, len(g), 3
   )
   model.body_mass[env_ids[:, None], b[None, :]] = m[:, None]
-  inertia = (2.0 / 3.0) * m * r * r
+  inertia = (2.0 / 5.0) * m * r * r
   model.body_inertia[env_ids[:, None], b[None, :]] = inertia[:, None, None].expand(
     -1, len(b), 3
   )
@@ -2091,9 +2256,12 @@ __all__ = [
   "side_kick_bonus",
   "kick_rest_accuracy",
   "search_turn",
+  "ball_lost_penalty",
   "side_foot_strike",
   "inside_foot_style",
   "turn_rate_track",
+  "goal_mouth",
+  "long_kick_speed_in_mouth",
   "long_kick_speed_linear",
   "style_advantage",
   "hop_kick_style",
@@ -2127,4 +2295,5 @@ __all__ = [
   "walk_speed",
   "walk_speed_limit",
   "walk_speed_track",
+  "yaw_cap_track",
 ]

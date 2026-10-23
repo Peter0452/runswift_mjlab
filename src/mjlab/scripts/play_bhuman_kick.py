@@ -10,7 +10,7 @@ into our 22-D action. Arms are held at B-Human's fixed arm pose; the head is
 driven by our scripted ball tracker as usual.
 
 Differences from B-Human's training sim that remain: our MuJoCo K1 PD gains,
-effort limits and ball (0.10 kg, r 0.08 m vs 0.29 kg, r 0.095 m); B-Human's
+effort limits; the ball matches B-Human (0.290 kg, r 0.095 m); B-Human's
 deployment also only switches to this policy within ~1.1 m of the ball (its
 walk policy brings the robot there), so the ball spawns 0.4–1.5 m away by
 default, like their training.

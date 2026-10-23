@@ -52,7 +52,6 @@ from typing import Dict, List, Optional, Sequence, Union
 
 import numpy as np
 import onnxruntime as ort
-
 from policy_runner.joint_index import JointIndex
 from policy_runner.policy.base import Policy
 from policy_runner.types import (

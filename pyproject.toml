@@ -54,6 +54,8 @@ dependencies = [
   "onnxscript>=0.5.4",
   "wandb>=0.22.3",
   "setuptools>=70,<82",
+  "huggingface-hub>=0.34.0",
+  "pyarrow>=17.0.0",
 ]
 
 [project.urls]
@@ -63,6 +65,8 @@ dependencies = [
 [project.scripts]
 train = "mjlab.scripts.train:main"
 play = "mjlab.scripts.play:main"
+play-kick-to-walk = "mjlab.scripts.play_kick_to_walk:main"
+play-bhuman-kick = "mjlab.scripts.play_bhuman_kick:main"
 list-envs = "mjlab.scripts.list_envs:main"
 viz-nan = "mjlab.scripts.nan_viz:main"
 export-scene = "mjlab.scripts.export_scene:main"

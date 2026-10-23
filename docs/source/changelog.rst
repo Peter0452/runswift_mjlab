@@ -15,6 +15,23 @@ Added
   self-play task, now aiming at lanes across the goal mouth and able to face
   controller strikers (``controller_checkpoint``), fine-tunes the kick skill in
   the game (phase 2). Runners can wrap the env themselves (``make_vecenv``).
+  The controller's actor is a GRU; frozen opponents (mirror, pool snapshots,
+  ``controller_checkpoint``) run one-layer GRU actors with per-env memory.
+- Self-play restarts go to the side that did not cause them: after a goal the
+  side that conceded, after an out the side that did not touch the ball last
+  (new ``opponent_ball_contact`` sensor). An out no longer hands the learner a
+  fresh ball. ``SelfPlayKickCommandCfg.opponent_restarts=False`` restores the
+  old behaviour.
+- Self-play sides are symmetric: the opponent's ball detection has the
+  learner's per-episode delay, its head scans in the learner's
+  ``scan_share`` of episodes, it gets copies of the learner's pushes and
+  startup DR (``*_opponent`` events; its joint inputs carry the encoder
+  bias), copies of the learner sample actions with its clamped std
+  (``sample_copies``), and restarts place it as far from the ball and at the
+  same bearing as the learner. Its ball memory and lost rule are the
+  learner's (IMU-yaw-only memory, ``memory_invalidate``; it had perfect
+  odometry). A policy against itself went from a 0.25 (controller) / 0.37
+  (flat kick) to a 0.46 share of points; the learner's own DR is unchanged.
 - Added 1v1 self-play on the stage-3 kick loop, striker against striker
   (``Mjlab-Velocity-Kick-SelfPlay-Amp-DA-Muon-Booster-K1``). Each episode has a
   field from 9 x 6 to 14 x 9 m with 2.4 m goals (bar 1.6 / 1.8 m); a goal
@@ -111,6 +128,9 @@ Changed
 Fixed
 ^^^^^
 
+- Playing a two-level striker checkpoint now mirrors it into the opponent.
+  Before, play never synced the opponent, which stayed the zero placeholder
+  (walking straight ahead, ignoring the ball) and always lost.
 - NuBots PPO: use a fixed LR schedule and ``std_range`` so adaptive KL ramp
   cannot drive action ``std_param`` to NaN mid-update (``torch.normal`` crash).
   Velocity runner also guards Gaussian std with a NaN/floor sanitize.

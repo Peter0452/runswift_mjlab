@@ -621,3 +621,66 @@ def commands_vel(
     "rel_standing_envs": torch.tensor(cfg.rel_standing_envs),
     "rel_heading_envs": torch.tensor(cfg.rel_heading_envs),
   }
+
+
+class anneal_rewards:
+  """Linear annealing of task-shaping rewards toward a competition reward.
+
+  Weights of ``reward_names`` are scaled by ``alpha``, which falls linearly
+  from 1 at ``start_step`` to ``final_scale`` at ``end_step``. As in Bansal et
+  al. 2018 (emergent complexity via multi-agent competition): dense shaping
+  teaches the basics, then the sparse competition reward carries most of the
+  training.
+
+  Steps are this run's own env steps: a warm start restores the source run's
+  ``common_step_counter`` (stage 3: ~400k), which would end the schedule at
+  once. Jumps larger than ``MAX_STEP_JUMP`` (checkpoint loads) are skipped,
+  and the elapsed count is checkpointed so a resume continues it.
+  """
+
+  MAX_STEP_JUMP = 10_000
+
+  def __init__(self, cfg: CurriculumTermCfg, env: ManagerBasedRlEnv):
+    params = cfg.params
+    self.reward_names: list[str] = list(params["reward_names"])
+    self.start_step = int(params["start_step"])
+    self.end_step = int(params["end_step"])
+    self.final_scale = float(params.get("final_scale", 0.0))
+    assert self.end_step > self.start_step
+    self.original_weights = {
+      name: float(env.reward_manager.get_term_cfg(name).weight)
+      for name in self.reward_names
+    }
+    self.elapsed = 0
+    self._last_counter = int(env.common_step_counter)
+
+  def alpha(self) -> float:
+    frac = (self.elapsed - self.start_step) / (self.end_step - self.start_step)
+    frac = min(max(frac, 0.0), 1.0)
+    return 1.0 - frac * (1.0 - self.final_scale)
+
+  def _apply(self, env: ManagerBasedRlEnv) -> float:
+    alpha = self.alpha()
+    for name, original in self.original_weights.items():
+      env.reward_manager.get_term_cfg(name).weight = original * alpha
+    return alpha
+
+  def state_dict(self) -> dict[str, int]:
+    return {"elapsed": self.elapsed}
+
+  def load_state_dict(self, state: dict[str, int], env: ManagerBasedRlEnv) -> None:
+    self.elapsed = int(state["elapsed"])
+    self._last_counter = int(env.common_step_counter)
+    self._apply(env)
+
+  def __call__(
+    self, env: ManagerBasedRlEnv, env_ids: torch.Tensor | slice, **kwargs: Any
+  ) -> dict[str, torch.Tensor]:
+    del env_ids, kwargs
+    counter = int(env.common_step_counter)
+    delta = counter - self._last_counter
+    if 0 < delta <= self.MAX_STEP_JUMP:
+      self.elapsed += delta
+    self._last_counter = counter
+    alpha = self._apply(env)
+    return {"alpha": torch.tensor(alpha), "elapsed": torch.tensor(self.elapsed)}
