@@ -7,6 +7,7 @@ from pathlib import Path
 
 import mujoco
 
+from k1.deploy.contract import DEPLOY_Q_LIMITS, LEG_TORQUE_CLIP
 from k1.tasks.kick.mdp import approach as approach_mdp
 from k1.tasks.velocity import mdp
 from k1.tasks.walk.env_cfg import (
@@ -270,45 +271,6 @@ TOUCHDOWN_SPEED_WEIGHT = 15.0
 
 
 K1_CAMERA_HALF_FOV = (1.211259 / 2.0, 0.733038 / 2.0)
-
-
-# Hard leg torque limits (N*m), user 2026-10-07: B-Human's kick clip
-# (K1_Ball.yaml torque_clipping). The motor ratings in k1_whirlwind_constants
-# (knee 112, hip roll 76, hip pitch 68, hip yaw / ankle 38.3) are believed to
-# be no-load numbers; the real loaded limits are not measured yet - replace
-# these when they are. B-Human's own note on "real" limits: 80/60/40/70/36/36.
-LEG_TORQUE_CLIP = {
-  ".*_Hip_Pitch": 50.0,
-  ".*_Hip_Roll": 50.0,
-  ".*_Hip_Yaw": 30.0,
-  ".*_Knee_Pitch": 60.0,
-  ".*_Ankle_.*": 30.0,
-}
-
-
-# Joint-target clip of k1_policy_runner (walk_policy_amp_v1.Q_ABS_LIMITS): the
-# runner (robot, runswift fixture) clips every target to these. Training did
-# not until 2026-10-07; x4_g004_70 pressed hip roll up to 0.38 rad past the
-# 0.40 rad stop around kicks and lost its aim under the clip (86 % -> 19 %).
-DEPLOY_Q_LIMITS = {
-  "Head_Yaw": (-1.0, 1.0),
-  "Head_Pitch": (-0.349, 0.855),
-  "Left_Shoulder_Pitch": (-3.316, 1.22),
-  "Left_Shoulder_Roll": (-1.74, 1.57),
-  "Left_Elbow_Pitch": (-2.27, 2.27),
-  "Left_Elbow_Yaw": (-2.44, 0.0),
-  "Right_Shoulder_Pitch": (-3.316, 1.22),
-  "Right_Shoulder_Roll": (-1.57, 1.74),
-  "Right_Elbow_Pitch": (-2.27, 2.27),
-  "Right_Elbow_Yaw": (0.0, 2.44),
-  ".*_Hip_Pitch": (-3.0, 2.21),
-  "Left_Hip_Roll": (-0.4, 1.57),
-  "Right_Hip_Roll": (-1.57, 0.4),
-  ".*_Hip_Yaw": (-1.0, 1.0),
-  ".*_Knee_Pitch": (0.0, 2.23),
-  ".*_Ankle_Pitch": (-0.87, 0.345),
-  ".*_Ankle_Roll": (-0.345, 0.345),
-}
 
 
 def _deployment_match(cfg: ManagerBasedRlEnvCfg) -> None:

@@ -23,7 +23,7 @@ Sources: `docs/K1_KICK_LOOP_POLICY_IO.md` (kick loop, detailed),
 | Action scale | head 0.375, arms 0.35, hip pitch 0.2125, hip roll 0.2375, hip yaw 0.1197, knee 0.35, ankle 0.1915 | exported with 6 decimals (3 was a bug) |
 | PD gains | legs kp 80 / kd 4, ankles 50 / 2, arms 10 / 1, head 4 / 0.25 | from ONNX metadata; randomised ×0.8–1.2 in training |
 | Joint-target clip | runner clamps to the joint ranges (`Q_ABS_LIMITS`); training does the same (`_deployment_match`) | a missing clip cost x4 its accuracy (lesson S1) |
-| Leg torque | training hard-clips at B-Human's 50 / 50 / 30 / 60 / 30 / 30 Nm (hip pitch, roll, yaw, knee, ankle pitch, roll) | `env_cfgs.LEG_TORQUE_CLIP`; loaded limits unknown, keep one table |
+| Leg torque | training hard-clips at B-Human's 50 / 50 / 30 / 60 / 30 / 30 Nm (hip pitch, roll, yaw, knee, ankle pitch, roll) | `k1/deploy/contract.py` `LEG_TORQUE_CLIP`; loaded limits unknown, keep one table |
 | Motor delay | training 0–40 ms (includes zero), held per episode | the runner adds none; lesson S2 |
 | Observation noise | gyro ±0.2, gravity ±0.05, joint pos ±0.01 (+ bias ±0.015), joint vel ±1.5 | training only; the runner adds none |
 | Observation history | none | adding history is a runtime change |
@@ -141,8 +141,10 @@ fix pending.
 ## 6. Changing the contract
 
 A change to any row above is a **runtime change**:
-1. Make it in training and in `src/k1/deploy/obs_layout.py` (actor slots; the
-   rest of the contract moves into `k1/deploy/contract.py` later).
+1. Make it in training and in the contract code: `src/k1/deploy/contract.py`
+   (rate, joint order, default pose, scales, PD, clips, delay) or
+   `src/k1/deploy/obs_layout.py` (actor slots). `tests/test_deploy_contract.py`
+   and `tests/test_deploy_obs_layout.py` check training against them.
 2. Write down the matching runner change (file, function) and who makes it.
 3. Export with the contract in ONNX metadata; run parity until it passes.
 4. Mark the run `research` until the runner side exists; only then `deployable`.
