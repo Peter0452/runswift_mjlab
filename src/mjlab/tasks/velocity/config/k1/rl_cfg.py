@@ -3,25 +3,10 @@
 import math
 
 from mjlab.rl import (
-  FastSacAlgorithmCfg,
-  FastSacRunnerCfg,
   RslRlModelCfg,
   RslRlOnPolicyRunnerCfg,
   RslRlPpoAlgorithmCfg,
 )
-
-_NUBOTS_SYMMETRY_CFG = {
-  "use_data_augmentation": True,
-  "use_mirror_loss": False,
-  "mirror_loss_coeff": 0.05,
-  "data_augmentation_func": "mjlab.tasks.velocity.mdp.symmetry:nubots_symmetry",
-}
-
-
-def _apply_nubots_symmetry(cfg: RslRlOnPolicyRunnerCfg) -> RslRlOnPolicyRunnerCfg:
-  """Enable left-right leg symmetry data augmentation on a NuBots runner cfg."""
-  cfg.algorithm.symmetry_cfg = dict(_NUBOTS_SYMMETRY_CFG)
-  return cfg
 
 
 def booster_k1_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
@@ -148,86 +133,6 @@ def booster_k1_nubots_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
   )
 
 
-def booster_k1_nubots_rough_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
-  """NuBots PPO for rough FT: lower LR, eval/best checkpoint, slightly higher entropy."""
-  cfg = booster_k1_nubots_ppo_runner_cfg()
-  cfg.algorithm.learning_rate = 5.0e-6
-  cfg.algorithm.entropy_coef = 0.008  # was 0.005; damp brittle gait on mixed terrain
-  cfg.eval_interval = 1000
-  cfg.eval_steps = 240
-  return cfg
-
-
-def booster_k1_nubots_phase1_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
-  """Phase-1 posture lock: 2k iters, early stop, full-episode eval."""
-  cfg = booster_k1_nubots_rough_ppo_runner_cfg()
-  cfg.max_iterations = 2_000
-  cfg.eval_interval = 500
-  cfg.eval_steps = 1500
-  cfg.early_stop_enabled = True
-  cfg.early_stop_min_iters = 200
-  cfg.early_stop_drop_fraction = 0.15
-  cfg.early_stop_patience = 50
-  return cfg
-
-
-def booster_k1_nubots_phase2_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
-  """Phase-2 rough ramp: 3k iters, early stop, full-episode eval."""
-  cfg = booster_k1_nubots_phase1_ppo_runner_cfg()
-  cfg.max_iterations = 3_000
-  cfg.eval_interval = 500
-  cfg.eval_steps = 1500
-  cfg.early_stop_enabled = True
-  cfg.early_stop_min_iters = 300
-  cfg.early_stop_drop_fraction = 0.15
-  cfg.early_stop_patience = 50
-  return cfg
-
-
-def booster_k1_nubots_phase2_stabilize_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
-  """Phase-2 stabilize: 2k iters, tighter early stop on ep-length drop."""
-  cfg = booster_k1_nubots_phase1_ppo_runner_cfg()
-  cfg.max_iterations = 2_000
-  cfg.eval_interval = 500
-  cfg.eval_steps = 1500
-  cfg.early_stop_enabled = True
-  cfg.early_stop_min_iters = 150
-  cfg.early_stop_drop_fraction = 0.10
-  cfg.early_stop_patience = 30
-  return cfg
-
-
-def booster_k1_nubots_phase3_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
-  """Phase-3 speed unlock: 2k iters, early stop, full-episode eval."""
-  cfg = booster_k1_nubots_phase1_ppo_runner_cfg()
-  cfg.max_iterations = 2_000
-  cfg.eval_interval = 500
-  cfg.eval_steps = 1500
-  cfg.early_stop_enabled = True
-  cfg.early_stop_min_iters = 200
-  cfg.early_stop_drop_fraction = 0.12
-  cfg.early_stop_patience = 40
-  return cfg
-
-
-def booster_k1_nubots_quality_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
-  """Quality FT: gentler LR, denser eval, patient early stop.
-
-  Prior run early-stopped at +335 iters before the next eval window, so
-  ``model_best`` never moved off the resume checkpoint.
-  """
-  cfg = booster_k1_nubots_phase1_ppo_runner_cfg()
-  cfg.max_iterations = 3_000
-  cfg.algorithm.learning_rate = 2.0e-6
-  cfg.eval_interval = 250
-  cfg.eval_steps = 1500
-  cfg.early_stop_enabled = True
-  cfg.early_stop_min_iters = 600
-  cfg.early_stop_drop_fraction = 0.15
-  cfg.early_stop_patience = 80
-  return cfg
-
-
 def booster_k1_nubots_speed_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
   """Speed lineage, trained from scratch.
 
@@ -307,83 +212,3 @@ def booster_k1_nubots_htwk_robust_ft_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
   cfg.early_stop_drop_fraction = 0.20
   cfg.early_stop_patience = 80
   return cfg
-
-
-def booster_k1_nubots_symmetry_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
-  """Symmetry FT: quality env + left-right data augmentation on legs."""
-  cfg = booster_k1_nubots_quality_ppo_runner_cfg()
-  cfg.max_iterations = 2_000
-  cfg.algorithm.learning_rate = 2.0e-6
-  return _apply_nubots_symmetry(cfg)
-
-
-def booster_k1_nubots_symmetry_v2_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
-  """Symmetry v2: ankle kd=2, gentler LR after v1 train-stats dip."""
-  cfg = booster_k1_nubots_symmetry_ppo_runner_cfg()
-  cfg.max_iterations = 1_500
-  cfg.algorithm.learning_rate = 1.0e-6
-  cfg.eval_interval = 250
-  cfg.early_stop_min_iters = 400
-  cfg.early_stop_patience = 60
-  return cfg
-
-
-def booster_k1_nubots_phase1_symmetry_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
-  """Phase-1 + symmetry from ONNX teacher (posture lock, 95/5 flat/rough)."""
-  return _apply_nubots_symmetry(booster_k1_nubots_phase1_ppo_runner_cfg())
-
-
-def booster_k1_nubots_phase2_symmetry_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
-  """Phase-2 rough ramp + symmetry."""
-  return _apply_nubots_symmetry(booster_k1_nubots_phase2_ppo_runner_cfg())
-
-
-def booster_k1_nubots_phase2_stabilize_symmetry_ppo_runner_cfg() -> (
-  RslRlOnPolicyRunnerCfg
-):
-  """Phase-2 stabilize (70/15/15) + symmetry."""
-  return _apply_nubots_symmetry(booster_k1_nubots_phase2_stabilize_ppo_runner_cfg())
-
-
-def booster_k1_nubots_phase3_symmetry_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
-  """Phase-3 speed unlock + symmetry."""
-  return _apply_nubots_symmetry(booster_k1_nubots_phase3_ppo_runner_cfg())
-
-
-def booster_k1_fast_sac_runner_cfg() -> FastSacRunnerCfg:
-  """Create FastSAC runner configuration for Booster K1 velocity task."""
-  return FastSacRunnerCfg(
-    algorithm=FastSacAlgorithmCfg(
-      critic_learning_rate=3e-4,
-      actor_learning_rate=3e-4,
-      alpha_learning_rate=3e-4,
-      buffer_size=1024,
-      num_steps=1,
-      gamma=0.97,
-      tau=0.125,
-      batch_size=8192,
-      learning_starts=10,
-      policy_frequency=4,
-      num_updates=8,
-      target_entropy_ratio=0.0,
-      num_atoms=101,
-      v_min=-20.0,
-      v_max=20.0,
-      critic_hidden_dim=768,
-      actor_hidden_dim=512,
-      alpha_init=0.001,
-      use_autotune=True,
-      use_tanh=True,
-      obs_normalization=True,
-      use_layer_norm=True,
-      num_q_networks=2,
-      amp=True,
-      amp_dtype="bf16",
-      compile=False,
-      logging_interval=100,
-    ),
-    experiment_name="k1_velocity_fast_sac",
-    save_interval=1_000,
-    max_iterations=50_000,
-    obs_groups={"actor": ("actor",), "critic": ("critic",)},
-  )

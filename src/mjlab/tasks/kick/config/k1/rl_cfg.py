@@ -52,11 +52,6 @@ def _k1_kick_ppo_base(
   )
 
 
-def k1_arc_kick_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
-  """PPO for full kick."""
-  return _k1_kick_ppo_base(experiment_name="k1_arc_kick", max_iterations=20_000)
-
-
 def k1_kick_approach_ppo_runner_cfg() -> RslRlOnPolicyRunnerCfg:
   """PPO for approach-only stage."""
   return _k1_kick_ppo_base(experiment_name="k1_kick_approach", max_iterations=10_000)

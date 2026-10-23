@@ -25,12 +25,13 @@ Files in this folder:
 | A1 | Keep the latest and best checkpoint per run. "Best" means the peak of smoothed `Train/mean_reward` (`best.csv`, from `best_ckpt.py`) plus checkpoints chosen by evaluation (champions, deployed, parents, benchmarked). Active dribble runs are untouched until they finish; the 18 git-tracked log files are kept. | **Done**: 7,940 checkpoints deleted, 31 GB freed |
 | A2 | Keep the JSON benchmark results, discard the traces | **Done**: 4,862 `.npz` deleted, 18.5 GB freed; 837 JSON kept |
 | A3 | wandb | open |
-| A4 | Keep HTWK | conflicts with the removal list below: confirm |
-| A5 | Remove non-K1 tasks (Cartpole, Yam, G1, Go1); no backup | approved, pending code step |
-| — | Remove the 14 other `*-Nubots` tasks, `Velocity-Flat/Rough-Booster-K1-FastSAC`, `-K1-G1` | approved, pending code step |
-| — | No ARCHIVE category: items marked ARCHIVE are deleted (git history only) | approved, pending code step |
-| — | Delete `record_kick_kinematics.py`, `collect_arrival_buffer.py`, `measure_swing_stretch.py`, `import_nubots_onnx.py` | approved, pending code step |
+| A4 | Keep the 4 HTWK tasks; remove the other 14 `*-Nubots` tasks | **Done** (`restructure` branch) |
+| A5 | Remove non-K1 tasks (Cartpole, Yam, G1, Go1) and their G1/Go1-only tooling (`demo`, `csv_to_npz`, nightly benchmarks, cloud configs, Go1 terrain demo) | **Done**; framework tests ported to K1 envs |
+| — | Remove `Velocity-Flat/Rough-Booster-K1-FastSAC`, `-K1-G1` | **Done**; 33 orphaned config functions removed |
+| — | No ARCHIVE category: AMP walk grid (6), arc kick, Kick-Near-Amp, Kick-WalkAmp, Kick-WalkAmp-Amp, root probes, `launch_v15.sh`, `relaunch_selfplay.sh`, `styles_then_evolve.sh` deleted | **Done**. Kept `dribble_watch*.sh` and `play_dribble.sh` while dribble is active. `kick_transition_probe.py` and `artifacts/` are untracked, so deleting them is permanent: not done yet |
+| — | Delete `record_kick_kinematics.py`, `collect_arrival_buffer.py`, `measure_swing_stretch.py`, `import_nubots_onnx.py` | **Done** |
 | A9 | No cold backup | approved |
+| — | Git: snapshot on `archive/pre-restructure-2026-10-23`; stashes saved as `archive/selfplay-stash-*` and `archive/stash-*`; `git gc` | **Done**: `.git` 17 GB → 148 MB |
 
 ## Decisions needed from you
 

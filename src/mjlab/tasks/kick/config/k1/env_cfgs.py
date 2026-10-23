@@ -3,35 +3,9 @@
 from mjlab.envs import ManagerBasedRlEnvCfg
 from mjlab.tasks.kick.arc_kick_env_cfg import (
   make_approach_only_env_cfg,
-  make_arc_kick_env_cfg,
   make_near_kick_env_cfg,
 )
 from mjlab.tasks.velocity.config.k1.env_cfgs import booster_k1_base_walk_env_cfg
-
-
-def k1_arc_kick_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
-  """BaseWalk + 3-phase reference-pose kick (replaces chase/approach/strike/score)."""
-  base = booster_k1_base_walk_env_cfg(play=play)
-  cfg = make_arc_kick_env_cfg(base)
-  if play:
-    cfg.episode_length_s = int(1e9)
-    cfg.observations["actor"].enable_corruption = False
-    # Clean ball obs in play.
-    cfg.observations["actor"].terms["ball_rel_pos"].noise = None
-    cfg.curriculum = {}
-    cfg.events.pop("push_robot", None)
-    cfg.events["reset_base"].params["radius_range"] = (2.0, 3.0)
-    cfg.terminations.pop("target_hit", None)
-    cfg.terminations.pop("target_missed", None)
-    cfg.terminations.pop("double_touch", None)
-    cfg.terminations.pop("kick_success", None)
-    cfg.terminations.pop("near_ball_no_kick", None)
-    # Keep walking: zero twist collapses BaseWalk/kick policies (gait + tracking).
-    # Only hide twist arrows so they are not confused with the green kick aim.
-    cfg.commands["twist"].debug_vis = False
-    # Pin kick goal — green sphere/aim should only move if the ball moves.
-    cfg.commands["goal"].resampling_time_range = (1e9, 1e9)
-  return cfg
 
 
 def k1_kick_approach_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
@@ -78,13 +52,6 @@ def k1_kick_near_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     # Play / Setup B FSM: always start from configured Near radius (no mix).
     cfg.events["reset_base"].params["handoff_fraction"] = 0.0
   return cfg
-
-
-def k1_kick_near_amp_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
-  """Near kick + AMP obs (kick clips until contact; settle without style)."""
-  from mjlab.tasks.kick.config.k1.amp_wrapper import with_kick_amp_obs_group
-
-  return with_kick_amp_obs_group(k1_kick_near_env_cfg(play=play), style_weight=0.3)
 
 
 def k1_kick_walkamp_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:

@@ -5,7 +5,7 @@ import torch
 from conftest import get_test_device
 
 from mjlab.envs import ManagerBasedRlEnv
-from mjlab.tasks.cartpole.cartpole_env_cfg import cartpole_balance_env_cfg
+from mjlab.tasks.velocity.config.k1.env_cfgs import booster_k1_flat_env_cfg
 
 
 @pytest.fixture(scope="module")
@@ -14,17 +14,24 @@ def device():
 
 
 def _make_cfg(auto_reset: bool):
-  cfg = cartpole_balance_env_cfg()
-  cfg.episode_length_s = 0.5  # 10 steps at dt=0.05
+  cfg = booster_k1_flat_env_cfg()
+  cfg.episode_length_s = 0.5
   cfg.scene.num_envs = 4
   cfg.auto_reset = auto_reset
+  # Noise and observation delay would make the obs recompute check differ.
+  for group in cfg.observations.values():
+    group.enable_corruption = False
+    for term in group.terms.values():
+      term.delay_min_lag = term.delay_max_lag = 0
   return cfg
 
 
 def _step_until_done_env(env):
   """Step with zero actions until at least one env is done. Return step outputs."""
   for _ in range(env.max_episode_length + 5):
-    action = torch.zeros((env.num_envs, 1), device=env.device)
+    action = torch.zeros(
+      (env.num_envs, env.action_manager.total_action_dim), device=env.device
+    )
     result = env.step(action)
     terminated, truncated = result[2], result[3]
     if (terminated | truncated).any():
@@ -83,7 +90,9 @@ def test_auto_reset_false_explicit_reset_works(device):
   assert (env.episode_length_buf[done_ids] == 0).all()
 
   # Can continue stepping after manual reset.
-  action = torch.zeros((env.num_envs, 1), device=env.device)
+  action = torch.zeros(
+    (env.num_envs, env.action_manager.total_action_dim), device=env.device
+  )
   obs, reward, _, _, _ = env.step(action)
   assert obs is not None
   assert reward is not None
@@ -96,7 +105,9 @@ def test_auto_reset_false_requires_manual_reset_before_next_step(device):
   env.reset()
   _step_until_done_env(env)
 
-  action = torch.zeros((env.num_envs, 1), device=env.device)
+  action = torch.zeros(
+    (env.num_envs, env.action_manager.total_action_dim), device=env.device
+  )
   with pytest.raises(RuntimeError, match="must be reset via reset"):
     env.step(action)
 
@@ -123,7 +134,9 @@ def test_auto_reset_false_user_loop_pattern(device):
   episode_count = torch.zeros(env.num_envs, dtype=torch.long, device=env.device)
   last_terminal_obs: dict[str, torch.Tensor] | None = None
 
-  action = torch.zeros((env.num_envs, 1), device=env.device)
+  action = torch.zeros(
+    (env.num_envs, env.action_manager.total_action_dim), device=env.device
+  )
   for _ in range((env.max_episode_length + 2) * 3):
     obs, _, terminated, truncated, _ = env.step(action)
     done = terminated | truncated

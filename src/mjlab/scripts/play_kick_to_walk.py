@@ -28,7 +28,7 @@ from mjlab.utils.lab_api.math import quat_apply_inverse, wrap_to_pi, yaw_quat
 from mjlab.utils.torch import configure_torch_backends
 from mjlab.viewer import NativeMujocoViewer, ViserPlayViewer
 
-_DEFAULT_KICK_TASK = "Mjlab-Kick-Near-Amp-Booster-K1"
+_DEFAULT_KICK_TASK = "Mjlab-Kick-Near-Booster-K1"
 _DEFAULT_WALK_TASK = "Mjlab-Velocity-Flat-Amp-DA-Muon-Booster-K1"
 _DEFAULT_WALK_CKPT = Path(
   "logs/rsl_rl/k1_velocity_amp_symmetric_muon_wwcmu50_roughft/"

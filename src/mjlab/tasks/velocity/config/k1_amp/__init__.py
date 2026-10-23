@@ -8,7 +8,6 @@ from .env_cfgs import (
   KICK_STYLE_WEIGHT,
   booster_k1_amp_flat_env_cfg,
   booster_k1_amp_kick_handoff_env_cfg,
-  booster_k1_amp_rough_env_cfg,
   booster_k1_amp_rough_ft_env_cfg,
   booster_k1_dribble_env_cfg,
   booster_k1_kick_approach_env_cfg,
@@ -18,7 +17,6 @@ from .env_cfgs import (
 )
 from .rl_cfg import (
   booster_k1_amp_kick_handoff_runner_cfg,
-  booster_k1_amp_ppo_runner_cfg,
   booster_k1_amp_ppo_symmetric_runner_cfg,
   booster_k1_dribble_runner_cfg,
   booster_k1_kick_approach_runner_cfg,
@@ -45,35 +43,31 @@ def _with_amp_reset_cfg(env_cfg, runner_cfg):
 
 
 _AMP_TASKS = {
-  "Rough-Amp": (booster_k1_amp_rough_env_cfg, booster_k1_amp_ppo_runner_cfg),
   "Rough-Amp-DA": (
     booster_k1_amp_rough_ft_env_cfg,
     booster_k1_amp_ppo_symmetric_runner_cfg,
   ),
-  "Flat-Amp": (booster_k1_amp_flat_env_cfg, booster_k1_amp_ppo_runner_cfg),
   "Flat-Amp-DA": (
     booster_k1_amp_flat_env_cfg,
     booster_k1_amp_ppo_symmetric_runner_cfg,
   ),
 }
 
-for use_muon in (False, True):
-  optimizer = "-Muon" if use_muon else ""
-  for name, (env_cfg_fn, rl_cfg_fn) in _AMP_TASKS.items():
-    rl_cfg = rl_cfg_fn(use_muon=use_muon)
-    # Walk spring and two critics. Style is 0.2: at a 98% discriminator
-    # accuracy the style advantage is saturated noise, and 0.5 of it was
-    # washing out the tracking gradient.
-    rl_cfg.decap = True
-    rl_cfg.decap_source = "loader"
-    rl_cfg.algorithm.multi_critic_alphas = (0.2, 0.8)
-    register_mjlab_task(
-      task_id=f"Mjlab-Velocity-{name}{optimizer}-Booster-K1",
-      env_cfg=_with_amp_reset_cfg(env_cfg_fn(), rl_cfg),
-      play_env_cfg=_with_amp_reset_cfg(env_cfg_fn(play=True), rl_cfg),
-      rl_cfg=rl_cfg,
-      runner_cls=VelocityAmpOnPolicyRunner,
-    )
+for name, (env_cfg_fn, rl_cfg_fn) in _AMP_TASKS.items():
+  rl_cfg = rl_cfg_fn(use_muon=True)
+  # Walk spring and two critics. Style is 0.2: at a 98% discriminator
+  # accuracy the style advantage is saturated noise, and 0.5 of it was
+  # washing out the tracking gradient.
+  rl_cfg.decap = True
+  rl_cfg.decap_source = "loader"
+  rl_cfg.algorithm.multi_critic_alphas = (0.2, 0.8)
+  register_mjlab_task(
+    task_id=f"Mjlab-Velocity-{name}-Muon-Booster-K1",
+    env_cfg=_with_amp_reset_cfg(env_cfg_fn(), rl_cfg),
+    play_env_cfg=_with_amp_reset_cfg(env_cfg_fn(play=True), rl_cfg),
+    rl_cfg=rl_cfg,
+    runner_cls=VelocityAmpOnPolicyRunner,
+  )
 
 _approach_rl = booster_k1_kick_approach_runner_cfg()
 register_mjlab_task(

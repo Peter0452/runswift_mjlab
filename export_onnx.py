@@ -21,7 +21,7 @@ from mjlab.utils.torch import configure_torch_backends
 
 def main() -> None:
   p = argparse.ArgumentParser(description=__doc__)
-  p.add_argument("--task", default="Mjlab-Velocity-Quality-Booster-K1-Nubots")
+  p.add_argument("--task", default="Mjlab-Velocity-HTWK-Robust-FT-Booster-K1-Nubots")
   p.add_argument("--checkpoint", required=True)
   p.add_argument("--out", required=True, help="destination .onnx path")
   p.add_argument("--device", default="cuda:0")

@@ -121,48 +121,6 @@ def test_rough_velocity_tasks_have_generator_terrain(
     )
 
 
-def test_rough_velocity_training_has_curriculum_enabled() -> None:
-  """Rough velocity training tasks should have terrain curriculum enabled."""
-  rough_training_tasks = [
-    "Mjlab-Velocity-Rough-Unitree-G1",
-    "Mjlab-Velocity-Rough-Unitree-Go1",
-  ]
-
-  for task_id in rough_training_tasks:
-    cfg = load_env_cfg(task_id)
-
-    assert cfg.scene.terrain is not None, f"Task {task_id} has no terrain config"
-    assert cfg.scene.terrain.terrain_generator is not None, (
-      f"Task {task_id} has no terrain_generator"
-    )
-    assert cfg.scene.terrain.terrain_generator.curriculum is True, (
-      f"Task {task_id} curriculum={cfg.scene.terrain.terrain_generator.curriculum}, "
-      "expected True"
-    )
-
-
-def test_rough_velocity_play_has_curriculum_disabled() -> None:
-  """Rough velocity play tasks should have terrain curriculum disabled."""
-  rough_training_tasks = [
-    "Mjlab-Velocity-Rough-Unitree-G1",
-    "Mjlab-Velocity-Rough-Unitree-Go1",
-  ]
-
-  for task_id in rough_training_tasks:
-    cfg = load_env_cfg(task_id, play=True)
-
-    assert cfg.scene.terrain is not None, (
-      f"Task {task_id} (play mode) has no terrain config"
-    )
-    assert cfg.scene.terrain.terrain_generator is not None, (
-      f"Task {task_id} (play mode) has no terrain_generator"
-    )
-    assert cfg.scene.terrain.terrain_generator.curriculum is False, (
-      f"Task {task_id} (play mode) curriculum={cfg.scene.terrain.terrain_generator.curriculum}, "
-      "expected False"
-    )
-
-
 def test_g1_velocity_has_correct_action_scale(g1_velocity_task_ids: list[str]) -> None:
   """G1 velocity tasks should use G1_ACTION_SCALE."""
   for task_id in g1_velocity_task_ids:

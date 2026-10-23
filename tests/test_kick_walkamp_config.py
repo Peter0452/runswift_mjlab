@@ -14,8 +14,8 @@ from mjlab.tasks.velocity.mdp.amp_symmetry import (
   flip_k1_policy_obs_left_right,
 )
 
-TASK = "Mjlab-Kick-WalkAmp-Booster-K1"
-TASK_AMP = "Mjlab-Kick-WalkAmp-Amp-Booster-K1"
+TASK = "Mjlab-Kick-WalkAmp-DA-Muon-Booster-K1"
+TASK_AMP = "Mjlab-Kick-WalkAmp-Amp-DA-Muon-Booster-K1"
 TASK_DA = "Mjlab-Kick-WalkAmp-Amp-DA-Muon-Booster-K1"
 
 _REWARDS = {
@@ -151,4 +151,3 @@ def test_walkamp_play_keeps_double_touch():
   assert reset["momentum_time_s"] == 0.0
   assert reset["face_ball"] is True
   assert reset["spawn_half_angle"] == 0.0
-
