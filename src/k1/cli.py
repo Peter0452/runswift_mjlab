@@ -42,6 +42,8 @@ rsw engine run --hours H [--go]  repeat steps; trains only with --go
 rsw design context|check|inbox the LLM designer's context, proposal check
                                (with expected gain), inbox state
 rsw design ask [--n N]         run /design headless now (writes proposals only)
+rsw rsjudge CKPT --name N      runswift-spec kick benchmark, lab + deployed,
+                               paired vs B-Human and the champion (95 % CI)
 rsw check [--bench]            the safety net (tests/golden/README.md)
 
 Old names still work: ``rsw methods`` = ``rsw approaches``, ``rsw evolve`` =
@@ -332,6 +334,14 @@ def _deploy_intake(args: argparse.Namespace) -> int:
   return 0 if report["verdict"] == "TAKE" else 1
 
 
+def _rsjudge(args: argparse.Namespace) -> int:
+  from k1.eval import rs_judge
+
+  v = rs_judge.run(str(Path(args.checkpoint).resolve()), args.name, tuple(args.seeds))
+  print(json.dumps(v.to_dict(), indent=2))
+  return 0
+
+
 def _judge(args: argparse.Namespace) -> int:
   from k1 import runs
   from k1.eval import judges
@@ -595,6 +605,11 @@ def main(argv: list[str] | None = None) -> int:
         help="also the deterministic designers (no worth gate)",
       )
       p.set_defaults(func=_engine)  # fmt: skip
+  p = sub.add_parser("rsjudge")
+  p.add_argument("checkpoint")
+  p.add_argument("--name", required=True)
+  p.add_argument("--seeds", type=int, nargs="+", default=[0, 1])
+  p.set_defaults(func=_rsjudge)
   p = sub.add_parser("check")
   p.add_argument("--bench", action="store_true", help="also the champion benchmark")
   p.set_defaults(func=_check)

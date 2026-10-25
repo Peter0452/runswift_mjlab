@@ -37,6 +37,13 @@ tune:
     tags:
     - accuracy
     step: up
+  genes.k.KICK_AIM_SIGMA:
+    range:
+    - 0.15
+    - 0.35
+    tags:
+    - accuracy
+    step: down
   genes.w.kick_rest_accuracy:
     range:
     - 300.0
