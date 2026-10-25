@@ -1,5 +1,9 @@
 """``rsw``: one interface to the K1 work for people, agents and the engine.
 
+rsw design context [--task kick]   the LLM designer's context: request, champion,
+                               gaps, history, approaches, rules, proposal schema
+rsw design check [FILE ...]    validate candidate proposals (default: the inbox)
+rsw design inbox               proposals waiting, used, rejected, to build
 rsw request list               task requests (tasks/<name>/request.yaml), checked
 rsw request check [NAME ...]   schema, judges, implementations, subtasks, frozen hash
 rsw request show NAME          a request and its task tree
@@ -107,6 +111,56 @@ def _knowledge_check(_: argparse.Namespace) -> int:
     print(p)
   print("knowledge ok" if not problems else f"{len(problems)} problems")
   return 1 if problems else 0
+
+
+def _engine_champion() -> tuple[dict, list]:
+  import yaml
+
+  from k1.engine import state
+
+  if (state.DIR / "state.json").is_file():
+    st = state.load(state.DIR / "state.json")
+    return st.champion, st.history + [{"change": c["change"]} for c in st.in_flight]
+  recipe = yaml.safe_load(
+    (recipes.RECIPES / "kick" / "kick_stage3_h022.yaml").read_text()
+  )
+  return {"recipe": recipe, "checkpoint": None}, []
+
+
+def _design(args: argparse.Namespace) -> int:
+  import yaml
+
+  from k1.engine import design
+
+  champion, history = _engine_champion()
+  if args.design_cmd == "context":
+    text = design.context(champion, history, args.task)
+    out = design.PROPOSALS / "context.md"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(text)
+    print(text)
+    print(f"(saved to {out.relative_to(ROOT)})")
+    return 0
+  if args.design_cmd == "inbox":
+    for d in (design.INBOX, design.USED, design.REJECTED, design.BUILD):
+      files = sorted(d.glob("*.yaml")) if d.is_dir() else []
+      print(f"{d.name:9s} {len(files):3d}  {' '.join(f.name for f in files[-8:])}")
+    return 0
+  paths = [Path(p) for p in args.files] or design.inbox()
+  bad = 0
+  for path in paths:
+    try:
+      p = yaml.safe_load(path.read_text()) or {}
+      problems = design.check(p, champion, history)
+    except (OSError, yaml.YAMLError) as e:
+      problems = [str(e)]
+    print(f"{'ok  ' if not problems else 'FAIL'} {path}")
+    for msg in problems:
+      print(f"     {msg}")
+    if not problems and p.get("kind") != "new":
+      print(f"     change: {design.change_text(p, champion['recipe'])}")
+    bad += bool(problems)
+  return 1 if bad else 0
 
 
 def _review(args: argparse.Namespace) -> int:
@@ -319,6 +373,7 @@ def _engine(args: argparse.Namespace) -> int:
   from k1.engine import outer, state
   from k1.engine.designers import GeneDesigner
   from k1.engine.designers.approach import ApproachDesigner
+  from k1.engine.designers.llm import InboxDesigner
 
   path = state.DIR / "state.json"
   if args.engine_cmd == "init":
@@ -351,7 +406,13 @@ def _engine(args: argparse.Namespace) -> int:
     return 0
   from k1.engine.real import BenchJudge, RsTrainer
 
-  designers = [ApproachDesigner("kick", _champion_gaps), GeneDesigner(EVOLVE_GENES)]
+  # The LLM designer's inbox first (proposals written by /design), then the
+  # deterministic approach designer and one-gene steps when the inbox is empty.
+  designers = [
+    InboxDesigner(),
+    ApproachDesigner("kick", _champion_gaps),
+    GeneDesigner(EVOLVE_GENES),
+  ]
   cfg = outer.Config()
   rng = random.Random(st.counter)
   deadline = time.time() + 3600 * (args.hours if args.engine_cmd == "run" else 0)
@@ -409,6 +470,14 @@ def main(argv: list[str] | None = None) -> int:
     p.set_defaults(func=_approaches)
   kn = sub.add_parser("knowledge").add_subparsers(dest="knowledge_cmd", required=True)
   kn.add_parser("check").set_defaults(func=_knowledge_check)
+  des = sub.add_parser("design").add_subparsers(dest="design_cmd", required=True)
+  p = des.add_parser("context")
+  p.add_argument("--task", default="kick")
+  p.set_defaults(func=_design)
+  p = des.add_parser("check")
+  p.add_argument("files", nargs="*")
+  p.set_defaults(func=_design)
+  des.add_parser("inbox").set_defaults(func=_design)
   rev = sub.add_parser("review").add_subparsers(dest="review_cmd", required=True)
   p = rev.add_parser("gaps")
   p.add_argument("--task", default="kick")

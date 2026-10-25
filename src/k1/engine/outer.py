@@ -181,8 +181,18 @@ def step(
     {"change": c["change"]} for c in state.in_flight
   ]  # distinct from everything in flight too
   attempts = 0
+  # Priority designers (the LLM designer's inbox) go first every time; the
+  # others take turns.
+  first = [d for d in designers if getattr(d, "priority", False)]
+  for d in first:
+    setattr(d, "empty", False)  # noqa: B010  (ask it again this step)
+  rest = [d for d in designers if not getattr(d, "priority", False)] or first
   while len(state.in_flight) < cfg.max_in_flight and attempts < 2 * len(designers):
-    designer = designers[(state.counter + attempts) % len(designers)]
+    pending = [d for d in first if not getattr(d, "empty", False)]
+    if pending:
+      designer = pending[0]
+    else:
+      designer = rest[(state.counter + attempts) % len(rest)]
     attempts += 1
     proposals = designer.propose(state.champion, tried, rng)
     if not proposals:

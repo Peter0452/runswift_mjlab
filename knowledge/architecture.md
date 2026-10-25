@@ -199,6 +199,7 @@ is never zero.
 | task / observation | obs, action, command changes | per-section smokes + runner change + parity |
 | trainer | the inner loop's search ranges | the inner loop measures it |
 | front-end (L4) | an LLM or a person writing any of the above | the gate of the designer it uses |
+| **llm** (built, Step 9) | the LLM agent is the designer: `/design` gives it the context pack (`rsw design context`), the knowledge and the tools; it writes proposals in a fixed schema into the inbox; `rsw design check` validates them; the engine reads the inbox first (`InboxDesigner`), the deterministic designers fill in when it is empty | `rsw design check`, then `rsw recipe check` |
 
 Ideas borrowed from harbor's reward-tuning design and implemented natively
 here: async refill pool, verdict schema, designer/implementer context split,
@@ -225,3 +226,6 @@ state. New-task authoring becomes `rsw task new` (section-by-section with smokes
    gaps → tags → approach cards (`trial`, `tune`) → add / tune moves;
    `rsw review gaps|new|approve`, `/review` command; the engine runs the
    approach designer plus one-gene steps.
+6. **Step 9: the LLM agent as designer** (2026-10-26): context pack, proposal
+   schema and checker, inbox read first by the engine, `/design` command; the
+   deterministic designers become its baseline and fallback.
