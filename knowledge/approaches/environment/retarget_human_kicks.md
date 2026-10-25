@@ -12,6 +12,8 @@ impact: training-only
 sources:
 - gmr
 registry: null
+trial: null
+tune: null
 ---
 
 # Retargeted human kicks as AMP / RSI clips

@@ -7,6 +7,11 @@ rsw request freeze NAME --agreed   freeze after the requester's sign-off
 rsw approaches [--element E] [ID]  approaches by element (cards, registry, uses),
                                or one approach's card and its uses
 rsw knowledge check            approach cards, sources, uses and requests connect
+rsw review gaps [--task kick]  the champion's measured gaps, what the engine would
+                               try for them, and what it can't apply
+rsw review new TOPIC [--task kick] [--trigger TEXT]
+                               start a literature review from the gaps
+rsw review approve NAME --agreed   let the engine use a review's shortlist
 rsw tasks                      registered tasks and the approaches each has on
 rsw recipe check [PATH ...]    build and verify recipes (default: all)
 rsw recipe diff PATH RUN_DIR   compare a recipe with a past run's params
@@ -102,6 +107,51 @@ def _knowledge_check(_: argparse.Namespace) -> int:
     print(p)
   print("knowledge ok" if not problems else f"{len(problems)} problems")
   return 1 if problems else 0
+
+
+def _review(args: argparse.Namespace) -> int:
+  import random
+
+  from k1.approaches import review
+
+  if args.review_cmd == "approve":
+    if not args.agreed:
+      print("approve needs --agreed: the requester signed off the shortlist")
+      return 2
+    print(f"approved: {review.approve(args.name)}")
+    return 0
+  if args.review_cmd == "new":
+    path = review.new(args.topic, args.task, args.trigger)
+    print(f"review started: {path}")
+    print("next: research it (.claude/commands/review.md), fill the shortlist, then")
+    print(f"      rsw knowledge check; rsw review approve {path.stem} --agreed")
+    return 0
+  import yaml
+
+  from k1.engine.designers.approach import ApproachDesigner
+
+  gaps = review.gaps_for(args.task, args.top)
+  print(f"{args.task} champion gaps (benchmark v2 full, seed 1):")
+  for g in gaps:
+    print(f"  {g.weight:5.1f}  {g.describe()}  [{', '.join(g.tags)}]")
+  from k1.engine import state
+
+  if (state.DIR / "state.json").is_file():  # the engine's champion
+    champ = state.load(state.DIR / "state.json").champion
+  else:
+    recipe_path = recipes.RECIPES / "kick" / "kick_stage3_h022.yaml"
+    champ = {"recipe": yaml.safe_load(recipe_path.read_text())}
+  designer = ApproachDesigner(args.task, lambda c: gaps)
+  print("\nthe approach designer would try, in order:")
+  history: list[dict] = []
+  for _ in range(args.top):
+    props = designer.propose(champ, history, random.Random(0))
+    if not props:
+      break
+    print(f"  {props[0].change}\n      hypothesis: {props[0].hypothesis}")
+    history.append({"change": props[0].change})
+  print(f"\nmatching but not applicable by the engine: {', '.join(designer.blocked)}")
+  return 0
 
 
 def _request(args: argparse.Namespace) -> int:
@@ -237,8 +287,9 @@ def _judge(args: argparse.Namespace) -> int:
   return 0 if verdict.status == "scored" else 1
 
 
-# Outer-loop defaults (best guesses, restructure/STEP5_LOG.md): two deterministic
-# designers on the kick champion's recipe; no LLM front-end.
+# Outer-loop defaults (best guesses, restructure/STEP5_LOG.md, STEP8_LOG.md):
+# the approach designer (gaps -> approaches from knowledge/) and one-gene steps
+# on the kick champion's recipe; no LLM front-end.
 EVOLVE_GENES = {
   "w.kick_direction": (300.0, 2000.0),
   "w.kick_vel": (300.0, 2000.0),
@@ -246,7 +297,17 @@ EVOLVE_GENES = {
   "w.walk_speed_track": (1.0, 12.0),
   "w.action_rate_l2": (-0.4, -0.05),
 }
-EVOLVE_METHODS = {"caps": {"temporal": 1.5}, "decap": {"source": "kick"}}
+
+
+def _champion_gaps(champion: dict):
+  """Gaps of the engine's champion: its own confirmed benchmark when it has
+  one, else the task's reference benchmark."""
+  from k1.engine.gaps import champion_gaps
+
+  bench = ((champion.get("verdict") or {}).get("metrics") or {}).get("bench")
+  if isinstance(bench, list):
+    bench = bench[0]
+  return champion_gaps(champion["recipe"]["task"], bench)
 
 
 def _engine(args: argparse.Namespace) -> int:
@@ -256,7 +317,8 @@ def _engine(args: argparse.Namespace) -> int:
   import yaml
 
   from k1.engine import outer, state
-  from k1.engine.designers import GeneDesigner, MethodDesigner
+  from k1.engine.designers import GeneDesigner
+  from k1.engine.designers.approach import ApproachDesigner
 
   path = state.DIR / "state.json"
   if args.engine_cmd == "init":
@@ -289,7 +351,7 @@ def _engine(args: argparse.Namespace) -> int:
     return 0
   from k1.engine.real import BenchJudge, RsTrainer
 
-  designers = [GeneDesigner(EVOLVE_GENES), MethodDesigner(EVOLVE_METHODS)]
+  designers = [ApproachDesigner("kick", _champion_gaps), GeneDesigner(EVOLVE_GENES)]
   cfg = outer.Config()
   rng = random.Random(st.counter)
   deadline = time.time() + 3600 * (args.hours if args.engine_cmd == "run" else 0)
@@ -347,6 +409,20 @@ def main(argv: list[str] | None = None) -> int:
     p.set_defaults(func=_approaches)
   kn = sub.add_parser("knowledge").add_subparsers(dest="knowledge_cmd", required=True)
   kn.add_parser("check").set_defaults(func=_knowledge_check)
+  rev = sub.add_parser("review").add_subparsers(dest="review_cmd", required=True)
+  p = rev.add_parser("gaps")
+  p.add_argument("--task", default="kick")
+  p.add_argument("--top", type=int, default=8)
+  p.set_defaults(func=_review)
+  p = rev.add_parser("new")
+  p.add_argument("topic")
+  p.add_argument("--task", default="kick")
+  p.add_argument("--trigger", default="requested by a person")
+  p.set_defaults(func=_review)
+  p = rev.add_parser("approve")
+  p.add_argument("name")
+  p.add_argument("--agreed", action="store_true", help="the requester signed off")
+  p.set_defaults(func=_review)
   req = sub.add_parser("request").add_subparsers(dest="request_cmd", required=True)
   req.add_parser("list").set_defaults(func=_request)
   p = req.add_parser("check")

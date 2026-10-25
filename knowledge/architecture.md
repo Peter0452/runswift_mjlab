@@ -195,6 +195,7 @@ is never zero.
 | constraint (L2) | penalty → constraint, bounds | budget |
 | scenario / DR (L3) | spawns, vanishing, pushes, DR ranges (evidence-based) | read-back smoke; DR needs robot evidence + user OK |
 | method (L5) | enable / tune a registered method | `rsw recipe check` |
+| **approach** (built, Step 8) | reads the champion's measured gaps (`k1/engine/gaps.py`), matches tags to approach cards, proposes add (`trial`) or tune (`tune`) moves; approved review shortlists first; combination by stacking promoted children (`combine` > 1 bundles, off: one change per run) | `rsw recipe check` |
 | task / observation | obs, action, command changes | per-section smokes + runner change + parity |
 | trainer | the inner loop's search ranges | the inner loop measures it |
 | front-end (L4) | an LLM or a person writing any of the above | the gate of the designer it uses |
@@ -220,3 +221,7 @@ state. New-task authoring becomes `rsw task new` (section-by-section with smokes
    `dev` docs are the authority for what a policy sees and outputs. Mirror +
    conformance test, spec metadata in exports, the runner's intake as a gate
    check, `deliveries/` for handover and tier-2 spec drafts.
+5. **Step 8: knowledge-driven designer and reviews** (2026-10-25): measured
+   gaps → tags → approach cards (`trial`, `tune`) → add / tune moves;
+   `rsw review gaps|new|approve`, `/review` command; the engine runs the
+   approach designer plus one-gene steps.

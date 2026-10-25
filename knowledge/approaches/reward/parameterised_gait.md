@@ -11,6 +11,8 @@ impact: training-only
 sources:
 - htwk_gym
 registry: null
+trial: null
+tune: null
 ---
 
 # Step length / frequency terms for cadence

@@ -11,6 +11,8 @@ impact: training-only
 sources:
 - deployment_scenarios
 registry: null
+trial: null
+tune: null
 ---
 
 # Falls as an adaptive constraint (Lagrangian)

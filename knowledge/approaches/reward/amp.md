@@ -12,6 +12,16 @@ impact: training-only
 sources:
 - peng2021_amp
 registry: amp
+trial: null
+tune:
+  methods.amp.style_reward_weight:
+    range:
+    - 0.1
+    - 0.4
+    tags:
+    - style
+    - smoothness
+    step: both
 ---
 
 # Adversarial motion priors (AMP-PPO)

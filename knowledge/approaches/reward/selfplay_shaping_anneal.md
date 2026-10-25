@@ -11,6 +11,8 @@ impact: training-only
 sources:
 - bansal2018_competition
 registry: null
+trial: null
+tune: null
 ---
 
 # Anneal task shaping in self-play (Bansal-style)

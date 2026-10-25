@@ -12,6 +12,8 @@ sources:
 - peng2021_amp
 - ours
 registry: conditioned_amp
+trial: null
+tune: null
 ---
 
 # Command-conditioned AMP discriminator (amp_cond)

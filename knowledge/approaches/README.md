@@ -53,8 +53,22 @@ status: experimental      # candidate | experimental | trial | adopted | rejecte
 impact: training-only     # or runtime (changes what runs on the robot)
 sources: [mysore2021_caps]   # ids in knowledge/sources/
 registry: caps            # name in k1.approaches (code that turns it on), or null
+trial:                    # how the engine switches it on in a recipe, or null
+  methods: {caps: {temporal: 1.5}}      # and/or genes: {s.spawn_any_prob: 0.3}
+tune:                     # parameters the engine may step once it is on, or null
+  methods.caps.temporal: {range: [0.5, 1.5], tags: [smoothness], step: up}
 ---
 ```
+
+`trial` and `tune` are what makes an approach usable by the engine's approach
+designer (`k1/engine/designers/approach.py`). It reads the champion's measured
+gaps, matches their tags (`symptoms.yaml`: metric and situation → tags) to
+cards, and proposes either **add** (apply the `trial`) or **tune** (step one
+`tune` parameter ×1.25 or ×0.8 within its range, in the `step` direction). A card
+without either is "blocked" for the engine: it needs building, a runtime change
+or a person, and escalation packets and `rsw review gaps` list it. Give a
+`trial` only when a recipe can apply it: parameters of a registered approach
+or genes the task reads.
 
 Body: **What**, **Where it plugs in**, **Deployment impact**, **Evidence**
 (ours, summarised; each result is a use record), **Pitfalls**.

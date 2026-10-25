@@ -10,6 +10,8 @@ impact: training-only
 sources:
 - ours
 registry: reward_grammar
+trial: null
+tune: null
 ---
 
 # JSON reward programs (KICK_REWARD_PROGRAM)

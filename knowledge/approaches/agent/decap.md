@@ -11,6 +11,11 @@ impact: training-only
 sources:
 - apex
 registry: decap
+trial:
+  methods:
+    decap:
+      source: kick
+tune: null
 ---
 
 # Decaying action prior (DecAP, from APEX)

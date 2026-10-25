@@ -5,11 +5,34 @@ element: environment
 also: []
 tags:
 - sim2real
+- safety
+- perception
 status: candidate
 impact: training-only
 sources:
 - deployment_scenarios
 registry: null
+trial:
+  genes:
+    s.spawn_any_prob: 0.3
+    s.far_spawn_prob: 0.3
+tune:
+  genes.s.spawn_any_prob:
+    range:
+    - 0.1
+    - 0.5
+    tags:
+    - safety
+    - perception
+    step: up
+  genes.s.far_spawn_prob:
+    range:
+    - 0.1
+    - 0.5
+    tags:
+    - safety
+    - perception
+    step: up
 ---
 
 # Ball-behind and far spawns

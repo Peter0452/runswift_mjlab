@@ -11,6 +11,8 @@ sources:
 - bansal2018_competition
 - ours
 registry: null
+trial: null
+tune: null
 ---
 
 # Self-play against frozen copies and an opponent pool

@@ -11,6 +11,8 @@ sources:
 - vinyals2019_alphastar
 - ours
 registry: kl_anchor
+trial: null
+tune: null
 ---
 
 # KL anchor to a frozen reference policy (AnchoredAmpPPO)

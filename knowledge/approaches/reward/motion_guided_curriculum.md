@@ -12,6 +12,8 @@ impact: training-only
 sources:
 - robonaldo
 registry: null
+trial: null
+tune: null
 ---
 
 # Motion-guided curriculum: track a reference kick, then relax

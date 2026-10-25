@@ -10,6 +10,17 @@ impact: training-only
 sources:
 - deployment_scenarios
 registry: null
+trial:
+  genes:
+    s.world_ball_prob: 0.2
+tune:
+  genes.s.world_ball_prob:
+    range:
+    - 0.05
+    - 0.4
+    tags:
+    - perception
+    step: up
 ---
 
 # Fresh ball at any bearing (team ball feed)

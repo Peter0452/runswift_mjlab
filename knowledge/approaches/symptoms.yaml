@@ -1,0 +1,41 @@
+# Symptom index: which goal tags a measured gap points to, so the engine's
+# approach designer (k1/engine/designers/approach.py) and literature reviews
+# find candidate approaches by tag. Metric names are benchmark v2 metrics
+# (scripts/tools/fitness_v2.py); requirement ids are tasks/kick/request.yaml.
+# Edit freely; `rsw knowledge check` validates the tags.
+
+kick:
+  metrics:
+    first_touch_15_pct: {tags: [accuracy], requirement: P2}
+    kicks_20_pct: {tags: [accuracy], requirement: P2}
+    goal_pct: {tags: [accuracy, power], requirement: P2}
+    first_touch_speed: {tags: [power], requirement: P3}
+    long_3d: {tags: [power], requirement: P3}
+    long_x_needed: {tags: [power], requirement: P3}
+    short_stop_m: {tags: [accuracy], requirement: P3}
+    goals_per_ep: {tags: [accuracy, power], requirement: P3}
+    first_kick_cens: {tags: [speed], requirement: P1}
+    first_kick_pct: {tags: [speed, exploration], requirement: P1}
+    cap_use: {tags: [speed], requirement: Q1}
+    fall_pct: {tags: [safety], requirement: S1}
+    fall_pct_behind: {tags: [safety, perception], requirement: S1}
+    torque_sat_pct: {tags: [sim2real, safety], requirement: S3}
+    action_rate: {tags: [smoothness], requirement: Q3}
+    touchdown_speed: {tags: [smoothness, sim2real], requirement: Q3}
+    landing_force: {tags: [smoothness, sim2real], requirement: Q3}
+    fast_height_m: {tags: [style], requirement: Q2}
+    style_selection_pct: {tags: [style], requirement: Q4}
+  # Situation words in the benchmark key add tags (e.g. "approach/behind/...").
+  situations:
+    behind: [perception, exploration]
+    unknown: [perception]
+    world: [perception]
+    late_detect: [perception]
+    moving: [perception]
+    push: [safety]
+    heavy: [power]
+    large: [power]
+    small: [accuracy]
+  # Primary requirements (priority 1) that stay behind also match these, at
+  # half weight: approaches that help the policy find better solutions at all.
+  primary_extra: [exploration, multi-objective]

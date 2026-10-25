@@ -11,6 +11,8 @@ impact: training-only
 sources:
 - bhuman_isaacgymrl
 registry: null
+trial: null
+tune: null
 ---
 
 # Planted support foot beside the ball

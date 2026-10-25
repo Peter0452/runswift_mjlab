@@ -10,6 +10,18 @@ impact: training-only
 sources:
 - mysore2021_caps
 registry: caps
+trial:
+  methods:
+    caps:
+      temporal: 1.5
+tune:
+  methods.caps.temporal:
+    range:
+    - 0.5
+    - 1.5
+    tags:
+    - smoothness
+    step: up
 ---
 
 # CAPS action smoothness (temporal and spatial)

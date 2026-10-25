@@ -10,6 +10,8 @@ impact: training-only
 sources:
 - contact_uan
 registry: null
+trial: null
+tune: null
 ---
 
 # Learned residual actuator / contact model from robot logs

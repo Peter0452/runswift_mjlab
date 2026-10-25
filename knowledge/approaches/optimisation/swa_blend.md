@@ -11,6 +11,8 @@ impact: training-only
 sources:
 - izmailov2018_swa
 registry: swa_blend
+trial: null
+tune: null
 ---
 
 # Weight averaging and weight-space blends of checkpoints

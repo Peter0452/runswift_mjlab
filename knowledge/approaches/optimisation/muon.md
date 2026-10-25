@@ -10,6 +10,8 @@ impact: training-only
 sources:
 - jordan2024_muon
 registry: muon
+trial: null
+tune: null
 ---
 
 # Muon optimizer for actor and critic

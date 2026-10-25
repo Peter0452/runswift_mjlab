@@ -5,6 +5,15 @@ approaches from the literature (and from our own uses) are worth trying, and
 why. Literature only decides what is worth trying; the benchmark decides what
 stays.
 
+Start one from the measured gaps: `rsw review gaps` shows the champion's gaps,
+what the engine would try and what it can't apply; `rsw review new TOPIC --task
+kick` writes the skeleton below, already filled with the gaps and what the
+knowledge base holds for their tags; `/review TOPIC` (Claude Code command,
+`.claude/commands/review.md`) does the research. The review's front matter
+holds `task`, `trigger`, `gaps`, `approved` and a `shortlist` of
+`{approach, gap, hypothesis}`; after the requester agrees, `rsw review approve
+NAME --agreed` lets the engine's approach designer try those first.
+
 `<date>_<topic>.md`, with these sections:
 
 1. **Trigger:** new task request, stalled loop, a measured symptom, or a periodic scan.

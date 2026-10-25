@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import random
 import time
+from collections.abc import Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Protocol
@@ -125,8 +126,11 @@ def collect(state: State, trainer: Trainer, judge: Judge) -> list[str]:
   return log
 
 
-def escalation_packet(state: State, out_dir: Path) -> Path:
-  """Decision packet for the user: what was tried, what each verdict said."""
+def escalation_packet(
+  state: State, out_dir: Path, designers: Sequence[Designer] = ()
+) -> Path:
+  """Decision packet for the user: what was tried, what each verdict said, and
+  the matching approaches the engine could not apply (designers' ``blocked``)."""
   out_dir.mkdir(parents=True, exist_ok=True)
   path = out_dir / f"packet_{time.strftime('%Y%m%d_%H%M%S')}.md"
   rows = [
@@ -142,8 +146,20 @@ def escalation_packet(state: State, out_dir: Path) -> Path:
     + "\n".join(rows)
     + "\n\nOptions: widen a designer's ranges, enable another designer, change the "
     "objective weights, or accept the champion and stop.\n"
+    + _blocked_section(designers)
   )
   return path
+
+
+def _blocked_section(designers: Sequence[Designer]) -> str:
+  blocked = sorted({b for d in designers for b in getattr(d, "blocked", [])})
+  if not blocked:
+    return ""
+  return (
+    "\nApproaches that match the gaps but need building, a runtime change or a "
+    "person (no engine trial): " + ", ".join(blocked) + ". Review them with "
+    "`rsw review new TOPIC --task FAMILY`, or give a card a `trial`.\n"
+  )
 
 
 def step(
@@ -158,7 +174,8 @@ def step(
 ) -> list[str]:
   log = collect(state, trainer, judge)
   if state.non_improving >= cfg.escalate_after:
-    log.append(f"escalated: {escalation_packet(state, out_dir / 'packets')}")
+    packet = escalation_packet(state, out_dir / "packets", designers)
+    log.append(f"escalated: {packet}")
     return log
   tried = state.history + [
     {"change": c["change"]} for c in state.in_flight

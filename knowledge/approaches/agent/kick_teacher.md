@@ -12,6 +12,8 @@ impact: training-only
 sources:
 - ours
 registry: kick_teacher
+trial: null
+tune: null
 ---
 
 # Teacher imitation near the ball (kick-loop or B-Human teacher)

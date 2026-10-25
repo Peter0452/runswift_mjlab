@@ -10,6 +10,13 @@ impact: training-only
 sources:
 - apex
 registry: multi_critic
+trial:
+  methods:
+    multi_critic:
+      alphas:
+      - 0.5
+      - 0.5
+tune: null
 ---
 
 # Multi-critic advantage mix (APEX)

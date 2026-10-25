@@ -10,6 +10,8 @@ impact: training-only
 sources:
 - ours
 registry: null
+trial: null
+tune: null
 ---
 
 # Domain randomisation, latency and limits inherited from the AMP walk

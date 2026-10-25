@@ -10,6 +10,17 @@ impact: training-only
 sources:
 - deployment_scenarios
 registry: null
+trial:
+  genes:
+    s.cap_low_prob: 0.3
+tune:
+  genes.s.cap_low_prob:
+    range:
+    - 0.05
+    - 0.4
+    tags:
+    - speed
+    step: up
 ---
 
 # Episodes at runswift's low speed caps

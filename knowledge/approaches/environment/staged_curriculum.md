@@ -11,6 +11,8 @@ impact: training-only
 sources:
 - ours
 registry: null
+trial: null
+tune: null
 ---
 
 # Staged curriculum with warm-start handoff (walk → approach → kick)

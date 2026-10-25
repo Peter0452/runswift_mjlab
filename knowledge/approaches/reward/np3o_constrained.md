@@ -12,6 +12,8 @@ impact: training-only
 sources:
 - humanoid_soccer
 registry: null
+trial: null
+tune: null
 ---
 
 # Constrained RL refinement (N-P3O)

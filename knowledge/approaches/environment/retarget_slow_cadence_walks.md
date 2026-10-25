@@ -11,6 +11,8 @@ impact: training-only
 sources:
 - gmr
 registry: null
+trial: null
+tune: null
 ---
 
 # Slower-cadence walking clips for the AMP set

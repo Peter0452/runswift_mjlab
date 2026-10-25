@@ -13,6 +13,8 @@ impact: training-only
 sources:
 - humanoid_soccer
 registry: null
+trial: null
+tune: null
 ---
 
 # Privileged teacher distilled by DAgger into a noisy-input student

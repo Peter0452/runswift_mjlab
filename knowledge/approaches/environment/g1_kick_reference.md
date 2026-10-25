@@ -10,6 +10,8 @@ impact: training-only
 sources:
 - robonaldo
 registry: null
+trial: null
+tune: null
 ---
 
 # G1 push-kick reference motion, retargeted

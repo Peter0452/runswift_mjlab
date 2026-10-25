@@ -11,6 +11,8 @@ impact: runtime
 sources:
 - bhuman_isaacgymrl
 registry: null
+trial: null
+tune: null
 ---
 
 # Leg torque clip at B-Human's kick values

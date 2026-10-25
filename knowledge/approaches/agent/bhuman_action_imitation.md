@@ -10,6 +10,8 @@ impact: training-only
 sources:
 - bhuman_isaacgymrl
 registry: bhuman_action_imitation
+trial: null
+tune: null
 ---
 
 # Plain action imitation of B-Human's kick policy

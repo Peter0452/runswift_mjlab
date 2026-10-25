@@ -12,6 +12,8 @@ impact: runtime
 sources:
 - bhuman_isaacgymrl
 registry: null
+trial: null
+tune: null
 ---
 
 # Continuous kick-speed command + strong-kick flag

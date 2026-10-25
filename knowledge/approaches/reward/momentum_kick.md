@@ -10,6 +10,8 @@ impact: training-only
 sources:
 - bhuman_isaacgymrl
 registry: null
+trial: null
+tune: null
 ---
 
 # Momentum kick: kick while walking into the ball

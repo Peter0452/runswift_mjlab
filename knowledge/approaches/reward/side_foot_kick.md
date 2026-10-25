@@ -12,6 +12,8 @@ impact: training-only
 sources:
 - bhuman_isaacgymrl
 registry: null
+trial: null
+tune: null
 ---
 
 # Side-foot (inside-foot) strike
