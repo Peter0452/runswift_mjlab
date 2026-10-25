@@ -456,3 +456,52 @@ invalid or harmful; benchmark / fitness bug. Every intervention: what, why, evid
 - 2026-10-26 00:30 Claude (user goal, 8 h, unattended): train/fine-tune the kick with the runswift-spec benchmark (`k1/eval/rs_kick.py`, the user's schema) and B-Human as reference/target, through the new interface (cards, proposals with forecasts, `rsw design check`, recipes, `rsw recipe check`, `rsw train`).
   Baselines (score; seeds 0 / 1): B-Human pretrained 0.925 / 0.931 (0.921 with its obs noise). h022 deployed path (camera, 10-40 ms delay) 0.834 / 0.854; h022 lab (perfect perception, zero delay, as B-Human runs) 0.936-0.942 / 0.940. So in matched lab conditions h022 already beats B-Human slightly; the deficit is the deployed path: 22 kicks > 45 deg off (touches 0.7-1.2 s in, ball 0.36-0.6 m away, side/back targets) and 10 no-kicks. Cause found: training never spawns the ball closer than 1.0 m (ball_distance_range 1-4 m); every benchmark trial is 0.35-1.0 m.
 - 00:34 card `near_ball_starts` (environment; reuses the v52 side drill with target 0-180 deg either side, ball 0.35-1.0 m). Proposals near_ball 0.25 / 0.4 checked (expected gain +4.8 on bench v2 each). Started night_n1_near025 and night_n2_near04 from h022_c2_18450, 600 iterations (~5.1 s/it), tensorboard logging. Judge: rs_kick deployed + lab, seeds 0 and 1, every ~150 iterations; bench v2 quick screen on the best before any promotion.
+- 01:15 Claude: cause of the deployed-path wrong-way kicks (h022, rs_kick seed 0, delay zero): camera 0.834 / 28 wrong-way; wide FOV with camera noise 0.938 / 1; camera FOV without noise, dropout, vision delay and jitter 0.939 / 0; both on (control) 0.837 / 28. Delay alone (perfect perception, typical delay) 0.935 / 2 wrong-way but doubles kicks slower than 2.3 s (27 -> 53). So a close ball (0.36-0.6 m) at the bottom edge of the view (head pitch max 47 deg + half FOV 21 deg = 68 deg below horizontal; ball at 0.4 m is ~65 deg down) flickers with noise, the lost rule fires (0.5 s in view without detection), the virtual ball appears at 1.6 rad and the robot turns into the real ball (~0.8 s). Same geometry and rule on the robot: the policy has to keep a close ball in view (step back / stop). near_ball 18750: deployed 0.848 / 0.854 (n1 / n2), lab 0.937 / 0.944; no-kicks 9 -> 1 / 5, wrong-way still 29 / 24.
+
+### 2026-10-26 07:55 — near-ball round 1 verdict; round 2 launched
+
+- Lost ~6 h: the judge waited for `model_19050.pt`, but a 600-iteration resume
+  from 18450 ends at `model_19049.pt`. Waiters now wait for the training
+  process to exit and take the newest checkpoint.
+- rsjudge at 19049 (score; paired vs B-Human / vs h022, 95 % CI):
+
+  | run | deployed s0 / s1 | lab s0 / s1 |
+  |---|---|---|
+  | n1 side_drill 0.25 | 0.852 / 0.879 (vs h022 +0.017 [-0.005,+0.040] / +0.025 [+0.005,+0.045]) | 0.945 / 0.948 (vs B-Human +0.020 [+0.011,+0.030] / +0.017 [+0.008,+0.026]) |
+  | n2 side_drill 0.4 | 0.841 / 0.866 | 0.934 / 0.924 (vs B-Human +0.009 / -0.007) |
+
+  n1 wins; n2 dropped. Lab: n1 beats B-Human on both seeds, but not by the
+  substantial 0.05. Deployed: still ~-0.06 vs B-Human's lab score.
+- Round 2 (400 it each, from n1 19049): `kick_n3_aim025` (KICK_AIM_SIGMA 0.25,
+  inbox proposal, expected gain +4.2) and `kick_n4_cont` (same genes, control
+  for the continuation effect). Bench v2 quick screen of n1 19049 in parallel.
+- 08:08 bench v2 quick (seed 1) of n1 19049: score +38.8 vs h022, **no
+  regressions**, B-Human beaten on 12 metric-caps (close_any camera kicks_20 /
+  first_kick / falls, near_grid first_touch). Single seed: confirm on seed 2.
+
+### 2026-10-26 08:40 — round 2 verdict; round 3 launched
+
+| run (19448) | deployed s0 / s1 | lab s0 / s1 | lab vs B-Human |
+|---|---|---|---|
+| n4 continue n1 | 0.856 / 0.875 (vs h022 +0.021 / +0.021, CIs > 0) | 0.954 / 0.950 | +0.029 [+0.021,+0.037] / +0.019 [+0.009,+0.028] |
+| n3 aim sigma 0.25 | 0.850 / 0.876 | 0.939 / 0.939 | +0.014 / +0.008 |
+
+- n3 rejected: aim sigma 0.25 did not cut direction error; lab fell vs n1.
+- n4 is the night's best: better than h022 in all four mode-seeds, 0 falls.
+- Deployed loss is now one failure: all 21 wrong-way kicks (s0) have the ball
+  0.36-0.64 m away; lab mode has 1. Camera bottom-edge loss + lost rule.
+- Round 3 from n4 19448 (400 it each, via inbox -> InboxDesigner -> recipe):
+  `kick_n5_close` (side_drill distance 0.35-1.0 -> 0.35-0.65, gain +6.6) and
+  `kick_n6_avoid15` (ball_avoidance -5 -> -15, gain +4.9).
+- 08:55 bench v2 quick of n4 19448: +37.4 vs h022 but **regression**
+  full_loop/camera short_stop_m high cap 3.91 m [3.58,4.23] vs h022 2.92
+  [2.60,3.22] (n1 3.55, not flagged): the near-ball line over-powers short
+  passes. n4 not promotable as is; n1 19049 remains the clean candidate.
+- 09:00 my mistakes: (1) killed n5's trainer instead of n6's (PIDs listed
+  together); (2) the judge waiter's `kill -0` on all PIDs fired when any one
+  died. n5 stopped at 19550; n6 (ball_avoidance -15) dropped for a better use
+  of the slot. Now one PID per launch (`$!`) and one waiter per run.
+- Round 3b: `kick_n5b_close` (n5 resumed 19550 -> 19849) and `kick_n7_rest15`
+  (from n4, w.kick_rest_accuracy 1000 -> 1500). n7 is a **worth-gate override**:
+  the gate scored it +1.7 (< 4) because it prices gain only, not removing a
+  regression that blocks promotion. Step 10 gap: give regression fixes a gain.
