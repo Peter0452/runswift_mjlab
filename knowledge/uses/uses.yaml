@@ -235,3 +235,13 @@
   result: none
   finding: Not tested as asked; the deviation (frozen alpha) was reported.
   evidence: knowledge/objectives.md
+
+- id: u023
+  approach: world_model_ball
+  source: deployment_scenarios
+  part: world-ball inputs (ball seen at any bearing) in training, s.world_ball_prob 0.3
+  task: kick
+  context: hier loop h019-h021 (2026-10-09), with the cold starts and aim_tight; from h012_c1_18000
+  result: negative
+  finding: Not promoted (screens +40..+69 vs parent +77.5). exp_world2_18798 scored +109 vs the champion but regressed short_stop, robust goals and action_rate. Truth-input ball-behind cold-start falls stayed (~10/90; cold-behind sim falls 50 %). Bundled with other changes and judged against a single-screen parent bar (monitor 2026-10-09 07:58), so it is weak evidence.
+  evidence: docs/evolution/monitor.md

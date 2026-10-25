@@ -79,6 +79,7 @@ def _record(state: State, child: dict, verdict: Verdict, promoted: bool) -> None
       "change": child["change"],
       "designer": child["designer"],
       "hypothesis": child.get("hypothesis", ""),
+      "expected_gain": child.get("expected_gain"),
       "recipe": child["recipe_path"],
       "verdict": verdict.to_dict(),
       "promoted": promoted,
@@ -202,7 +203,8 @@ def step(
     path = write_recipe(proposal, state.champion, run_id, out_dir / "recipes")
     child = {"id": run_id, "change": proposal.change, "designer": designer.name,
              "hypothesis": proposal.hypothesis, "recipe_path": str(path),
-             "task": proposal.recipe["task"]}  # fmt: skip
+             "task": proposal.recipe["task"],
+             "expected_gain": proposal.expected_gain}  # fmt: skip
     problems = check(path)
     tried.append({"change": proposal.change})
     if problems:
@@ -214,7 +216,15 @@ def step(
     child["handle"] = trainer.start(path, run_id, cfg.budget_iterations)
     state.in_flight.append(child)
     log.append(f"{run_id}: started [{designer.name}] {proposal.change}")
+  log += [m for d in designers for m in _drain(d)]
   return log
+
+
+def _drain(designer: Designer) -> list[str]:
+  msgs = getattr(designer, "log", [])
+  out = [f"[{designer.name}] {m}" for m in msgs]
+  msgs.clear()
+  return out
 
 
 def config_dict(cfg: Config) -> dict[str, Any]:

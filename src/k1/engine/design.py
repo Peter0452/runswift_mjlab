@@ -17,7 +17,9 @@ The designer is an LLM agent (Claude Code, ``/design``) with tools and skills:
    is valid only if every edit is on the recipe surface (a registered
    approach's parameters, genes, reward weights), names known approaches, stays
    inside the knowledge's tune ranges (or says why not), keeps one change per
-   run, isn't a repeat, and is training-only;
+   run, isn't a repeat, is training-only, and is worth a kick retrain: its
+   forecast (``expect``) must be detectable and reach the minimum expected
+   benchmark gain (``k1/engine/worth.py``);
 3. **the inbox** (``experiments/evolution/proposals/inbox/*.yaml``): valid
    proposals wait there; the engine's ``InboxDesigner`` turns them into
    children, and later layers implement them (recipe check → train → judge).
@@ -27,8 +29,12 @@ The designer is an LLM agent (Claude Code, ``/design``) with tools and skills:
 
 from __future__ import annotations
 
+import glob
 import json
+import os
 import shutil
+import subprocess
+import time
 from pathlib import Path
 from typing import Any
 
@@ -36,8 +42,10 @@ import yaml
 
 from k1 import recipes
 from k1.approaches import APPROACHES, knowledge
+from k1.engine import worth
 from k1.engine.designers import Proposal
 from k1.engine.designers.approach import ApproachDesigner, _get
+from k1.engine.gaps import Gap, champion_gaps
 from k1.engine.state import DIR
 
 PROPOSALS = DIR / "proposals"
@@ -63,7 +71,11 @@ edits:                         # recipe paths -> values (empty for kind new)
   # rewards.ball_avoidance: -3.0         # rewards.<term>: weight
 gap: "fall_pct in approach/behind/world/typical"   # the measured gap it targets
 hypothesis: "more ball-behind spawns cut behind falls below 15 % with no regression"
-expect: {metric: fall_pct, situation: approach/behind/world/typical, direction: lower, by: ">= 1 tolerance"}
+expect:                        # forecast, judged before anything trains (worth a run?)
+  - {metric: fall_pct, situation: approach/behind/world/typical, direction: lower,
+     by: 8.0, p: 0.5}            # main effect: metric units; p = chance it happens
+  - {metric: fall_pct_behind, situation: approach/camera/typical, direction: lower,
+     by: 3.0, p: 0.4, caps: [high]}   # side effects count too; caps default: where the gap is
 why: "reasoning, with the evidence it rests on"
 evidence: [u017, humanoid_soccer]  # use ids, source ids, review names (optional)
 # out_of_range_reason: "..."       # needed when a value leaves a card's tune range
@@ -80,6 +92,14 @@ RULES = """\
 - Never repeat a change in the history; prefer approaches not tried yet.
 - Every proposal names the gap it targets and a falsifiable hypothesis with the
   metric, situation and direction; judge by the benchmark, not the reward.
+- Worth a run: a child costs ~2.7 GPU-hours; the benchmark sees a metric move
+  only beyond its tolerance (seed noise). `expect` lists the forecast effects (metric,
+  situation, by in metric units, p); the main (first) effect must move its
+  metric by >= 1 fitness tolerance, and the expected gain
+  (sum of p x min(by/tol, 3) x weight x caps) must reach the engine's minimum
+  (default 4). Be honest with p: forecasts are compared with verdicts later.
+  Trivial nudges (a 25 % weight step on a small gap) usually don't qualify;
+  aim for changes with a mechanism that can move a big gap.
 - Objectives and standing decisions: knowledge/objectives.md (ask before
   changing any); DR, latency and limits stay as inherited from the AMP walk.
 """
@@ -131,6 +151,8 @@ def check(
   champion: dict[str, Any],
   history: list[dict[str, Any]],
   allow_combine: bool = False,
+  gaps: list[Gap] | None = None,
+  min_gain: float = worth.MIN_GAIN,
 ) -> list[str]:
   """Problems with a candidate proposal (empty = valid for the engine)."""
   missing = [f for f in REQUIRED if f not in p]
@@ -191,12 +213,22 @@ def check(
     problems.append("the edits don't change the champion's recipe")
   if change_text(p, recipe) in {h.get("change") for h in history}:
     problems.append("already tried (same change in the engine history)")
-  if not isinstance(p["expect"], dict) or "metric" not in p["expect"]:
-    problems.append("expect needs at least {metric, direction}")
+  problems += estimate(p, gaps, min_gain).problems
   return problems
 
 
-def to_proposal(p: dict[str, Any], champion: dict[str, Any]) -> Proposal:
+def estimate(
+  p: dict[str, Any], gaps: list[Gap] | None = None, min_gain: float = worth.MIN_GAIN
+) -> worth.Worth:
+  """Expected benchmark gain of a proposal and whether it is worth a run."""
+  if gaps is None:
+    gaps = champion_gaps(FAMILY_TASK.get(p.get("task"), ""))
+  return worth.estimate(p.get("expect"), gaps, min_gain=min_gain)
+
+
+def to_proposal(
+  p: dict[str, Any], champion: dict[str, Any], gain: float | None = None
+) -> Proposal:
   recipe = champion["recipe"]
   return Proposal(
     recipe=apply_edits(recipe, p["edits"]),
@@ -204,6 +236,7 @@ def to_proposal(p: dict[str, Any], champion: dict[str, Any]) -> Proposal:
     why=f"gap {p['gap']}: {p['why']} (evidence: {', '.join(p.get('evidence') or [])})",
     designer=f"llm:{p['designer']}",
     hypothesis=p["hypothesis"],
+    expected_gain=gain,
   )
 
 
@@ -326,3 +359,54 @@ def file_away(path: Path, where: Path, note: str | None = None) -> Path:
   if note:
     dest.with_suffix(".why.txt").write_text(note + "\n")
   return dest
+
+
+# The LLM designer, called by the engine itself when the inbox runs dry
+# (user 2026-10-26: "May the engine call the LLM by itself: yes").
+ALLOWED_TOOLS = [
+  "Read", "Grep", "Glob",
+  "Bash(.venv/bin/python -m k1.cli design *)",
+  "Bash(.venv/bin/python -m k1.cli review gaps*)",
+  "Bash(.venv/bin/python -m k1.cli approaches*)",
+  "Edit(experiments/evolution/proposals/inbox/**)",  # covers Write too
+]  # fmt: skip
+LOGS = PROPOSALS / "llm_logs"
+
+
+def claude_binary() -> str | None:
+  """``$K1_CLAUDE``, ``claude`` on PATH, or the newest editor-extension build."""
+  if os.environ.get("K1_CLAUDE"):
+    return os.environ["K1_CLAUDE"]
+  found = shutil.which("claude")
+  if found:
+    return found
+  home = os.path.expanduser("~")
+  builds = sorted(
+    glob.glob(f"{home}/.cursor/extensions/anthropic.claude-code-*/resources/native-binary/claude")
+    + glob.glob(f"{home}/.vscode/extensions/anthropic.claude-code-*/resources/native-binary/claude"),
+    key=os.path.getmtime,
+  )  # fmt: skip
+  return str(builds[-1]) if builds else None
+
+
+def ask_llm(n: int = 3, family: str = "kick", timeout: int = 1800) -> str:
+  """Run ``/design`` headless (``claude -p``): it may only read, run the design
+  and review commands, and write into the inbox. Returns a one-line outcome;
+  the transcript goes to ``proposals/llm_logs/``."""
+  exe = claude_binary()
+  if exe is None:
+    return "no claude binary (set K1_CLAUDE)"
+  LOGS.mkdir(parents=True, exist_ok=True)
+  log = LOGS / f"{time.strftime('%Y%m%d_%H%M%S')}.log"
+  cmd = [exe, "-p", f"/design {n} --task {family}", "--permission-mode", "dontAsk",
+         "--allowedTools", *ALLOWED_TOOLS]  # fmt: skip
+  if os.environ.get("K1_DESIGN_BUDGET_USD"):
+    cmd += ["--max-budget-usd", os.environ["K1_DESIGN_BUDGET_USD"]]
+  try:
+    out = subprocess.run(
+      cmd, cwd=recipes.ROOT, capture_output=True, text=True, timeout=timeout
+    )
+  except subprocess.TimeoutExpired:
+    return f"timed out after {timeout} s"
+  log.write_text(f"$ {' '.join(cmd)}\n\n{out.stdout}\n{out.stderr}")
+  return f"exit {out.returncode}, {len(inbox())} in the inbox (log {log.name})"

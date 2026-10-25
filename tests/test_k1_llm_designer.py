@@ -26,7 +26,15 @@ GOOD = {
   "edits": {"genes.s.far_spawn_prob": 0.3},
   "gap": "fall_pct in approach/behind/world/typical",
   "hypothesis": "fewer behind falls",
-  "expect": {"metric": "fall_pct", "direction": "lower"},
+  "expect": [
+    {
+      "metric": "fall_pct",
+      "situation": "approach/behind/world/typical",
+      "direction": "lower",
+      "by": 9.0,
+      "p": 0.5,
+    }
+  ],  # fmt: skip
   "why": "biggest gap",
 }
 
@@ -63,6 +71,9 @@ def test_a_good_proposal_checks_and_becomes_a_recipe() -> None:
     ({"edits": {"genes.s.spawn_any_prob": 0.3}}, "don't change"),
     ({"touches": "runtime"}, "runtime changes"),
     ({"approaches": ["no_such_card"]}, "unknown approach"),
+    ({"expect": [{**GOOD["expect"][0], "by": 2.0}]}, "not detectable"),
+    ({"expect": [{**GOOD["expect"][0], "p": 0.1}]}, "not worth a run"),
+    ({"expect": {"metric": "fall_pct", "direction": "lower"}}, "needs"),
   ],
 )
 def test_check_catches(change, problem) -> None:
@@ -77,6 +88,41 @@ def test_repeats_and_reasons() -> None:
   wide = {**GOOD, "approaches": ["caps"], "edits": {"methods.caps.temporal": 3.0},
           "out_of_range_reason": "test"}  # fmt: skip
   assert design.check(wide, champ, []) == []
+
+
+def test_expected_gain_follows_the_fitness_formula() -> None:
+  # 9 points / tol 3 = 3 tol, safety weight 2, both caps (where the gap is), p 0.5
+  est = design.estimate(GOOD)
+  assert est.ok and est.gain == pytest.approx(0.5 * 3 * 2 * 2)
+  side = {"metric": "goals_per_ep", "situation": "full_loop/camera/typical",
+          "direction": "higher", "by": 0.12, "p": 0.5, "caps": ["high"]}  # fmt: skip
+  both = design.estimate({**GOOD, "expect": [*GOOD["expect"], side]})
+  assert both.gain == pytest.approx(6 + 0.5 * 2 * 3 * 1)
+
+
+def test_inbox_designer_picks_the_highest_expected_gain(dirs) -> None:
+  small = {**GOOD, "expect": [{**GOOD["expect"][0], "p": 0.4}]}
+  _write("a_small", small)
+  _write("b_big", {**GOOD, "edits": {"genes.s.far_spawn_prob": 0.4}})
+  props = InboxDesigner().propose(_champion(), [], random.Random(0))
+  assert props[0].expected_gain == pytest.approx(6.0)
+  assert (design.USED / "b_big.yaml").is_file()
+  assert (design.INBOX / "a_small.yaml").is_file()  # waits for a later step
+
+
+def test_inbox_designer_asks_the_llm_when_empty(dirs) -> None:
+  calls = []
+
+  def ask() -> str:
+    calls.append(1)
+    _write("from_llm", GOOD)
+    return "wrote 1"
+
+  d = InboxDesigner(ask=ask, ask_every=3600)
+  assert d.propose(_champion(), [], random.Random(0))[0].designer == "llm:test"
+  assert d.propose(_champion(), [], random.Random(0)) == [] and d.empty
+  assert len(calls) == 1  # rate-limited: not asked again within ask_every
+  assert any("asked the LLM designer: wrote 1" in m for m in d.log)
 
 
 def test_inbox_designer_files_proposals(dirs) -> None:

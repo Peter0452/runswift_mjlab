@@ -23,6 +23,7 @@ class Proposal:
   why: str
   designer: str
   hypothesis: str = ""
+  expected_gain: float | None = None  # forecast benchmark score (worth.py)
 
 
 class Designer(Protocol):

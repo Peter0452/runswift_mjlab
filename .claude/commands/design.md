@@ -41,14 +41,28 @@ Request: $ARGUMENTS (default: 3 candidates for the kick).
 4. Prefer candidates that are distinct from each other and from the history,
    target the highest-weight gaps, and have a mechanism you can state. Be
    honest about weak matches.
-5. If the best idea is an approach the engine can't apply (no `trial` /
+5. **Judge whether each candidate is worth a kick retrain** (~2.7 GPU-hours
+   per child). Forecast its effects in `expect`: the metric, situation, the
+   change `by` in metric units and `p`, your honest probability that it
+   happens; add side effects you expect on other benchmark metrics. The check
+   turns this into the benchmark score it would earn
+   (p x min(by/tol, 3) x weight x caps) and refuses candidates whose main
+   effect is under one tolerance (not detectable) or whose total is under the
+   engine's minimum (default 4). Don't inflate p to pass: forecasts are
+   compared with verdicts. If nothing you can propose clears the bar, write
+   no proposal and say why; suggest a review or a `kind: new` instead.
+6. If the best idea is an approach the engine can't apply (no `trial` /
    `tune`, needs code), write it as `kind: new` with the reasoning: it goes to
    the build queue for a person. If it needs literature first, say so and
    suggest `/review TOPIC`.
-6. Write each candidate as
+7. Write each candidate as
    `experiments/evolution/proposals/inbox/<date>_<short_name>.yaml`, following
    the schema in the context exactly.
-7. Run `.venv/bin/python -m k1.cli design check` and fix every FAIL.
-8. Report the candidates to the user: gap → change → hypothesis → why, and
-   which ones are build requests. The engine picks them up at its next step
-   (`rsw engine step --go`, which trains only with the user's go-ahead).
+8. Run `.venv/bin/python -m k1.cli design check` and fix every FAIL (a
+   "not worth a run" FAIL means drop or rethink it, not raise p).
+9. Report the candidates: gap → change → hypothesis → expected gain → why, and
+   which ones are build requests. The engine trains the one with the highest
+   expected gain at its next step (`rsw engine step --go`). The engine may run
+   this command itself, headless (`claude -p`), when its inbox is empty: then
+   you can only read, run the design/review/approaches commands and write in
+   the inbox.

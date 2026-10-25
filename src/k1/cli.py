@@ -34,8 +34,14 @@ rsw deploy intake ONNX         the runner's model intake (TAKE / TAKE AS LEGACY 
                                DO NOT TAKE) against its specs on branch dev
 rsw engine init RECIPE CKPT    set the outer loop's champion
 rsw engine status              champion, children in flight, recent verdicts
-rsw engine step [--go]         one outer-loop step (collect, escalate, refill)
+rsw engine step [--go]         one outer-loop step (collect, escalate, refill);
+                               trains only inbox proposals worth a run, asking
+                               the LLM designer (claude -p /design) when empty
 rsw engine run --hours H [--go]  repeat steps; trains only with --go
+                               (--min-gain G, --no-llm, --fallback)
+rsw design context|check|inbox the LLM designer's context, proposal check
+                               (with expected gain), inbox state
+rsw design ask [--n N]         run /design headless now (writes proposals only)
 rsw check [--bench]            the safety net (tests/golden/README.md)
 
 Old names still work: ``rsw methods`` = ``rsw approaches``, ``rsw evolve`` =
@@ -146,6 +152,9 @@ def _design(args: argparse.Namespace) -> int:
       files = sorted(d.glob("*.yaml")) if d.is_dir() else []
       print(f"{d.name:9s} {len(files):3d}  {' '.join(f.name for f in files[-8:])}")
     return 0
+  if args.design_cmd == "ask":
+    print(design.ask_llm(args.n, args.task))
+    return 0
   paths = [Path(p) for p in args.files] or design.inbox()
   bad = 0
   for path in paths:
@@ -159,6 +168,10 @@ def _design(args: argparse.Namespace) -> int:
       print(f"     {msg}")
     if not problems and p.get("kind") != "new":
       print(f"     change: {design.change_text(p, champion['recipe'])}")
+    if p.get("kind") != "new" and isinstance(p.get("expect"), dict | list):
+      est = design.estimate(p)
+      for line in [f"expected gain {est.gain:+.1f}", *est.effects]:
+        print(f"     {line}")
     bad += bool(problems)
   return 1 if bad else 0
 
@@ -404,15 +417,22 @@ def _engine(args: argparse.Namespace) -> int:
       "dry run: add --go to let the loop train (one or two GPU trainings at a time)"
     )
     return 0
+  from k1.engine import design
   from k1.engine.real import BenchJudge, RsTrainer
 
-  # The LLM designer's inbox first (proposals written by /design), then the
-  # deterministic approach designer and one-gene steps when the inbox is empty.
-  designers = [
-    InboxDesigner(),
-    ApproachDesigner("kick", _champion_gaps),
-    GeneDesigner(EVOLVE_GENES),
+  # The LLM designer: proposals in the inbox (written by /design, or by the
+  # engine calling it headless when the inbox is empty), the one with the
+  # highest expected gain first; nothing trains unless it is worth a run. The
+  # deterministic designers (no forecast, no worth gate) only with --fallback.
+  designers: list = [
+    InboxDesigner(
+      gaps=_champion_gaps,
+      min_gain=args.min_gain,
+      ask=None if args.no_llm else design.ask_llm,
+    )
   ]
+  if args.fallback:
+    designers += [ApproachDesigner("kick", _champion_gaps), GeneDesigner(EVOLVE_GENES)]
   cfg = outer.Config()
   rng = random.Random(st.counter)
   deadline = time.time() + 3600 * (args.hours if args.engine_cmd == "run" else 0)
@@ -478,6 +498,10 @@ def main(argv: list[str] | None = None) -> int:
   p.add_argument("files", nargs="*")
   p.set_defaults(func=_design)
   des.add_parser("inbox").set_defaults(func=_design)
+  p = des.add_parser("ask")
+  p.add_argument("--n", type=int, default=3)
+  p.add_argument("--task", default="kick")
+  p.set_defaults(func=_design)
   rev = sub.add_parser("review").add_subparsers(dest="review_cmd", required=True)
   p = rev.add_parser("gaps")
   p.add_argument("--task", default="kick")
@@ -554,7 +578,23 @@ def main(argv: list[str] | None = None) -> int:
       )
       if name == "run":
         p.add_argument("--hours", type=float, required=True)
-      p.set_defaults(func=_engine)
+      p.add_argument(
+        "--min-gain",
+        type=float,
+        default=4.0,
+        help="expected benchmark gain a proposal needs to train",
+      )
+      p.add_argument(
+        "--no-llm",
+        action="store_true",
+        help="don't call the LLM designer headless (inbox only)",
+      )
+      p.add_argument(
+        "--fallback",
+        action="store_true",
+        help="also the deterministic designers (no worth gate)",
+      )
+      p.set_defaults(func=_engine)  # fmt: skip
   p = sub.add_parser("check")
   p.add_argument("--bench", action="store_true", help="also the champion benchmark")
   p.set_defaults(func=_check)
