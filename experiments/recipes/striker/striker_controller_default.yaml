@@ -2,6 +2,7 @@
 # edit by hand from here on.
 name: striker_controller_default
 task: Mjlab-Velocity-Striker-Controller-Booster-K1
+request: striker
 change: 'none: the registered task as it is'
 why: Baseline and control for two-level striker controller. Declares every method the task
   has on, so the code and the recipe can't drift apart.

@@ -1,6 +1,7 @@
 # The deployed kick champion's training (h022_c2, 2026-10-09).
 name: kick_stage3_h022
 task: Mjlab-Velocity-Kick-Stage3-Amp-DA-Muon-Booster-K1
+request: kick
 change: reproduces the training of the deployed kick champion h022_c2_18450 (2026-10-09)
 why: 'The registered stage-3 task has changed since the champion was trained (DecAP with kick
   clips, multi-critic and the kick motion mix arrived 2026-10-16). This recipe is the champion''s

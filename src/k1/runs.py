@@ -28,7 +28,7 @@ def _git(*args: str) -> str:
 
 
 def describe(recipe: Recipe, env_cfg: Any, rl_cfg: Any, extra_args: list[str]) -> dict:
-  from k1.methods import detect_all
+  from k1.approaches import detect_all
 
   return {
     "schema": 1,

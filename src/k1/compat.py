@@ -35,6 +35,9 @@ ALIASES = {
   "k1.tasks.velocity.rl.striker_runner": "k1.tasks.striker.runner",
   "k1.tasks.velocity.config.k1": "k1.tasks.walk.baselines",
   "mjlab.tasks.tracking.config.k1": "k1.tasks.legacy.tracking",
+  # Step 6 (2026-10-25): methods are approaches, the evolution loop is the engine.
+  "k1.methods": "k1.approaches",
+  "k1.evolve": "k1.engine",
 }
 
 

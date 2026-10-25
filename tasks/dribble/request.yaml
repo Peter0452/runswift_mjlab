@@ -1,0 +1,92 @@
+# Task request: dribble with kick mode. Written 2026-10-25 from
+# knowledge/objectives.md ("Everywhere", "Dribble"); priorities and TBD targets
+# are best guesses for the user to agree (restructure/STEP6_LOG.md). Draft.
+name: dribble
+version: 1
+status: draft
+level: 0
+requested_by: user
+goal: >-
+  Dribble at ~1.5 m/s in all directions with good ball control, and kick from
+  the dribble (kick mode) at least as hard as B-Human, on the real K1.
+context:
+  behaviour: runswift behaviour calls the dribble policy to carry the ball; kick mode on obs slot 82
+  before: [walk]
+  after: [walk, kick]
+interface:
+  commands: [dribble velocity, kick mode (slot 82)]
+  observes: dribble layout (k1/deploy/obs_layout.py)
+  outputs: 22 joint targets at 50 Hz (k1/deploy/contract.py)
+  precondition: ball close and seen or remembered
+  postcondition: ball under control, or kicked more than 0.5 m away and standing
+requirements:
+  - id: S1
+    metric: falls
+    target: no regression vs the bench model (strict gate)
+    priority: 0
+    source: objectives Dribble 2026-10-21
+  - id: S2
+    metric: deploy gate (export, contract metadata, ONNX parity, lost-ball rule)
+    target: passes
+    priority: 0
+    source: CLAUDE.md deploy-first rule
+  - id: P1
+    metric: dribble speed
+    target: ~1.5 m/s in all directions with good ball control
+    priority: 1
+    source: objectives Dribble speed 2026-10-19
+  - id: P2
+    metric: 0.8 m/s dribble gate and posture
+    target: no regression (strict)
+    priority: 1
+    source: objectives Dribble 2026-10-21
+  - id: P3
+    metric: kick-mode power
+    target: at least B-Human's (~4.3 m/s 3D in our bench); air balls fine
+    priority: 1
+    source: objectives Dribble kick mode 2026-10-21
+  - id: P4
+    metric: dribble while kick mode exists
+    target: not compromised (dribble gates hold)
+    priority: 1
+    source: objectives Dribble kick mode 2026-10-21
+  - id: Q1
+    metric: slow dribble gates (0.3 / 0.5 m/s)
+    target: within -0.08 of v17
+    priority: 2
+    source: objectives Dribble 2026-10-21
+  - id: Q2
+    metric: time to kick in kick mode
+    target: as short as possible (TBD number)
+    priority: 2
+    source: objectives Dribble kick mode
+  - id: Q3
+    metric: re-kick behaviour
+    target: re-kick until the ball is more than 0.5 m away, then stand
+    priority: 2
+    source: objectives Dribble kick mode
+  - id: Q4
+    metric: kick style by geometry
+    target: under ~30 deg to the approach line a power kick, over it a side-foot kick; then outcome-based choice
+    priority: 2
+    source: objectives Dribble kick mode
+verification:
+  judge: dribble_gate
+  benchmark: scripts/tools/dribble_gate.py (vs swa_v17) and dribble_eval.py
+  promotion: gates pass with no regression; confirmed on seed 2
+  secondary: []
+constraints:
+  - inputs may change if needed, as a separate model version with runner and parity updated (2026-10-23)
+  - DR, latency and limits inherited from the AMP walk
+  - deploy contract (k1/deploy/contract.py) and knowledge/deployment.md
+subtasks: {}
+priors:
+  - {type: teacher, ref: kick-loop teacher h011 (legs) near the ball, note: kick_teacher; anchors kick power}
+  - {type: teacher, ref: B-Human kick policy, note: allowed as a teacher (2026-10-22); plain action imitation rejected}
+budget: {gpu_hours: TBD, robot_sessions: TBD}
+deliverable:
+  onnx: dribble_models/ (deployed by the user)
+  report: verdict per requirement, gate output, run.json
+implementations:
+  - dribble/dribble_default.yaml
+frozen: null

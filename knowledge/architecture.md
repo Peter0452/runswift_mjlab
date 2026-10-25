@@ -7,7 +7,11 @@ harbor dependency); hybrid promotion rule. Status: Steps 1–3 done (keep-list, 
 move) done 2026-10-24 except the big-file splits, deferred to Step 5 (see "As built"
 below and `restructure/STEP4_LOG.md`); Step 5 built 2026-10-24: methods registry, recipes, `run.json`, `rsw`, deploy
 contract + gate, verdicts and judges, outer loop + inner PBT (`k1/evolve`, not yet
-run: needs your budget and designer choices; `restructure/STEP5_LOG.md`).
+run: needs your budget and designer choices; `restructure/STEP5_LOG.md`). Step 6
+built 2026-10-25: task requests and implementations, approaches filed by element
+with sources and uses, literature reviews; `k1/methods` → `k1/approaches`,
+`k1/evolve` → `k1/engine` (old paths alias; see "Task requests and
+implementations" below and `restructure/STEP6_LOG.md`).
 
 ## Layout
 
@@ -30,16 +34,21 @@ runswift_mjlab/
 │   │                            export.py (contract → ONNX metadata) · parity.py (runner checks)
 │   ├── common/                  ball.py (K1_BALL) · vision.py (camera, memory, lost rule, head) ·
 │   │                            symmetry.py · terrain.py · physics_guard.py · reward_log.py
-│   ├── methods/<name>/          METHOD.md card · config + apply() · smoke test; registry.py
+│   ├── approaches/              registry.py (approaches with code: element, detect, apply) ·
+│   │                            knowledge.py (cards, sources, uses; check)   [was methods/]
+│   ├── requests.py              task requests: schema, check, freeze, task tree
 │   ├── tasks/                   __init__.py registers the 34 task IDs
 │   │   walk/ kick/ dribble/ selfplay/ striker/ bhuman/ legacy/   (each: config.py + mdp/)
 │   ├── eval/                    one judge per task, one result shape
-│   └── evolve/                  outer.py · pool.py · inner.py (PBT/PB2) · verdict.py · designers/
+│   └── engine/                  outer.py · inner.py (PBT/PB2) · state.py · real.py · designers/
+│                                [was evolve/]
 │
-├── experiments/recipes/<task>/*.yaml   run definitions (in git)
+├── tasks/<name>/request.yaml           task requests: the "what" (in git)
+├── experiments/recipes/<task>/*.yaml   task implementations: run definitions (in git)
 ├── experiments/evolution/              loop state, verdicts (gitignored)
 ├── logs/rsl_rl/<exp>/<run>/            checkpoints (latest + best + referenced), params/, run.json
 ├── knowledge/                          read first (this directory)
+│   approaches/<element>/  sources/  uses/  reviews/   approach knowledge (Step 6)
 ├── docs/                               original notes, benchmark JSON
 ├── tests/{framework,k1,golden}/        upstream tests · our tests · safety net
 ├── scripts/                            thin wrappers for old commands; scripts/agent/ (hooks)
@@ -82,13 +91,57 @@ Differences from the sketch above, all logged with reasons in
 | Deployment (obs, actions, rate, ball, head, caps, clips, delay) | `k1/deploy/contract.py`; readable copy `knowledge/deployment.md` | ONNX metadata, runner parity gate, deployable label |
 | Task set | `k1/tasks/__init__.py` | `tests/test_task_registry.py` |
 | Model behaviour | `tests/golden/` | `scripts/tools/golden.py`, `golden_bench.py` (later `rsw check`) |
-| Method | `k1/methods/<name>/` | `rsw recipe check`, each method's smoke test |
+| Task request | `tasks/<name>/request.yaml` | `rsw request check`; frozen hash once agreed |
+| Approach | `knowledge/approaches/<element>/<id>.md` + `k1/approaches/registry.py` | `rsw knowledge check`, `rsw recipe check` |
 | Run | `logs/…/run.json` | written by `rsw train`, appended by evals |
 | Objectives | `knowledge/objectives.md` | CLAUDE.md, session briefing hook |
 
-## Methods and recipes
+## Task requests and implementations (Step 6, 2026-10-25)
 
-A **method** is one technique (AMP, DecAP, Muon, multi-critic, CAPS, KL anchor,
+The repo is a task-fulfilment system for the runswift behaviour module and for
+people: a requester sends a **task request** (the what), the engine answers it
+with **task implementations** (the how), and a judge joins the two.
+
+```
+ requester ── TASK REQUEST (tasks/<name>/request.yaml) ──▶ engine
+           ◀── report: verdict per requirement ─────────  │
+                                                          ▼
+ approaches (knowledge) ──options──▶ TASK IMPLEMENTATIONS (recipes) → train
+           ▲                                              │
+           └── uses ◀── judge (frozen verification) ◀─────┘ → gates → delivery
+```
+
+- **Task request:** goal, context, run-time interface, requirements with
+  priorities (0 safety, 1 primary, 2 secondary), verification (judge,
+  benchmark, promotion rule), constraints, optional priors (typed: clips,
+  teacher, reward hint, constraint, curriculum, scenario, warm start,
+  approach), budget, deliverable, implementations.
+  - **Lifecycle:** draft → agreed → frozen (hash of interface, requirements
+    and verification) → delivered. A change is a new version.
+  - The system proposes measurable requirements and relaxations with evidence;
+    it never relaxes a requirement itself.
+- **Task graph:** a request with level > 0 acts through subtasks (lower-level
+  requests or deployed policies). A subtask's interface is the parent's action
+  space; decomposition (flat vs hierarchical) is an implementation choice.
+- **Task implementation:** a recipe naming its `request` and an optional
+  falsifiable `hypothesis`; the engine's designers write them from approaches.
+- **Approaches** are filed by the element their mechanism changes. The four RL
+  elements are agent, reward, value and model. Two context axes cover the
+  rest: environment (what the agent experiences) and optimisation. The full
+  taxonomy is in `knowledge/approaches/README.md`. Knowledge is stored as
+  source → approach → use:
+  - **Sources** (`knowledge/sources/`): papers, repositories and our own work,
+    each with its approach written as elements.
+  - **Approach cards:** idea, conditions, our status.
+  - **Uses** (`knowledge/uses/uses.yaml`): which part we used, in which task,
+    with what result, negative results included.
+- **Literature reviews** (`knowledge/reviews/`): a trigger, related tasks and
+  their approaches, a fit judgement and a shortlist with hypotheses. Literature
+  decides what is worth trying; the benchmark decides what stays.
+
+## Approaches (formerly methods) and recipes
+
+An **approach** (called a method before Step 6) is one technique (AMP, DecAP, Muon, multi-critic, CAPS, KL anchor,
 kick teacher, symmetry augmentation, conditioned AMP, SWA/blend, reward
 grammar; FastSAC parked; B-Human imitation rejected). Each has a card: what /
 source, extension point(s), parameters, conflicts, **deployment impact**
@@ -134,7 +187,7 @@ recipe's ranges change. Its best checkpoint goes back to the outer judges.
 technique, reward hacking, deployed path, peak vs final), findings. Ungradable
 is never zero.
 
-**Designers** (`k1/evolve/designers/`), all emitting recipes:
+**Designers** (`k1/engine/designers/`), all emitting recipes with a hypothesis:
 
 | Designer | Proposes | Gate before training |
 |---|---|---|
@@ -160,3 +213,6 @@ state. New-task authoring becomes `rsw task new` (section-by-section with smokes
 2. **Evolution loop**: methods + registry, recipes reproducing today's configs
    (verified by golden), `run.json`, `rsw`, deploy parity gate and labels,
    outer + inner loop, designers, verdicts; loop state to `experiments/evolution/`.
+3. **Step 6: task requests and approach knowledge** (2026-10-25): `tasks/`,
+   `k1/requests.py`, approaches by element with sources, uses and reviews,
+   `k1/approaches` and `k1/engine` renames, `rsw request|approaches|knowledge|engine`.

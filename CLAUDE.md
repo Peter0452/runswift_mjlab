@@ -19,6 +19,9 @@ Deploy-first rules:
 - Shared defaults (ball model, reward weights, caps) affect every task built on
   them: change them only deliberately and re-run the safety net.
 - Use `.venv/bin/python -m pytest`; evals with `timeout -k 30 N .venv/bin/python ...`.
+- Work starts from a task request (`tasks/<name>/request.yaml`: what is asked and
+  how it is judged; `rsw request list`); approaches to try are in
+  `knowledge/approaches/` by element, with sources and our results (`rsw approaches`).
 - Train from a recipe (`experiments/recipes/`), not a bare task: `rsw recipe check`,
   `rsw train RECIPE` (dry run; `--go` to train), `rsw check` for the safety net. The
   deployed kick champion's setup is `kick/kick_stage3_h022.yaml`.

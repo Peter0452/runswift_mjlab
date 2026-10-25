@@ -25,7 +25,9 @@ experience records, in-code design notes and the session memory.
 |---|---|
 | Know what "better" means and what must not change | [objectives.md](objectives.md) |
 | Keep training and the robot runner consistent | [deployment.md](deployment.md) |
-| See the target layout, methods/recipes and the evolution-loop design | [architecture.md](architecture.md) |
+| See the target layout, task requests / implementations, approaches and the engine | [architecture.md](architecture.md) |
+| See what is asked of each task (requirements, verification) | [../tasks/](../tasks/README.md) (`rsw request list`) |
+| Find approaches to try, by element, with sources and our results | [approaches/](approaches/README.md), [sources/](sources/README.md), [uses/](uses/README.md), [reviews/](reviews/README.md) (`rsw approaches`) |
 | Work on a skill | [skills/](skills/): [walk](skills/walk.md), [kick](skills/kick.md), [dribble](skills/dribble.md), [self-play striker](skills/selfplay_striker.md), [B-Human port](skills/bhuman_kick.md) |
 | Find the current best model for something | [models.md](models.md) |
 | Design a reward or a run | [lessons/reward_design.md](lessons/reward_design.md) |
@@ -59,12 +61,13 @@ Tasks removed on 2026-10-23 (upstream demos, unused variants) are on branch
 | Robot model, ball, deploy layouts | `src/k1/robot/`, `src/k1/common/ball.py`, `src/k1/deploy/obs_layout.py` |
 | Old module paths | `mjlab.tasks.velocity.*`, `mjlab.tasks.kick.*` etc. still import (served by `src/k1/compat.py`); patch family modules, not the re-export shims |
 | AMP, multi-critic, kick teacher | `src/mjlab/amp/` |
-| Methods, recipes, CLI | `src/k1/methods/` (registry + `METHOD.md` cards), `experiments/recipes/<family>/*.yaml` (run definitions, checked against the code), `rsw` (`rsw --help`; `src/k1/cli.py`) |
+| Task requests | `tasks/<name>/request.yaml` (`rsw request list|check|show|freeze`; schema `src/k1/requests.py`) |
+| Approaches, recipes, CLI | `src/k1/approaches/` (registry of approaches with code + knowledge loader), cards in `knowledge/approaches/<element>/`, `experiments/recipes/<family>/*.yaml` (task implementations, checked against the code), `rsw` (`rsw --help`; `src/k1/cli.py`) |
 | Judges, verdicts, deploy gate | `src/k1/eval/` (`rsw judge`), `src/k1/deploy/{contract,obs_layout,parity}.py` (`rsw deploy check`) |
 | Training runs | `logs/rsl_rl/<experiment>/<run>/` (latest, best and referenced checkpoints kept; configs in `params/`; `run.json` for runs started with `rsw train`) |
 | Eval and bench tools | `scripts/tools/` (catalog: `scripts/tools/README.md`) |
 | Benchmark results | `docs/benchmarks*/` (JSON) |
-| Evolution loop (new) | `src/k1/evolve/`, `rsw evolve status|step|run`; state in `experiments/evolution/` (gitignored) |
+| Engine (new evolution loop) | `src/k1/engine/` (was `k1/evolve`), `rsw engine status|step|run` (`rsw evolve` still works); state in `experiments/evolution/` (gitignored) |
 | Kick evolution loop state (old loop, history) | `docs/evolution/` (`HANDOFF.md` first) |
 | Experience records | `docs/experience/` |
 | Robot runner, ONNX models, robot recordings | `../k1_policy_runner/` |
@@ -82,5 +85,6 @@ either fix the change or, if it was intended, re-record and say why.
 - New finding with evidence → add it to the right `lessons/` file with its
   source; never delete a superseded lesson, mark it `superseded` and say by what.
 - New best model → update [models.md](models.md) and the skill page.
-- New objective or standing decision from the user → [objectives.md](objectives.md), with the date.
+- New objective or standing decision from the user → [objectives.md](objectives.md), with the date, and the matching task request in `tasks/`.
+- A run that tested one approach → a use record in [uses/uses.yaml](uses/uses.yaml); a new paper or repo → a source record and, if it brings a new approach, a card. Check with `rsw knowledge check`.
 - Long run-by-run logs stay in `docs/` notes; this directory holds the distilled version.

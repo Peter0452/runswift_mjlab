@@ -2,6 +2,7 @@
 # edit by hand from here on.
 name: dribble_default
 task: Mjlab-Velocity-Dribble-Amp-DA-Muon-Booster-K1
+request: dribble
 change: 'none: the registered task as it is'
 why: Baseline and control for dribble with kick mode. Declares every method the task has on,
   so the code and the recipe can't drift apart.

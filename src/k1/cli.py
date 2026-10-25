@@ -1,7 +1,13 @@
-"""``rsw``: one interface to the K1 work for people, agents and the evolution loop.
+"""``rsw``: one interface to the K1 work for people, agents and the engine.
 
-rsw tasks                      registered tasks and the methods each has on
-rsw methods [NAME]             method registry, or one method's card
+rsw request list               task requests (tasks/<name>/request.yaml), checked
+rsw request check [NAME ...]   schema, judges, implementations, subtasks, frozen hash
+rsw request show NAME          a request and its task tree
+rsw request freeze NAME --agreed   freeze after the requester's sign-off
+rsw approaches [--element E] [ID]  approaches by element (cards, registry, uses),
+                               or one approach's card and its uses
+rsw knowledge check            approach cards, sources, uses and requests connect
+rsw tasks                      registered tasks and the approaches each has on
 rsw recipe check [PATH ...]    build and verify recipes (default: all)
 rsw recipe diff PATH RUN_DIR   compare a recipe with a past run's params
 rsw train PATH [--go] [-- ARGS]  train a recipe (dry run without --go); ARGS go
@@ -15,11 +21,14 @@ rsw deploy check CKPT [--run RUN_DIR | --task TASK]
                                deploy gate: export, ONNX parity, contract
                                metadata, lost-ball rule; records the result in
                                run.json and labels the run deployable
-rsw evolve init RECIPE CKPT    set the outer loop's champion
-rsw evolve status              champion, children in flight, recent verdicts
-rsw evolve step [--go]         one outer-loop step (collect, escalate, refill)
-rsw evolve run --hours H [--go]  repeat steps; trains only with --go
+rsw engine init RECIPE CKPT    set the outer loop's champion
+rsw engine status              champion, children in flight, recent verdicts
+rsw engine step [--go]         one outer-loop step (collect, escalate, refill)
+rsw engine run --hours H [--go]  repeat steps; trains only with --go
 rsw check [--bench]            the safety net (tests/golden/README.md)
+
+Old names still work: ``rsw methods`` = ``rsw approaches``, ``rsw evolve`` =
+``rsw engine``.
 """
 
 from __future__ import annotations
@@ -37,7 +46,7 @@ ROOT = recipes.ROOT
 
 def _tasks(_: argparse.Namespace) -> int:
   import mjlab.tasks  # noqa: F401
-  from k1.methods import detect_all
+  from k1.approaches import detect_all
   from mjlab.tasks.registry import list_tasks, load_env_cfg, load_rl_cfg
 
   for task in list_tasks():
@@ -46,16 +55,81 @@ def _tasks(_: argparse.Namespace) -> int:
   return 0
 
 
-def _methods(args: argparse.Namespace) -> int:
-  from k1.methods import METHODS
+def _approaches(args: argparse.Namespace) -> int:
+  from k1.approaches import APPROACHES, ELEMENTS
+  from k1.approaches import knowledge as kn
 
+  cards = kn.cards()
   if args.name:
-    print(METHODS[args.name].card.read_text())
+    card = cards.get(args.name)
+    if card is None and args.name in APPROACHES:  # a registry name
+      card = next(c for c in cards.values() if c.meta["registry"] == args.name)
+    if card is None:
+      print(f"no approach {args.name!r}")
+      return 2
+    print(card.path.read_text())
+    for u in kn.uses_of(card.id):
+      print(f"- {u['id']} [{u['result']}] {u['task']}: {u['finding']}")
     return 0
-  print(f"{'method':24s} {'status':13s} {'impact':14s} points")
-  for m in METHODS.values():
-    print(f"{m.name:24s} {m.status:13s} {m.impact:14s} {', '.join(m.points)}")
+  n_uses: dict[str, int] = {}
+  for u in kn.uses():
+    n_uses[u["approach"]] = n_uses.get(u["approach"], 0) + 1
+  for element in ELEMENTS:
+    if args.element and element != args.element:
+      continue
+    group = [c for c in cards.values() if c.meta["element"] == element]
+    print(f"{element} ({len(group)})")
+    for c in group:
+      m = c.meta
+      code = "code" if m["registry"] else "card"
+      print(
+        f"  {c.id:28s} {m['status']:13s} {m['impact']:14s} {code}  "
+        f"uses {n_uses.get(c.id, 0):2d}  {', '.join(m['tags'])}"
+      )
   return 0
+
+
+def _knowledge_check(_: argparse.Namespace) -> int:
+  from k1 import requests
+  from k1.approaches import knowledge as kn
+
+  problems = kn.check()
+  for name in requests.names():
+    problems += [f"tasks/{name}: {p}" for p in requests.check(name)]
+  for p in problems:
+    print(p)
+  print("knowledge ok" if not problems else f"{len(problems)} problems")
+  return 1 if problems else 0
+
+
+def _request(args: argparse.Namespace) -> int:
+  from k1 import requests
+
+  if args.request_cmd == "freeze":
+    if not args.agreed:
+      print("freeze needs --agreed: the requester signed off the requirements")
+      return 2
+    problems = requests.check(args.name)
+    if problems:
+      print("\n".join(problems))
+      return 1
+    print(f"{args.name} frozen at {requests.freeze(args.name)}")
+    return 0
+  if args.request_cmd == "show":
+    print(requests.path_of(args.name).read_text())
+    print("\n".join(requests.tree(args.name)))
+    return 0
+  names = getattr(args, "names", None) or requests.names()
+  bad = 0
+  for name in names:
+    problems = requests.check(name)
+    req = requests.load(name) if requests.path_of(name).is_file() else {}
+    head = f"{name:12s} level {req.get('level', '?')}  {req.get('status', '?'):9s}"
+    print(f"{'ok  ' if not problems else 'FAIL'} {head}")
+    for p in problems:
+      print(f"     {p}")
+    bad += bool(problems)
+  return 1 if bad else 0
 
 
 def _recipe_check(args: argparse.Namespace) -> int:
@@ -162,17 +236,17 @@ EVOLVE_GENES = {
 EVOLVE_METHODS = {"caps": {"temporal": 1.5}, "decap": {"source": "kick"}}
 
 
-def _evolve(args: argparse.Namespace) -> int:
+def _engine(args: argparse.Namespace) -> int:
   import random
   import time
 
   import yaml
 
-  from k1.evolve import outer, state
-  from k1.evolve.designers import GeneDesigner, MethodDesigner
+  from k1.engine import outer, state
+  from k1.engine.designers import GeneDesigner, MethodDesigner
 
   path = state.DIR / "state.json"
-  if args.evolve_cmd == "init":
+  if args.engine_cmd == "init":
     recipe = yaml.safe_load(Path(args.recipe).read_text())
     ckpt = str(Path(args.checkpoint).resolve())
     champ = {"recipe": recipe, "checkpoint": ckpt, "verdict": None}
@@ -180,10 +254,10 @@ def _evolve(args: argparse.Namespace) -> int:
     print(f"champion set: {recipe['name']} @ {ckpt}")
     return 0
   if not path.is_file():
-    print("no loop state: rsw evolve init RECIPE CKPT first")
+    print("no loop state: rsw engine init RECIPE CKPT first")
     return 2
   st = state.load(path)
-  if args.evolve_cmd == "status":
+  if args.engine_cmd == "status":
     print(
       f"champion: {st.champion['recipe'].get('name')} @ {st.champion.get('checkpoint')}"
     )
@@ -200,12 +274,12 @@ def _evolve(args: argparse.Namespace) -> int:
       "dry run: add --go to let the loop train (one or two GPU trainings at a time)"
     )
     return 0
-  from k1.evolve.real import BenchJudge, RsTrainer
+  from k1.engine.real import BenchJudge, RsTrainer
 
   designers = [GeneDesigner(EVOLVE_GENES), MethodDesigner(EVOLVE_METHODS)]
   cfg = outer.Config()
   rng = random.Random(st.counter)
-  deadline = time.time() + 3600 * (args.hours if args.evolve_cmd == "run" else 0)
+  deadline = time.time() + 3600 * (args.hours if args.engine_cmd == "run" else 0)
   with state.single_writer(path):
     while True:
       for line in outer.step(
@@ -213,7 +287,7 @@ def _evolve(args: argparse.Namespace) -> int:
       ):
         print(line, flush=True)
       state.save(st, path)
-      if args.evolve_cmd == "step" or time.time() > deadline:
+      if args.engine_cmd == "step" or time.time() > deadline:
         return 0
       if st.non_improving >= cfg.escalate_after and not st.in_flight:
         return 0
@@ -225,7 +299,7 @@ def _check(args: argparse.Namespace) -> int:
   steps = [
     [py, "-m", "pytest", "-q", "-p", "no:cacheprovider", "tests/test_task_registry.py",
      "tests/test_deploy_obs_layout.py", "tests/test_k1_compat.py",
-     "tests/test_k1_methods.py", "-m", "not slow"],
+     "tests/test_k1_approaches.py", "tests/test_k1_requests.py", "-m", "not slow"],
     [py, "scripts/tools/golden.py", "check"],
   ]  # fmt: skip
   if args.bench:
@@ -252,9 +326,25 @@ def main(argv: list[str] | None = None) -> int:
   )
   sub = parser.add_subparsers(dest="cmd", required=True)
   sub.add_parser("tasks").set_defaults(func=_tasks)
-  p = sub.add_parser("methods")
-  p.add_argument("name", nargs="?")
-  p.set_defaults(func=_methods)
+  for name in ("approaches", "methods"):
+    p = sub.add_parser(name)
+    p.add_argument("name", nargs="?")
+    p.add_argument("--element", help="only this element")
+    p.set_defaults(func=_approaches)
+  kn = sub.add_parser("knowledge").add_subparsers(dest="knowledge_cmd", required=True)
+  kn.add_parser("check").set_defaults(func=_knowledge_check)
+  req = sub.add_parser("request").add_subparsers(dest="request_cmd", required=True)
+  req.add_parser("list").set_defaults(func=_request)
+  p = req.add_parser("check")
+  p.add_argument("names", nargs="*")
+  p.set_defaults(func=_request)
+  p = req.add_parser("show")
+  p.add_argument("name")
+  p.set_defaults(func=_request)
+  p = req.add_parser("freeze")
+  p.add_argument("name")
+  p.add_argument("--agreed", action="store_true", help="the requester signed off")
+  p.set_defaults(func=_request)
   rec = sub.add_parser("recipe").add_subparsers(dest="recipe_cmd", required=True)
   p = rec.add_parser("check")
   p.add_argument("paths", nargs="*")
@@ -288,20 +378,21 @@ def main(argv: list[str] | None = None) -> int:
     "--confirm", action="store_true", help="full benchmark, seeds 1 and 2 (promotion)"
   )
   p.set_defaults(func=_judge)
-  evo = sub.add_parser("evolve").add_subparsers(dest="evolve_cmd", required=True)
-  p = evo.add_parser("init")
-  p.add_argument("recipe")
-  p.add_argument("checkpoint")
-  p.set_defaults(func=_evolve)
-  evo.add_parser("status").set_defaults(func=_evolve)
-  for name in ("step", "run"):
-    p = evo.add_parser(name)
-    p.add_argument(
-      "--go", action="store_true", help="actually train (default: dry run)"
-    )
-    if name == "run":
-      p.add_argument("--hours", type=float, required=True)
-    p.set_defaults(func=_evolve)
+  for cmd in ("engine", "evolve"):
+    eng = sub.add_parser(cmd).add_subparsers(dest="engine_cmd", required=True)
+    p = eng.add_parser("init")
+    p.add_argument("recipe")
+    p.add_argument("checkpoint")
+    p.set_defaults(func=_engine)
+    eng.add_parser("status").set_defaults(func=_engine)
+    for name in ("step", "run"):
+      p = eng.add_parser(name)
+      p.add_argument(
+        "--go", action="store_true", help="actually train (default: dry run)"
+      )
+      if name == "run":
+        p.add_argument("--hours", type=float, required=True)
+      p.set_defaults(func=_engine)
   p = sub.add_parser("check")
   p.add_argument("--bench", action="store_true", help="also the champion benchmark")
   p.set_defaults(func=_check)

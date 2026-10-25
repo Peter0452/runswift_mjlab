@@ -1,0 +1,66 @@
+# Task request: 1v1 self-play striker (composite). Written 2026-10-25 from
+# knowledge/objectives.md ("Self-play striker") and knowledge/skills/
+# selfplay_striker.md; priorities and TBD targets are best guesses for the user
+# to agree (restructure/STEP6_LOG.md). Draft.
+name: striker
+version: 1
+status: draft
+level: 1
+requested_by: user
+goal: >-
+  Continuous dribble, kick and outmanoeuvre play against an opponent inside
+  the runswift behaviour, beyond the stage-3 kick loop.
+context:
+  behaviour: runswift behaviour hands ball play to the striker (decision layer or flat policy)
+  before: []
+  after: []
+interface:
+  commands: [game state from the behaviour (TBD)]
+  observes: kick-loop layout + opponent xy (86 inputs, flat) or skill choice inputs (two-level)
+  outputs: joint targets (flat) or skill choice + commands every 0.2 s (two-level)
+  precondition: TBD with the behaviour module
+  postcondition: TBD with the behaviour module
+requirements:
+  - id: S1
+    metric: falls
+    target: TBD (no regression vs the current best)
+    priority: 0
+    source: objectives Everywhere
+  - id: S2
+    metric: deploy gate
+    target: passes
+    priority: 0
+    source: CLAUDE.md deploy-first rule
+  - id: P1
+    metric: goal share vs a fixed opponent pool
+    target: TBD (current best 0.441 vs h022, controller_v2 + h022)
+    priority: 1
+    source: knowledge/skills/selfplay_striker.md
+  - id: P2
+    metric: kick skill
+    target: still meets the kick request (subtask kick)
+    priority: 1
+    source: objectives Self-play striker
+verification:
+  judge: [controller_eval, selfplay_eval]
+  benchmark: scripts/tools/controller_eval.py (two-level) and selfplay_eval.py (flat), fixed opponents only
+  promotion: beats the current best vs the fixed pool; confirmed on seed 2
+  secondary: []
+constraints:
+  - judge against frozen opponents, never the live league
+  - even the sides by giving the opponent the learner's DR, never by removing it from the learner
+  - decomposition (flat self-play vs two-level controller) is an implementation choice to test
+subtasks:
+  kick: {request: kick}
+  walk: {deployed: logs/rsl_rl/k1_velocity_amp_symmetric_muon_wwcmu50_roughft/2026-09-21_20-34-24_stageA/model_9950.pt}
+priors:
+  - {type: approach, ref: kl_anchor, note: self-play fine-tunes drift without it}
+  - {type: reward_hint, ref: Bansal-style annealing of task shaping to 0.2, note: user request}
+budget: {gpu_hours: TBD, robot_sessions: TBD}
+deliverable:
+  onnx: kick_loop_models/ (flat) or controller + skills (two-level)
+  report: verdict per requirement, eval output, run.json
+implementations:
+  - striker/striker_controller_default.yaml
+  - selfplay/selfplay_default.yaml
+frozen: null

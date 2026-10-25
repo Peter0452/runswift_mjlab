@@ -11,7 +11,7 @@ evolution loop.
 
 These stay where they are during the restructure (old commands keep working);
 the evaluation and evolution layer is rebuilt in Step 5 as `k1/eval` (one judge
-per task, one verdict shape) and `k1/evolve` (see `knowledge/architecture.md`).
+per task, one verdict shape) and `k1/engine` (was `k1/evolve`; see `knowledge/architecture.md`).
 
 ## Safety net (run before and after code changes; `tests/golden/README.md`)
 
@@ -73,7 +73,7 @@ per task, one verdict shape) and `k1/evolve` (see `knowledge/architecture.md`).
 | `blend_checkpoints.py` | Weight-space crossover of same-architecture checkpoints |
 | `blend_search.py` | Screen blends at several ratios, benchmark the best |
 
-## Evolution loop (current, replaced by `k1/evolve` in Step 5)
+## Evolution loop (old, replaced by `k1/engine`, built in Step 5)
 
 | Tool | What it does |
 |---|---|

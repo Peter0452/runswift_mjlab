@@ -1,18 +1,21 @@
 """Recipes: one YAML file per training run (``experiments/recipes/<family>/``).
 
-A recipe is a registered task plus explicit, checked deltas::
+A recipe is a task implementation: a registered task plus explicit, checked
+deltas, answering a task request (``tasks/<name>/request.yaml``)::
 
   name: kick_stage3_h022
   task: Mjlab-Velocity-Kick-Stage3-Amp-DA-Muon-Booster-K1
+  request: kick                 # the task request it answers (or null)
   change: what differs from the control (one change per run)
   why: the reason, with evidence
+  hypothesis: what should move, and how much (falsifiable; optional)
   touches: training-only        # or runtime (needs runner change + parity)
   control: kick_stage3_default  # same-length run to judge against (or null)
   init: null                    # checkpoint to start from
   ball: ours                    # K1_BALL: ours | bhuman
   genes: {}                     # KICK_GENES / DRIBBLE_GENES (read at import)
-  methods:                      # every method that is on, with its parameters;
-    decap: false                # false turns a method off
+  methods:                      # every approach with code that is on, with its
+    decap: false                # parameters (k1.approaches); false turns it off
     caps: {temporal: 1.0}
   rewards: {kick_vel: 900.0}    # reward term -> weight
   rl: {algorithm.learning_rate: 1.0e-4}   # other runner fields (dotted paths)
@@ -47,6 +50,8 @@ class Recipe:
   task: str
   change: str
   why: str
+  request: str | None = None
+  hypothesis: str | None = None
   touches: str = "training-only"
   control: str | None = None
   init: str | None = None
@@ -143,19 +148,19 @@ def build(recipe: Recipe) -> tuple[Any, Any]:
         f"build {recipe.name}: run with {key}={value} (see run_with_env)"
       )
   import mjlab.tasks  # noqa: F401  (registers the tasks)
-  from k1.methods import METHODS
+  from k1.approaches import APPROACHES
   from mjlab.tasks.registry import load_env_cfg, load_rl_cfg
 
   env_cfg, rl_cfg = load_env_cfg(recipe.task), load_rl_cfg(recipe.task)
   for name, params in recipe.methods.items():
-    if name not in METHODS:
+    if name not in APPROACHES:
       raise KeyError(f"unknown method {name!r}")
     if params is False:
       _disable(name, rl_cfg, env_cfg)
     elif isinstance(params, dict):
       _enable(name, rl_cfg)
-      settable = {k: v for k, v in params.items() if k in METHODS[name].params}
-      METHODS[name].apply(rl_cfg, settable)
+      settable = {k: v for k, v in params.items() if k in APPROACHES[name].params}
+      APPROACHES[name].apply(rl_cfg, settable)
   for term, weight in recipe.rewards.items():
     if term not in env_cfg.rewards:
       raise KeyError(f"unknown reward term {term!r}")
@@ -202,8 +207,8 @@ def _same(a: Any, b: Any) -> bool:
 
 def verify(recipe: Recipe, env_cfg: Any, rl_cfg: Any) -> list[str]:
   """Problems with a built recipe (empty when it is true to the code)."""
+  from k1.approaches import detect_all
   from k1.deploy.obs_layout import LAYOUTS
-  from k1.methods import detect_all
 
   problems = []
   found = detect_all(env_cfg, rl_cfg)

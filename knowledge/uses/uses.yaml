@@ -1,0 +1,237 @@
+# Uses: each time we applied an approach (or part of one) in a task, and what
+# happened. One entry per use; negative results stay. Format in README.md.
+# Seeded 2026-10-25 from the approach cards' evidence and the L5 catalogue;
+# dates are when the result was recorded, where the source note gives one.
+
+- id: u001
+  approach: amp
+  source: peng2021_amp
+  part: style reward from a discriminator on WW + CMU walk clips
+  task: walk
+  context: AMP walk (gold walk model_9950)
+  settings: {style_reward_weight: 0.2}
+  result: positive
+  finding: Style weight 0.2 works; 0.5 at 98 % discriminator accuracy is saturated noise that washed out velocity tracking.
+  evidence: knowledge/skills/walk.md
+  status_effect: adopted (in every deployed model)
+
+- id: u002
+  approach: amp
+  source: peng2021_amp
+  part: unconditioned style prior
+  task: dribble
+  context: faster clip mix for speed (v19)
+  result: negative
+  finding: An unconditioned style prior copies the clips' posture; the faster mix leaned the dribble 16 degrees (lesson R25).
+  evidence: knowledge/skills/dribble.md
+  date: 2026-10-20
+
+- id: u003
+  approach: conditioned_amp
+  source: ours
+  part: command-conditioned discriminator (amp_cond)
+  task: dribble
+  context: v20, after the faster mix leaned the dribble
+  result: mixed
+  finding: Helped a little (+0.05-0.08); runner leg jitter rose 0.066 -> 0.080.
+  evidence: knowledge/skills/dribble.md
+
+- id: u004
+  approach: caps
+  source: mysore2021_caps
+  part: temporal regulariser
+  task: dribble
+  context: dribble lineage
+  settings: {temporal: 2.0}
+  result: negative
+  finding: CAPS 2.0 made recoveries sluggish; temporal 1.0 stays on in the dribble.
+  evidence: knowledge/skills/dribble.md
+
+- id: u005
+  approach: caps
+  source: mysore2021_caps
+  part: temporal regulariser, with a strong foot-flat penalty
+  task: kick
+  context: stage 3 v24
+  settings: {temporal: 1.0}
+  result: negative
+  finding: The policy stood still in front of far balls; a smooth policy can be standing still (E7). The champion h022 trained with temporal 1.0, spatial 0.4.
+  evidence: knowledge/skills/kick.md
+
+- id: u006
+  approach: kick_teacher
+  source: ours
+  part: MSE imitation of the kick-loop teacher h011 (legs) near the ball
+  task: dribble
+  context: dribble kick mode, teacher off in v34
+  result: positive
+  finding: Teacher off dropped kick power to 2.63 m/s; the teacher anchors dribble kick power.
+  evidence: knowledge/skills/dribble.md
+
+- id: u007
+  approach: kick_teacher
+  source: ours
+  part: straight-kick-only teaching
+  task: dribble
+  context: v36
+  result: positive
+  finding: Inside-foot kicks rose 11 -> 24 %.
+  evidence: knowledge/skills/dribble.md
+
+- id: u008
+  approach: bhuman_action_imitation
+  source: bhuman_isaacgymrl
+  part: B-Human's kick policy as teacher / executor near the ball
+  task: dribble
+  context: v41 (teacher), v43 (takeover)
+  result: negative
+  finding: v41 collapsed our kick (1.96 m/s, 37 deg); takeover (v43) also hurt. Don't retry plain action imitation of B-Human.
+  evidence: knowledge/skills/dribble.md
+  status_effect: rejected
+
+- id: u009
+  approach: kl_anchor
+  source: vinyals2019_alphastar
+  part: KL to a frozen reference policy, decaying
+  task: selfplay
+  context: self-play fine-tunes of h022
+  settings: {coef: 0.5, coef_final: 0.1, lr: 1.0e-4}
+  result: positive
+  finding: Fine-tunes drifted 22-36 % in actor weights and got worse vs h022; fixed LR 1e-4 plus the anchor fixed it (E18). Anchor to the best checkpoint after a reward fix, not the old baseline.
+  evidence: knowledge/skills/selfplay_striker.md
+
+- id: u010
+  approach: muon
+  source: jordan2024_muon
+  part: Muon for actor and critic matrices
+  task: selfplay
+  context: fine-tunes at the adaptive LR
+  result: mixed
+  finding: Adopted for all AMP tasks; at the adaptive LR (~1e-3) a fine-tune random-walks; fixed LR 1e-4 worked (E18).
+  evidence: knowledge/approaches/optimisation/muon.md
+
+- id: u011
+  approach: swa_blend
+  source: izmailov2018_swa
+  part: weight averaging of nearby checkpoints
+  task: selfplay
+  context: swa_v15v16_9100 (deployed)
+  result: positive
+  finding: SWA is a cheap, reliable gain (E21); swa_v15v16 beat h022 0.421 vs 0.402 goal share, 6/6 seeds.
+  evidence: knowledge/skills/selfplay_striker.md
+
+- id: u012
+  approach: swa_blend
+  source: izmailov2018_swa
+  part: weight-space blend of dribble and kick skills
+  task: dribble
+  context: skill blend
+  result: negative
+  finding: Blending the dribble and kick skills gives the worst of both (R27); blends don't fine-tune well afterwards (ft_x50a/b 170 -> 80-98 goals).
+  evidence: knowledge/approaches/optimisation/swa_blend.md
+
+- id: u013
+  approach: swa_blend
+  source: izmailov2018_swa
+  part: SWA checkpoint deployed on the robot
+  task: dribble
+  context: swaA on the real robot
+  result: mixed
+  finding: swaA fell 1.9 times per upright minute on the robot; the benchmark gate still applies to averaged checkpoints.
+  evidence: knowledge/skills/dribble.md
+
+- id: u014
+  approach: momentum_kick
+  source: bhuman_isaacgymrl
+  part: kick quality not tied to standstill
+  task: kick
+  context: stage 3 v57
+  result: positive
+  finding: Long 3D kick 5.6 -> 8.0 m/s; body speed at contact 0.12 -> 0.56 m/s.
+  evidence: docs/approach_catalogue.yaml
+  status_effect: adopted
+
+- id: u015
+  approach: planted_support
+  source: bhuman_isaacgymrl
+  part: support foot planted beside the ball at contact
+  task: kick
+  context: x4_g004_70
+  result: positive
+  finding: Support planted 72 -> 92 %, no regressions.
+  evidence: docs/approach_catalogue.yaml
+  status_effect: adopted
+
+- id: u016
+  approach: side_foot_kick
+  source: bhuman_isaacgymrl
+  part: AMP clips + RSI; explicit side_foot_strike reward
+  task: kick
+  context: v59, v60, evo_g011
+  result: negative
+  finding: Clips + RSI gave 1-2 % side-foot; the Gaussian reward had no gradient, the ramp reward 1 % at +250. Local shaping does not discover the style.
+  evidence: docs/approach_catalogue.yaml
+
+- id: u017
+  approach: torque_clip
+  source: bhuman_isaacgymrl
+  part: leg torque clip 50/50/30/60/30/30 Nm
+  task: kick
+  context: stage 3, from 2026-10-07
+  result: positive
+  finding: Knee p90 107 -> 54 Nm.
+  evidence: docs/approach_catalogue.yaml
+  date: 2026-10-07
+  status_effect: adopted
+
+- id: u018
+  approach: staged_curriculum
+  source: ours
+  part: warm-start handoff with re-initialised placeholder slots
+  task: kick
+  context: stage 1 -> stage 2
+  result: positive
+  finding: A plain resume collapsed stage 2 (KL 22); the reset fixed it (ball distance 2.5 -> 0.65 m in 60 iterations).
+  evidence: knowledge/skills/kick.md
+
+- id: u019
+  approach: vision_model
+  source: ours
+  part: IMU-only ball memory (no odometry)
+  task: kick
+  context: robot test, 2026-10-02
+  result: positive
+  finding: Training with odometry-based memory made the head and approach fail on the robot; the runner has no odometry, so training uses rotation-only memory.
+  evidence: knowledge/session_notes/k1-kick-staged-training.md
+  date: 2026-10-02
+
+- id: u020
+  approach: hierarchical_controller
+  source: ours
+  part: GRU controller over frozen kick and walk skills
+  task: striker
+  context: controller v2-v7
+  result: mixed
+  finding: controller_v2 + h022 reached 0.441 goal share vs h022; v3-v7 did not beat v2; the decision layer adds only ~+0.02-0.04 over a scripted rule.
+  evidence: knowledge/skills/selfplay_striker.md
+
+- id: u021
+  approach: self_play
+  source: bansal2018_competition
+  part: 1v1 fine-tune against frozen copies and a pool
+  task: selfplay
+  context: v15/v16, SWA
+  result: positive
+  finding: swa_v15v16_9100 beats h022 under the same scripted controller (0.421 vs 0.402, 6/6 seeds); deployed at the user's request.
+  evidence: knowledge/skills/selfplay_striker.md
+  status_effect: adopted
+
+- id: u022
+  approach: selfplay_shaping_anneal
+  source: bansal2018_competition
+  part: anneal task shaping toward the game reward
+  task: selfplay
+  context: v13-v16 froze alpha instead of annealing to 0.2
+  result: none
+  finding: Not tested as asked; the deviation (frozen alpha) was reported.
+  evidence: knowledge/objectives.md

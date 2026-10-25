@@ -21,7 +21,7 @@ result; true for its time), **superseded** (replaced; see the pointer),
 | `docs/K1_KICK_APPROACH_NOTES.md` | 10-01 | record | Stage 2: spec, warm-start collapse, sim blow-up guard, body heading change |
 | `docs/K1_KICK_REWARD_EVOLUTION_DESIGN.md` | 10-06 | proposal (built) | Reward grammar and L0–L4 ladder |
 | `docs/K1_KICK_APPROACH_LOOP_DESIGN.md` | 10-06 | proposal (built) | L5 approach loop: finding and integrating methods |
-| `docs/approach_catalogue.yaml` | 10-07 | current | L5 catalogue atoms |
+| `docs/approach_catalogue.yaml` | 10-07 | superseded by `knowledge/approaches/`, `knowledge/sources/`, `knowledge/uses/` (2026-10-25; every atom has a card) | L5 catalogue atoms |
 | `docs/evolution/HANDOFF.md` | 10-09 | record (state), current (runbook, gotchas) | Evolution system, user objectives, champion state, runbook, gotchas, pending items. Read before touching the loop |
 | `docs/evolution/monitor.md` | 10-07 → 10-09 | record | Every intervention in the loop, with reasons |
 | `docs/evolution/log.md` | 10-07 → 10-09 | record | Loop events (machine-written) |

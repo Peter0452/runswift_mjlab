@@ -1,0 +1,96 @@
+# Task request: the stage-3 kick loop. Written 2026-10-25 from
+# knowledge/objectives.md ("Everywhere", "Kick"); priorities and TBD targets are
+# best guesses for the user to agree (restructure/STEP6_LOG.md). Draft: not frozen.
+name: kick
+version: 1
+status: draft
+level: 0
+requested_by: user
+goal: >-
+  Kick faster, more accurately and more powerfully than B-Human across diverse
+  ball sizes, without losing stability, with no falls and smooth actions, on
+  the real K1 in RoboCup matches.
+context:
+  behaviour: runswift behaviour calls the kick loop when it decides to kick
+  before: [walk]
+  after: [walk]
+interface:
+  commands: [speed caps (vx, vy, wz), kick direction, kick range (short / medium / long)]
+  observes: kick-loop layout, 83 inputs (k1/deploy/obs_layout.py)
+  outputs: 22 joint targets at 50 Hz (k1/deploy/contract.py)
+  precondition: walking or standing; ball seen or remembered (vision model, lost rule)
+  postcondition: upright and walking again after the kick
+requirements:
+  - id: S1
+    metric: falls (benchmark v2)
+    target: 0, and no regression vs the champion
+    priority: 0
+    source: objectives Kick headline 2026-10-08
+  - id: S2
+    metric: deploy gate (export, contract metadata, ONNX parity, lost-ball rule)
+    target: passes
+    priority: 0
+    source: CLAUDE.md deploy-first rule
+  - id: S3
+    metric: leg torque
+    target: within the B-Human kick clip (50/50/30/60/30/30 Nm)
+    priority: 0
+    source: objectives Everywhere 2026-10-07
+  - id: P1
+    metric: time to first kick
+    target: shorter than B-Human
+    priority: 1
+    source: objectives Kick headline, "kick quickly"
+  - id: P2
+    metric: kick accuracy
+    target: better than B-Human
+    priority: 1
+    source: objectives Kick headline
+  - id: P3
+    metric: power by range
+    target: short 1-4 m soft and accurate; medium 4-8 m matched to distance; long >= 8 m at least B-Human's power (goal 7-8 m/s; air balls fine)
+    priority: 1
+    source: objectives Kick power by range 2026-10-07
+  - id: Q1
+    metric: speed cap use
+    target: reaches the chase caps |vx| <= 2.0 (1.75 back), |vy| <= 2.0, |wz| <= 3.0
+    priority: 2
+    source: objectives Kick 2026-10-23
+  - id: Q2
+    metric: posture
+    target: upright, no lean at speed, height ~0.52 m, flat feet; as smooth as the gold walk
+    priority: 2
+    source: objectives Kick posture
+  - id: Q3
+    metric: action rate and step loudness
+    target: stable and smooth; quiet steps
+    priority: 2
+    source: objectives Kick 2026-10-08
+  - id: Q4
+    metric: kick styles
+    target: several styles kept (front, inside foot, hop), chosen per situation by outcome
+    priority: 2
+    source: objectives Kick styles 2026-10-05/07
+verification:
+  judge: kick_bench_v2
+  benchmark: benchmark v2 (scripts/tools/kick_bench2.py) scored by fitness_v2 vs the champion and B-Human
+  promotion: beats the champion on targeted metrics with no regression elsewhere; confirmed on seed 2
+  secondary: [runswift kick benchmark v2 (rs_kick_bench.py), runswift goal grid (proxy soft gate)]
+constraints:
+  - one end-to-end kick policy; no switching or walk/kick hybrids (2026-10-06)
+  - 83 inputs fixed; any input change is a new version with runner and parity updates
+  - DR, latency and limits inherited from the AMP walk; change only with robot evidence and the user's go-ahead
+  - deploy contract (k1/deploy/contract.py) and knowledge/deployment.md
+subtasks: {}
+priors:
+  - {type: curriculum, ref: staged walk -> approach -> kick with warm-start handoff, note: staged_curriculum}
+  - {type: motion_clips, ref: walk AMP mix; kick clips, note: amp}
+  - {type: teacher, ref: B-Human kick policy, note: allowed as a gated teacher (2026-10-22); plain action imitation rejected}
+budget: {gpu_hours: TBD, robot_sessions: TBD}
+deliverable:
+  onnx: kick_loop_models/ in k1_policy_runner (deployed by the user)
+  report: verdict per requirement, benchmark JSON, run.json
+implementations:
+  - kick/kick_stage3_h022.yaml
+  - kick/kick_stage3_default.yaml
+frozen: null

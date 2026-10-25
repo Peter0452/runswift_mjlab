@@ -2,6 +2,7 @@
 # edit by hand from here on.
 name: kick_stage3_default
 task: Mjlab-Velocity-Kick-Stage3-Amp-DA-Muon-Booster-K1
+request: kick
 change: 'none: the registered task as it is'
 why: Baseline and control for kick stage 3 (the deployed kick loop's task). Declares every
   method the task has on, so the code and the recipe can't drift apart.
