@@ -598,6 +598,29 @@ def test_long_kick_underpower() -> None:
   assert torch.allclose(u, torch.tensor([0.0, 0.0, 0.5, 0.0]), atol=1e-5)
 
 
+def test_short_kick_overpower() -> None:
+  from types import SimpleNamespace
+
+  from k1.tasks.kick.mdp import kick_loop as kl
+
+  # need 2 m/s: cap 2.5; 2.5 free, 3.75 half, 6 capped at 1; long and no-kick 0
+  cmd = SimpleNamespace(
+    kick_event=torch.tensor([True, True, True, True, False]),
+    kick_long=torch.tensor([False, False, False, True, False]),
+    kick_speed=torch.tensor([2.5, 3.75, 6.0, 6.0, 6.0]),
+    kick_speed_req=torch.full((5,), 2.0),
+  )
+  orig = kl._kick_command
+  kl._kick_command = lambda e: cmd
+  try:
+    o = kl.short_kick_overpower(None)
+  finally:
+    kl._kick_command = orig
+  assert torch.allclose(o, torch.tensor([0.0, 0.5, 1.0, 0.0, 0.0]), atol=1e-5)
+  cfg = load_env_cfg("Mjlab-Velocity-Kick-Stage3-Amp-DA-Muon-Booster-K1")
+  assert cfg.rewards["short_kick_overpower"].weight == 0.0  # off unless a gene
+
+
 def test_loft_factor() -> None:
   from k1.tasks.kick.mdp import kick_loop as kl
 

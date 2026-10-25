@@ -629,6 +629,9 @@ def booster_k1_kick_stage3_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     # v54d: −800 → −300. At −800 (v54c) not kicking long became the safe
     # choice: long kicks 555 → 454, near-ball wait up, goals 0.98 → 0.69.
     "long_kick_underpower": (mdp.long_kick_underpower, -300.0),
+    # 2026-10-26: short / medium kick above 1.25× the needed speed (h022 ~1.5×,
+    # passes 3.5 m long; B-Human ~1.25×, 1.4 m). Off by default; a gene.
+    "short_kick_overpower": (mdp.short_kick_overpower, 0.0),
     # v52b: per aimed, well-struck short / medium kick launched 30–60°+ off
     # the body heading (v52's relaxed alignment alone left side kicks at ~3 %).
     "side_kick_bonus": (mdp.side_kick_bonus, 400.0 if SIDE_KICKS_V52 else 0.0),

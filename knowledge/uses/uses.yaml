@@ -245,3 +245,33 @@
   result: negative
   finding: Not promoted (screens +40..+69 vs parent +77.5). exp_world2_18798 scored +109 vs the champion but regressed short_stop, robust goals and action_rate. Truth-input ball-behind cold-start falls stayed (~10/90; cold-behind sim falls 50 %). Bundled with other changes and judged against a single-screen parent bar (monitor 2026-10-09 07:58), so it is weak evidence.
   evidence: docs/evolution/monitor.md
+
+- id: u024
+  approach: near_ball_starts
+  source: bhuman_isaacgymrl
+  part: ball 0.35-1.0 m ahead, target any direction (side_drill 0.25 / 0.4)
+  task: kick
+  context: night 2026-10-26, fine-tune from h022_c2_18450, 600 it; judged on rs_kick (runswift spec v2) vs B-Human pretrained
+  result: mixed
+  finding: "Fails bench v2 full confirmation (goals_per_ep, short_stop_m, goal_grid unknown regress on both seeds). 0.25 dose (n1 19049): rs_kick lab 0.945/0.948 (vs B-Human +0.020/+0.017, CIs > 0), deployed 0.852/0.879 (vs h022 +0.017/+0.025); bench v2 quick no regression. 0.4 dose worse (lab 0.934/0.924). Longer training and a 0.35-0.65 m dose raise rs_kick but grow short-pass overshoot (short_stop_m regression at 400+ more it)."
+  evidence: docs/evolution/monitor.md
+
+- id: u025
+  approach: task_reward_shaping
+  source: bhuman_isaacgymrl
+  part: tighter kick aim (KICK_AIM_SIGMA 0.25)
+  task: kick
+  context: night 2026-10-26, from n1 19049, 400 it
+  result: negative
+  finding: rs_kick lab 0.939/0.939 (below n1 0.945/0.948), direction error not lower; deployed unchanged.
+  evidence: docs/evolution/monitor.md
+
+- id: u026
+  approach: task_reward_shaping
+  source: bhuman_isaacgymrl
+  part: short-pass rest accuracy x1.5 (w.kick_rest_accuracy 1500)
+  task: kick
+  context: night 2026-10-26, from n4 19448 (near-ball line), 400 it
+  result: mixed
+  finding: "best deployed rs_kick of the night (0.876/0.880, vs h022 +0.042/+0.025) but lab fell to 0.937/0.939 and short_stop_m still regressed (high cap); did not fix the overshoot it targeted."
+  evidence: docs/evolution/monitor.md

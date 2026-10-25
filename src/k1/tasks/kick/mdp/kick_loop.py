@@ -1590,12 +1590,7 @@ def goal_mouth(env: ManagerBasedRlEnv) -> torch.Tensor:
   collect this on top of the unchanged aim and power rewards.
   """
   cmd = _kick_command(env)
-  return (
-    cmd.kick_event.float()
-    * _mouth_ramp(cmd)
-    * cmd.kick_quality
-    * _promptness(cmd)
-  )
+  return cmd.kick_event.float() * _mouth_ramp(cmd) * cmd.kick_quality * _promptness(cmd)
 
 
 def long_kick_speed_in_mouth(env: ManagerBasedRlEnv) -> torch.Tensor:
@@ -1676,6 +1671,21 @@ def long_kick_underpower(env: ManagerBasedRlEnv) -> torch.Tensor:
   need = LONG_UNDERPOWER_FRACTION * cmd.kick_speed_req.clamp(min=0.5)
   short = (1.0 - cmd.kick_speed / need).clamp(0.0, 1.0)
   return (cmd.kick_event & cmd.kick_long).float() * short
+
+
+SHORT_OVERPOWER_FRACTION = 1.25
+
+
+def short_kick_overpower(env: ManagerBasedRlEnv) -> torch.Tensor:
+  """Per short / medium kick: excess above 1.25 × the speed the target needs, as
+  a fraction (0 at ≤ 1.25×, 1 at ≥ 2.5×). 2026-10-26: h022 struck short passes
+  at ~1.5× needed and they stopped 3.5 m past the target; B-Human's at ~1.25×
+  stopped 1.4 m away. kick_rest_accuracy pays only when the ball comes to rest,
+  seconds later; this prices the overpower at the kick."""
+  cmd = _kick_command(env)
+  cap = SHORT_OVERPOWER_FRACTION * cmd.kick_speed_req.clamp(min=0.5)
+  excess = (cmd.kick_speed / cap - 1.0).clamp(0.0, 1.0)
+  return (cmd.kick_event & ~cmd.kick_long).float() * excess
 
 
 def _long_band(cmd) -> tuple[float, float]:
@@ -2278,6 +2288,7 @@ __all__ = [
   "ball_size_mass",
   "stand_start",
   "long_kick_underpower",
+  "short_kick_overpower",
   "trunk_pitch_band",
   "walk_base_height",
   "walk_stance_width",

@@ -505,3 +505,49 @@ invalid or harmful; benchmark / fitness bug. Every intervention: what, why, evid
   (from n4, w.kick_rest_accuracy 1000 -> 1500). n7 is a **worth-gate override**:
   the gate scored it +1.7 (< 4) because it prices gain only, not removing a
   regression that blocks promotion. Step 10 gap: give regression fixes a gain.
+
+### 2026-10-26 09:30 — round 3b verdict; n1 to full confirmation
+
+| run | deployed s0 / s1 | lab s0 / s1 | bench v2 quick |
+|---|---|---|---|
+| n5b close 0.35-0.65 (19849) | 0.854 / 0.876 | 0.945 / 0.946 | short_stop_m regress low+high |
+| n7 rest x1.5 (19847) | 0.876 / 0.880 (vs h022 +0.042/+0.025) | 0.937 / 0.939 | short_stop_m regress high |
+
+- Short-pass overshoot grows with near-ball training (n1 < n4 < n7 < n5b);
+  rest accuracy x1.5 did not fix it. Root cause open (side_drill keeps the
+  target bins; maybe close starts reward quick hard first touches).
+- Only clean candidate: n1 19049. Running `rsw judge --confirm` (bench v2
+  full, seeds 1+2). Use records u024-u026.
+
+### 2026-10-26 10:15 — n1 fails the full confirmation; h022 stays champion
+
+`rsw judge --confirm` (bench v2 full, seeds 1+2) of n1 19049: score +26.0
+(18.4 / 7.6) but regressions on both seeds: full_loop/camera goals_per_ep (high
+cap 1.86/1.87 vs h022 2.07/2.02; also low cap, moving, robust, late_detect),
+short_stop_m (3.7-4.1 m vs 2.9-3.1), goal_grid/unknown goal_pct (seed 2 high cap
+64 % vs 84 %). The near-ball fine-tune wins rs_kick but loses the full loop.
+Not promoted. Pose probe (foot contact at kick, rs_kick rollouts): sole strike,
+toes up ~37 deg, sole rolled ~50 deg inward; pose variation within this kick does
+not change rs_kick outcomes except flat-foot toe touches (accidental, -0.11..-0.16).
+
+### 2026-10-26 — kick pose study (h022, n1, B-Human; bench v2 full_loop + close_any, camera)
+
+Pose at foot-ball contact per kick (scratchpad pose_v2.py over kick_bench2.measure).
+- Ours (h022/n1): inner sole strike, foot toe-out ~56-60 deg vs the kick line,
+  sole rolled ~45-50 deg inward, toes up ~27-31 deg. Kicking leg pinned at joint
+  limits: ankle roll -0.345 in 100 % of kicks, hip roll -0.40 in 66-72 %, ankle
+  pitch near -0.87 in 15 %. Knee nearly straight (0.55).
+- B-Human: inside-of-foot sweep (76 %), toe-out ~90 deg, flat foot, hip roll
+  +0.89 abducted, knee 1.25; no joint at a limit; power from hip roll (p90 32 Nm).
+- Outcomes (full_loop): short passes B-Human rest miss 1.4 m at 1.2-1.3x needed
+  speed vs ours 3.5-4.4 m at 1.5-1.6x; ours more accurate (3.4-4.8 vs 6.9-12.2
+  deg), more long power (0.89-1.01 vs 0.71 x needed).
+- Within ours, short-pass speed/needed is ~1.5 for every pose: the overshoot is
+  power modulation, not pose. Long power rises with toe-out (40-55: 0.61x,
+  55-70: 0.97x, 70-85: 1.33x) and toes-up >= 35 deg.
+- Real robot (dribble_1019): reaches the ankle/hip roll limits; ankle roll tracks
+  well at extremes (0.04 rad), hip roll and ankle pitch poorly (0.23-0.24 rad).
+Use: short-pass overpower target from B-Human (~1.25x needed) is the lever for
+the short_stop regression; don't train toward B-Human's pose (costs accuracy and
+long power; u-record kick.md: inside-foot cut long power 6.99 -> 4.70); robot
+check of contact pose before any limit-margin change (needs robot evidence).
