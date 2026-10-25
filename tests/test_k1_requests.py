@@ -75,3 +75,8 @@ def test_freeze_then_change_is_caught(tasks_copy) -> None:
   assert requests.check("dribble") == []
   _edit(tasks_copy, "dribble", lambda r: r["requirements"][0].update(target="anything"))
   assert any("make a new version" in p for p in requests.check("dribble"))
+
+
+def test_interface_policy_must_be_a_bound_spec(tasks_copy) -> None:
+  _edit(tasks_copy, "kick", lambda r: r["interface"].update(policy="kick_loop_v9@1"))
+  assert any("not a bound spec" in p for p in requests.check("kick"))

@@ -8,6 +8,45 @@ the runner must change the same way, and parity must pass before the model
 ships.** (The runner repo itself is not edited from this repo's work; record
 the needed runner change and its owner.)
 
+## 0. The runner owns the RL development interface (branch `dev`, 2026-10-25)
+
+`../k1_policy_runner` branch `dev` is the target. It writes down what a model
+must look like for it to run:
+
+- `docs/rl-development/interface.md`: three tiers and the required ONNX metadata
+- `docs/policies/joint_table.md`
+- one spec per policy: `docs/policies/kick_loop_v1.md`, `walk_amp_v1.md`
+- `docs/rl-development/model-intake.md`: the intake check
+
+**The runner's documents are the authority; this page and
+`src/k1/deploy/` are our mirror.** `tests/test_runner_spec.py` compares the
+mirror with the runner:
+
+- the joint table (pose, scales, PD, limits)
+- each bound layout's `policy_id`, `spec_version` and `obs_layout`
+- the training actor-input order
+- the kick's lost rule, memory, camera FOV and head tracker against the
+  runner's constants
+
+The runner's tiers map onto our rules:
+
+| Runner tier | Here |
+|---|---|
+| 1. Robot facts (joint order, limits, 50 Hz, one frame) | `contract.py`; never changed from this repo |
+| 2. Pinned per policy (layout and meaning, pose, scales, PD) | `contract.py` + `obs_layout.py` (`policy_id`, `spec_version`, `spec_layout`). A change is a **new policy version** with a draft spec in `deliveries/specs/`, and the recipe says `touches: runtime` |
+| 3. Free (weights, rewards, DR, curriculum) | recipes; list run-time-relevant DR (delay, noise) in the delivery |
+
+**Delivery** (`deliveries/README.md`):
+- The export writes `policy_id`, `spec_version`, `obs_dim` and `obs_layout`.
+- `rsw deploy check` requires the runner's intake verdict **TAKE**
+  (`rsw deploy intake ONNX` runs the intake alone).
+- Layouts without a runner spec on `dev` can't be delivered yet: dribble,
+  flat self-play, striker controller.
+
+Open: the kick's trained speed ranges. Training uses the chase caps (up to vy
+2.0, wz 3.0); the spec and runner say vy ≤ 1.5, wz ≤ 1.5. The test is xfail
+until this is decided.
+
 Sources: `docs/K1_KICK_LOOP_POLICY_IO.md` (kick loop, detailed),
 `../k1_policy_runner/python-implementation/DRIBBLE_POLICY_IO.md` (dribble),
 `docs/STRIKER_SELF_PLAY_PLAN.md` §3 (self-play / controller),
@@ -42,7 +81,7 @@ pitch / shoulder roll / elbow pitch / elbow yaw, 6–9 right arm (same order),
 | Seen | ball centre inside the head camera view (±0.606 rad × ±0.367 rad from `Head_2`) | a detection younger than `--ball-hold-s` |
 | Detection noise | σ = 0.03 m + 0.05 × distance; dropout 2–5 %; delay 0–4 steps; frame hold 2–4 steps (dribble) | real vision (~16 Hz, 2–13 % lost) |
 | Memory | last sighting turned by **IMU yaw only** (no odometry, `memory_odometry=False`) | same rule |
-| Lost rule | lost after 0.5 s in view with no detection, or 1.5 s with none; then a **virtual ball** beside the robot on the remembered side (kick: close, dribble: 1.2 m), age 0 | same rule; `lost_rule_parity.py` |
+| Lost rule | lost after 0.5 s in view (within 3 m) with no detection, or 1.5 s with none; then a **virtual ball** on the remembered side (kick: 2.0 m at ±1.6 rad, age keeps decaying; dribble: 1.2 m) | same rule (kick values checked against the runner by `tests/test_runner_spec.py`); `lost_rule_parity.py` |
 | FOV gate | training only reports camera-visible balls | runner drops detections at impossible bearings (> 66°) |
 | Never seen | zeros, age 0 | zeros, age 0 |
 | Ball model | `K1_BALL`: ours (0.08 m / 0.1 kg, randomised) by default; `bhuman` (0.095 m / 0.29 kg) opt-in | the real ball |
@@ -114,8 +153,10 @@ through `play_bhuman_kick.py`; not a deployment target of this repo.
 
 ## 4. Before a model ships
 
-1. Golden safety net (`tests/golden/README.md`) passes.
-2. Parity, training vs runner: `parity_check.py` (kick loop) or
+1. Golden safety net (`tests/golden/README.md`) passes, including
+   `tests/test_runner_spec.py` (our mirror matches the runner's specs).
+2. `rsw deploy check CKPT --run RUN_DIR`: metadata, ONNX vs actor, lost-rule
+   parity, the runner's intake verdict TAKE. Older parity tools: `parity_check.py` (kick loop) or
    `dribble_parity_check.py`, `onnx_parity.py`, `lost_rule_parity.py`. Expected:
    ONNX vs PyTorch ≤ ~4e-6, joint targets identical except the documented cases
    (episode-start ball memory, lost-rule edge cases, runner joint clamp).

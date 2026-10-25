@@ -15,6 +15,7 @@ context:
   before: []
   after: []
 interface:
+  # runner policy spec: none yet (flat self-play: 86 inputs; two-level: controller + skills); needs a new runner spec
   commands: [game state from the behaviour (TBD)]
   observes: kick-loop layout + opponent xy (86 inputs, flat) or skill choice inputs (two-level)
   outputs: joint targets (flat) or skill choice + commands every 0.2 s (two-level)

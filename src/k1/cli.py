@@ -21,6 +21,8 @@ rsw deploy check CKPT [--run RUN_DIR | --task TASK]
                                deploy gate: export, ONNX parity, contract
                                metadata, lost-ball rule; records the result in
                                run.json and labels the run deployable
+rsw deploy intake ONNX         the runner's model intake (TAKE / TAKE AS LEGACY /
+                               DO NOT TAKE) against its specs on branch dev
 rsw engine init RECIPE CKPT    set the outer loop's champion
 rsw engine status              champion, children in flight, recent verdicts
 rsw engine step [--go]         one outer-loop step (collect, escalate, refill)
@@ -202,6 +204,17 @@ def _deploy_check(args: argparse.Namespace) -> int:
   return 0 if result["passed"] else 1
 
 
+def _deploy_intake(args: argparse.Namespace) -> int:
+  from k1.deploy import intake, runner_spec
+
+  if not runner_spec.present():
+    print(f"runner docs not found under {runner_spec.RUNNER}")
+    return 2
+  report = intake.intake(args.onnx)
+  print(report["report"])
+  return 0 if report["verdict"] == "TAKE" else 1
+
+
 def _judge(args: argparse.Namespace) -> int:
   from k1 import runs
   from k1.eval import judges
@@ -299,7 +312,8 @@ def _check(args: argparse.Namespace) -> int:
   steps = [
     [py, "-m", "pytest", "-q", "-p", "no:cacheprovider", "tests/test_task_registry.py",
      "tests/test_deploy_obs_layout.py", "tests/test_k1_compat.py",
-     "tests/test_k1_approaches.py", "tests/test_k1_requests.py", "-m", "not slow"],
+     "tests/test_k1_approaches.py", "tests/test_k1_requests.py",
+     "tests/test_runner_spec.py", "tests/test_deploy_contract.py", "-m", "not slow"],
     [py, "scripts/tools/golden.py", "check"],
   ]  # fmt: skip
   if args.bench:
@@ -368,6 +382,9 @@ def main(argv: list[str] | None = None) -> int:
   p.add_argument("--task", help="task id when there is no run.json")
   p.add_argument("--out", help="where to write the ONNX (default: a temp dir)")
   p.set_defaults(func=_deploy_check)
+  p = dep.add_parser("intake")
+  p.add_argument("onnx")
+  p.set_defaults(func=_deploy_intake)
   p = sub.add_parser("judge")
   p.add_argument("checkpoint")
   p.add_argument("--run", help="run directory with run.json (task and env vars)")

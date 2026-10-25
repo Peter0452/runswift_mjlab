@@ -15,6 +15,7 @@ context:
   before: [walk]
   after: [walk]
 interface:
+  policy: kick_loop_v1@1               # runner spec: k1_policy_runner/docs/policies/kick_loop_v1.md (dev)
   commands: [speed caps (vx, vy, wz), kick direction, kick range (short / medium / long)]
   observes: kick-loop layout, 83 inputs (k1/deploy/obs_layout.py)
   outputs: 22 joint targets at 50 Hz (k1/deploy/contract.py)

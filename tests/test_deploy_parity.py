@@ -8,6 +8,10 @@ from k1.deploy.parity import ROOT, check_onnx_metadata
 
 RUNNER = ROOT.parent / "k1_policy_runner"
 DEPLOYED = {
+  # Runner branch dev (2026-10-25): the models its launch scripts use.
+  "kick_loop_models/iter23.onnx": "kick_loop_v1",
+  "amp_models/2026-10-17_21-58-53_softland_v1.onnx": "walk_amp",
+  # Earlier deployments (present on the dribble branch; skipped when absent).
   "kick_loop_models/k1_kick_loop_h022_c2_18450.onnx": "kick_loop_v1",
   "kick_loop_models/k1_kick_loop_swa_v15v16_9100.onnx": "selfplay_v1",
   "dribble_models/k1_dribble_swaA_v15b_12400.onnx": "dribble_v1",
@@ -46,7 +50,7 @@ CHAMPION = (
 def test_deploy_gate_passes_the_deployed_champion(tmp_path) -> None:
   from k1.deploy.parity import RUNNER_PY, gate
 
-  if not RUNNER_PY.is_dir():
+  if RUNNER_PY is None:
     pytest.skip("runner not present")
   result = gate(
     "Mjlab-Velocity-Kick-Stage3-Amp-DA-Muon-Booster-K1", str(CHAMPION), tmp_path
@@ -54,4 +58,5 @@ def test_deploy_gate_passes_the_deployed_champion(tmp_path) -> None:
   assert result["metadata_problems"] == []
   assert result["onnx_max_diff"] < 1e-4
   assert result["lost_rule"]["passed"], result["lost_rule"]["detail"]
+  assert result["intake"]["verdict"] == "TAKE", result["intake"]
   assert result["passed"]

@@ -88,7 +88,7 @@ Differences from the sketch above, all logged with reasons in
 
 | Contract | Lives in | Enforced by |
 |---|---|---|
-| Deployment (obs, actions, rate, ball, head, caps, clips, delay) | `k1/deploy/contract.py`; readable copy `knowledge/deployment.md` | ONNX metadata, runner parity gate, deployable label |
+| Deployment (obs, actions, rate, ball, head, caps, clips, delay) | authority: the runner's RL development interface (`k1_policy_runner` dev: `docs/rl-development/`, `docs/policies/`); mirror `k1/deploy/contract.py` + `obs_layout.py`; readable `knowledge/deployment.md` | `tests/test_runner_spec.py`, ONNX metadata (`policy_id`, `spec_version`, `obs_dim`, `obs_layout`), runner intake TAKE + parity in `rsw deploy check`, deployable label |
 | Task set | `k1/tasks/__init__.py` | `tests/test_task_registry.py` |
 | Model behaviour | `tests/golden/` | `scripts/tools/golden.py`, `golden_bench.py` (later `rsw check`) |
 | Task request | `tasks/<name>/request.yaml` | `rsw request check`; frozen hash once agreed |
@@ -216,3 +216,7 @@ state. New-task authoring becomes `rsw task new` (section-by-section with smokes
 3. **Step 6: task requests and approach knowledge** (2026-10-25): `tasks/`,
    `k1/requests.py`, approaches by element with sources, uses and reviews,
    `k1/approaches` and `k1/engine` renames, `rsw request|approaches|knowledge|engine`.
+4. **Step 7: runner RL development interface** (2026-10-25): the runner's
+   `dev` docs are the authority for what a policy sees and outputs. Mirror +
+   conformance test, spec metadata in exports, the runner's intake as a gate
+   check, `deliveries/` for handover and tier-2 spec drafts.

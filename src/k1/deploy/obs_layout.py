@@ -1,5 +1,11 @@
 """Actor input layouts of the deployed policy families (knowledge/deployment.md §3).
 
+A layout that the runner can run names the runner policy spec it delivers to
+(``policy_id``, ``spec_version``: ``k1_policy_runner/docs/policies/<id>.md`` on
+the runner's ``dev`` branch) and that spec's ``obs_layout`` string, which the
+export writes into the ONNX metadata. ``tests/test_runner_spec.py`` checks
+these against the runner's docs; a layout without a spec can't be delivered.
+
 Each layout lists the actor observation terms in order with their sizes, what
 they hold and where the runner gets them. ``tests/test_deploy_obs_layout.py``
 checks these against the layouts the golden models were recorded with, and
@@ -24,6 +30,10 @@ class Layout:
   task: str
   blocks: tuple[Block, ...]
   outputs: int = 22  # joint position targets, deployment.md §1 joint order
+  # Runner policy spec this layout delivers to (None: no spec, not deliverable).
+  policy_id: str | None = None
+  spec_version: int | None = None
+  spec_layout: str | None = None  # the spec's obs_layout string, verbatim
 
   @property
   def size(self) -> int:
@@ -55,6 +65,10 @@ WALK_AMP = Layout(
   task="Mjlab-Velocity-Rough-Amp-DA-Muon-Booster-K1",
   blocks=_PROPRIO
   + (Block("command", 3, "velocity command vx, vy, wz", "behaviour / joystick"),),
+  policy_id="walk_amp_v1",
+  spec_version=1,
+  spec_layout="base_ang_vel[3],projected_gravity[3],joint_pos[22],joint_vel[22],"
+  "actions[22],command[3]",
 )
 
 KICK_LOOP_V1 = Layout(
@@ -72,6 +86,10 @@ KICK_LOOP_V1 = Layout(
     Block("kick_direction", 2, "kick direction cos, sin", "--kick-dir-mode"),
     Block("kick_range", 3, "range one-hot < 4 / 4-8 / >= 8 m", "--kick-range"),
   ),
+  policy_id="kick_loop_v1",
+  spec_version=1,
+  spec_layout="base_ang_vel[3],projected_gravity[3],joint_pos[22],joint_vel[22],"
+  "actions[22],ball_xy[2],ball_age[1],speed_limit[3],kick_direction[2],kick_range[3]",
 )
 
 DRIBBLE_V1 = Layout(
@@ -132,3 +150,29 @@ LAYOUTS = {
   lay.name: lay
   for lay in (WALK_AMP, KICK_LOOP_V1, DRIBBLE_V1, SELFPLAY_V1, STRIKER_CONTROLLER_V2)
 }
+
+
+def layout_for_task(task: str) -> Layout | None:
+  return next((lay for lay in LAYOUTS.values() if lay.task == task), None)
+
+
+def parse_spec_layout(text: str) -> list[tuple[str, int]]:
+  """``"a[3],b[2]"`` -> ``[("a", 3), ("b", 2)]``."""
+  out = []
+  for part in text.split(","):
+    name, size = part.strip().rstrip("]").split("[")
+    out.append((name, int(size)))
+  return out
+
+
+def spec_metadata(layout: Layout) -> dict[str, str]:
+  """The ONNX metadata keys the runner's RL development interface requires on
+  top of pose, scales and gains: empty for a layout without a runner spec."""
+  if layout.policy_id is None or layout.spec_layout is None:
+    return {}
+  return {
+    "policy_id": layout.policy_id,
+    "spec_version": str(layout.spec_version),
+    "obs_dim": str(layout.size),
+    "obs_layout": layout.spec_layout,
+  }

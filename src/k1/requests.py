@@ -11,7 +11,9 @@ requests (``request: NAME``, each a lower level) or deployed policies
 (``deployed: PATH``).
 
     name, version, status, level, requested_by, goal, context
-    interface      run-time contract with the behaviour module and the runner
+    interface      run-time contract with the behaviour module and the runner;
+                   ``policy: <policy_id>@<spec_version>`` names the runner
+                   policy spec a deliverable model must pass intake against
     requirements   [{id, metric, target, priority, source}]; priority 0 = hard
                    safety, 1 = primary, 2 = secondary
     verification   {judge (k1.eval.judges; a list when implementations
@@ -117,6 +119,15 @@ def check(name: str) -> list[str]:
         problems.append(f"subtask {sub}: must be a lower level")
     elif set(ref) != {"deployed"}:
       problems.append(f"subtask {sub}: give request: NAME or deployed: PATH")
+  policy = req["interface"].get("policy")
+  if policy is not None:
+    from k1.deploy.obs_layout import LAYOUTS
+
+    known = {f"{lay.policy_id}@{lay.spec_version}" for lay in LAYOUTS.values()}
+    if policy not in known:
+      problems.append(
+        f"interface policy {policy!r} is not a bound spec {sorted(known)}"
+      )
   if req["level"] > 0 and not req["subtasks"]:
     problems.append("a composite request (level > 0) needs subtasks")
   for p in req["priors"]:

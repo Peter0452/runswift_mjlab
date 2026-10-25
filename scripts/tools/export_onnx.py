@@ -3,7 +3,9 @@
 The run directory's ``.onnx`` is overwritten at every save, so it is always
 the latest checkpoint. This exports a chosen one, with the same metadata
 (default_joint_pos, action_scale, PD gains, joint and observation names) that
-``k1_policy_runner`` reads.
+``k1_policy_runner`` reads, plus the keys its RL development interface requires
+(``policy_id``, ``spec_version``, ``obs_dim``, ``obs_layout``) when the task's
+layout delivers to a runner policy spec (``k1/deploy/obs_layout.py``).
 
   uv run python scripts/tools/export_onnx.py --checkpoint <ckpt> --output <file.onnx>
 """
@@ -15,6 +17,7 @@ from dataclasses import asdict
 from pathlib import Path
 
 import mjlab.tasks  # noqa: F401
+from k1.deploy.obs_layout import layout_for_task, spec_metadata
 from mjlab.envs import ManagerBasedRlEnv
 from mjlab.rl import RslRlVecEnvWrapper
 from mjlab.rl.exporter_utils import attach_metadata_to_onnx, get_base_metadata
@@ -45,9 +48,11 @@ def main() -> None:
   out = Path(args.output).resolve()
   out.parent.mkdir(parents=True, exist_ok=True)
   runner.export_policy_to_onnx(str(out.parent), out.name)
-  attach_metadata_to_onnx(
-    str(out), get_base_metadata(env.unwrapped, Path(args.checkpoint).stem)
-  )
+  metadata: dict = get_base_metadata(env.unwrapped, Path(args.checkpoint).stem)
+  layout = layout_for_task(args.task)
+  if layout is not None:
+    metadata.update(spec_metadata(layout))
+  attach_metadata_to_onnx(str(out), metadata)
   print(f"exported {args.checkpoint} -> {out}")
 
 

@@ -1,6 +1,6 @@
 """Deploy gate: is an exported model the policy we trained, under the runner contract?
 
-Three checks, all required before a run's label becomes ``deployable``:
+Four checks, all required before a run's label becomes ``deployable``:
 
 1. ONNX metadata vs the contract (``contract.py``, ``obs_layout.py``): joint
    order, PD gains, default pose, action scales (6 decimals), actor inputs, no
@@ -10,6 +10,9 @@ Three checks, all required before a run's label becomes ``deployable``:
 3. Kick family: the lost-ball rule, training env vs the runner's
    ``KickLoopPolicy`` (``scripts/tools/lost_rule_parity.py``; reads
    ``../k1_policy_runner``, never writes it).
+4. The runner's model intake (``k1/deploy/intake.py``, its own
+   ``tools/onnx_dump.py`` and specs): the verdict must be ``TAKE``. A layout
+   without a runner policy spec can't pass (nothing on the runner would run it).
 
 ``rsw deploy check`` runs them; the result goes into the run's ``run.json``.
 """
@@ -22,17 +25,13 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from k1.deploy import contract
-from k1.deploy.obs_layout import LAYOUTS, Layout
+from k1.deploy import contract, intake, runner_spec
+from k1.deploy.obs_layout import Layout, layout_for_task
 
 ROOT = Path(__file__).resolve().parents[3]
-RUNNER_PY = ROOT.parent / "k1_policy_runner" / "python-implementation"
+RUNNER_PY = runner_spec.package_dir()  # None when the runner is not present
 ONNX_TOLERANCE = 1e-4
 KICK_FAMILY = ("kick_loop_v1", "dribble_v1", "selfplay_v1")
-
-
-def layout_for_task(task: str) -> Layout | None:
-  return next((lay for lay in LAYOUTS.values() if lay.task == task), None)
 
 
 def _floats(text: str) -> list[float]:
@@ -137,8 +136,8 @@ LOST_RULE_MISMATCH_SHARE = 0.01
 
 
 def lost_rule(checkpoint: str, onnx_path: Path) -> tuple[bool, str]:
-  if not RUNNER_PY.is_dir():
-    return False, f"runner not found at {RUNNER_PY}"
+  if RUNNER_PY is None:
+    return False, f"runner package not found under {runner_spec.RUNNER}"
   proc = subprocess.run(
     [sys.executable, str(ROOT / "scripts/tools/lost_rule_parity.py"), checkpoint,
      str(RUNNER_PY), str(onnx_path)],
@@ -172,6 +171,14 @@ def gate(task: str, checkpoint: str, out_dir: Path) -> dict:
     ok, detail = lost_rule(checkpoint, onnx_path)
     result["lost_rule"] = {"passed": ok, "detail": detail}
     checks.append(ok)
+  if runner_spec.present():
+    report = intake.intake(onnx_path)
+    (out_dir / (onnx_path.stem + "_intake.txt")).write_text(report["report"] + "\n")
+    result["intake"] = {k: report[k] for k in ("verdict", "policy", "differences")}
+    checks.append(report["verdict"] == "TAKE")
+  else:
+    result["intake"] = {"verdict": "runner not present"}
+    checks.append(False)
   result["layout"] = layout.name if layout else None
   result["passed"] = all(checks) and layout is not None
   return result

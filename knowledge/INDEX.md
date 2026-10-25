@@ -24,7 +24,7 @@ experience records, in-code design notes and the session memory.
 | If you want to | Read |
 |---|---|
 | Know what "better" means and what must not change | [objectives.md](objectives.md) |
-| Keep training and the robot runner consistent | [deployment.md](deployment.md) |
+| Keep training and the robot runner consistent | [deployment.md](deployment.md) (§0: the runner's RL development interface is the authority), [../deliveries/](../deliveries/README.md) |
 | See the target layout, task requests / implementations, approaches and the engine | [architecture.md](architecture.md) |
 | See what is asked of each task (requirements, verification) | [../tasks/](../tasks/README.md) (`rsw request list`) |
 | Find approaches to try, by element, with sources and our results | [approaches/](approaches/README.md), [sources/](sources/README.md), [uses/](uses/README.md), [reviews/](reviews/README.md) (`rsw approaches`) |
