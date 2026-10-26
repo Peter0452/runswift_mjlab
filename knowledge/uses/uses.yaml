@@ -285,3 +285,23 @@
   result: negative
   finding: "Short passes stayed at 1.56x needed (h022 1.49x) at every dose; no gain in long power, aim or time to kick; no bench v2 regression. Cause: kick speed is uncorrelated with the needed speed within a range class (policy sees only the < 4 / 4-8 / >= 8 m one-hot), so the overshoot needs a finer range input (deployment contract), not a reward."
   evidence: docs/evolution/monitor.md
+
+- id: u028
+  approach: stand_starts
+  source: deployment_scenarios
+  part: standing starts (stand_start_v2 0.3 from h022; 0.1 from n7)
+  task: kick
+  context: night 2026-10-26/27, 500 it each, judged vs same-length controls and h022
+  result: negative
+  finding: "0.3 from h022 halves camera falls (approach 1.6 vs 5.5/3.9 %, goal_grid 3.3 vs 6.7 %) but first kick 1-2 s later, long_3d 3.8 vs 4.5 m/s, goals down, rs deployed -0.03 vs control; ball-behind world falls not fixed (37.5/52 vs h022 24/24). 0.1 on n7: gate -74.6 vs h022 (goals, short_stop). The policy turns cautious; reset itself is sound (h022 at 100 % standing starts: 3 terminations / 512 x 15 s)."
+  evidence: docs/evolution/monitor.md
+
+- id: u029
+  approach: swa_blend
+  source: izmailov2018_swa
+  part: weight averaging across fine-tune lines from h022 (scripts/tools/average_checkpoints.py, blend_checkpoints.py)
+  task: kick
+  context: night 2026-10-26/27; ingredients control_s7 (h022 + 500 it, seed 7), n7, n5b (near-ball line)
+  result: positive
+  finding: "avg(control_s7, n7) gate +31.9 vs h022 (no regressions) and rs deployed +0.026/+0.036, held-out seeds +0.030/+0.026, but ball-behind world falls 35 vs 24 %; avg(control_s7, n7, n5b) and 0.3 control_s7 + 0.7 n7 keep rs deployed ~+0.03 (held-out +0.023/+0.027 for the 3-way) with only short_stop regressing. Averaging two controls, or a run's tail, did not help (short_stop swings between neighbouring checkpoints). Averaging across lines combines the near-ball line's deployed gains and safety with the control line's loop metrics."
+  evidence: docs/evolution/monitor.md

@@ -589,3 +589,34 @@ Launched: `engine_daemon.sh 6 --gpu-hours 8` at 19:53 (LLM designer headless on 
 - **Standing starts** (user OK): h022 in the training env with 100 % standing starts: 3 terminations in 512 × 15 s (10 at 0 %), 0 within 2 s after an 8 mm lift (soles started 6 mm in the ground). Reset sound; the 10-09 collapse came with alive +2/s and touchdown −15. Gene `stand_start_v2` (872b3c0), card stand_starts; proposal (0.3 + dose 0.15, expected +7.6) queued to the engine.
 
 - 21:50 stopped by the user ("stop"): daemon, engine and e0003 smoke job killed; e0003 (stand_starts 0.3) left in flight at smoke, never trained.
+
+## 2026-10-26/27 night — hand-run (user: "dont use our improvement loop, do it yourself", 7-8 h)
+Rules: deploy contract fixed (83 inputs, outputs), safety net, ≤2 trainings, one change per run, judged vs a same-length control (h022 = floor on falls/safety), updated rs_kick (power by class) + bench v2.
+- 23:10 t1_stand03 (h022 + stand_start_v2 0.3) and t2_control_s7 (second control, seed 7) launched.
+- Re-judged the near-ball line vs control_h022_500 (gate bench v2 + rs_kick):
+
+| run | gate vs control | regressions vs control | rs deployed vs control (s0, s1) | rs deployed vs h022 | gate vs h022 | safety regr. vs h022 |
+|---|---|---|---|---|---|---|
+| n1 | +39.1 | cap_use low | +0.000, +0.024* | +0.017, +0.032* | +13.3 | none |
+| n4 | +25.4 | none | +0.004, +0.011 | +0.021*, +0.020* | −2.4 | none |
+| n5b | +26.7 | none | +0.003, +0.029* | +0.020*, +0.038* | +2.1 | none |
+| n7 | +34.5 | none | +0.024*, +0.023* | +0.041*, +0.031* | +6.0 | none (only short_stop low/high) |
+
+  The control itself: rs deployed +0.017*/+0.009 vs h022, gate −27.3 vs h022 (short_stop, goals, action_rate). n7 falls less than h022 at high caps everywhere (approach 0.8 vs 2.3 %, goal_grid 4.4 vs 7.8 %). n7 = leading candidate; trade-off: short passes overshoot more (small power 0.14 vs 0.21).
+- 00:12 t3_n7_stand03 (n7 + stand starts 0.3) and t4_n7_control (n7 unchanged) launched; n7 full bench v2 s1/s2 running.
+- 00:15 t1_stand03 (h022 + stand starts 0.3) vs control: gate −55.1 — falls halve (approach 1.6 vs 5.5/3.9 %, goal_grid 3.3 vs 6.7 %) but first kick 1–2 s later (close_any 6.95/4.41 vs 5.13/3.35 s), long_3d 3.8 vs 4.5 m/s, goals 0.82/1.63 vs 1.11/1.88; rs deployed −0.033!/−0.027!, lab ~0.79. Rejected at 0.3 (primary objectives). Killed t3_n7_stand03 (same dose), launched t5_n7_stand01 (0.1) at 00:21.
+- **Control noise correction:** t2_control_s7 (seed 7) vs control_h022_500 (seed 42): gate +44.4, no regressions; vs h022 +16.5, no regressions (short_stop 3.09 vs h022 3.00, control_s42 3.91). The "drift" was mostly one unlucky training seed: training-seed variance ≈ ±40 gate points. Recipe-level claims need several seeds; checkpoint-level choice (what we deploy) only needs eval CIs. So tonight: compare checkpoints vs h022, confirm the winner on held-out seeds.
+- 00:40 weight soups (scripts/tools/average_checkpoints.py): s1 = avg(control_s42, control_s7), s2 = control_s7 tail (18750–18949), s3 = avg(control_s7, n7); evaluation queued.
+- 01:10 control_s7 rs deployed 0.770/0.785 (+0.016*/+0.014 vs h022), same as control_s42: rs is seed-stable, gate bench is not. n7 beats both controls by ~+0.024 deployed.
+- World-model falls (gate + extras, low/high): approach/behind/world h022 24.2/23.8, control 55.9/43.4, t1_stand03 37.5/52.0, **n7 21.9/14.8**; goal_grid/world/zero falls h022 14.4/11.1, **n7 7.8/4.4** (goals 61 vs 74 %). Standing starts 0.3 did not fix behind falls.
+- n7 full bench v2 s1 vs h022: +9.1, regressions short_stop low/high, goals_per_ep low, late_detect goals low (as n1). s2 stopped (superseded).
+- Soups: s1 avg(ctl42, ctl7) gate −2.1 (short_stop), rs +0.009/+0.022*; s2 ctl7 tail gate −13.8 (short_stop, goals): short_stop swings between neighbouring checkpoints; **s3 avg(ctl7, n7) gate +31.9, no regressions, rs deployed +0.026*/+0.036*** (short_stop 3.31 vs 3.00, first kick 3.80 vs 4.01 s high caps, goal_grid falls 3.3 vs 7.8 %). S3 = main candidate → extras, held-out rs seeds 2/3 (S3, h022, n7), full s1/s2 queued.
+- 01:30 t6_n7_control_s7 (n7 + 500, seed 7), t7_n7_lowcap03 (n7, s.cap_low_prob 0.15 → 0.3, for low-cap goals). Soups s4 (ctl7+n7+n5b), s5 (ctl7+t4), s6 (0.3 ctl7 + 0.7 n7) queued.
+- S3 + world extras vs h022: +11.8, regression approach/behind/world fall_pct high (S3 34.8/35.2 vs h022 24.2/23.8 %; n7 21.9/14.8): the control line's ball-behind weakness came with the average. S3 fails the falls floor as is.
+- Held-out rs seeds 2/3 (never used for picking): S3 deployed +0.030*/+0.026*, lab −0.001/−0.009 (n.s.) vs h022; n7 deployed +0.029*/+0.024*, lab +0.002/−0.009*; n7 vs S3 ties everywhere. The deployed gain of the near-ball line is real; lab ties h022.
+- t4_n7_control (n7 + 500, seed 42) vs h022: gate +2.8 (short_stop, goals high), rs deployed +0.014/+0.020*: more training on n7 did not help.
+- t5_n7_stand01 (n7 + stand starts 0.1) vs h022: gate −74.6 (short_stop, goals low/high, goal_grid/world/zero goals, cap_use, fast_height), rs deployed +0.016: standing starts rejected at 0.3 and 0.1 (gene stays off).
+- Soups 2: s4 avg(ctl7, n7, n5b) gate+extras vs h022 +22.2 (short_stop only), rs dep +0.030*/+0.031*; s5 avg(ctl7, t4) +36.5 but behind-world falls regress; s6 0.3 ctl7 + 0.7 n7 +24.5 (short_stop only), rs dep +0.030*/+0.029*, safest of the soups (behind world 28.1/21.1, goal_grid world 8.9/5.6, approach 0.8/0.0 %).
+- t6_n7_control_s7 gate +30.1 (short_stop, goals high), rs +0.018*/+0.015; t7_n7_lowcap03 gate −55.1 (near_grid accuracy, long power, goals low/high): rejected. Continuing n7 does not help; more low-cap episodes hurt.
+- **S4 confirmed** (logs/rsl_rl/k1_kick_stage3_amp/tonight_soups/s4_ctl7_n7_n5b.pt): full bench v2 vs h022 s1 +52.2 (short_stop low), s2 +67.2 (short_stop low/high), no safety / goal / accuracy regressions; held-out rs seeds deployed +0.023*/+0.027*, lab +0.004/−0.003; rs lab s0/s1 0.846/0.849 (h022 +0.005/+0.004 n.s., B-Human −0.008/−0.012*: small-kick power 0.24-0.26 vs B-Human 0.73 is the whole gap); deploy gate PASSED (ONNX parity 6e-6, lost rule, metadata), runner intake TAKE (kick_loop_v1); clip ok (ball 8.1 m, min height 0.43 m). S6: full s1 +43.4 (short_stop), held-out deployed +0.028*/+0.027*, lab +0.000/−0.010*, deploy gate PASSED.
+- Not deployed: handed to the user. Short-pass overshoot remains the one regression (and the lab gap to B-Human); it needs the finer range input (deploy contract).
