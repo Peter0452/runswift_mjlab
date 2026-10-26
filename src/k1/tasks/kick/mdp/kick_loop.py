@@ -2056,6 +2056,11 @@ def ball_size_mass(
   )
 
 
+# The default pose's soles sit ~6 mm below the root's default height (lowest
+# foot link at 0.032 m, sole 0.038 m below it): lift so they start 2 mm clear.
+STAND_START_LIFT = 0.008
+
+
 def stand_start(
   env: ManagerBasedRlEnv,
   env_ids: torch.Tensor | None,
@@ -2081,7 +2086,7 @@ def stand_start(
   zero = torch.zeros_like(half)
   state = robot.data.default_root_state[ids].clone()
   state[:, :2] = robot.data.root_link_pos_w[ids, :2]
-  state[:, 2] = state[:, 2] + env.scene.env_origins[ids, 2]
+  state[:, 2] = state[:, 2] + env.scene.env_origins[ids, 2] + STAND_START_LIFT
   state[:, 3:7] = torch.stack((half.cos(), zero, zero, half.sin()), dim=-1)
   state[:, 7:] = 0.0
   robot.write_root_state_to_sim(state, env_ids=ids)

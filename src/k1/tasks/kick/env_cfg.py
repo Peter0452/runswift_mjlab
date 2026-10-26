@@ -831,15 +831,18 @@ def _use_foot_capsules(cfg: ManagerBasedRlEnvCfg) -> None:
 
 def with_stand_start(cfg: ManagerBasedRlEnvCfg) -> ManagerBasedRlEnvCfg:
   """Cold starts after the motion reset (2026-10-09): a share of episodes
-  starts standing still (gene stand_start_prob, default 0.25)."""
+  starts standing still (gene ``stand_start_v2``, default 0 = off)."""
   cfg.events["stand_start"] = EventTermCfg(
     mode="reset",
     func=mdp.stand_start,
-    # Off (2026-10-09 03:10): every child with stand starts at 0.35 collapsed
+    # Off 2026-10-09 03:10: every child with stand starts at 0.35 collapsed
     # 80-140 iterations in (h018_c0/c1, h019_c0/c1/c2: episodes end in ~1 s on
-    # illegal_contact); the same genes without them (exp_nostand) stayed
-    # healthy. The gene is ignored until the cause is found.
-    params={"prob": 0.0},
+    # illegal_contact), but those children also added alive +2/s, touchdown
+    # -15 and world ball 0.3. 2026-10-26: h022 in the training env with every
+    # episode a stand start ends 3 episodes in 512 x 15 s (10 without), so the
+    # reset itself is sound; it is a gene again under a new name
+    # (``stand_start_prob`` stays ignored: h022's recipe carries 0.35 of it).
+    params={"prob": float(KICK_GENES.get("stand_start_v2", 0.0))},
   )
   return cfg
 
