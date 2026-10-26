@@ -275,3 +275,13 @@
   result: mixed
   finding: "best deployed rs_kick of the night (0.876/0.880, vs h022 +0.042/+0.025) but lab fell to 0.937/0.939 and short_stop_m still regressed (high cap); did not fix the overshoot it targeted."
   evidence: docs/evolution/monitor.md
+
+- id: u027
+  approach: task_reward_shaping
+  source: bhuman_isaacgymrl
+  part: short_kick_overpower (excess above 1.25x needed speed, per short / medium kick), -300 / -600 / -1500
+  task: kick
+  context: 2026-10-26, from h022_c2_18450, 600 it (-300 stopped at 300 it)
+  result: negative
+  finding: "Short passes stayed at 1.56x needed (h022 1.49x) at every dose; no gain in long power, aim or time to kick; no bench v2 regression. Cause: kick speed is uncorrelated with the needed speed within a range class (policy sees only the < 4 / 4-8 / >= 8 m one-hot), so the overshoot needs a finer range input (deployment contract), not a reward."
+  evidence: docs/evolution/monitor.md

@@ -551,3 +551,24 @@ Use: short-pass overpower target from B-Human (~1.25x needed) is the lever for
 the short_stop regression; don't train toward B-Human's pose (costs accuracy and
 long power; u-record kick.md: inside-foot cut long power 6.99 -> 4.70); robot
 check of contact pose before any limit-margin change (needs robot evidence).
+
+### 2026-10-26 ~12:00 — short_kick_overpower doses from h022
+
+Term added (4a96e34, off by default). Halfway (18750, full-loop pose probe):
+o1 -300 drifted (short 1.60x needed, miss 4.14 m, goals 1.43); o2 -600 held or
+improved the aims (long 1.00x / 5.2 m/s, aim 3.7 deg, near-ball 2.56 s, goals
+1.63) but short passes barely moved (1.51x, miss 3.33 m). o1 stopped at ~18760;
+o3 -1500 launched in its slot. Judging per run on exit: rs_kick both seeds/modes,
+pose probe, bench v2 quick.
+- 12:05 final (19049): short_kick_overpower did not change short-pass power.
+  o2 -600: short 1.56x needed, miss 3.52 m, long 0.96x, aim 4.6 deg, near-ball
+  2.64 s, goals 1.49/robot; rs_kick lab 0.927/0.928 (vs h022 -0.009/-0.012),
+  deployed 0.834/0.879; bench v2 quick +12.3, no regressions. o3 -1500: short
+  1.56x, miss 3.46 m, long 0.89x, aim 4.4, near 2.78 s, goals 1.44; rs_kick lab
+  0.935/0.923, deployed 0.838/0.871; bench v2 quick +28.2, no regressions.
+  Neither promoted (no gain on speed / accuracy / time to kick).
+  Cause: within a range class kick speed is uncorrelated with the needed speed
+  (corr ~0 for h022, o3 and B-Human; p10-p90 1.5-4.7 m/s). The policy sees only
+  the range one-hot (< 4 / 4-8 / >= 8 m), so "short" spans 0.8-2.5 m/s needed and
+  it kicks for the far end (short targets reached 93-95 % vs B-Human 67 %).
+  Overshoot is an input limit (deployment contract), not reward or pose.

@@ -1,0 +1,78 @@
+name: kick_o3
+task: Mjlab-Velocity-Kick-Stage3-Amp-DA-Muon-Booster-K1
+request: kick
+change: 'tune task_reward_shaping: genes.w.short_kick_overpower: None -> -1500.0'
+why: '[llm:claude] gap bench v2 full: short_stop_m is h022''s weakest power-by-range metric
+  (2.9-3.1 m) and the regression that failed n1 (3.7-4.1 m); pose study 2026-10-26: our short
+  passes leave at 1.5x the needed speed for every pose, B-Human''s at 1.25x stop 1.4 m from
+  the target: halfway (300 it): -600 left short passes at 1.51x needed (h022 1.49x) while
+  long power, aim, time to kick and goals improved; -300 drifted to 1.60x. Stronger dose.
+  kick_rest_accuracy pays seconds later, at rest, times quality; the overpower term charges
+  at the kick, where the policy chooses the swing. Fraction above 1.25x needed, capped at
+  1 (2.5x): -600 x 0.16-0.24 at today''s 1.55x. Long kicks untouched (long_kick_underpower
+  guards them; v54b lesson: soft passes leaking into long kicks). Risk: hesitant short kicks
+  (time to kick up). (evidence: bhuman_isaacgymrl)'
+touches: training-only
+control: kick_stage3_h022
+init: logs/rsl_rl/k1_kick_stage3_amp/2026-10-09_10-22-47_champ_h022_c2_18450/model_18450.pt
+ball: ours
+genes:
+  amp_kick_data: 0.0
+  ball_mass_alpha_max: 0.55
+  caps_near_ball_scale: 0.5
+  caps_temporal_coef: 1.0
+  desired_kl: 0.004
+  k.KICK_STYLE_AMP: 0.0
+  k.LOFT_PENALTY: 0.0
+  k.LONG_AIM_SIGMA2: 0.05
+  k.MOMENTUM_KICK_MAX_SPEED: 0.9646
+  k.PROMPT_KICK_TAU: 1.3626
+  k.STYLE_MAP: free
+  k.STYLE_SHARE_HOP: 0.0
+  k.STYLE_SHARE_INSIDE: 0.0
+  k.SUPPORT_PLANT_FACTOR: 1.0
+  k.TRACK_BRAKE_PROFILE: 1.0
+  rsi_bhuman: 0.1
+  rsi_ours: 0.15
+  s.cap_low_prob: 0.15
+  s.far_spawn_prob: 0.2
+  s.spawn_any_prob: 0.3
+  s.unknown_start_prob: 0.15
+  stand_start_prob: 0.35
+  style_w: 0.3
+  t.far_cap_tracking: 6.0
+  t.hop_power_long: 0.0
+  w.action_rate_l2: -0.15
+  w.hop_kick_fall: -1000.0
+  w.hop_kick_style: 0.0
+  w.inside_foot_style: 0.0
+  w.kick_direction: 900.0
+  w.kick_rest_accuracy: 1000.0
+  w.long_kick_power: 4000.0
+  w.long_kick_speed_linear: 800.0
+  w.long_kick_underpower: -300.0
+  w.search_turn: 10.0
+  w.style_advantage: 1500.0
+  w.torque_over_soft_limit: -100.0
+  w.touchdown_speed: -39.0636
+  w.walk_speed_track: 6.0
+  w.short_kick_overpower: -1500.0
+reward_program: docs/evolution/programs/h022_c2.json
+methods:
+  amp:
+    style_reward_weight: 0.3
+  muon: {}
+  symmetry_aug: {}
+  decap: false
+  multi_critic: false
+  caps:
+    temporal: 1.0
+    near_ball_scale: 0.5
+rewards:
+  ball_avoidance: -5.0
+rl: {}
+env:
+  scene.num_envs: 4096
+hypothesis: pricing short / medium kicks above 1.25x the needed speed at the kick cuts short_stop_m
+  to <= 2.2 m at both caps and raises full-loop goals per episode, with no loss in long-kick
+  speed, aim error or time to kick (rs_kick lab >= 0.94)
