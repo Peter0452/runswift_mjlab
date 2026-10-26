@@ -142,6 +142,7 @@ def _spec(state: State, child: dict, checkpoint: str = "") -> dict[str, Any]:
     if Path(child["recipe_path"]).is_file()
     else {},
     "champion_recipe": state.champion["recipe"],
+    "targets": child.get("targets", []),
   }
 
 
@@ -461,7 +462,8 @@ def step(
              "hypothesis": proposal.hypothesis, "recipe_path": str(path),
              "task": proposal.recipe["task"], "gap": proposal.gap,
              "parent": proposal.parent, "family": family, "probes": [],
-             "expected_gain": proposal.expected_gain}  # fmt: skip
+             "expected_gain": proposal.expected_gain,
+             "targets": proposal.targets}  # fmt: skip
     problems = check(path)
     tried.append({"change": proposal.change})
     if problems:
@@ -476,7 +478,8 @@ def step(
                           "task": proposal.recipe["task"], "gap": proposal.gap,
                           "parent": proposal.parent, "init": proposal.init,
                           "family": family, "probes": [],
-                          "expected_gain": proposal.expected_gain})  # fmt: skip
+                          "expected_gain": proposal.expected_gain,
+                          "targets": proposal.targets})  # fmt: skip
       tried.append({"change": change})
     _launch(state, cfg, judge, trainer, child, log)
   log += [m for d in designers for m in _drain(d)]

@@ -23,6 +23,7 @@ deployed seeds.
 
 from __future__ import annotations
 
+import json
 import statistics
 from pathlib import Path
 from typing import Any
@@ -87,12 +88,25 @@ def probe(checkpoint: str, name: str, refs: dict[str, Any]) -> rs_judge.RsVerdic
   return rs_judge.run(checkpoint, name, (0,), ("deployed",), refs.get("rs"))
 
 
-def screen(checkpoint: str, name: str, refs: dict[str, Any]) -> Verdict:
+def screen(
+  checkpoint: str, name: str, refs: dict[str, Any], targets: tuple[str, ...] = ()
+) -> Verdict:
+  """``targets``: benchmark v2 situations the proposal forecasts an effect in;
+  those not in the gate size run too, against the champion's full seed-1
+  result (designer, 2026-10-26: the world-ball children were screened only on
+  side effects, never on the situation they targeted)."""
   gate = Path(refs["bench"]["gate_1"])
   if not gate.is_file():
     return Verdict("kick_scorecard", "smoke_failed", checkpoint,
                    findings=[f"no gate-size reference for the champion: {gate}"])  # fmt: skip
-  bench = judges.run_kick(checkpoint, f"{name}_gate_s1", "gate", 1, gate)
+  gate_ref = json.loads(gate.read_text())
+  extra = tuple(t for t in targets if t not in gate_ref)
+  if extra:
+    full = json.loads(Path(refs["bench"]["full_1"]).read_text())
+    merged = {**gate_ref, **{k: full[k] for k in extra if k in full}}
+    gate = judges.BENCH / f"{name}_screen_reference.json"
+    gate.write_text(json.dumps(merged, indent=1))
+  bench = judges.run_kick(checkpoint, f"{name}_gate_s1", "gate", 1, gate, extra)
   if bench.status != "scored":
     return bench
   rs = rs_judge.run(checkpoint, f"{name}_screen", (0,), ("deployed",), refs.get("rs"))

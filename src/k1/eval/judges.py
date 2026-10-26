@@ -112,11 +112,15 @@ def score_kick(
   return float(total), list(regress), list(beaten)
 
 
-def _bench_kick(checkpoint: str, name: str, size: str, seed: int) -> dict | str:
+def _bench_kick(
+  checkpoint: str, name: str, size: str, seed: int, extra: tuple[str, ...] = ()
+) -> dict | str:
   env = {k: v for k, v in os.environ.items() if k not in _BENCH_ENV_DROP}
   env["BENCH2_SEED"] = str(seed)
+  more = ["--extra", ",".join(extra)] if extra else []
   proc = subprocess.run(
-    [sys.executable, str(TOOLS / "kick_bench2.py"), "run", name, checkpoint, "--size", size],
+    [sys.executable, str(TOOLS / "kick_bench2.py"), "run", name, checkpoint, "--size", size,
+     *more],
     cwd=ROOT, env=env, capture_output=True, text=True,
   )  # fmt: skip
   out = BENCH / f"{name}.json"
@@ -132,8 +136,9 @@ def run_kick(
   size: str = "quick",
   seed: int = 1,
   reference: Path | None = None,
+  extra: tuple[str, ...] = (),
 ) -> Verdict:
-  result = _bench_kick(checkpoint, name, size, seed)
+  result = _bench_kick(checkpoint, name, size, seed, extra)
   if isinstance(result, str):
     return Verdict("kick_bench_v2", "smoke_failed", checkpoint, findings=[result])
   reference = reference or KICK_REFERENCE[(size, seed)]

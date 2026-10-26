@@ -31,6 +31,8 @@ class Proposal:
   init: str | None = None
   # Other strengths of the same one change, run as siblings: (change, recipe).
   doses: list[tuple[str, dict[str, Any]]] = field(default_factory=list)
+  # Benchmark situations its forecast names: the screen runs them too.
+  targets: list[str] = field(default_factory=list)
 
 
 class Designer(Protocol):

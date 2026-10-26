@@ -191,3 +191,9 @@ def test_doses_parent_ceiling_and_rs_kick_forecasts(tmp_path) -> None:
   est = design.estimate(rs, [])
   assert not est.problems or "not worth" in est.problems[0]
   assert est.gain > 0
+
+
+def test_proposal_targets_are_its_forecast_situations() -> None:
+  p = {**GOOD, "expect": [*GOOD["expect"],
+       {"metric": "power_small", "situation": "rs_kick/lab", "by": 0.3, "p": 0.5}]}  # fmt: skip
+  assert design.to_proposal(p, _champion()).targets == ["approach/behind/world/typical"]

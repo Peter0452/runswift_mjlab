@@ -317,6 +317,15 @@ def to_proposal(
     parent=p.get("parent"),
     init=init if p.get("parent") else None,
     doses=doses,
+    targets=sorted(
+      {
+        e["situation"]
+        for e in worth.effects_of(p.get("expect"))
+        if isinstance(e, dict)
+        and "situation" in e
+        and not str(e["situation"]).startswith("rs_kick/")
+      }
+    ),  # fmt: skip
   )
 
 

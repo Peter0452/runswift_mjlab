@@ -46,7 +46,9 @@ def probe(spec: dict[str, Any]) -> dict[str, Any]:
 
 
 def screen(spec: dict[str, Any]) -> dict[str, Any]:
-  v = scorecard.screen(spec["checkpoint"], spec["name"], spec["refs"])
+  v = scorecard.screen(
+    spec["checkpoint"], spec["name"], spec["refs"], tuple(spec.get("targets") or ())
+  )
   out: dict[str, Any] = {"verdict": v.to_dict()}
   run_dir = Path(spec["checkpoint"]).parent
   try:

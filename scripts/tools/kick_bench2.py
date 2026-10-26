@@ -749,7 +749,9 @@ def measure(run: Run, policy: str) -> dict:
 # ---------------------------------------------------------------------------
 
 
-def run_all(name: str, policy: str, size: str) -> None:
+def run_all(name: str, policy: str, size: str, extra: tuple[str, ...] = ()) -> None:
+  """``extra``: situation keys from the full plan to run as well (the engine's
+  screen adds the situations a proposal targets)."""
   OUT.mkdir(parents=True, exist_ok=True)
   out = OUT / f"{name}.json"
   out.parent.mkdir(parents=True, exist_ok=True)
@@ -757,7 +759,12 @@ def run_all(name: str, policy: str, size: str) -> None:
   data.setdefault("_meta", {}).update(
     {"policy": policy, "size": size, "date": time.strftime("%Y-%m-%d %H:%M")}
   )
-  for run in plan(size, policy == "bhuman"):
+  runs = plan(size, policy == "bhuman")
+  have = {r.key for r in runs}
+  runs += [
+    r for r in plan("full", policy == "bhuman") if r.key in extra and r.key not in have
+  ]
+  for run in runs:
     if run.key in data:
       continue
     t0 = time.time()
@@ -798,6 +805,11 @@ def compare(a: str, b: str) -> None:
 if __name__ == "__main__":
   if sys.argv[1] == "run":
     size = sys.argv[sys.argv.index("--size") + 1] if "--size" in sys.argv else "full"
-    run_all(sys.argv[2], sys.argv[3], size)
+    extra = (
+      tuple(sys.argv[sys.argv.index("--extra") + 1].split(","))
+      if "--extra" in sys.argv
+      else ()
+    )
+    run_all(sys.argv[2], sys.argv[3], size, extra)
   else:
     compare(sys.argv[2], sys.argv[3])
