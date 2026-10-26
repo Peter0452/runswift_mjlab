@@ -460,6 +460,7 @@ def _engine(args: argparse.Namespace) -> int:
     budget_iterations=args.iterations,
     smoke=not args.no_smoke,
     gpu_hours=args.gpu_hours,
+    max_in_flight=args.max_in_flight,
   )
   rng = random.Random(st.counter)
   deadline = time.time() + 3600 * (args.hours if args.engine_cmd == "run" else 0)
@@ -632,6 +633,8 @@ def main(argv: list[str] | None = None) -> int:
                      help="training iterations per child")  # fmt: skip
       p.add_argument("--gpu-hours", type=float, default=None,
                      help="stop starting children beyond this spend")  # fmt: skip
+      p.add_argument("--max-in-flight", type=int, default=2,
+                     help="children training at once (fewer when other runs share the GPU)")  # fmt: skip
       p.add_argument("--no-smoke", action="store_true",
                      help="skip the few-iteration smoke training before each child")  # fmt: skip
       p.set_defaults(func=_engine)  # fmt: skip

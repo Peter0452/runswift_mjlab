@@ -551,8 +551,10 @@ def ask_llm(n: int = 3, family: str = "kick", timeout: int = 1800) -> str:
     return "no claude binary (set K1_CLAUDE)"
   LOGS.mkdir(parents=True, exist_ok=True)
   log = LOGS / f"{time.strftime('%Y%m%d_%H%M%S')}.log"
+  # JSON output: the final message, cost and any error land in the log (a
+  # text run once came back empty with exit 0, 2026-10-26).
   cmd = [exe, "-p", f"/design {n} --task {family}", "--permission-mode", "dontAsk",
-         "--allowedTools", *ALLOWED_TOOLS]  # fmt: skip
+         "--output-format", "json", "--allowedTools", *ALLOWED_TOOLS]  # fmt: skip
   if os.environ.get("K1_DESIGN_BUDGET_USD"):
     cmd += ["--max-budget-usd", os.environ["K1_DESIGN_BUDGET_USD"]]
   try:
