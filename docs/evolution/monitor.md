@@ -572,3 +572,7 @@ pose probe, bench v2 quick.
   the range one-hot (< 4 / 4-8 / >= 8 m), so "short" spans 0.8-2.5 m/s needed and
   it kicks for the far end (short targets reached 93-95 % vs B-Human 67 %).
   Overshoot is an input limit (deployment contract), not reward or pose.
+
+### 2026-10-26 — rs_kick power scored by kick class (user request)
+User: power should follow each kick's intended design (strong, small, medium). `rs_kick.power_score`: strong (range ≥ 8 m, every 20 m trial) = min(1, peak / 7.5 m/s), the training long-kick reference; small (< 4 m) / medium (4–8 m) = 1 − |peak / need − 1|, need = √(2 · 0.95 · range), our training roll deceleration (was clip(peak / √(2 · 0.3 · range)) for all, which capped at ~3.5 m/s and never charged overshoot). Edges / decel / reference are asserted equal to kick_loop's. `rs_judge` rescores reference CSVs on load (`rs_kick.rescore`); `bench_bhuman_kick_v2` uses the shared score. Old report.md files keep the old scores.
+Rescored (lab s0/s1 old → new): B-Human 0.925/0.931 → 0.854/0.861; h022 0.936/0.940 → 0.841/0.845; n4 0.954/0.950 → 0.855/0.855; n5b → 0.854/0.858; n1 → 0.850/0.852; n7 → 0.843/0.845. Deployed: h022 0.754/0.771, n7 0.795/0.803, n5b 0.774/0.809. Power lab s1 (small / medium / strong): h022 0.25 / 0.91 / 0.56 (small at 1.9× need), B-Human 0.73 / 0.53 / 0.57 (small 0.76×, medium 0.51×). B-Human now leads h022 in lab by ~0.015; small-kick overshoot is the whole gap (range input, u027).

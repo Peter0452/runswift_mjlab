@@ -38,8 +38,42 @@ def test_bhuman_benchmark_uses_the_same_trials() -> None:
 def test_score_formula() -> None:
   assert rs_kick.score(1.0, 0.0, 10.0, 20.0) == 1.0
   # time 4.6 s halves the time term; 15 deg halves accuracy; half the speed.
-  need = math.sqrt(2 * rs_kick.DECEL * 4.0)
-  assert math.isclose(rs_kick.score(4.6, 15.0, need / 2, 4.0), 0.25 + 0.15 + 0.1)
+  need = math.sqrt(2 * rs_kick.DECEL * 3.0)
+  assert math.isclose(rs_kick.score(4.6, 15.0, need / 2, 3.0), 0.25 + 0.15 + 0.1)
+
+
+def test_power_follows_the_kick_class() -> None:
+  assert [rs_kick.kick_class(r) for r in (0.5, 3.9, 4.0, 7.9, 8.0, 20.0)] == [
+    "small", "small", "medium", "medium", "strong", "strong"
+  ]  # fmt: skip
+  # Strong: harder is better up to the long-kick reference, never penalised.
+  assert rs_kick.power_score(3.75, 20.0) == 0.5
+  assert rs_kick.power_score(9.0, 8.0) == 1.0
+  # Small / medium: the speed that rolls the ball to the target; overshoot
+  # costs as much as falling short.
+  for r in (2.0, 6.0):
+    need = rs_kick.need_speed(r)
+    assert rs_kick.power_score(need, r) == 1.0
+    assert math.isclose(rs_kick.power_score(1.5 * need, r), 0.5)
+    assert math.isclose(rs_kick.power_score(0.5 * need, r), 0.5)
+    assert rs_kick.power_score(2.5 * need, r) == 0.0
+  assert rs_kick.need_speed(0.05) == rs_kick.MIN_NEED
+
+
+def test_power_classes_match_the_training_design() -> None:
+  from k1.tasks.kick.mdp import kick_loop
+
+  assert rs_kick.RANGE_EDGES == kick_loop.RANGE_EDGES
+  assert rs_kick.DECEL == kick_loop.BALL_ROLL_DECEL
+  assert rs_kick.STRONG_REF == kick_loop.LONG_KICK_VEL_REF
+
+
+def test_rescore_reads_csv_rows() -> None:
+  row = {"fell": "False", "kicked": "True", "time": "1.0", "dir_err": "0.0",
+         "peak_speed": "7.5", "range": "20.0"}  # fmt: skip
+  assert rs_kick.rescore(row) == 1.0
+  assert rs_kick.rescore(row | {"fell": "True"}) == 0.0
+  assert rs_kick.rescore(row | {"kicked": "False", "time": "nan"}) == 0.0
 
 
 def test_trial_row_on_a_straight_kick() -> None:

@@ -42,15 +42,14 @@ import mjlab.tasks  # noqa: F401
 # Trials and constants are shared with our kick loop's benchmark
 # (scripts/tools/rs_kick_bench.py) so the two compare.
 from k1.eval.rs_kick import (  # noqa: E402
-  ACC_REF,
   SECTORS,
   SIDES,
   STOP_SPEED,
-  TIME_REF,
   TRACK_S,
   TRIAL_S,
   make_trials,
 )
+from k1.eval.rs_kick import score as rs_score  # noqa: E402
 from k1.tasks.bhuman.kick_command import BHumanKickCommand, BHumanKickCommandCfg
 from k1.tasks.bhuman.mdp import set_ball_size_mass
 from k1.tasks.bhuman.robot import get_bhuman_ball_cfg
@@ -217,12 +216,7 @@ def run_policy(env, vec, actor, trials: list[dict], seed: int) -> list[dict]:
     dir_err = math.degrees(sum(errs) / 2)
     time_s = (s0 + 1) * dt
     peak = float(sp.max())
-    needed = math.sqrt(2 * 0.3 * tr["range"])
-    score = (
-      0.5 * min(1.0, TIME_REF / time_s)
-      + 0.3 * float(np.clip(1 - dir_err / ACC_REF, 0, 1))
-      + 0.2 * float(np.clip(peak / needed, 0, 1))
-    )
+    score = rs_score(time_s, dir_err, peak, tr["range"])
     row.update(
       time=time_s,
       dir_err=dir_err,

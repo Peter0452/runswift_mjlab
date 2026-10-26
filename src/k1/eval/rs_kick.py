@@ -17,8 +17,15 @@ time to kick, direction error (angle between the commanded direction and the
 ball's direction at 50 % and 90 % of its final distance, averaged), average /
 peak ball speed and distance / path length from the kick until the ball stops
 (max 6 s). Score: 0 if fell or no kick, else 0.5 s_time + 0.3 s_acc +
-0.2 s_power with s_time = min(1, 2.3 s / time), s_acc = clip(1 - err / 30 deg),
-s_power = clip(peak / sqrt(2 * 0.3 * range)).
+0.2 s_power with s_time = min(1, 2.3 s / time), s_acc = clip(1 - err / 30 deg).
+
+s_power follows each kick class's design (the policy's range one-hot, edges
+4 / 8 m; 2026-10-26, was clip(peak / sqrt(2 * 0.3 * range)) for every kick):
+- strong (range >= 8 m, incl. every 20 m trial): kicked hard, not rolled to the
+  target: min(1, peak / 7.5 m/s), our long-kick reference;
+- small (< 4 m) and medium (4-8 m): roll to the target: 1 - |peak / need - 1|,
+  need = sqrt(2 * 0.95 * range) (our measured roll deceleration), so
+  overshooting costs as much as falling short.
 """
 
 from __future__ import annotations
@@ -40,7 +47,13 @@ TRACK_S = 6.0
 STOP_SPEED = 0.05
 TIME_REF = 2.3
 ACC_REF = 30.0
-DECEL = 0.3  # ball deceleration assumed for the power reference (m/s^2)
+# Power by kick class, the training design (kick_loop.py: RANGE_EDGES,
+# BALL_ROLL_DECEL, LONG_KICK_VEL_REF, linear speed match, need >= 0.5 m/s).
+RANGE_EDGES = (4.0, 8.0)
+KICK_CLASSES = ("small", "medium", "strong")
+DECEL = 0.95  # roll deceleration behind the small / medium need (m/s^2)
+STRONG_REF = 7.5  # strong kicks get full power marks at this peak speed (m/s)
+MIN_NEED = 0.5
 WEAK_M = 0.3  # a kick that moves the ball less than this is weak
 # Benchmark ball contact (slide, torsion, rolling friction) and Isaac Gym's
 # per-actor damping, as in the B-Human port (BHumanKickCommandCfg).
@@ -221,13 +234,41 @@ def trial_row(
   return row
 
 
+def kick_class(range_m: float) -> str:
+  return KICK_CLASSES[sum(range_m >= e for e in RANGE_EDGES)]
+
+
+def need_speed(range_m: float) -> float:
+  """Peak speed a small / medium kick is designed to have for this range."""
+  return max(MIN_NEED, math.sqrt(2 * DECEL * range_m))
+
+
+def power_score(peak: float, range_m: float) -> float:
+  if kick_class(range_m) == "strong":
+    return min(1.0, peak / STRONG_REF)
+  return max(0.0, 1.0 - abs(peak / need_speed(range_m) - 1.0))
+
+
 def score(time_s: float, dir_err: float, peak: float, range_m: float) -> float:
-  needed = math.sqrt(2 * DECEL * range_m)
   return (
     0.5 * min(1.0, TIME_REF / time_s)
     + 0.3 * float(np.clip(1 - dir_err / ACC_REF, 0, 1))
-    + 0.2 * float(np.clip(peak / needed, 0, 1))
+    + 0.2 * power_score(peak, range_m)
   )
+
+
+def rescore(row: dict) -> float:
+  """Score of a stored trial row (csv strings ok) under the current formula."""
+
+  def true(v) -> bool:
+    return v is True or v == "True"
+
+  if true(row["fell"]) or not true(row["kicked"]):
+    return 0.0
+  return score(
+    float(row["time"]), float(row["dir_err"]), float(row["peak_speed"]),
+    float(row["range"]),
+  )  # fmt: skip
 
 
 def _ms(x: list[float]) -> str:
@@ -259,6 +300,16 @@ def summarize(rows: list[dict]) -> dict:
     "peak_mean": float(np.nanmean(col("peak_speed"))) if ok else float("nan"),
     "dist_mean": float(np.nanmean(col("distance"))) if ok else float("nan"),
     "dir_err_mean": float(np.nanmean(col("dir_err"))) if ok else float("nan"),
+    "power": float(np.mean([power_score(r["peak_speed"], r["range"]) for r in ok]))
+    if ok
+    else float("nan"),
+    "ratio": _ms(
+      [
+        r["peak_speed"] / need_speed(r["range"])
+        for r in ok
+        if kick_class(r["range"]) != "strong"
+      ]
+    ),
   }
 
 
@@ -276,6 +327,10 @@ def group(rows: list[dict]) -> dict:
     "kinds": {
       "strong": summarize([r for r in rows if r["strong"]]),
       "normal": summarize([r for r in rows if not r["strong"]]),
+    },
+    "classes": {
+      c: summarize([r for r in rows if kick_class(r["range"]) == c])
+      for c in KICK_CLASSES
     },
   }
 
@@ -336,6 +391,24 @@ def report(results: dict[str, dict], header: str) -> str:
       s = results[n]["kinds"][kind]
       out.append(
         f"| {n} | {kind} | {s['score']:.3f} | {s['dir_err_mean']:.1f} | "
+        f"{s['peak_mean']:.2f} | {s['dist_mean']:.2f} |"
+      )
+  out.append(
+    "\n## Power by kick class\n\nSmall < 4 m and medium 4-8 m: power = 1 - |peak / "
+    f"need - 1|, need = sqrt(2 x {DECEL} x range). Strong >= 8 m: power = "
+    f"min(1, peak / {STRONG_REF} m/s).\n"
+  )
+  out.append(
+    "| Policy | Class | Trials | Score | Power | Peak / need | Peak speed [m/s] | "
+    "Distance [m] |"
+  )
+  out.append("|---|---|---|---|---|---|---|---|")
+  for n in names:
+    for c in KICK_CLASSES:
+      s = results[n]["classes"][c]
+      ratio = "-" if c == "strong" else s["ratio"]
+      out.append(
+        f"| {n} | {c} | {s['n']} | {s['score']:.3f} | {s['power']:.2f} | {ratio} | "
         f"{s['peak_mean']:.2f} | {s['dist_mean']:.2f} |"
       )
   out.append("\n## Notes\n")

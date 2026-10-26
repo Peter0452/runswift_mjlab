@@ -25,6 +25,8 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
+from k1.eval import rs_kick
+
 ROOT = Path(__file__).resolve().parents[3]
 OUT = ROOT / "docs" / "benchmarks_rs_kick"
 MODES = {
@@ -68,8 +70,9 @@ class RsVerdict:
 
 
 def scores_of(path: Path) -> list[float]:
+  """Trial scores under the current formula (reference files predate changes)."""
   with open(path) as f:
-    return [float(r["score"]) for r in csv.DictReader(f)]
+    return [rs_kick.rescore(r) for r in csv.DictReader(f)]
 
 
 def paired(a: list[float], b: list[float]) -> Paired:
