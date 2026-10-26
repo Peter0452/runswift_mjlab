@@ -46,7 +46,7 @@ class FakeTrainer:
 
 
 class FakeJudge:
-  """Every stage finishes on the first poll. Scores e0001 +5, others -3
+  """Every stage finishes on the first poll. Scores e0001 +15, others -3
   (``gains=False``: all -3); probes return ``probe_margin``."""
 
   def __init__(self, gains=True, smoke_problems=(), probe_margin=(0.0, -0.01, 0.01)):
@@ -55,7 +55,7 @@ class FakeJudge:
     self.started: list[tuple[str, str]] = []
 
   def _score(self, ck):
-    return 5.0 if self.gains and "e0001" in ck else -3.0
+    return 15.0 if self.gains and "e0001" in ck else -3.0
 
   def start(self, stage, spec):
     self.started.append((stage, spec["name"]))

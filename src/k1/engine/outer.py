@@ -55,6 +55,10 @@ class Config:
   ceiling_after: int = 3  # failed children on one gap before asking the user
   gpu_hours: float | None = None  # stop proposing beyond this spend
   clip: bool = True  # record a clip of every new champion
+  # A screen goes on to the confirmation only above this score: an identical
+  # re-run of h022 screened +7.0 (benchmark v2 gate 0.0, rs_kick deployed
+  # +0.007 = +7 points of seed noise), 2026-10-26.
+  screen_min: float = 10.0
 
 
 class Trainer(Protocol):
@@ -289,8 +293,12 @@ def collect(state: State, cfg: Config, trainer: Trainer, judge: Judge) -> list[s
       if out.get("curves"):
         child["curves"] = out["curves"]
         v.metrics["curves"] = out["curves"]
-      if stage == "screen" and v.status == "scored" and (v.score or 0) > 0 \
-          and not v.regressions:  # fmt: skip
+      if (
+        stage == "screen"
+        and v.status == "scored"
+        and (v.score or 0) > cfg.screen_min
+        and not v.regressions
+      ):
         child.update(stage="confirm", screen=v.to_dict(),
                      job=judge.start("confirm", _spec(state, child, child["checkpoint"])))  # fmt: skip
         log.append(f"{child['id']}: screen {v.score:+.1f}, confirming")
