@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import copy
 import random
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Protocol
 
 
@@ -24,6 +24,13 @@ class Proposal:
   designer: str
   hypothesis: str = ""
   expected_gain: float | None = None  # forecast benchmark score (worth.py)
+  gap: str = ""  # the measured gap it targets (ceiling detection)
+  # Continue from an earlier child instead of the champion: its history id and
+  # checkpoint (the recipe is then that child's recipe plus the change).
+  parent: str | None = None
+  init: str | None = None
+  # Other strengths of the same one change, run as siblings: (change, recipe).
+  doses: list[tuple[str, dict[str, Any]]] = field(default_factory=list)
 
 
 class Designer(Protocol):

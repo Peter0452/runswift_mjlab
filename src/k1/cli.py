@@ -138,9 +138,11 @@ def _engine_champion() -> tuple[dict, list]:
 def _design(args: argparse.Namespace) -> int:
   import yaml
 
-  from k1.engine import design
+  from k1.engine import design, worth
 
   champion, history = _engine_champion()
+  ceilings = design._ceilings()
+  factor = worth.calibration([h for h in history if "verdict" in h])
   if args.design_cmd == "context":
     text = design.context(champion, history, args.task)
     out = design.PROPOSALS / "context.md"
@@ -162,7 +164,7 @@ def _design(args: argparse.Namespace) -> int:
   for path in paths:
     try:
       p = yaml.safe_load(path.read_text()) or {}
-      problems = design.check(p, champion, history)
+      problems = design.check(p, champion, history, ceilings=ceilings, factor=factor)
     except (OSError, yaml.YAMLError) as e:
       problems = [str(e)]
     print(f"{'ok  ' if not problems else 'FAIL'} {path}")
@@ -401,8 +403,11 @@ def _engine(args: argparse.Namespace) -> int:
   path = state.DIR / "state.json"
   if args.engine_cmd == "init":
     recipe = yaml.safe_load(Path(args.recipe).read_text())
+    from k1.eval import scorecard
+
     ckpt = str(Path(args.checkpoint).resolve())
-    champ = {"recipe": recipe, "checkpoint": ckpt, "verdict": None}
+    champ = {"recipe": recipe, "checkpoint": ckpt, "verdict": None,
+             "refs": scorecard.default_refs()}  # fmt: skip
     state.save(state.State(champion=champ), path)
     print(f"champion set: {recipe['name']} @ {ckpt}")
     return 0
@@ -414,7 +419,11 @@ def _engine(args: argparse.Namespace) -> int:
     print(
       f"champion: {st.champion['recipe'].get('name')} @ {st.champion.get('checkpoint')}"
     )
-    print(f"in flight: {[c['id'] + ' ' + c['change'] for c in st.in_flight]}")
+    print("in flight: " + str([f"{c['id']} {c.get('stage')} {c['change']}"
+                               for c in st.in_flight]))  # fmt: skip
+    print(f"queued doses: {len(st.queue)}; side jobs: "
+          f"{[j['kind'] + ' ' + j['for'] for j in st.side_jobs]}")  # fmt: skip
+    print(f"GPU hours spent: {st.gpu_hours:.1f}; ceilings: {st.ceilings or 'none'}")
     print(f"non-improving in a row: {st.non_improving}")
     for h in st.history[-10:]:
       v = h["verdict"]
@@ -427,8 +436,12 @@ def _engine(args: argparse.Namespace) -> int:
       "dry run: add --go to let the loop train (one or two GPU trainings at a time)"
     )
     return 0
-  from k1.engine import design
-  from k1.engine.real import BenchJudge, RsTrainer
+  from k1.engine import design, notify
+  from k1.engine.real import BackgroundJudge, RsTrainer
+  from k1.eval import scorecard
+
+  if not st.champion.get("refs"):
+    st.champion["refs"] = scorecard.default_refs()
 
   # The LLM designer: proposals in the inbox (written by /design, or by the
   # engine calling it headless when the inbox is empty), the one with the
@@ -443,16 +456,27 @@ def _engine(args: argparse.Namespace) -> int:
   ]
   if args.fallback:
     designers += [ApproachDesigner("kick", _champion_gaps), GeneDesigner(EVOLVE_GENES)]
-  cfg = outer.Config()
+  cfg = outer.Config(
+    budget_iterations=args.iterations,
+    smoke=not args.no_smoke,
+    gpu_hours=args.gpu_hours,
+  )
   rng = random.Random(st.counter)
   deadline = time.time() + 3600 * (args.hours if args.engine_cmd == "run" else 0)
   with state.single_writer(path):
     while True:
-      for line in outer.step(
-        st, cfg, designers, RsTrainer(), BenchJudge(), rng, state.DIR
-      ):
+      try:
+        log = outer.step(st, cfg, designers, RsTrainer(), BackgroundJudge(), rng,
+                         state.DIR)  # fmt: skip
+      except Exception as e:
+        state.save(st, path)
+        notify.notify([f"crash: engine step raised {e!r}"])
+        raise
+      for line in log:
         print(line, flush=True)
       state.save(st, path)
+      notify.heartbeat(st, log)
+      notify.notify(log)
       if args.engine_cmd == "step" or time.time() > deadline:
         return 0
       if st.non_improving >= cfg.escalate_after and not st.in_flight:
@@ -604,6 +628,12 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="also the deterministic designers (no worth gate)",
       )
+      p.add_argument("--iterations", type=int, default=500,
+                     help="training iterations per child")  # fmt: skip
+      p.add_argument("--gpu-hours", type=float, default=None,
+                     help="stop starting children beyond this spend")  # fmt: skip
+      p.add_argument("--no-smoke", action="store_true",
+                     help="skip the few-iteration smoke training before each child")  # fmt: skip
       p.set_defaults(func=_engine)  # fmt: skip
   p = sub.add_parser("rsjudge")
   p.add_argument("checkpoint")

@@ -19,7 +19,7 @@ Tracks (one episode per robot; every fall counts, from t = 0):
               detections variants (full size only)
 
 usage:
-  python scripts/tools/kick_bench2.py run NAME (CK | bhuman) [--size quick|full]
+  python scripts/tools/kick_bench2.py run NAME (CK | bhuman) [--size quick|gate|full]
   python scripts/tools/kick_bench2.py compare NAME_A NAME_B
 Results: docs/benchmarks_v2/NAME.json
 """
@@ -51,9 +51,9 @@ TASK = "Mjlab-Velocity-Kick-Stage3-Amp-DA-Muon-Booster-K1"
 DEV = "cuda:0"
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "docs" / "benchmarks_v2"
-GOAL_GRID = (
-  ROOT.parent / "runswift/benchmarks/results/2026-10-02/k1-score-grid/manifest.json"
-)
+# runswift's 90 goal-scoring positions (runswift commit cfd682f1); a copy, so
+# the benchmark doesn't depend on the branch the runswift checkout is on.
+GOAL_GRID = OUT / "assets" / "k1-score-grid_manifest_2026-10-02.json"
 CAPS = {"low": (0.5, 0.3, 0.6), "high": (2.0, 1.5, 1.5)}
 DELAYS = {"zero": (0, 0), "typical": (2, 8)}
 BALL_R = 0.08
@@ -99,6 +99,17 @@ def plan(size: str, bhuman: bool) -> list[Run]:
       Run("approach", "world", "typical", n=256, seconds=6.0, variant="behind"),
       Run("full_loop", "camera", "typical", n=512, seconds=30.0, start="walk"),
     ]
+  if size == "gate":
+    # Engine screen (2026-10-26): quick plus what the full confirmation failed
+    # on after a quick pass (n1: goals per episode and short-pass stop in the
+    # loop, goal grid): the loop at full size and the goal grid.
+    runs = [r for r in plan("quick", bhuman) if r.track != "full_loop"]
+    if not bhuman:
+      runs += [
+        Run("goal_grid", "camera", "typical", n=180, seconds=115.0),
+        Run("full_loop", "camera", "typical", n=1024, seconds=30.0, start="walk"),
+      ]
+    return runs
   q = size == "quick"
   runs = [
     Run("near_grid", "perfect", "typical", n=216),

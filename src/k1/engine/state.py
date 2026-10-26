@@ -25,6 +25,11 @@ class State:
   history: list[dict[str, Any]] = field(default_factory=list)
   non_improving: int = 0
   counter: int = 0
+  queue: list[dict[str, Any]] = field(default_factory=list)  # doses waiting
+  side_jobs: list[dict[str, Any]] = field(default_factory=list)  # reverify, clip
+  gpu_hours: float = 0.0  # training + judging spent by this loop
+  gap_failures: dict[str, int] = field(default_factory=dict)  # gap -> misses
+  ceilings: list[str] = field(default_factory=list)  # gaps sent to the user
 
   def next_id(self) -> str:
     self.counter += 1
@@ -50,12 +55,29 @@ def single_writer(path: Path) -> Iterator[None]:
   try:
     fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
   except FileExistsError:
-    raise RuntimeError(
-      f"another loop holds {lock} (delete it if that loop is dead)"
-    ) from None
+    if _holder_alive(lock):
+      raise RuntimeError(f"another loop holds {lock}") from None
+    lock.unlink(missing_ok=True)  # left by a loop that died: take it over
+    fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
   try:
     os.write(fd, str(os.getpid()).encode())
     yield
   finally:
     os.close(fd)
     lock.unlink(missing_ok=True)
+
+
+def _holder_alive(lock: Path) -> bool:
+  try:
+    pid = int(lock.read_text().strip() or 0)
+  except (OSError, ValueError):
+    return False
+  if pid <= 0:
+    return False
+  try:
+    os.kill(pid, 0)
+  except ProcessLookupError:
+    return False
+  except PermissionError:
+    return True
+  return True

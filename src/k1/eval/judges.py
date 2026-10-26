@@ -100,11 +100,12 @@ def _fitness() -> ModuleType:
 
 
 def score_kick(
-  result: dict, size: str, seed: int = 1
+  result: dict, size: str, seed: int = 1, reference: Path | None = None
 ) -> tuple[float, list[str], list[str]]:
-  """Fitness, regressions and B-Human metrics beaten, against the champion."""
+  """Fitness, regressions and B-Human metrics beaten, against the champion
+  (``reference``: its benchmark JSON; default the h022 file for size / seed)."""
   fit = _fitness()
-  ref = json.loads(KICK_REFERENCE[(size, seed)].read_text())
+  ref = json.loads((reference or KICK_REFERENCE[(size, seed)]).read_text())
   bh = json.loads(BHUMAN.read_text()) if BHUMAN.is_file() else None
   total, regress = fit.score(result, ref, bh)
   beaten = fit.convincing(result, bh) if bh else []
@@ -125,11 +126,18 @@ def _bench_kick(checkpoint: str, name: str, size: str, seed: int) -> dict | str:
   return json.loads(out.read_text())
 
 
-def run_kick(checkpoint: str, name: str, size: str = "quick", seed: int = 1) -> Verdict:
+def run_kick(
+  checkpoint: str,
+  name: str,
+  size: str = "quick",
+  seed: int = 1,
+  reference: Path | None = None,
+) -> Verdict:
   result = _bench_kick(checkpoint, name, size, seed)
   if isinstance(result, str):
     return Verdict("kick_bench_v2", "smoke_failed", checkpoint, findings=[result])
-  total, regress, beaten = score_kick(result, size, seed)
+  reference = reference or KICK_REFERENCE[(size, seed)]
+  total, regress, beaten = score_kick(result, size, seed, reference)
   ungated = [r for r in regress if r.split(":")[1] in UNGATED]
   return Verdict(
     judge="kick_bench_v2",
@@ -141,7 +149,7 @@ def run_kick(checkpoint: str, name: str, size: str = "quick", seed: int = 1) -> 
     + ["single seed: identical champion re-runs scored up to +29; confirm on seed 2"],
     metrics={"bench": f"docs/benchmarks_v2/{name}.json", "size": size, "seed": seed,
              "bhuman_beaten": beaten},
-    reference=str(KICK_REFERENCE[(size, seed)].relative_to(ROOT)),
+    reference=str(Path(reference).resolve().relative_to(ROOT)),
   )  # fmt: skip
 
 

@@ -114,7 +114,7 @@ def main() -> None:
   who = "bhuman" if policy == "bhuman" else "peter"
   patch(None if who == "bhuman" else policy, CAPS[caps], perception)
   root = assets()
-  grid = RL / "runswift/benchmarks/results/2026-10-02/k1-score-grid/manifest.json"
+  grid = RL / "runswift_mjlab/docs/benchmarks_v2/assets/k1-score-grid_manifest_2026-10-02.json"
   evaluator = RL / "runswift/src/behaviour/examples/booster_match/score_evaluator.py"
   base = OUT / name
   base.mkdir(parents=True, exist_ok=True)

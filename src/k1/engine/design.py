@@ -55,7 +55,8 @@ INBOX, USED, REJECTED, BUILD = (
 KINDS = ("add", "tune", "combine", "new")
 REQUIRED = ("designer", "task", "kind", "approaches", "edits", "gap", "hypothesis",
             "expect", "why")  # fmt: skip
-OPTIONAL = ("evidence", "touches", "out_of_range_reason", "retry_reason", "name")
+OPTIONAL = ("evidence", "touches", "out_of_range_reason", "retry_reason", "name",
+            "parent", "doses")  # fmt: skip
 FAMILY_TASK = {"kick": "Mjlab-Velocity-Kick-Stage3-Amp-DA-Muon-Booster-K1"}
 
 SCHEMA = """\
@@ -76,8 +77,15 @@ expect:                        # forecast, judged before anything trains (worth 
      by: 8.0, p: 0.5}            # main effect: metric units; p = chance it happens
   - {metric: fall_pct_behind, situation: approach/camera/typical, direction: lower,
      by: 3.0, p: 0.4, caps: [high]}   # side effects count too; caps default: where the gap is
+  # rs_kick metrics too: situation rs_kick/deployed | rs_kick/lab, metric score |
+  # power_small | power_medium | power_strong (power by kick class, 0-1)
 why: "reasoning, with the evidence it rests on"
 evidence: [u017, humanoid_soccer]  # use ids, source ids, review names (optional)
+# parent: e0007        # continue from that engine child (its checkpoint and recipe)
+#                      # instead of the champion, e.g. to fix the regression that
+#                      # blocked it; fixing a parent's regression earns its gain
+# doses: {genes.s.far_spawn_prob: [0.2, 0.4]}   # other strengths of the one edit,
+#                      # trained as siblings (the edit's value is the first dose)
 # out_of_range_reason: "..."       # needed when a value leaves a card's tune range
 # retry_reason: "..."              # needed to retry a rejected approach
 """
@@ -102,6 +110,11 @@ RULES = """\
   aim for changes with a mechanism that can move a big gap.
 - Objectives and standing decisions: knowledge/objectives.md (ask before
   changing any); DR, latency and limits stay as inherited from the AMP walk.
+- Learn from the verdicts: read each recent child's scorecard parts, probes and
+  training curves below before proposing. A gap at a ceiling is closed to
+  training-only proposals (only `kind: new` or a person can address it).
+- Forecasts are calibrated: the engine multiplies expected gains by measured /
+  forecast so far (shown below), so honest p and by values pay off.
 """
 
 
@@ -138,6 +151,26 @@ def _value(recipe: dict[str, Any], path: str) -> Any:
   return _get(recipe, path)
 
 
+def _parent_entry(p: dict[str, Any], history: list[dict[str, Any]]) -> dict | None:
+  if p.get("parent") is None:
+    return None
+  return next((h for h in history if h.get("id") == p["parent"]), None)
+
+
+def base_recipe(
+  p: dict[str, Any], champion: dict[str, Any], history: list[dict[str, Any]]
+) -> tuple[dict[str, Any], str | None]:
+  """The recipe a proposal edits and the checkpoint it starts from: the
+  champion's, or its parent child's."""
+  h = _parent_entry(p, history)
+  if h is None:
+    return champion["recipe"], champion.get("checkpoint")
+  recipe = yaml.safe_load(Path(h["recipe"]).read_text())
+  for k in ("name", "change", "why", "hypothesis", "control", "init"):
+    recipe.pop(k, None)
+  return recipe, h["verdict"].get("checkpoint")
+
+
 def _tune_range(path: str) -> tuple[float, float] | None:
   for card in knowledge.cards().values():
     spec = (card.meta["tune"] or {}).get(path)
@@ -153,6 +186,8 @@ def check(
   allow_combine: bool = False,
   gaps: list[Gap] | None = None,
   min_gain: float = worth.MIN_GAIN,
+  ceilings: list[str] | tuple[str, ...] = (),
+  factor: float = 1.0,
 ) -> list[str]:
   """Problems with a candidate proposal (empty = valid for the engine)."""
   missing = [f for f in REQUIRED if f not in p]
@@ -187,6 +222,33 @@ def check(
     problems.append("one change per run: one approach per proposal (bundles are off)")
   if p["kind"] == "new":
     return problems  # needs building: no edits to check
+  if p["gap"] in ceilings:
+    problems.append(f"gap {p['gap']!r} is at a ceiling: training-only children "
+                    "failed it; it waits for the user (kind: new or a structural change)")  # fmt: skip
+  if p.get("parent") is not None:
+    h = _parent_entry(p, history)
+    if (
+      h is None or not h["verdict"].get("checkpoint") or not Path(h["recipe"]).is_file()
+    ):
+      problems.append(f"parent {p['parent']!r}: not a judged child with a checkpoint")
+      return problems
+  doses = p.get("doses") or {}
+  if doses:
+    if (
+      not isinstance(doses, dict)
+      or list(doses) != list(p["edits"])[:1]
+      or len(p["edits"]) != 1
+    ):
+      problems.append("doses: other values for the proposal's one edit "
+                      "({path: [values]}, same path as its single edit)")  # fmt: skip
+    else:
+      path, values = next(iter(doses.items()))
+      rng = _tune_range(path)
+      for v in values:
+        if not isinstance(v, int | float):
+          problems.append(f"doses: {v!r} is not a number")
+        elif rng and not rng[0] <= v <= rng[1] and not p.get("out_of_range_reason"):
+          problems.append(f"doses: {v} outside the tune range {list(rng)}")
   if not p["edits"]:
     problems.append("no edits")
   for path, value in p["edits"].items():
@@ -208,28 +270,42 @@ def check(
   if any(" must be methods." in x or "not a registered" in x or "no parameter" in x
          for x in problems):  # fmt: skip
     return problems  # can't apply edits off the recipe surface
-  recipe = champion["recipe"]
+  recipe, _ = base_recipe(p, champion, history)
   if apply_edits(recipe, p["edits"]) == recipe:
-    problems.append("the edits don't change the champion's recipe")
+    problems.append("the edits don't change the base recipe")
   if change_text(p, recipe) in {h.get("change") for h in history}:
     problems.append("already tried (same change in the engine history)")
-  problems += estimate(p, gaps, min_gain).problems
+  problems += estimate(p, gaps, min_gain, factor, _parent_entry(p, history)).problems
   return problems
 
 
 def estimate(
-  p: dict[str, Any], gaps: list[Gap] | None = None, min_gain: float = worth.MIN_GAIN
+  p: dict[str, Any],
+  gaps: list[Gap] | None = None,
+  min_gain: float = worth.MIN_GAIN,
+  factor: float = 1.0,
+  parent: dict[str, Any] | None = None,
 ) -> worth.Worth:
   """Expected benchmark gain of a proposal and whether it is worth a run."""
   if gaps is None:
     gaps = champion_gaps(FAMILY_TASK.get(p.get("task"), ""))
-  return worth.estimate(p.get("expect"), gaps, min_gain=min_gain)
+  return worth.estimate(p.get("expect"), gaps, min_gain=min_gain, factor=factor,
+                        parent=parent)  # fmt: skip
 
 
 def to_proposal(
-  p: dict[str, Any], champion: dict[str, Any], gain: float | None = None
+  p: dict[str, Any],
+  champion: dict[str, Any],
+  gain: float | None = None,
+  history: list[dict[str, Any]] | None = None,
 ) -> Proposal:
-  recipe = champion["recipe"]
+  history = history or []
+  recipe, init = base_recipe(p, champion, history)
+  doses = []
+  for path, values in (p.get("doses") or {}).items():
+    for v in values:
+      q = {**p, "edits": {path: v}}
+      doses.append((change_text(q, recipe), apply_edits(recipe, q["edits"])))
   return Proposal(
     recipe=apply_edits(recipe, p["edits"]),
     change=change_text(p, recipe),
@@ -237,6 +313,10 @@ def to_proposal(
     designer=f"llm:{p['designer']}",
     hypothesis=p["hypothesis"],
     expected_gain=gain,
+    gap=p["gap"],
+    parent=p.get("parent"),
+    init=init if p.get("parent") else None,
+    doses=doses,
   )
 
 
@@ -304,6 +384,18 @@ def context(
       or ["(nothing tried yet)"]
     ),  # fmt: skip
     "",
+    "## What the last children taught (read before proposing)",
+    "",
+    *reflection(history),
+    "",
+    f"Forecast calibration: x{worth.calibration(history):.2f} (measured / forecast). "
+    f"Gaps at a ceiling (closed to training-only proposals): "
+    f"{', '.join(_ceilings()) or 'none'}.",
+    "",
+    "## rs_kick (runswift-spec kick test, power by kick class)",
+    "",
+    *rs_gaps(champion),
+    "",
     "## Approaches (knowledge/approaches; cards have the details)",
     "",
     "| id | element | status | tags | engine can | uses |",
@@ -340,6 +432,67 @@ def context(
     "```",
   ]
   return "\n".join(out) + "\n"
+
+
+def _ceilings() -> list[str]:
+  from k1.engine import state
+
+  path = state.DIR / "state.json"
+  return state.load(path).ceilings if path.is_file() else []
+
+
+def reflection(history: list[dict[str, Any]], n: int = 8) -> list[str]:
+  """Per recent judged child: scorecard parts, rs_kick power by class, the
+  regressions, probes and the edited terms' training curves."""
+  out = []
+  for h in [h for h in history if "verdict" in h][-n:]:
+    v = h["verdict"]
+    m = v.get("metrics") or {}
+    rs = m.get("rs") or {}
+    parts = [f"- **{h['id']}** {h['change']} -> {v['status']} {v.get('score')}"
+             f"{' PROMOTED' if h.get('promoted') else ''}"]  # fmt: skip
+    if "bench_score" in m:
+      parts.append(
+        f"  benchmark v2 {m['bench_score']}, rs_kick points {m.get('rs_points')}"
+      )
+    if rs.get("margins"):
+      parts.append(f"  rs_kick margins vs champion: {rs['margins']}")
+    if rs.get("power"):
+      parts.append(f"  rs_kick power by class: {rs['power']}")
+    if v.get("regressions"):
+      parts.append(f"  regressions: {', '.join(v['regressions'][:6])}")
+    if h.get("probes"):
+      parts.append(
+        f"  probes (frac, margin): {[(p['frac'], p['margin']) for p in h['probes']]}"
+      )
+    cur = m.get("curves") or {}
+    if cur.get("focus"):
+      parts.append(f"  edited terms' curves (first -> last): {cur['focus']}")
+    if cur.get("missing_terms"):
+      parts.append(f"  edited terms never logged: {cur['missing_terms']}")
+    if h.get("hypothesis"):
+      parts.append(f"  hypothesis was: {h['hypothesis']}")
+    out += parts
+  return out or ["(nothing judged yet)"]
+
+
+def rs_gaps(champion: dict[str, Any]) -> list[str]:
+  """Champion vs B-Human on rs_kick in lab mode: score and power by class."""
+  from k1.eval import rs_judge, scorecard
+
+  refs = (champion.get("refs") or scorecard.default_refs())["rs"]
+  out = []
+  for seed in (0, 1):
+    ours_p = refs.get(f"lab_s{seed}")
+    bh_p = rs_judge.BHUMAN.get(seed)
+    if not ours_p or not bh_p or not Path(ours_p).is_file() or not bh_p.is_file():
+      continue
+    ours, bh = rs_judge.class_power(Path(ours_p)), rs_judge.class_power(bh_p)
+    so = sum(rs_judge.scores_of(Path(ours_p))) / 200
+    sb = sum(rs_judge.scores_of(bh_p)) / 200
+    out.append(f"- lab s{seed}: score ours {so:.3f} vs B-Human {sb:.3f}; power "
+               + ", ".join(f"{c} {ours[c]:.2f} vs {bh[c]:.2f}" for c in ours))  # fmt: skip
+  return out or ["(no rs_kick reference results)"]
 
 
 def time_now() -> str:

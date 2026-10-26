@@ -176,14 +176,36 @@ from everything in flight) → gate plan from `touches` → dispatch to the asyn
 pool → strict judges on the population's best → promote or reject, record the
 verdict → after N non-improving verdicts, write a decision packet for the user.
 
+**Child stages** (built 2026-10-26, `k1/engine/outer.py`; each stage is a
+background job, `k1/engine/jobs.py`, so judging never holds up training):
+smoke (3 training iterations: starts, no crash, every edited reward term
+logged) → train from the champion or a named parent child, with probes at 30 /
+55 / 80 % of the budget (rs_kick deployed; two significantly negative probes in
+a row stop it, `stopped_early`) → screen (kick scorecard at benchmark v2 `gate`
+size + rs_kick deployed, per-term training curves attached) → confirm (full
+scorecard) → promote, then reverify (the new champion's own results become the
+references; a clip with a motion check is recorded). **Kick scorecard**
+(`k1/eval/scorecard.py`): benchmark v2 fitness + 1000 x the mean deployed
+rs_kick margin; regressions from both; confirmed when benchmark v2 gains on both
+seeds or rs_kick gains significantly on both deployed seeds. Around it: doses
+(sibling strengths of one change), forecast calibration (measured / forecast,
+`worth.calibration`), credit for fixing a parent's regression, a ceiling
+detector (3 failed children on one gap → structural request to the user, gap
+closed to training-only proposals), a GPU-hour budget, a heartbeat
+(`experiments/evolution/heartbeat.json`), notifications (`notify.log`,
+`notify-send`) and `scripts/tools/engine_daemon.sh` (restart after a crash).
+
 **Inner loop** (tunes a design while it trains; minutes): a PBT / PB2 population
 of 4–8 copies of one recipe, pinned seed, quick screen every 50–100 iterations;
 weak copies take the weights and numbers of strong ones (exploit) and are
 nudged (explore); weight blends as crossover. Only continuous numbers inside the
 recipe's ranges change. Its best checkpoint goes back to the outer judges.
+Not wired: at most 2 trainings at a time leaves no room for a population;
+doses + probe-based early stopping do its job (successive halving over
+strengths) until more GPUs are available.
 
 **Verdict** (fixed schema): status (smoke_failed / parity_failed / train_failed
-/ diverged / scored), per-term returns, behaviour checklist (falls, posture,
+/ diverged / stopped_early / scored), per-term returns, behaviour checklist (falls, posture,
 technique, reward hacking, deployed path, peak vs final), findings. Ungradable
 is never zero.
 
@@ -229,3 +251,9 @@ state. New-task authoring becomes `rsw task new` (section-by-section with smokes
 6. **Step 9: the LLM agent as designer** (2026-10-26): context pack, proposal
    schema and checker, inbox read first by the engine, `/design` command; the
    deterministic designers become its baseline and fallback.
+7. **Step 10: the engine calls the designer itself** (2026-10-26): headless
+   `claude -p /design` when the inbox is empty, worth-a-retrain gate.
+8. **Step 11: autonomous loop** (2026-10-26): background stages, kick
+   scorecard (benchmark v2 + rs_kick), smoke, probes and early stopping, doses,
+   parents, calibration, ceilings, reverify + clip on promotion, budget,
+   heartbeat, notifications, daemon.

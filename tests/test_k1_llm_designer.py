@@ -159,3 +159,35 @@ def test_context_has_every_section() -> None:
                   "## Rules", "## Proposal schema"):  # fmt: skip
     assert section in text, section
   assert "fall_pct" in text and "ball_behind_starts" in text
+
+
+def test_doses_parent_ceiling_and_rs_kick_forecasts(tmp_path) -> None:
+  # Doses: other strengths of the one edit, as sibling recipes.
+  p = {**GOOD, "doses": {"genes.s.far_spawn_prob": [0.4]}}
+  assert design.check(p, _champion(), []) == []
+  prop = design.to_proposal(p, _champion())
+  assert [r["genes"]["s.far_spawn_prob"] for _, r in prop.doses] == [0.4]
+  bad = {**GOOD, "doses": {"genes.s.cap_low_prob": [0.4]}}
+  assert any("doses" in m for m in design.check(bad, _champion(), []))
+  # Parent: continue from an earlier child's recipe and checkpoint.
+  rec = tmp_path / "e0003.yaml"
+  child = {**_champion()["recipe"], "name": "e0003"}
+  child["genes"] = {**child["genes"], "s.far_spawn_prob": 0.25}
+  rec.write_text(yaml.safe_dump(child))
+  hist = [{"id": "e0003", "change": "x", "recipe": str(rec),
+           "verdict": {"checkpoint": "ck3.pt", "score": 10.0, "regressions": []}}]  # fmt: skip
+  q = {**GOOD, "parent": "e0003"}
+  assert design.check(q, _champion(), hist) == []
+  prop = design.to_proposal(q, _champion(), history=hist)
+  assert prop.init == "ck3.pt" and prop.parent == "e0003"
+  assert prop.change.endswith("0.25 -> 0.3")
+  assert design.check({**GOOD, "parent": "e0099"}, _champion(), hist)
+  # A gap at a ceiling is closed to training-only proposals.
+  problems = design.check(GOOD, _champion(), [], ceilings=[GOOD["gap"]])
+  assert any("ceiling" in m for m in problems)
+  # rs_kick metrics are valid forecasts.
+  rs = {**GOOD, "expect": [{"metric": "power_small", "situation": "rs_kick/lab",
+                            "direction": "higher", "by": 0.3, "p": 0.6}]}  # fmt: skip
+  est = design.estimate(rs, [])
+  assert not est.problems or "not worth" in est.problems[0]
+  assert est.gain > 0

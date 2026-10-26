@@ -47,6 +47,10 @@ class InboxDesigner:
     self.asks: list[float] = []
     self.log: list[str] = []
     self.empty = False
+    # Set by the engine every step (outer.step).
+    self.ceilings: list[str] = []
+    self.calibration = 1.0
+    self.history: list[dict[str, Any]] = []
 
   def propose(
     self, champion: dict[str, Any], history: list[dict[str, Any]], rng: random.Random
@@ -62,7 +66,7 @@ class InboxDesigner:
       return []
     path, p, gain = best
     design.file_away(path, design.USED)
-    return [design.to_proposal(p, champion, gain)]
+    return [design.to_proposal(p, champion, gain, self.history or history)]
 
   def _may_ask(self) -> bool:
     if self.ask is None or len(self.asks) >= self.max_asks:
@@ -78,9 +82,11 @@ class InboxDesigner:
       except yaml.YAMLError as e:
         design.file_away(path, design.REJECTED, f"not YAML: {e}")
         continue
+      full = self.history or history
       problems = design.check(
-        p, champion, history, self.allow_combine, gaps, self.min_gain
-      )
+        p, champion, full, self.allow_combine, gaps, self.min_gain,
+        self.ceilings, self.calibration,
+      )  # fmt: skip
       if problems:
         design.file_away(path, design.REJECTED, "\n".join(problems))
         self.log.append(f"rejected {path.name}: {problems[0]}")
@@ -89,5 +95,7 @@ class InboxDesigner:
         design.file_away(path, design.BUILD)
         self.log.append(f"build request {path.name}: {p['approaches']}")
         continue
-      valid.append((path, p, design.estimate(p, gaps, self.min_gain).gain))
+      parent = design._parent_entry(p, full)
+      est = design.estimate(p, gaps, self.min_gain, self.calibration, parent)
+      valid.append((path, p, est.gain))
     return max(valid, key=lambda v: v[2]) if valid else None

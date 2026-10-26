@@ -69,15 +69,59 @@ def effects_of(expect: Any) -> list[dict[str, Any]]:
   return expect if isinstance(expect, list) else [expect]
 
 
+# rs_kick metrics a forecast may name (situation "rs_kick/<mode>"): score and
+# power by kick class (``rs_judge``); tolerance = about one seed's noise,
+# weight as the scorecard counts them (deployed score is the one in the score).
+RS_ROWS: dict[tuple[str, str], tuple[float, float]] = {
+  ("rs_kick/deployed", "score"): (0.015, 3.0),
+  ("rs_kick/lab", "score"): (0.01, 1.0),
+  **{(f"rs_kick/{m}", f"power_{c}"): (0.05, 1.0)
+     for m in ("deployed", "lab") for c in ("small", "medium", "strong")},
+}  # fmt: skip
+CALIBRATION_MIN = 3  # verdicts with a forecast before calibration applies
+CALIBRATION_RANGE = (0.25, 1.5)
+
+
+def calibration(history: list[dict[str, Any]]) -> float:
+  """Measured over forecast gain across judged children (losses count as 0):
+  the factor the next forecasts are multiplied by. 1 until enough history."""
+  pairs = [
+    (h["expected_gain"], max(0.0, h["verdict"].get("score") or 0.0))
+    for h in history
+    if (h.get("expected_gain") or 0) > 0
+    and h["verdict"]["status"] in ("scored", "stopped_early")
+  ]
+  if len(pairs) < CALIBRATION_MIN:
+    return 1.0
+  ratio = sum(m for _, m in pairs) / sum(e for e, _ in pairs)
+  return min(CALIBRATION_RANGE[1], max(CALIBRATION_RANGE[0], ratio))
+
+
+def unblock_credit(effect: dict[str, Any], parent: dict[str, Any] | None) -> float:
+  """A forecast effect that fixes one of the parent child's regressions earns
+  its share of the parent's gain: that regression is what blocked promoting it."""
+  if not parent:
+    return 0.0
+  regress = parent["verdict"].get("regressions") or []
+  gain = max(0.0, parent["verdict"].get("score") or 0.0)
+  hits = [r for r in regress
+          if r.split(":")[0] == effect["situation"] and r.split(":")[1] == effect["metric"]]  # fmt: skip
+  return gain * len(hits) / len(regress) if hits else 0.0
+
+
 def estimate(
   expect: Any,
   gaps: list[Gap],
   min_z: float = MIN_Z,
   min_gain: float = MIN_GAIN,
   rows: dict[tuple[str, str], tuple[float, float]] | None = None,
+  factor: float = 1.0,
+  parent: dict[str, Any] | None = None,
 ) -> Worth:
-  """Expected benchmark score of a proposal's ``expect`` and the gate result."""
-  rows = rows if rows is not None else _fitness_rows()
+  """Expected benchmark score of a proposal's ``expect`` and the gate result.
+  ``factor``: calibration from past forecasts; ``parent``: the history entry a
+  child continues from (fixing its regressions earns credit)."""
+  rows = {**(rows if rows is not None else _fitness_rows()), **RS_ROWS}
   w = Worth(0.0)
   for i, e in enumerate(effects_of(expect)):
     if not isinstance(e, dict):
@@ -103,10 +147,15 @@ def estimate(
       continue
     tol, weight = rows[(key, metric)]
     z = by / tol
-    caps = e.get("caps") or sorted(
-      {g.cap for g in gaps if g.key == key and g.metric == metric}
-    ) or ["low", "high"]  # fmt: skip
-    gain = p * min(z, 3.0) * weight * len(caps)
+    if key.startswith("rs_kick/"):
+      caps = ["-"]  # rs_kick runs at its own caps
+    else:
+      caps = e.get("caps") or sorted(
+        {g.cap for g in gaps if g.key == key and g.metric == metric}
+      ) or ["low", "high"]  # fmt: skip
+    gain = (
+      p * min(z, 3.0) * weight * len(caps) + p * unblock_credit(e, parent)
+    ) * factor
     w.gain += gain
     w.effects.append(f"{metric} in {key} by {by:g} ({z:.1f} tol) at {'+'.join(caps)} "
                      f"caps, p {p:g} -> {gain:+.1f}")  # fmt: skip
@@ -115,6 +164,8 @@ def estimate(
         f"not detectable: the main effect moves {metric} by {by:g}, below "
         f"{min_z:g} tolerance ({tol:g}); the benchmark can't tell it from noise"
       )
+  if factor != 1.0:
+    w.effects.append(f"calibration x{factor:.2f} (measured / forecast so far)")
   if not w.problems and w.gain < min_gain:
     w.problems.append(
       f"not worth a run: expected gain {w.gain:+.1f} < {min_gain:g} "

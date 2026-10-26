@@ -12,7 +12,10 @@ import time
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
-STATUSES = ("smoke_failed", "parity_failed", "train_failed", "diverged", "scored")
+# stopped_early: the engine stopped the training after probes said it was
+# significantly behind the champion (early stopping), so it was never judged.
+STATUSES = ("smoke_failed", "parity_failed", "train_failed", "diverged",
+            "stopped_early", "scored")  # fmt: skip
 
 
 @dataclass

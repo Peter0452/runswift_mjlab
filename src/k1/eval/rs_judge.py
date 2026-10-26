@@ -64,6 +64,11 @@ class RsVerdict:
   vs_bhuman: dict[str, str] = field(default_factory=dict)
   vs_champion: dict[str, str] = field(default_factory=dict)
   falls: int = 0
+  # (mean, lo, hi) of the paired margin over the champion, per "<mode>_s<seed>".
+  margins: dict[str, list[float]] = field(default_factory=dict)
+  trials: dict[str, str] = field(default_factory=dict)  # per-trial CSV per key
+  # Power score by kick class (rs_kick.KICK_CLASSES), per key.
+  power: dict[str, dict[str, float]] = field(default_factory=dict)
 
   def to_dict(self) -> dict[str, Any]:
     return asdict(self)
@@ -84,9 +89,32 @@ def paired(a: list[float], b: list[float]) -> Paired:
   return Paired(m, m - half, m + half)
 
 
-def run(checkpoint: str, name: str, seeds: tuple[int, ...] = (0, 1)) -> RsVerdict:
+def class_power(path: Path) -> dict[str, float]:
+  """Mean power score per kick class over the kicked, standing trials."""
+  with open(path) as f:
+    ok = [
+      r for r in csv.DictReader(f) if r["kicked"] == "True" and r["fell"] == "False"
+    ]
+  out = {}
+  for c in rs_kick.KICK_CLASSES:
+    vals = [rs_kick.power_score(float(r["peak_speed"]), float(r["range"]))
+            for r in ok if rs_kick.kick_class(float(r["range"])) == c]  # fmt: skip
+    out[c] = round(statistics.fmean(vals), 4) if vals else float("nan")
+  return out
+
+
+def run(
+  checkpoint: str,
+  name: str,
+  seeds: tuple[int, ...] = (0, 1),
+  modes: tuple[str, ...] = tuple(MODES),
+  champion: dict[str, str] | None = None,
+) -> RsVerdict:
+  """``champion``: the champion's per-trial CSV per "<mode>_s<seed>" (default
+  h022's)."""
   v = RsVerdict(checkpoint)
-  for mode, flags in MODES.items():
+  for mode in modes:
+    flags = MODES[mode]
     for seed in seeds:
       tag = f"{name}_{mode}_s{seed}"
       subprocess.run(
@@ -98,11 +126,16 @@ def run(checkpoint: str, name: str, seeds: tuple[int, ...] = (0, 1)) -> RsVerdic
       ours = scores_of(trials)
       key = f"{mode}_s{seed}"
       v.scores[key] = round(statistics.fmean(ours), 4)
+      v.trials[key] = str(trials)
+      v.power[key] = class_power(trials)
       with open(trials) as f:
         v.falls += sum(r["fell"] == "True" for r in csv.DictReader(f))
       if seed in BHUMAN and BHUMAN[seed].is_file():
         v.vs_bhuman[key] = str(paired(ours, scores_of(BHUMAN[seed])))
-      ref = CHAMPION.get((mode, seed))
+      ref = Path(champion[key]) if champion and key in champion else None
+      ref = ref or CHAMPION.get((mode, seed))
       if ref and ref.is_file():
-        v.vs_champion[key] = str(paired(ours, scores_of(ref)))
+        m = paired(ours, scores_of(ref))
+        v.vs_champion[key] = str(m)
+        v.margins[key] = [round(m.mean, 4), round(m.lo, 4), round(m.hi, 4)]
   return v
