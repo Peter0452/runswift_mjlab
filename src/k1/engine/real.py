@@ -39,13 +39,8 @@ class RsTrainer:
             "started": time.time()}  # fmt: skip
 
   def poll(self, handle: dict[str, Any]) -> tuple[str, str] | None:
-    try:
-      os.kill(handle["pid"], 0)
+    if _alive(handle["pid"]):
       return None  # still running
-    except ProcessLookupError:
-      pass
-    except PermissionError:
-      return None
     text = Path(handle["log"]).read_text(errors="replace")
     m = re.search(r"\[k1\] run.json -> (\S+)", text)
     if m is None:
@@ -87,13 +82,27 @@ class RsTrainer:
 
 
 def _alive(pid: int) -> bool:
+  """Still running. A finished child of this process stays a zombie (and
+  answers ``kill 0``) until reaped, so reap it; for others, a zombie state in
+  /proc also counts as finished (first engine run, 2026-10-26: both children
+  sat done but "training" for 11 min)."""
+  try:
+    done, _ = os.waitpid(pid, os.WNOHANG)
+    if done == pid:
+      return False
+  except ChildProcessError:
+    pass  # not our child (e.g. started by an engine run before a restart)
   try:
     os.kill(pid, 0)
   except ProcessLookupError:
     return False
   except PermissionError:
     return True
-  return True
+  try:
+    state = Path(f"/proc/{pid}/stat").read_text().rsplit(")", 1)[1].split()[0]
+  except (OSError, IndexError):
+    return True
+  return state != "Z"
 
 
 class BackgroundJudge:

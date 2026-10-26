@@ -1,6 +1,9 @@
 """The engine (evolution loop) logic with a fake trainer and judge (no GPU)."""
 
 import random
+import subprocess
+import sys
+import time
 from pathlib import Path
 
 import pytest
@@ -332,3 +335,13 @@ def test_real_trainer_reads_a_finished_child(tmp_path) -> None:
   log.write_text("Traceback (most recent call last):\n  boom\n")
   status = RsTrainer().poll(finished)
   assert status is not None and status[0] == "failed"
+
+
+def test_a_finished_child_process_is_not_alive() -> None:
+  from k1.engine.real import _alive
+
+  proc = subprocess.Popen([sys.executable, "-c", "pass"])
+  deadline = time.time() + 10
+  while _alive(proc.pid) and time.time() < deadline:
+    time.sleep(0.05)
+  assert not _alive(proc.pid)  # exited: reaped, not mistaken for running
