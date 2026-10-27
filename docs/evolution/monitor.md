@@ -758,3 +758,4 @@ Remaining gap to B-Human: small-kick power (deployed 0.06-0.20 vs 0.71; motor de
 - w3 held-out deployed s2 / s3 vs S8 +0.014* / +0.010* (s0 / s1 +0.003 / +0.007*).
 - w3 lab s1-s3 vs S8 +0.012* / +0.007 / +0.013* (s0 +0.019*); vs B-Human lab s1 +0.001. w3 vs S8 over 8 rs mode-seeds: all positive, 6 significant; low-cap gap half of u4's; bench v2 grids: near first-touch slightly below S8, goal-grid falls lower, goals later.
 - u4 vs w3 on the fixed bench v2 grids (s1): near_grid first_touch_15 89.8 / 92.6 (u4) vs 98.1 / 88.0 (w3), S8 100 / 93.5; goal time 26.5 / 13.6 (u4) vs 25.4 / 12.9 (w3), S8 22.7 / 11.5. w3 improves on u4 on the grids and at low caps for a slightly smaller lab lead: w3 is the night's recommended candidate (still a trade-off vs S8 at low caps / goal time).
+- w3 deploy gate PASSED (ONNX parity 4.8e-6, lost rule, runner intake TAKE kick_loop_v1); ONNX in sp_soups/deploy_w3_u4_tail/. Not deployed (user's call).
