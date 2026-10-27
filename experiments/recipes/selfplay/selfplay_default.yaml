@@ -9,7 +9,7 @@ why: Baseline and control for 1v1 self-play on the stage-3 kick loop. Declares e
 touches: training-only
 control: null
 init: null
-ball: ours
+ball: bhuman
 genes: {}
 methods:
   amp:

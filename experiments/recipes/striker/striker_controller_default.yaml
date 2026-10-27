@@ -9,7 +9,7 @@ why: Baseline and control for two-level striker controller. Declares every metho
 touches: training-only
 control: null
 init: null
-ball: ours
+ball: bhuman
 genes: {}
 methods: {}
 rewards: {}

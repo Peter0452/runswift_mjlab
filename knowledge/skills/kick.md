@@ -87,14 +87,15 @@ around kicks). The ones that matter most:
 
 ## Ball
 
-Default: our ball (0.08 m / 0.1 kg nominal, randomised 0.07–0.13 m and
-0.05–0.45 kg, shell inertia). `K1_BALL=bhuman` switches the kick, approach
-and dribble tasks to B-Human's ball (0.095 m / 0.29 kg, solid), the ball
-future training should use. The one run trained on it so far,
-`k1_kick_stage3_amp/2026-10-16_01-30-01_h022_from_v54c_b`, needs
-`K1_BALL=bhuman` to replay. On B-Human's ball the champion scores clearly
-lower (goals 1.1 → 0.9, long kick 4.6 → 3.8 m/s, passes ~2 m long, knee
-peak +35 %), so expect a retraining step when switching.
+B-Human's ball (0.095 m ± 0.01 / 0.29 kg ± 0.01, solid) is the only ball since
+2026-10-28, for the kick, approach and dribble tasks. Our old ball (0.08 m /
+0.1 kg nominal, randomised 0.07–0.13 m and 0.05–0.45 kg, shell inertia), on
+which every model up to S8 / u4 was trained, was removed; those models play and
+benchmark on B-Human's ball. The h022 champion scored lower on it in bench v2
+(goals 1.1 → 0.9, long kick 4.6 → 3.8 m/s, 2026-10-16), so fine-tune existing
+models on it. Gene `ball_mass_alpha_max` (0.55 in old recipes) used to make
+B-Human's ball up to 0.87 kg; it is ignored now. rs_kick always used B-Human's
+ball contact.
 
 ## How it is judged
 

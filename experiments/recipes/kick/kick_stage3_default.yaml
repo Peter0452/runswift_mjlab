@@ -9,7 +9,7 @@ why: Baseline and control for kick stage 3 (the deployed kick loop's task). Decl
 touches: training-only
 control: null
 init: null
-ball: ours
+ball: bhuman
 genes: {}
 methods:
   amp:

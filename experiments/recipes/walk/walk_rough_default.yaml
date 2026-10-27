@@ -8,7 +8,7 @@ why: Baseline and control for AMP rough walk (the deployed gold walk's task). De
 touches: training-only
 control: null
 init: null
-ball: ours
+ball: bhuman
 genes: {}
 methods:
   amp:

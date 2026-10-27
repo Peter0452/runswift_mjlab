@@ -8,7 +8,7 @@ why: Baseline and control for AMP flat walk. Declares every method the task has 
 touches: training-only
 control: null
 init: null
-ball: ours
+ball: bhuman
 genes: {}
 methods:
   amp:

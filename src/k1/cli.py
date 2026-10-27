@@ -260,7 +260,8 @@ def _recipe_check(args: argparse.Namespace) -> int:
   bad = 0
   for path in paths:
     problems = recipes.check(path)
-    print(f"{'ok  ' if not problems else 'FAIL'} {path}")
+    old = recipes.load(path).ball == recipes.OLD_BALL
+    print(f"{'old ' if old else 'ok  ' if not problems else 'FAIL'} {path}")
     for p in problems:
       print(f"     {p}")
     bad += bool(problems)

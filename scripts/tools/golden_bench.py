@@ -40,7 +40,8 @@ CHECKPOINT = (
 def bench(name: str) -> dict:
   out = BENCH_OUT / f"{name}.json"
   out.unlink(missing_ok=True)  # kick_bench2 resumes finished tracks otherwise
-  # Default recipe and ball: per-run switches would change what is measured.
+  # Default recipe and ball (B-Human's): per-run switches would change what is
+  # measured.
   env = {k: v for k, v in os.environ.items() if k not in ("KICK_GENES", "K1_BALL")}
   env["BENCH2_SEED"] = "1"
   subprocess.run(

@@ -59,13 +59,13 @@ selfplay-run-authority).
   hop) and let the policy choose per situation from outcomes; no style forced
   by range.
 - **83 inputs fixed** for the kick loop (86 with opponent inputs in self-play).
-- **Ball (2026-10-08, 2026-10-23):** the default stays our ball, radius
-  0.07–0.13 m and mass 0.05–0.45 kg around 0.08 m / 0.1 kg, because every
-  kept model was trained on it. **Future training should move to B-Human's
-  ball** (0.095 m ± 0.01, 0.29 kg ± 0.01, solid): opt in per run with
-  `K1_BALL=bhuman` (read at import, `src/k1/common/ball.py`); switch the default
-  when a lineage has been retrained on it, then re-record the golden
-  references.
+- **Ball (2026-10-28, user: "get rid of the old ball, and use bhuman ball ever
+  since now"):** B-Human's ball (0.095 m ± 0.01, 0.29 kg ± 0.01, solid) is the
+  only ball (`src/k1/common/ball.py`). Our old ball (0.07–0.13 m, 0.05–0.45 kg
+  around 0.08 m / 0.1 kg; every model up to S8 / u4 was trained on it) is
+  removed: `K1_BALL=ours` is refused, recipes with `ball: ours` are records
+  only, and the genes `ball_mass_alpha_max` / `ball_radius_max` are ignored.
+  The golden references were re-recorded on B-Human's ball.
 - runswift's fixture is a proxy soft gate: we may be slightly worse where its
   ideal assumptions matter, but not on falls, accuracy or kick speed (kick
   speed gated on 6/9 m tasks only).

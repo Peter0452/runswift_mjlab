@@ -1,7 +1,8 @@
 # Golden references
 
-Recorded 2026-10-23 on branch `restructure`, before any code moves, with the
-default ball (`K1_BALL` unset = ours). Recording first caught a regression: the
+Re-recorded 2026-10-28 on B-Human's ball, the only ball since then (our old
+ball was removed; see `src/k1/common/ball.py`). First recorded 2026-10-23 on
+branch `restructure`, before any code moves, with our old ball. Recording first caught a regression: the
 self-play stash merge had switched the kick ball to B-Human's; the default was
 restored and the references re-recorded. Re-record only when a change is *meant* to alter behaviour,
 and say so in the commit.

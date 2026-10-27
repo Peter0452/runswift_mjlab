@@ -29,7 +29,6 @@ from k1.common.ball import (  # noqa: F401
   BALL_RADIUS,
   BALL_RADIUS_RANGE,
   BALL_SOLID,
-  BHUMAN_BALL,
   K1_BALL,
 )
 from mjlab.entity import Entity
@@ -68,7 +67,7 @@ SPAWN_VIEW_HALF_ANGLE = 0.4
 SPEED_LIMIT_VX = (0.3, 1.2)
 SPEED_LIMIT_VY = (0.2, 1.0)
 SPEED_LIMIT_WZ = (0.4, 1.25)
-# Ball model (K1_BALL): k1/common/ball.py.
+# Ball model (B-Human's ball): k1/common/ball.py.
 # Pelvis height used only to put the ball on the ground under the robot.
 NOMINAL_ROOT_HEIGHT = 0.53
 VIEW_SIGMA = 0.35

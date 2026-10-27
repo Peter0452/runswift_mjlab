@@ -140,14 +140,14 @@ def booster_k1_kick_stage1_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   return cfg
 
 
-# The ball model (ours or B-Human's) is chosen with K1_BALL; see k1/common/ball.py.
+# The ball model (B-Human's, the only one since 2026-10-28): k1/common/ball.py.
 _APPROACH_BALL_RADIUS = approach_mdp.BALL_RADIUS
 _APPROACH_BALL_MASS = approach_mdp.BALL_MASS
 _APPROACH_BALL_FRICTION = (1.0, 0.5, 0.015)
 
 
 def _get_approach_ball_spec() -> mujoco.MjSpec:
-  """Size-5 mesh scaled to the kick ball (K1_BALL model)."""
+  """Size-5 mesh scaled to the kick ball (k1/common/ball.py)."""
   spec = mujoco.MjSpec.from_file(str(BALL_XML))
   scale = _APPROACH_BALL_RADIUS / get_ball_radius(5)
   for mesh in spec.meshes:
@@ -162,7 +162,7 @@ def _get_approach_ball_spec() -> mujoco.MjSpec:
       geom.group = 3
       geom.size = (_APPROACH_BALL_RADIUS, 0, 0)
       # B-Human's ball is solid (Isaac Gym recomputeInertia on create_sphere);
-      # ours is a thin shell.
+      # the shell branch served our old ball.
       geom.typeinertia = (
         mujoco.mjtGeomInertia.mjINERTIA_VOLUME
         if approach_mdp.BALL_SOLID
@@ -392,11 +392,10 @@ def booster_k1_kick_stage3_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     ),
   )
 
-  # A different ball every episode, so the kick does not depend on one ball.
-  # Ours (default): radius 0.07–0.13 m and mass 0.05–0.45 kg (e^{2α} × 0.1 kg),
-  # drawn independently (user 2026-10-08). K1_BALL=bhuman: B-Human's ball,
-  # 0.095 m ± 0.01 and 0.290 kg ± 0.01. The key stays "ball_mass" so tools
-  # that pop it get the fixed nominal ball.
+  # A slightly different ball every episode: B-Human's ball, 0.095 m ± 0.01
+  # and 0.290 kg ± 0.01 (our old 0.07–0.13 m / 0.05–0.45 kg ball was removed
+  # 2026-10-28). The key stays "ball_mass" so tools that pop it get the fixed
+  # nominal ball.
   cfg.events["ball_mass"] = EventTermCfg(
     mode="reset",
     func=mdp.ball_size_mass,
@@ -760,19 +759,10 @@ def booster_k1_kick_stage3_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
   twist = cfg.commands["twist"]
   twist.ball_origin = str(KICK_GENES.get("ball_origin", "feet"))  # ty: ignore[unresolved-attribute]
   twist.ball_origin_jitter = float(KICK_GENES.get("ball_origin_jitter", 0.02))  # ty: ignore[unresolved-attribute]
-  # Gene ball_mass_alpha_max only raises the mass ceiling (alpha, around the
-  # nominal mass of the K1_BALL model). Genes written for our 0.1 kg ball
-  # (0.55, 0.752) make B-Human's 0.29 kg ball much heavier.
-  if "ball_mass_alpha_max" in KICK_GENES and "ball_mass" in cfg.events:
-    lo, hi = cfg.events["ball_mass"].params["alpha_range"]
-    hi = max(hi, float(KICK_GENES["ball_mass_alpha_max"]))
-    cfg.events["ball_mass"].params["alpha_range"] = (lo, hi)
-  if "ball_radius_max" in KICK_GENES and "ball_mass" in cfg.events:
-    lo, _ = cfg.events["ball_mass"].params["radius_range"]
-    cfg.events["ball_mass"].params["radius_range"] = (
-      lo,
-      float(KICK_GENES["ball_radius_max"]),
-    )
+  # Genes ball_mass_alpha_max / ball_radius_max are ignored since 2026-10-28:
+  # written for our old 0.1 kg ball, they raised the ceiling around B-Human's
+  # 0.29 kg nominal to 0.87 kg (every 2026-10-27/28 B-Human-ball run trained on
+  # that heavy ball). The ball is B-Human's, as specified in k1/common/ball.py.
   # L3 (scenarios): "s.<field>" sets a scenario field of the kick command
   # (spawn_any_prob, far_spawn_prob, world_ball_prob, cap_low_prob, ...).
   for key, value in KICK_GENES.items():

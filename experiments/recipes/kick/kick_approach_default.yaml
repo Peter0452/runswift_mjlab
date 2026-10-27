@@ -8,7 +8,7 @@ why: Baseline and control for kick stage 2 (approach). Declares every method the
 touches: training-only
 control: null
 init: null
-ball: ours
+ball: bhuman
 genes: {}
 methods:
   amp:

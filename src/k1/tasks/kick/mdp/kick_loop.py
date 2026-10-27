@@ -2144,11 +2144,10 @@ def ball_size_mass(
 ) -> None:
   """A different ball every episode: collision radius uniform in
   ``radius_range`` and mass ``nominal_mass * e^{2 alpha}``, independent.
-  Defaults follow the K1_BALL model (approach.py): ours 0.07-0.13 m and
-  0.05-0.45 kg with thin-shell inertia 2/3 m r^2 (user 2026-10-08); B-Human's
-  0.095 +- 0.01 m and 0.29 +- 0.01 kg with solid-sphere inertia 2/5 m r^2, as
-  Isaac Gym ``recomputeInertia``. Spawns read the radius back
-  (``ball_radius``); the visual mesh keeps the nominal size."""
+  Defaults follow the ball model (k1/common/ball.py): B-Human's 0.095 +- 0.01 m
+  and 0.29 +- 0.01 kg with solid-sphere inertia 2/5 m r^2, as Isaac Gym
+  ``recomputeInertia`` (the thin-shell branch served our old ball). Spawns read
+  the radius back (``ball_radius``); the visual mesh keeps the nominal size."""
   if env_ids is None:
     env_ids = torch.arange(env.num_envs, device=env.device)
   env_ids = env_ids.to(env.device, dtype=torch.long)

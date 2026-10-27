@@ -89,7 +89,6 @@ GENES: dict[str, tuple[float, float, float]] = {
   "w.turn_rate_track": (0.0, 20.0, 0.0),
   "w.long_kick_speed_linear": (0.0, 2000.0, 0.0),
   "w.style_advantage": (0.0, 1500.0, 0.0),
-  "ball_mass_alpha_max": (0.458, 0.6, 0.458),
   "t.hop_power_long": (0.0, 1500.0, 0.0),
   "t.inside_accurate_short": (0.0, 900.0, 0.0),
 }

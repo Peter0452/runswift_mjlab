@@ -32,7 +32,7 @@ runswift_mjlab/
 │   ├── robot/                   K1 model, actuators, sensors · ball + goal props
 │   ├── deploy/                  contract.py (source of truth) · obs_layout.py (named slots) ·
 │   │                            export.py (contract → ONNX metadata) · parity.py (runner checks)
-│   ├── common/                  ball.py (K1_BALL) · vision.py (camera, memory, lost rule, head) ·
+│   ├── common/                  ball.py (B-Human's) · vision.py (camera, memory, lost rule, head) ·
 │   │                            symmetry.py · terrain.py · physics_guard.py · reward_log.py
 │   ├── approaches/              registry.py (approaches with code: element, detect, apply) ·
 │   │                            knowledge.py (cards, sources, uses; check)   [was methods/]

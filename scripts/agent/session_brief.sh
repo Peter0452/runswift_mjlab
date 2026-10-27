@@ -24,7 +24,7 @@ brief="$(
   line "runswift_mjlab: $(git_state "$REPO")"
   line "k1_policy_runner: $(git_state "$RUNNER") (do not edit it from this repo's work)"
   line "Deployed: kick $(deployed "$RUNNER/start_kick.sh") · dribble $(deployed "$RUNNER/start_dribble.sh")"
-  line "Ball default: ${K1_BALL:-ours} (K1_BALL=bhuman opts in to B-Human's ball, the future target)."
+  line "Ball: B-Human's (0.095 m / 0.29 kg), the only ball since 2026-10-28; our old ball was removed."
 )"
 
 jq -n --arg ctx "$brief" '{hookSpecificOutput: {hookEventName: "SessionStart", additionalContext: $ctx}}'

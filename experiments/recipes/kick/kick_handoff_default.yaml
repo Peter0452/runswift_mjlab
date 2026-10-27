@@ -8,7 +8,7 @@ why: Baseline and control for walk fine-tune on kick handoffs. Declares every me
 touches: training-only
 control: null
 init: null
-ball: ours
+ball: bhuman
 genes: {}
 methods:
   amp:

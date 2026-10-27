@@ -12,7 +12,7 @@ deltas, answering a task request (``tasks/<name>/request.yaml``)::
   touches: training-only        # or runtime (needs runner change + parity)
   control: kick_stage3_default  # same-length run to judge against (or null)
   init: null                    # checkpoint to start from
-  ball: ours                    # K1_BALL: ours | bhuman
+  ball: bhuman                  # B-Human's ball (the only one; 'ours' = old record)
   genes: {}                     # KICK_GENES / DRIBBLE_GENES (read at import)
   methods:                      # every approach with code that is on, with its
     decap: false                # parameters (k1.approaches); false turns it off
@@ -42,6 +42,9 @@ import yaml
 ROOT = Path(__file__).resolve().parents[2]
 RECIPES = ROOT / "experiments" / "recipes"
 TOUCHES = ("training-only", "runtime")
+# Our old ball was removed on 2026-10-28 (k1/common/ball.py). Recipes that name
+# it are records of past runs: they load, but no longer build or train.
+OLD_BALL = "ours"
 
 
 @dataclass
@@ -55,7 +58,7 @@ class Recipe:
   touches: str = "training-only"
   control: str | None = None
   init: str | None = None
-  ball: str = "ours"
+  ball: str = "bhuman"
   genes: dict[str, Any] = field(default_factory=dict)
   methods: dict[str, Any] = field(default_factory=dict)
   rewards: dict[str, float] = field(default_factory=dict)
@@ -89,8 +92,8 @@ def load(path: str | Path) -> Recipe:
   recipe = Recipe(**data, path=path)
   if recipe.touches not in TOUCHES:
     raise ValueError(f"{path}: touches must be one of {TOUCHES}")
-  if recipe.ball not in ("ours", "bhuman"):
-    raise ValueError(f"{path}: ball must be 'ours' or 'bhuman'")
+  if recipe.ball not in (OLD_BALL, "bhuman"):
+    raise ValueError(f"{path}: ball must be 'bhuman' ('{OLD_BALL}' for old records)")
   return recipe
 
 
@@ -138,7 +141,7 @@ def _enable(name: str, rl_cfg: Any) -> None:
 def build(recipe: Recipe) -> tuple[Any, Any]:
   """Env and runner configs of a recipe. The calling process must already run
   under ``recipe.env_vars()`` (genes and the ball are read at import)."""
-  defaults = {"K1_BALL": "ours"}  # what an unset variable means
+  defaults = {"K1_BALL": "bhuman"}  # what an unset variable means
   for key, value in recipe.env_vars().items():
     current = os.environ.get(key) or defaults.get(
       key, "{}" if key.endswith("GENES") else ""
@@ -374,8 +377,11 @@ def run_with_env(
 
 
 def check(path: str | Path) -> list[str]:
-  """Build and verify a recipe in a fresh process; returns the problems."""
+  """Build and verify a recipe in a fresh process; returns the problems. A
+  record of a run on the old ball is not built (see ``OLD_BALL``)."""
   recipe = load(path)
+  if recipe.ball == OLD_BALL:
+    return []
   proc = run_with_env(recipe, "_verify")
   out = [ln for ln in proc.stdout.splitlines() if ln.startswith("RECIPE ")]
   if proc.returncode != 0 or not out:
@@ -387,6 +393,8 @@ def check(path: str | Path) -> list[str]:
 def diff(path: str | Path, run_dir: str | Path) -> list[str]:
   """Build a recipe in a fresh process and diff it against a past run."""
   recipe = load(path)
+  if recipe.ball == OLD_BALL:
+    return [f"ball: {OLD_BALL} (removed 2026-10-28): the recipe no longer builds"]
   proc = run_with_env(recipe, "_diff", str(run_dir))
   out = [ln for ln in proc.stdout.splitlines() if ln.startswith("RECIPE ")]
   if proc.returncode != 0 or not out:
@@ -399,6 +407,9 @@ def train(path: str | Path, extra_args: list[str], go: bool) -> int:
   """Train a recipe in a fresh process under its env vars. Without ``go`` only
   print what would run."""
   recipe = load(path)
+  if recipe.ball == OLD_BALL:
+    print(f"ball: {OLD_BALL} was removed on 2026-10-28; set ball: bhuman")
+    return 1
   problems = check(path)
   if problems:
     print("recipe check failed:\n  " + "\n  ".join(problems))

@@ -221,7 +221,7 @@ def run(mode: str, names: list[str]) -> int:
     if not (ROOT / model.checkpoint).exists():
       print(f"GOLDEN {name}: SKIP checkpoint missing ({model.checkpoint})", flush=True)
       continue
-    # Default ball (K1_BALL unset); the snapshots were recorded with it.
+    # Default ball (K1_BALL unset = B-Human's); the snapshots were recorded with it.
     env = {k: v for k, v in os.environ.items() if k != "K1_BALL"}
     env.update(_genes(model))
     proc = subprocess.run(
