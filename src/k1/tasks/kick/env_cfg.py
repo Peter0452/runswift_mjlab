@@ -2,6 +2,7 @@
 (the deployed kick loop), plus the training-side deployment match."""
 
 import json
+import math
 import os
 from pathlib import Path
 
@@ -632,6 +633,13 @@ def booster_k1_kick_stage3_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
     # 2026-10-26: short / medium kick above 1.25× the needed speed (h022 ~1.5×,
     # passes 3.5 m long; B-Human ~1.25×, 1.4 m). Off by default; a gene.
     "short_kick_overpower": (mdp.short_kick_overpower, 0.0),
+    # 2026-10-27, B-Human-derived, off by default (genes w.<term>): cost for a
+    # kick launched > 30 deg off target; speed toward the ball up to the cap;
+    # falls as an adaptive (Lagrangian) penalty.
+    "kick_wrong_direction": (mdp.kick_wrong_direction, 0.0),
+    "action_rate_joint": (mdp.action_rate_joint, 0.0),
+    "walk_speed_to_ball": (mdp.walk_speed_to_ball, 0.0),
+    "fall_lagrangian": (mdp.fall_lagrangian, 0.0),
     # v52b: per aimed, well-struck short / medium kick launched 30–60°+ off
     # the body heading (v52's relaxed alignment alone left side kicks at ~3 %).
     "side_kick_bonus": (mdp.side_kick_bonus, 400.0 if SIDE_KICKS_V52 else 0.0),
@@ -660,6 +668,8 @@ def booster_k1_kick_stage3_env_cfg(play: bool = False) -> ManagerBasedRlEnvCfg:
       # land heel first and roll flat instead of slapping the sole down (loud
       # steps on the robot). Gene foot_flat_settle_s.
       "settle_s": float(KICK_GENES.get("foot_flat_settle_s", 0.06)),
+      # 2026-10-27: free band (deg) on stance-foot pitch; gene foot_flat_free_deg.
+      "free_rad": math.radians(float(KICK_GENES.get("foot_flat_free_deg", 0.0))),
     },
   )
   # Quiet landings (2026-10-08): squared downward foot speed in the last 3 cm

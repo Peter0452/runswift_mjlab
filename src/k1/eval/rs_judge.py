@@ -44,6 +44,11 @@ CHAMPION = {
   for mode, tag in (("deployed", "dep"), ("lab", "lab"))
   for seed in (0, 1)
 }
+# 2026-10-28: deployed references re-run after the harness fix (place() now
+# clears the detection-delay history; the old runs fed a pre-placement ball).
+CHAMPION.update(
+  {("deployed", s): OUT / f"fx_h022_dep_s{s}" / "trials_h022.csv" for s in (0, 1)}
+)
 SUBSTANTIAL = 0.05  # paired margin over B-Human that counts as substantial
 
 

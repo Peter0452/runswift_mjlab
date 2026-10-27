@@ -133,6 +133,16 @@ def place(u, trials: list[dict], radius: torch.Tensor) -> torch.Tensor:
   cmd.last_seen_yaw[:] = 0.0
   cmd.kicked_since_target[:] = False
   cmd.never_seen[:] = False
+  # 2026-10-28: clear the actor's detection-delay history (and camera hold).
+  # env.reset() already pushed a detection of the pre-placement ball into it, so
+  # with a detection lag >= 1 the policy's first sightings were of a ball metres
+  # away: memory jumped there, the head tracker followed, the real ball was
+  # never seen, the lost rule fired (S8 deployed s0: 22 / 62 close-ball "kicks"
+  # were bumps at 3.2 m perceived error; score 0.793 -> 0.849 with this fix).
+  cmd._det_hist_vis[:] = False
+  cmd._det_hist_b[:] = 0.0
+  if hasattr(cmd, "_held_vis"):
+    cmd._held_vis[:] = False
   return d
 
 

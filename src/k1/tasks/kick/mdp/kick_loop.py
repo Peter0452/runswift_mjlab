@@ -66,6 +66,11 @@ KICK_VEL_CAP_AT_NEEDED = True
 # v54b: rest-accuracy score scale (m) and linear short / medium speed match.
 REST_MISS_SCALE = 2.0
 LINEAR_SPEED_MATCH = True
+# 2026-10-27: a short / medium goal pays exp(-overrun / scale), overrun = how far
+# the ball would roll past the target beyond the goal tolerance. kick_goal paid
+# any ball passing the target, so blasts (95 % reached) outbid passes (S8:
+# small kicks at 2.2x the needed speed). 0 = off (gene k.SHORT_GOAL_OVERRUN_SCALE).
+SHORT_GOAL_OVERRUN_SCALE = 0.0
 # Long-range kicks (range one-hot "long"): ball speed 7–8 m/s; kick_vel pays
 # up to LONG_KICK_VEL_REF and kick_vel_accurate is 1 inside the band.
 LONG_KICK_SPEED_BAND = (7.0, 8.0)
@@ -482,6 +487,7 @@ class KickLoopCommand(ApproachYawCommand):
     self.rest_pending = flag()
     self.rest_event = flag()
     self.rest_score = zeros()
+    self.goal_score = zeros()
     self.rest_target_w = torch.zeros(n, 2, device=dev)
     self.rest_tol = torch.ones(n, device=dev)
     # Long-kick speed band (curriculum, shared by all envs) and its hit rate.
@@ -575,6 +581,7 @@ class KickLoopCommand(ApproachYawCommand):
       self._kick_quality_sum,
       self.kick_speed_req,
       self.rest_score,
+      self.goal_score,
       self.prev_ball_speed,
       self._kicks,
       self._goals,
@@ -1092,6 +1099,18 @@ class KickLoopCommand(ApproachYawCommand):
       & (target_dist > self.cfg.max_target_distance)
     )
     self.goal_event[:] = reached
+    if SHORT_GOAL_OVERRUN_SCALE > 0.0:
+      roll = ball_speed.square() / (2.0 * self.cfg.ball_roll_decel)
+      overrun = (roll - self.goal_tol).clamp(min=0.0)
+      score = torch.exp(-overrun / SHORT_GOAL_OVERRUN_SCALE)
+      score = torch.where(self.kick_long, 1.0, score)
+      short_goals = reached & ~self.kick_long
+      log["Metrics/short_goal_overrun"] = (overrun * short_goals).sum() / (
+        short_goals.sum().clamp(min=1)
+      )
+    else:
+      score = torch.ones_like(ball_speed)
+    self.goal_score[:] = torch.where(reached, score, self.goal_score)
     self._goals += reached.float()
     respawn = reached | resting_far
     if respawn.any():
@@ -1743,10 +1762,107 @@ def long_kick_power(
   )
 
 
-def kick_goal(env: ManagerBasedRlEnv) -> torch.Tensor:
-  """Per goal: a kicked ball passed the target, times that kick's quality."""
+def action_rate_joint(env: ManagerBasedRlEnv) -> torch.Tensor:
+  """Squared change of the joint targets in rad (raw action change x the
+  joint's action scale), head excluded (its outputs are ignored). 2026-10-27:
+  action_rate_l2 counts raw units, so per rad it charges hip yaw 10x, the
+  ankles 4x, hip pitch 3.3x and the knee 1.2x what a uniform rad cost would
+  (scales 0.12-0.35); the stride joint pays the most. The real-robot limit is
+  on target jumps in rad (shaking at 0.13 rad / step, -0.03 era)."""
+  term = env.action_manager.get_term("joint_pos")
+  scale = term._scale
+  d = (env.action_manager.action - env.action_manager.prev_action) * scale
+  mask = getattr(term, "_rate_mask", None)
+  if mask is None:
+    names = list(term._target_names)
+    mask = torch.tensor(
+      [0.0 if "Head" in n else 1.0 for n in names] or [1.0] * d.shape[-1],
+      device=d.device,
+    )
+    term._rate_mask = mask
+  return (d.square() * mask).sum(dim=-1)
+
+
+# 2026-10-27, from B-Human's K1_Ball.yaml (kick_direction_negative_factor
+# 0.1 -> 3 over their stages): a kick launched more than WRONG_DIR_FREE off the
+# target costs, ramping to 1 at WRONG_DIR_FREE + WRONG_DIR_RAMP. Our
+# kick_direction pays only (>= 0), so a wild kick cost nothing but lost pay.
+WRONG_DIR_FREE = math.radians(30.0)
+WRONG_DIR_RAMP = math.radians(60.0)
+
+
+def kick_wrong_direction(env: ManagerBasedRlEnv) -> torch.Tensor:
+  """Per kick: (angle to the target - 30 deg) / 60 deg, clipped to [0, 1]."""
   cmd = _kick_command(env)
-  return cmd.goal_event.float() * cmd.last_kick_quality
+  angle = torch.acos(cmd.kick_cos.clamp(-1.0, 1.0))
+  wrong = ((angle - WRONG_DIR_FREE) / WRONG_DIR_RAMP).clamp(0.0, 1.0)
+  return cmd.kick_event.float() * wrong
+
+
+# 2026-10-27, from B-Human's _reward_ball_walk_speed: pay the speed toward the
+# ball itself (linear, no peak), up to the vx cap, and clip it to
+# NEAR_BALL_SPEED inside NEAR_BALL_RADIUS so the robot settles into the kick.
+# Walking away from a seen ball costs. walk_speed_track instead peaks at a
+# braked cap; S8 uses ~35 % of the 2 m/s cap on long approaches.
+NEAR_BALL_RADIUS = 0.6
+NEAR_BALL_SPEED = 0.5
+
+
+def walk_speed_to_ball(env: ManagerBasedRlEnv) -> torch.Tensor:
+  """Speed toward the ball (m/s): positive part clipped at the vx cap (at
+  NEAR_BALL_SPEED near the ball); negative part (walking away) kept, after the
+  post-kick window and while the ball is not lost."""
+  cmd = _kick_command(env)
+  _, dist, _, _, _, _, _, ball_b = _current(env)
+  robot: Entity = env.scene["robot"]
+  heading = ball_b / ball_b.norm(dim=-1, keepdim=True).clamp(min=1.0e-6)
+  toward = (robot.data.root_link_lin_vel_b[:, :2] * heading).sum(dim=-1)
+  cap = cmd.speed_limit[:, 0]
+  cap = torch.where(dist < NEAR_BALL_RADIUS, cap.clamp(max=NEAR_BALL_SPEED), cap)
+  pay = torch.minimum(toward.clamp(min=0.0), cap) + toward.clamp(max=0.0)
+  active = (cmd.time_since_kick >= POST_KICK_WINDOW) & ~cmd.ball_lost
+  return torch.where(active, pay, torch.zeros_like(pay))
+
+
+# 2026-10-27, falls as an adaptive constraint (approach card fall_constraint,
+# PPO-Lagrangian style): the multiplier rises while the fall rate is above
+# FALL_TARGET_FRACTION x the rate measured over the run's first
+# FALL_BASELINE_STEPS steps, and falls back (not below 0) when under it.
+FALL_TARGET_FRACTION = 0.7
+FALL_BASELINE_STEPS = 2000
+FALL_LAMBDA_RATE = 0.05
+FALL_LAMBDA_MAX = 5.0
+_FALL_STATE: dict[int, dict[str, float]] = {}
+
+
+def fall_lagrangian(env: ManagerBasedRlEnv) -> torch.Tensor:
+  """Per fall: the adaptive multiplier (starts at 1). Use with a negative weight
+  next to (or instead of) the fixed fall penalty."""
+  fell = env.termination_manager.terminated.float()
+  st = _FALL_STATE.setdefault(
+    id(env), {"steps": 0.0, "sum": 0.0, "ema": 0.0, "lam": 1.0}
+  )
+  rate = float(fell.mean())
+  st["steps"] += 1
+  if st["steps"] <= FALL_BASELINE_STEPS:
+    st["sum"] += rate
+    st["ema"] = st["sum"] / st["steps"]
+  else:
+    st["ema"] += 0.01 * (rate - st["ema"])
+    target = FALL_TARGET_FRACTION * st["sum"] / FALL_BASELINE_STEPS
+    st["lam"] += FALL_LAMBDA_RATE * (st["ema"] / max(target, 1.0e-6) - 1.0)
+    st["lam"] = min(max(st["lam"], 0.0), FALL_LAMBDA_MAX)
+  log = env.extras.setdefault("log", {})
+  log["Metrics/fall_lambda"] = st["lam"]
+  log["Metrics/fall_rate_ema"] = st["ema"]
+  return fell * st["lam"]
+
+
+def kick_goal(env: ManagerBasedRlEnv) -> torch.Tensor:
+  """Per goal: a kicked ball passed the target, times that kick's quality
+  (short / medium: times the overrun score, SHORT_GOAL_OVERRUN_SCALE)."""
+  cmd = _kick_command(env)
+  return cmd.goal_event.float() * cmd.last_kick_quality * cmd.goal_score
 
 
 def kick_lined_up(env: ManagerBasedRlEnv) -> torch.Tensor:
@@ -2222,10 +2338,27 @@ def arm_abduction(
   return _kick_command(env).style_gate * cost
 
 
+# 2026-10-27: 1 frees shoulder pitch (the fore-aft arm swing) from arm_pose.
+# S8's per-second rewards vs far-approach speed: arm_pose -0.34 -> -1.28 from
+# 0.3-0.6 to 0.9-1.2 m/s (foot_flat -0.30 -> -1.35) against walk_speed
+# +1.36: total reward flat above ~0.5 m/s. Wide arms stay charged by arm_pose
+# (roll / elbows) and arm_abduction. Read at call time (gene).
+ARM_POSE_SWING_FREE = 0.0
+
+
 def arm_pose_deviation(env: ManagerBasedRlEnv) -> torch.Tensor:
-  """Squared deviation of shoulders and elbows from the default pose."""
+  """Squared deviation of shoulders and elbows from the default pose
+  (shoulder pitch left out when ARM_POSE_SWING_FREE)."""
   robot: Entity = env.scene["robot"]
-  ids, _ = robot.find_joints((r".*_Shoulder_.*", r".*_Elbow_.*"))
+  pats = (
+    (r".*_Shoulder_Roll", r".*_Elbow_.*")
+    if ARM_POSE_SWING_FREE
+    else (
+      r".*_Shoulder_.*",
+      r".*_Elbow_.*",
+    )
+  )
+  ids, _ = robot.find_joints(pats)
   dev = robot.data.joint_pos[:, ids] - robot.data.default_joint_pos[:, ids]
   return torch.square(dev).sum(dim=-1)
 
@@ -2294,6 +2427,10 @@ __all__ = [
   "stand_start",
   "long_kick_underpower",
   "short_kick_overpower",
+  "kick_wrong_direction",
+  "action_rate_joint",
+  "walk_speed_to_ball",
+  "fall_lagrangian",
   "trunk_pitch_band",
   "walk_base_height",
   "walk_stance_width",

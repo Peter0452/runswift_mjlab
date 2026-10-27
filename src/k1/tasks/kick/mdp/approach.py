@@ -325,6 +325,8 @@ class ApproachYawCommand(CommandTerm):
     hist = int(cfg.vision_delay_steps[1]) + 1
     self._det_hist_b = torch.zeros(n, hist, 2, device=device)
     self._det_hist_vis = torch.zeros(n, hist, dtype=torch.bool, device=device)
+    self._det_hist_yaw = torch.zeros(n, hist, device=device)
+    self._seen_yaw = torch.zeros(n, device=device)
     self._det_lag = torch.zeros(n, dtype=torch.long, device=device)
     # Camera frame rate (vision_hold_steps): a new detection every k policy
     # steps, held in between, as the runner holds its last detection.
@@ -455,14 +457,19 @@ class ApproachYawCommand(CommandTerm):
     det = visible
     if self.cfg.vision_dropout > 0.0:
       det = det & (torch.rand_like(dist) >= self.cfg.vision_dropout)
+    now_yaw = _yaw_angle(self.robot.data.root_link_quat_w)
+    self._seen_yaw[:] = now_yaw
     if self._det_hist_b.shape[1] > 1:
       self._det_hist_b[:] = torch.roll(self._det_hist_b, 1, dims=1)
       self._det_hist_vis[:] = torch.roll(self._det_hist_vis, 1, dims=1)
+      self._det_hist_yaw[:] = torch.roll(self._det_hist_yaw, 1, dims=1)
       self._det_hist_b[:, 0] = seen_b
       self._det_hist_vis[:, 0] = det
+      self._det_hist_yaw[:, 0] = now_yaw
       rows = torch.arange(self.num_envs, device=self.device)
       seen_b = self._det_hist_b[rows, self._det_lag]
       det = self._det_hist_vis[rows, self._det_lag]
+      self._seen_yaw[:] = self._det_hist_yaw[rows, self._det_lag]
     if self.cfg.vision_hold_steps[1] > 1:
       fresh = self._hold_ctr % self._hold_k == 0
       self._held_b[:] = torch.where(fresh.unsqueeze(-1), seen_b, self._held_b)
@@ -488,7 +495,11 @@ class ApproachYawCommand(CommandTerm):
       self.last_seen_ball_b[:] = torch.where(
         visible.unsqueeze(-1), seen_b, self.last_seen_ball_b
       )
-      self.last_seen_yaw[:] = torch.where(visible, yaw, self.last_seen_yaw)
+      # memory_capture_yaw: stamp the sighting with the yaw when the image was
+      # taken (a delayed detection was captured _det_lag steps ago); default:
+      # the yaw on arrival, as the runner does (2026-10-27 diagnosis).
+      stamp = self._seen_yaw if self.cfg.memory_capture_yaw else yaw
+      self.last_seen_yaw[:] = torch.where(visible, stamp, self.last_seen_yaw)
       if self.cfg.memory_odometry:
         rel = torch.zeros_like(robot_pos)
         rel[:, :2] = self.last_seen_ball_w - self._ball_origin_w()[:, :2]
@@ -685,6 +696,27 @@ class ApproachYawCommand(CommandTerm):
       self.last_seen_ball_b[uid] = 0.0
     self.never_seen[env_ids] = unknown
     self._place_target(env_ids, ball_xy)
+    if bool(drill.any()) and self.cfg.drill_stand_prob > 0.0:
+      # 2026-10-28: rs_kick's close balls start from standing; training's
+      # close starts came mid-motion, and with the camera's detection delay S8
+      # bumps 26 / 62 close balls in its first steps. Stand only these episodes
+      # (all-episode stand starts slowed everything, u028).
+      st = env_ids[drill & (torch.rand(n, device=device) < self.cfg.drill_stand_prob)]
+      if len(st) > 0:
+        q = self.robot.data.root_link_quat_w[st]
+        half = 0.5 * _yaw_angle(q)
+        zero = torch.zeros_like(half)
+        rs = self.robot.data.default_root_state[st].clone()
+        rs[:, :2] = self.robot.data.root_link_pos_w[st, :2]
+        rs[:, 2] = rs[:, 2] + self._env.scene.env_origins[st, 2] + 0.008
+        rs[:, 3:7] = torch.stack((half.cos(), zero, zero, half.sin()), dim=-1)
+        rs[:, 7:] = 0.0
+        self.robot.write_root_state_to_sim(rs, env_ids=st)
+        self.robot.write_joint_state_to_sim(
+          self.robot.data.default_joint_pos[st].clone(),
+          torch.zeros_like(self.robot.data.default_joint_vel[st]),
+          env_ids=st,
+        )
     if bool(drill.any()):
       ids = drill.nonzero(as_tuple=False).squeeze(-1)
       lo, hi = self.cfg.side_drill_angle
@@ -837,6 +869,8 @@ class ApproachYawCommandCfg(CommandTermCfg):
   """Share of episodes starting with the ball close and the target to the side."""
   side_drill_ball_distance: tuple[float, float] = (0.4, 1.0)
   side_drill_angle: tuple[float, float] = (math.radians(60.0), math.radians(110.0))
+  drill_stand_prob: float = 0.0
+  """Share of side-drill (close-ball) episodes that start standing still."""
   """Target bearing from the ball, off the robot's heading, in a side drill (rad)."""
   ball_spawn_speed: tuple[float, float] = (0.0, 0.0)
   """Initial ball speed range (m/s), random direction; 0 = static ball."""
@@ -874,6 +908,9 @@ class ApproachYawCommandCfg(CommandTermCfg):
   memory_view_range: float = 3.0
   """Only remembered spots this close count for the in-view rule (m)."""
   memory_odometry: bool = True
+  memory_capture_yaw: bool = False
+  """Stamp a (delayed) sighting with the yaw at capture instead of on arrival.
+  Off = the runner's rule. A diagnostic / candidate runner change (2026-10-27)."""
   spawn_any_prob: float = 0.0
   """L3: share of spawns with the ball at any bearing (incl. behind)."""
   far_spawn_prob: float = 0.0

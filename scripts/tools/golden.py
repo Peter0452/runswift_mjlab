@@ -192,6 +192,17 @@ def _one(name: str, mode: str) -> int:
       f"{drift.get('actor', float('nan')):.3g} (> {ACTOR_OBS_ATOL})",
       flush=True,
     )
+    if "actor" in fresh_obs.keys() and "actor" in ref["obs"].keys():
+      # Where (env, slot): the drift is intermittent (2026-10-27/28, ~1 run in
+      # 4, always 1.67 on kick_champion_h022), so name it when it happens.
+      d = (fresh_obs["actor"].cpu() - ref["obs"]["actor"]).abs()
+      for flat in d.flatten().topk(min(5, d.numel())).indices.tolist():
+        e, s = divmod(flat, d.shape[-1])
+        print(
+          f"  env {e} slot {s}: ref {float(ref['obs']['actor'][e, s]):.4g} "
+          f"now {float(fresh_obs['actor'][e, s]):.4g}",
+          flush=True,
+        )
   verdict = "ok" if ok else "FAIL"
   print(
     f"GOLDEN {name}: {verdict} (action diff {diff:.2g}; fresh reset obs drift "

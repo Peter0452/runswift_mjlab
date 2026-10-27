@@ -57,6 +57,9 @@ class Approach:
   params: dict[str, str] = field(default_factory=dict)
   detect: Detect | None = None
   conflicts: tuple[str, ...] = ()
+  # Run before the parameters are set (e.g. swap in an algorithm config that
+  # has the parameter fields).
+  prepare: Callable[[Any], None] | None = None
 
   @property
   def card(self) -> Path:
@@ -67,6 +70,8 @@ class Approach:
 
   def apply(self, rl_cfg: Any, values: dict[str, Any]) -> None:
     """Set this method's parameters on a runner config (field-mapped methods)."""
+    if self.prepare is not None:
+      self.prepare(rl_cfg)
     for p, v in values.items():
       if p not in self.params:
         raise KeyError(f"{self.name}: unknown parameter {p!r}")
@@ -138,6 +143,16 @@ def _cond_amp_detect(env_cfg: Any, rl_cfg: Any) -> dict[str, Any] | None:
   if "amp_cond" not in groups:
     return None
   return APPROACHES["conditioned_amp"].read(rl_cfg)
+
+
+def _anchor_prepare(rl_cfg: Any) -> None:
+  """Tasks whose algorithm config has no anchor fields (the kick loop) get the
+  anchored one; the recipe's values are set on it next (2026-10-27)."""
+  if hasattr(rl_cfg.algorithm, "anchor_checkpoint"):
+    return
+  from k1.tasks.velocity.rl.anchor import with_anchor  # mjlab import, lazily
+
+  rl_cfg.algorithm = with_anchor(rl_cfg.algorithm, checkpoint="", coef=0.0)
 
 
 def _anchor_detect(env_cfg: Any, rl_cfg: Any) -> dict[str, Any] | None:
@@ -246,6 +261,7 @@ _METHOD_LIST = [
       "loss": "alg.anchor_loss",
     },
     _anchor_detect,
+    prepare=_anchor_prepare,
   ),
   Approach(
     "kick_teacher",

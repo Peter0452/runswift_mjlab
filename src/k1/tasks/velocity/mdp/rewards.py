@@ -1263,6 +1263,7 @@ def htwk_feet_orientation_contact_gated(
   asset_cfg: SceneEntityCfg = _DEFAULT_ASSET_CFG,
   threshold: float = 1.0,
   settle_s: float = 0.0,
+  free_rad: float = 0.0,
 ) -> torch.Tensor:
   """Foot roll/pitch penalty only while that foot is in contact.
 
@@ -1284,6 +1285,10 @@ def htwk_feet_orientation_contact_gated(
     sensor: ContactSensor = env.scene[sensor_name]
     assert sensor.data.current_contact_time is not None
     contact = contact & (sensor.data.current_contact_time >= settle_s)
+  if free_rad > 0.0:
+    # 2026-10-27: angles inside +-free_rad are free (the flat-stance metric
+    # counts < 5 deg as flat); only the excess is charged.
+    angle = (angle.abs() - free_rad).clamp(min=0.0)
   return torch.sum(torch.square(angle) * contact.float(), dim=1)
 
 

@@ -1,0 +1,82 @@
+name: u11_u6_prompt08
+task: Mjlab-Velocity-Kick-Stage3-Amp-DA-Muon-Booster-K1
+request: kick
+change: 'speed to kick on u6: genes.k.PROMPT_KICK_TAU: 1.3626 -> 0.8'
+why: 'Time points stay at 0.47/0.5 deployed (S8 median 1.72 s, B-Human 0.497); a per-step
+  time cost (u8) did not speed kicks. The kick rewards are scaled by promptness exp(-near
+  time / tau): a shorter tau pays the same strike more when released sooner, a pull rather
+  than a cost.'
+touches: training-only
+control: u6_u4_anchor02
+init: logs/rsl_rl/k1_kick_stage3_amp/tonight_soups/s8_ctl7_n7_n5b_n4.pt
+ball: ours
+genes:
+  amp_kick_data: 0.0
+  ball_mass_alpha_max: 0.55
+  caps_near_ball_scale: 0.5
+  caps_temporal_coef: 1.0
+  desired_kl: 0.004
+  k.KICK_STYLE_AMP: 0.0
+  k.LOFT_PENALTY: 0.0
+  k.LONG_AIM_SIGMA2: 0.05
+  k.MOMENTUM_KICK_MAX_SPEED: 0.9646
+  k.PROMPT_KICK_TAU: 0.8
+  k.STYLE_MAP: free
+  k.STYLE_SHARE_HOP: 0.0
+  k.STYLE_SHARE_INSIDE: 0.0
+  k.SUPPORT_PLANT_FACTOR: 1.0
+  k.TRACK_BRAKE_PROFILE: 1.0
+  rsi_bhuman: 0.1
+  rsi_ours: 0.15
+  s.cap_low_prob: 0.15
+  s.far_spawn_prob: 0.2
+  s.spawn_any_prob: 0.3
+  s.unknown_start_prob: 0.15
+  stand_start_prob: 0.35
+  style_w: 0.3
+  t.far_cap_tracking: 6.0
+  t.hop_power_long: 0.0
+  w.action_rate_l2: -0.15
+  w.hop_kick_fall: -1000.0
+  w.hop_kick_style: 0.0
+  w.inside_foot_style: 0.0
+  w.kick_direction: 900.0
+  w.kick_rest_accuracy: 1500.0
+  w.long_kick_power: 4000.0
+  w.long_kick_speed_linear: 1600.0
+  w.long_kick_underpower: -300.0
+  w.search_turn: 10.0
+  w.style_advantage: 1500.0
+  w.torque_over_soft_limit: -100.0
+  w.touchdown_speed: -39.0636
+  w.walk_speed_track: 6.0
+  s.side_drill_prob: 0.25
+  s.side_drill_ball_distance:
+  - 0.35
+  - 1.0
+  s.side_drill_angle:
+  - 0.0
+  - 3.1416
+  k.SHORT_GOAL_OVERRUN_SCALE: 1.0
+reward_program: docs/evolution/programs/h022_c2.json
+methods:
+  amp:
+    style_reward_weight: 0.3
+  muon: {}
+  symmetry_aug: {}
+  decap: false
+  multi_critic: false
+  caps:
+    temporal: 1.0
+    near_ball_scale: 0.5
+  kl_anchor:
+    checkpoint: logs/rsl_rl/k1_kick_stage3_amp/tonight_soups/s8_ctl7_n7_n5b_n4.pt
+    coef: 0.2
+    coef_final: 0.05
+    decay_updates: 5000
+    loss: kl
+rewards:
+  ball_avoidance: -5.0
+rl: {}
+env:
+  scene.num_envs: 4096
