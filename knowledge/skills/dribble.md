@@ -95,7 +95,16 @@ deploy-match config (`_dribble_deploy_match`) and the runner fall latch.
 - Speed beyond ~0.9 m/s; kick power to B-Human level; jitter back toward 0.07.
 - Next planned (not started): actor observation history (mjlab
   `ObservationGroupCfg.history_length`, runner `ObservationHistory`), warm
-  started with zero columns; separate model version.
+  started with zero columns; separate model version. **History length N = 10
+  for joints, ball and every other dribble input (user, 2026-10-28).**
+- Plan agreed 2026-10-28, to start after the current kick work, in this order:
+  0 re-measure v51 on B-Human's ball; 1 fine-tune it there (desired_kl 0.002 +
+  checkpoint averaging; the control for 3); 3 observation history N = 10 (new
+  family dribble_v2); 2 speed toward **2 m/s** (user, 2026-10-28): push-and-chase
+  with widened proximity / lost / success envelopes, chase caps (vx 2.0) with the
+  runner's --dribble-speed-limits raised to match (contract, bundle with
+  dribble_v2), and the robot fall gap (1.9 / min at ~0.8 m/s) closed first.
+  Phase 4 (walk / dribble / kick controller compatibility) dropped for now.
 - Runner run-time modes (kick / stop / dribble via buttons or a topic) are
   coded but untested on ROS.
 - Trim the dribble runs (all checkpoints since 2026-10-20 are still kept) once

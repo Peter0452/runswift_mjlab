@@ -1,0 +1,93 @@
+name: dribble_bb_d2
+task: Mjlab-Velocity-Dribble-Amp-DA-Muon-Booster-K1
+request: dribble
+change: 'on d1: rl algorithm.learning_rate 1e-4 -> 5e-5'
+why: Kick fine-tunes on B-Human's ball peaked ~500 it in and then drifted; halving the policy step (kick
+  desired_kl 0.004 -> 0.002) gave the best checkpoints (x4). The dribble runs a fixed LR, so halve the
+  LR.
+touches: training-only
+control: dribble_bb_d1
+init: logs/rsl_rl/k1_dribble_amp/2026-10-23_08-22-20_dribble_aimhead_v51/model_11750.pt
+ball: bhuman
+genes:
+  track_sigma_fast: 0.6
+  amp_cond: true
+  tilt_guard: -20
+  push_chase: true
+  kick_prob: 0.25
+  vanish_prob: 0.2
+  far_spawn_prob: 0.4
+  kick_teacher_coef: 0.15
+  kick_teacher_decay: 8000
+  kick_teacher_dist: 2.0
+  kick_teacher_arms: true
+  kick_line_up_tau: 1.5
+  kick_wait_w: -3
+  push_w: 300
+  ahead_w: 4
+  side_w: 1000
+  sole_yaw_sigma: 1.0
+  speed_gate_frac: 0.75
+  top_band_prob: 0.4
+  fast_turn_deg: 30
+  style_w: 0.15
+  critic_alphas: &id001
+  - 0.1
+  - 0.65
+  - 0.25
+  kick_leave_dist: 0.5
+  kick_air_ok: true
+  kick_cap: 2.0
+  kick_power_w: 3000
+  side_gate_deg: 30
+  kick_teacher_max_offset_deg: 30
+  kick_aim_wide: 0.35
+  lost_head_w: 1.0
+methods:
+  amp:
+    style_reward_weight: 0.3
+    style_start: 0.3
+    style_end: 0.3
+  muon: {}
+  symmetry_aug:
+    augmentation: k1.tasks.dribble.mdp.dribble:augment_symmetries_dribble
+  multi_critic:
+    alphas: *id001
+    extra_group:
+    - kick_power
+    - kick_line_up
+    - kick_stand
+    - kick_wait_cost
+    - kick_side
+  caps:
+    temporal: 1.0
+    spatial: 0.4
+    spatial_sigma: 0.05
+    near_ball_scale: 0.5
+  kick_teacher:
+    coef: 0.15
+    decay_updates: 8000
+    checkpoint: /home/peter/Desktop/Project/RL/runswift_mjlab/logs/rsl_rl/k1_kick_stage3_amp/2026-10-08_12-04-08_h011_c2/model_17750.pt
+    dist: 2.0
+    max_offset_deg: 30.0
+    arms: true
+    bhuman_dist: null
+    takeover_prob: null
+  conditioned_amp:
+    free_prob: 0.25
+    speed_mass:
+    - - 0.3
+      - 0.15
+    - - 0.7
+      - 0.3
+    - - 1.1
+      - 0.2
+    - - 1.6
+      - 0.2
+    - - 3.5
+      - 0.15
+rewards: {}
+rl:
+  algorithm.learning_rate: 5.0e-05
+env:
+  scene.num_envs: 4096

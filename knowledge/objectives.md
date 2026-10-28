@@ -72,8 +72,8 @@ selfplay-run-authority).
 
 ## Dribble
 
-- **Speed (2026-10-19):** dribble at ~1.5 m/s in all directions with good
-  ball control. Speed beats slow precision a bit (2026-10-21): slow-dribble
+- **Speed (2026-10-28, user; was ~1.5 m/s from 2026-10-19):** dribble at
+  **2 m/s** in all directions with good ball control; optimise toward it. Speed beats slow precision a bit (2026-10-21): slow-dribble
   gates (0.3 / 0.5 m/s) relaxed to −0.08 vs v17; 0.8 m/s, falls and posture
   gates stay strict.
 - **Kick mode (2026-10-21, obs slot 82):**
@@ -85,7 +85,12 @@ selfplay-run-authority).
   - do not compromise the dribble;
   - later: smooth, fast dribble → kick transitions.
 - The user allowed changing the inputs if needed (2026-10-23), as a separate
-  model version with runner and parity updated.
+  model version with runner and parity updated. **Observation history N = 10**
+  for joints, ball and every other dribble input (2026-10-28).
+- Plan order (2026-10-28, after the current kick work): re-measure v51 on
+  B-Human's ball → fine-tune it there → observation history (dribble_v2) →
+  speed toward 2 m/s. Skill-compatibility work for a walk / dribble / kick
+  controller is dropped for now.
 - B-Human may be used as a teacher (2026-10-22).
 
 ## Self-play striker
